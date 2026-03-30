@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trophy, Medal, Calendar, Clock, Users, ExternalLink, Video, Image, Award, ChevronDown, ChevronUp } from 'lucide-react';
+import { Trophy, Medal, Calendar, Clock, Users, ExternalLink, Video, Image, Award, ChevronDown, ChevronUp, Flag } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface Season {
@@ -283,6 +283,14 @@ const SeasonDetail = () => {
                         <div className="flex items-center gap-2 flex-wrap">
                           <Badge variant="outline">{m.game_name}</Badge>
                           {winner && <span className="text-sm font-medium text-gold">🏆 {winner.player_name}</span>}
+                          {m.first_player_id && (() => {
+                            const fp = m.results.find(r => r.player_id === m.first_player_id);
+                            return fp ? (
+                              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Flag className="h-3 w-3 text-gold" /> {fp.player_name}
+                              </span>
+                            ) : null;
+                          })()}
                           {m.duration_minutes && (
                             <span className="text-xs text-muted-foreground flex items-center gap-1">
                               <Clock className="h-3 w-3" /> {m.duration_minutes} min
@@ -311,10 +319,10 @@ const SeasonDetail = () => {
                                 <Badge variant={r.position === 1 ? 'default' : 'secondary'} className={`w-8 justify-center ${r.position === 1 ? 'bg-gold text-black' : ''}`}>
                                   {r.position}º
                                 </Badge>
-                                <span className="flex-1 font-medium">
+                                <span className="flex-1 font-medium flex items-center gap-1">
                                   {r.player_name}
                                   {r.player_id === m.first_player_id && (
-                                    <Badge variant="outline" className="ml-2 text-xs border-gold/50 text-gold">First</Badge>
+                                    <Flag className="h-3.5 w-3.5 text-gold ml-1" />
                                   )}
                                 </span>
                                 <span className="text-muted-foreground">{r.score} pts</span>

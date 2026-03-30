@@ -155,8 +155,8 @@ const AdminMatches = () => {
   };
 
   const handleSubmit = async () => {
-    if (!seasonId || !gameId || results.some(r => !r.player_id)) {
-      return toast.error('Preencha Season, Jogo e todos os jogadores');
+    if (!seasonId || !gameId || !playedDate || !playedTime || results.some(r => !r.player_id)) {
+      return toast.error('Preencha Season, Jogo, Data/Hora e todos os jogadores');
     }
     setSaving(true);
 

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Gamepad2 } from 'lucide-react';
+import { Calendar, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface Season {
@@ -31,7 +32,7 @@ const Seasons = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchSeasons = async () => {
       const { data } = await supabase
         .from('seasons')
         .select('*')
@@ -39,7 +40,7 @@ const Seasons = () => {
       setSeasons(data || []);
       setLoading(false);
     };
-    fetch();
+    fetchSeasons();
   }, []);
 
   return (
@@ -61,21 +62,26 @@ const Seasons = () => {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {seasons.map((s, i) => (
             <motion.div key={s.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-              <Card className="bg-card border-border hover:border-gold/20 transition-colors">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-xl">{s.name}</CardTitle>
-                    <Badge className={statusColors[s.status]}>{statusLabels[s.status]}</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {s.description && <p className="text-sm text-muted-foreground mb-4">{s.description}</p>}
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Calendar className="h-3 w-3" />
-                    <span>{new Date(s.start_date).toLocaleDateString('pt-BR')} — {new Date(s.end_date).toLocaleDateString('pt-BR')}</span>
-                  </div>
-                </CardContent>
-              </Card>
+              <Link to={`/seasons/${s.id}`}>
+                <Card className="bg-card border-border hover:border-gold/20 transition-colors cursor-pointer group">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-xl">{s.name}</CardTitle>
+                      <div className="flex items-center gap-2">
+                        <Badge className={statusColors[s.status]}>{statusLabels[s.status]}</Badge>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-gold transition-colors" />
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {s.description && <p className="text-sm text-muted-foreground mb-4">{s.description}</p>}
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Calendar className="h-3 w-3" />
+                      <span>{new Date(s.start_date).toLocaleDateString('pt-BR')} — {new Date(s.end_date).toLocaleDateString('pt-BR')}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
             </motion.div>
           ))}
         </div>

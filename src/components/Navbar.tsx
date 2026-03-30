@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Trophy, Users, Calendar, Shield, LogOut, Menu, X } from 'lucide-react';
+import { Users, Calendar, Shield, LogOut, Menu, X, Gamepad2, BookOpen } from 'lucide-react';
 import logo from '@/assets/azd-logo.png';
 import { useState } from 'react';
 
@@ -16,9 +16,10 @@ const Navbar = () => {
   };
 
   const navLinks = [
-    { to: '/rankings', label: 'Rankings', icon: Trophy },
     { to: '/seasons', label: 'Seasons', icon: Calendar },
+    { to: '/games', label: 'Jogos', icon: Gamepad2 },
     { to: '/players', label: 'Jogadores', icon: Users },
+    { to: '/rules', label: 'Regras', icon: BookOpen },
   ];
 
   return (

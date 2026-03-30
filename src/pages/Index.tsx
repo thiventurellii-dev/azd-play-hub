@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import logo from '@/assets/azd-logo.png';
 
 const features = [
-  { icon: Trophy, title: 'Rankings ELO', desc: 'Sistema de MMR estilo Dota 2, adaptado para board games com múltiplos jogadores.' },
+  { icon: Trophy, title: 'Rankings ELO', desc: 'Sistema de MMR, adaptado para board games com múltiplos jogadores.' },
   { icon: Calendar, title: 'Seasons', desc: 'Competições por temporadas com rankings independentes e jogos selecionados.' },
   { icon: Users, title: 'Comunidade', desc: 'Perfis de jogadores, histórico de partidas e estatísticas detalhadas.' },
   { icon: Zap, title: 'Tempo Real', desc: 'Acompanhe partidas e mudanças de ranking conforme acontecem.' },

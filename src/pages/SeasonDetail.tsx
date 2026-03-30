@@ -248,7 +248,9 @@ const SeasonDetail = () => {
                       <div className="flex items-center justify-center w-8">{getRankIcon(i)}</div>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold truncate">{r.player_name}</p>
-                        <p className="text-xs text-muted-foreground">{r.games_played} jogos • {r.wins} vitórias</p>
+                        <p className="text-xs text-muted-foreground">
+                          {r.games_played} partidas • {r.wins} vitórias • {r.games_played > 0 ? Math.round((r.wins / r.games_played) * 100) : 0}% win rate
+                        </p>
                       </div>
                       <div className="text-right">
                         <p className="text-xl font-bold text-gold">{r.current_mmr}</p>

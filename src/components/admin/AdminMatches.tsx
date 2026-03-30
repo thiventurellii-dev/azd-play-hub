@@ -291,7 +291,6 @@ const AdminMatches = () => {
           <div className="space-y-2">
             <Label>Duração (min)</Label>
             <Input type="number" value={duration} onChange={e => setDuration(e.target.value)} placeholder="120" className="max-w-[200px]" />
-            </div>
           </div>
 
           <div className="space-y-2">

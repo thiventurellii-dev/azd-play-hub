@@ -82,6 +82,7 @@ export type Database = {
           duration_minutes: number | null
           game_id: string
           id: string
+          image_url: string | null
           played_at: string
           season_id: string
         }
@@ -90,6 +91,7 @@ export type Database = {
           duration_minutes?: number | null
           game_id: string
           id?: string
+          image_url?: string | null
           played_at?: string
           season_id: string
         }
@@ -98,6 +100,7 @@ export type Database = {
           duration_minutes?: number | null
           game_id?: string
           id?: string
+          image_url?: string | null
           played_at?: string
           season_id?: string
         }

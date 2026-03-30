@@ -319,10 +319,10 @@ const SeasonDetail = () => {
                                 <Badge variant={r.position === 1 ? 'default' : 'secondary'} className={`w-8 justify-center ${r.position === 1 ? 'bg-gold text-black' : ''}`}>
                                   {r.position}º
                                 </Badge>
-                                <span className="flex-1 font-medium">
+                                <span className="flex-1 font-medium flex items-center gap-1">
                                   {r.player_name}
                                   {r.player_id === m.first_player_id && (
-                                    <Badge variant="outline" className="ml-2 text-xs border-gold/50 text-gold">First</Badge>
+                                    <Flag className="h-3.5 w-3.5 text-gold ml-1" />
                                   )}
                                 </span>
                                 <span className="text-muted-foreground">{r.score} pts</span>

@@ -240,24 +240,25 @@ const SeasonDetail = () => {
               <CardContent className="py-12 text-center text-muted-foreground">Nenhum ranking disponível ainda.</CardContent>
             </Card>
           ) : (
-            <div className="space-y-2">
+            <div className="overflow-x-auto">
+              <div className="grid grid-cols-[40px_1fr_80px_80px_80px_80px] gap-2 px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                <span>#</span>
+                <span>Jogador</span>
+                <span className="text-center">Partidas</span>
+                <span className="text-center">Vitórias</span>
+                <span className="text-center">Win Rate</span>
+                <span className="text-right">MMR</span>
+              </div>
               {rankings.map((r, i) => (
                 <motion.div key={r.player_id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.05 }}>
-                  <Card className={`bg-card border-border hover:border-gold/20 transition-colors ${i < 3 ? 'border-gold/30' : ''}`}>
-                    <CardContent className="flex items-center gap-4 py-4">
-                      <div className="flex items-center justify-center w-8">{getRankIcon(i)}</div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold truncate">{r.player_name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {r.games_played} partidas • {r.wins} vitórias • {r.games_played > 0 ? Math.round((r.wins / r.games_played) * 100) : 0}% win rate
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xl font-bold text-gold">{r.current_mmr}</p>
-                        <p className="text-xs text-muted-foreground">MMR</p>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <div className={`grid grid-cols-[40px_1fr_80px_80px_80px_80px] gap-2 items-center px-4 py-3 rounded-lg border border-border hover:border-gold/20 transition-colors ${i < 3 ? 'border-gold/30 bg-card' : 'bg-card'}`}>
+                    <div className="flex items-center justify-center">{getRankIcon(i)}</div>
+                    <p className="font-semibold truncate">{r.player_name}</p>
+                    <p className="text-center text-sm">{r.games_played}</p>
+                    <p className="text-center text-sm">{r.wins}</p>
+                    <p className="text-center text-sm">{r.games_played > 0 ? Math.round((r.wins / r.games_played) * 100) : 0}%</p>
+                    <p className="text-right text-lg font-bold text-gold">{r.current_mmr}</p>
+                  </div>
                 </motion.div>
               ))}
             </div>

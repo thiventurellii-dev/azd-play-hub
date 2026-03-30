@@ -9,10 +9,12 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index.tsx";
 import Login from "./pages/Login.tsx";
 import Register from "./pages/Register.tsx";
-import Rankings from "./pages/Rankings.tsx";
 import Seasons from "./pages/Seasons.tsx";
+import SeasonDetail from "./pages/SeasonDetail.tsx";
+import Games from "./pages/Games.tsx";
 import Players from "./pages/Players.tsx";
 import Profile from "./pages/Profile.tsx";
+import Rules from "./pages/Rules.tsx";
 import Admin from "./pages/Admin.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
@@ -30,9 +32,11 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              <Route path="/rankings" element={<Rankings />} />
               <Route path="/seasons" element={<Seasons />} />
+              <Route path="/seasons/:id" element={<SeasonDetail />} />
+              <Route path="/games" element={<Games />} />
               <Route path="/players" element={<Players />} />
+              <Route path="/rules" element={<Rules />} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />

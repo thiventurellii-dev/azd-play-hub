@@ -260,7 +260,7 @@ const AdminMatches = () => {
       <Card className="bg-card border-border">
         <CardHeader><CardTitle>Registrar Partida</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
               <Label>Season *</Label>
               <Select value={seasonId} onValueChange={v => { setSeasonId(v); setGameId(''); }}>
@@ -280,8 +280,17 @@ const AdminMatches = () => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Duração (min)</Label>
-              <Input type="number" value={duration} onChange={e => setDuration(e.target.value)} placeholder="120" />
+              <Label>Data da Partida *</Label>
+              <Input type="date" value={playedDate} onChange={e => setPlayedDate(e.target.value)} required />
+            </div>
+            <div className="space-y-2">
+              <Label>Hora da Partida *</Label>
+              <Input type="time" value={playedTime} onChange={e => setPlayedTime(e.target.value)} required />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Duração (min)</Label>
+            <Input type="number" value={duration} onChange={e => setDuration(e.target.value)} placeholder="120" className="max-w-[200px]" />
             </div>
           </div>
 

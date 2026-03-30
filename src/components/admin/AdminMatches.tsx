@@ -244,6 +244,8 @@ const AdminMatches = () => {
       toast.success('Partida registrada com sucesso!');
       setResults([{ player_id: '', position: 1, score: 0, is_first_player: false }]);
       setDuration('');
+      setPlayedDate('');
+      setPlayedTime('');
       setImageFile(null);
       fetchMatches();
     } catch (err: any) {

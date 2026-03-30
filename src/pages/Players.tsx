@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
-import { Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface Player {
   id: string;
   name: string;
+  nickname: string;
   avatar_url: string | null;
+  city: string;
+  state: string;
   created_at: string;
 }
 
@@ -18,7 +20,15 @@ const Players = () => {
   useEffect(() => {
     const fetch = async () => {
       const { data } = await supabase.from('profiles').select('*').order('name');
-      setPlayers(data || []);
+      setPlayers((data || []).map(p => ({
+        id: p.id,
+        name: p.name,
+        nickname: (p as any).nickname || '',
+        avatar_url: p.avatar_url,
+        city: (p as any).city || '',
+        state: (p as any).state || '',
+        created_at: p.created_at,
+      })));
       setLoading(false);
     };
     fetch();
@@ -40,10 +50,12 @@ const Players = () => {
               <Card className="bg-card border-border hover:border-gold/20 transition-colors">
                 <CardContent className="flex items-center gap-4 py-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-gold font-bold text-lg">
-                    {p.name?.charAt(0)?.toUpperCase() || '?'}
+                    {(p.nickname || p.name)?.charAt(0)?.toUpperCase() || '?'}
                   </div>
                   <div>
                     <p className="font-semibold">{p.name}</p>
+                    {p.nickname && <p className="text-xs text-gold">@{p.nickname}</p>}
+                    {(p.city || p.state) && <p className="text-xs text-muted-foreground">{[p.city, p.state].filter(Boolean).join(', ')}</p>}
                     <p className="text-xs text-muted-foreground">Desde {new Date(p.created_at).toLocaleDateString('pt-BR')}</p>
                   </div>
                 </CardContent>

@@ -113,6 +113,7 @@ export type Database = {
         Row: {
           created_at: string
           duration_minutes: number | null
+          first_player_id: string | null
           game_id: string
           id: string
           image_url: string | null
@@ -122,6 +123,7 @@ export type Database = {
         Insert: {
           created_at?: string
           duration_minutes?: number | null
+          first_player_id?: string | null
           game_id: string
           id?: string
           image_url?: string | null
@@ -131,6 +133,7 @@ export type Database = {
         Update: {
           created_at?: string
           duration_minutes?: number | null
+          first_player_id?: string | null
           game_id?: string
           id?: string
           image_url?: string | null
@@ -158,6 +161,7 @@ export type Database = {
         Row: {
           created_at: string
           current_mmr: number
+          game_id: string | null
           games_played: number
           id: string
           player_id: string
@@ -168,6 +172,7 @@ export type Database = {
         Insert: {
           created_at?: string
           current_mmr?: number
+          game_id?: string | null
           games_played?: number
           id?: string
           player_id: string
@@ -178,6 +183,7 @@ export type Database = {
         Update: {
           created_at?: string
           current_mmr?: number
+          game_id?: string | null
           games_played?: number
           id?: string
           player_id?: string
@@ -198,23 +204,47 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          birth_date: string | null
+          city: string | null
+          country_code: string | null
           created_at: string
+          email: string | null
+          gender: string | null
           id: string
           name: string
+          nickname: string | null
+          phone: string | null
+          state: string | null
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
+          birth_date?: string | null
+          city?: string | null
+          country_code?: string | null
           created_at?: string
+          email?: string | null
+          gender?: string | null
           id: string
           name?: string
+          nickname?: string | null
+          phone?: string | null
+          state?: string | null
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
+          birth_date?: string | null
+          city?: string | null
+          country_code?: string | null
           created_at?: string
+          email?: string | null
+          gender?: string | null
           id?: string
           name?: string
+          nickname?: string | null
+          phone?: string | null
+          state?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -259,6 +289,7 @@ export type Database = {
           end_date: string
           id: string
           name: string
+          prize: string | null
           start_date: string
           status: string
         }
@@ -268,6 +299,7 @@ export type Database = {
           end_date: string
           id?: string
           name: string
+          prize?: string | null
           start_date: string
           status?: string
         }
@@ -277,6 +309,7 @@ export type Database = {
           end_date?: string
           id?: string
           name?: string
+          prize?: string | null
           start_date?: string
           status?: string
         }

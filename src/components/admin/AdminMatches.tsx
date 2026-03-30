@@ -34,6 +34,8 @@ const AdminMatches = () => {
   const [seasonId, setSeasonId] = useState('');
   const [gameId, setGameId] = useState('');
   const [duration, setDuration] = useState('');
+  const [playedDate, setPlayedDate] = useState('');
+  const [playedTime, setPlayedTime] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [results, setResults] = useState<MatchResult[]>([{ player_id: '', position: 1, score: 0, is_first_player: false }]);
   const [saving, setSaving] = useState(false);

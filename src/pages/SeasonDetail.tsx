@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trophy, Medal, Calendar, Clock, Users, ExternalLink, Video, Image, Award, ChevronDown, ChevronUp } from 'lucide-react';
+import { Trophy, Medal, Calendar, Clock, Users, ExternalLink, Video, Image, Award, ChevronDown, ChevronUp, Flag } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface Season {

@@ -34,6 +34,8 @@ const AdminMatches = () => {
   const [seasonId, setSeasonId] = useState('');
   const [gameId, setGameId] = useState('');
   const [duration, setDuration] = useState('');
+  const [playedDate, setPlayedDate] = useState('');
+  const [playedTime, setPlayedTime] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [results, setResults] = useState<MatchResult[]>([{ player_id: '', position: 1, score: 0, is_first_player: false }]);
   const [saving, setSaving] = useState(false);
@@ -153,8 +155,8 @@ const AdminMatches = () => {
   };
 
   const handleSubmit = async () => {
-    if (!seasonId || !gameId || results.some(r => !r.player_id)) {
-      return toast.error('Preencha Season, Jogo e todos os jogadores');
+    if (!seasonId || !gameId || !playedDate || !playedTime || results.some(r => !r.player_id)) {
+      return toast.error('Preencha Season, Jogo, Data/Hora e todos os jogadores');
     }
     setSaving(true);
 
@@ -204,7 +206,7 @@ const AdminMatches = () => {
           season_id: seasonId,
           game_id: gameId,
           duration_minutes: parseInt(duration) || null,
-          played_at: new Date().toISOString(),
+          played_at: new Date(`${playedDate}T${playedTime}`).toISOString(),
           image_url: imageUrl,
           first_player_id: firstPlayerId,
         } as any)
@@ -242,6 +244,8 @@ const AdminMatches = () => {
       toast.success('Partida registrada com sucesso!');
       setResults([{ player_id: '', position: 1, score: 0, is_first_player: false }]);
       setDuration('');
+      setPlayedDate('');
+      setPlayedTime('');
       setImageFile(null);
       fetchMatches();
     } catch (err: any) {
@@ -256,7 +260,7 @@ const AdminMatches = () => {
       <Card className="bg-card border-border">
         <CardHeader><CardTitle>Registrar Partida</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
               <Label>Season *</Label>
               <Select value={seasonId} onValueChange={v => { setSeasonId(v); setGameId(''); }}>
@@ -276,9 +280,17 @@ const AdminMatches = () => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Duração (min)</Label>
-              <Input type="number" value={duration} onChange={e => setDuration(e.target.value)} placeholder="120" />
+              <Label>Data da Partida *</Label>
+              <Input type="date" value={playedDate} onChange={e => setPlayedDate(e.target.value)} required />
             </div>
+            <div className="space-y-2">
+              <Label>Hora da Partida *</Label>
+              <Input type="time" value={playedTime} onChange={e => setPlayedTime(e.target.value)} required />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Duração (min)</Label>
+            <Input type="number" value={duration} onChange={e => setDuration(e.target.value)} placeholder="120" className="max-w-[200px]" />
           </div>
 
           <div className="space-y-2">

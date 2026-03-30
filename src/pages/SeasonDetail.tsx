@@ -4,11 +4,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Trophy, Medal, Calendar, Clock, Users, ExternalLink, Video, Image } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Trophy, Medal, Calendar, Clock, Users, ExternalLink, Video, Image, Award, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface Season {
-  id: string; name: string; description: string | null; start_date: string; end_date: string; status: string;
+  id: string; name: string; description: string | null; start_date: string; end_date: string; status: string; prize: string;
 }
 
 interface RankingEntry {
@@ -16,9 +17,9 @@ interface RankingEntry {
 }
 
 interface MatchRecord {
-  id: string; played_at: string; duration_minutes: number | null; image_url: string | null;
-  game_name: string;
-  results: { player_name: string; position: number; score: number; mmr_change: number }[];
+  id: string; played_at: string; duration_minutes: number | null; image_url: string | null; first_player_id: string | null;
+  game_name: string; game_id: string;
+  results: { player_name: string; player_id: string; position: number; score: number; mmr_change: number; mmr_before: number; mmr_after: number }[];
 }
 
 interface GameInfo {
@@ -47,41 +48,29 @@ const SeasonDetail = () => {
   const [matches, setMatches] = useState<MatchRecord[]>([]);
   const [games, setGames] = useState<GameInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedGameId, setSelectedGameId] = useState<string>('all');
+  const [expandedMatch, setExpandedMatch] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
     const fetchAll = async () => {
-      // Season info
       const { data: sData } = await supabase.from('seasons').select('*').eq('id', id).single();
-      setSeason(sData);
-
-      // Rankings
-      const { data: rData } = await supabase
-        .from('mmr_ratings')
-        .select('player_id, current_mmr, games_played, wins')
-        .eq('season_id', id)
-        .order('current_mmr', { ascending: false });
-
-      if (rData && rData.length > 0) {
-        const playerIds = rData.map(r => r.player_id);
-        const { data: profiles } = await supabase.from('profiles').select('id, name').in('id', playerIds);
-        const pMap: Record<string, string> = {};
-        for (const p of (profiles || [])) pMap[p.id] = p.name;
-        setRankings(rData.map(r => ({ ...r, player_name: pMap[r.player_id] || 'Unknown' })));
-      }
+      setSeason(sData ? { ...sData, prize: (sData as any).prize || '' } : null);
 
       // Season games
       const { data: sgData } = await supabase.from('season_games').select('game_id').eq('season_id', id);
       const gameIds = (sgData || []).map(sg => sg.game_id);
+      let gamesData: GameInfo[] = [];
       if (gameIds.length > 0) {
         const { data: gData } = await supabase.from('games').select('*').in('id', gameIds).order('name');
-        setGames(gData || []);
+        gamesData = gData || [];
       }
+      setGames(gamesData);
 
       // Matches
       const { data: mData } = await supabase
         .from('matches')
-        .select('id, played_at, duration_minutes, image_url, game_id')
+        .select('id, played_at, duration_minutes, image_url, first_player_id, game_id')
         .eq('season_id', id)
         .order('played_at', { ascending: false })
         .limit(50);
@@ -90,7 +79,7 @@ const SeasonDetail = () => {
         const matchIds = mData.map(m => m.id);
         const gameIdsMatch = [...new Set(mData.map(m => m.game_id))];
         const [resRes, gamesRes] = await Promise.all([
-          supabase.from('match_results').select('match_id, player_id, position, score, mmr_change').in('match_id', matchIds),
+          supabase.from('match_results').select('match_id, player_id, position, score, mmr_change, mmr_before, mmr_after').in('match_id', matchIds),
           supabase.from('games').select('id, name').in('id', gameIdsMatch),
         ]);
         const gameMap: Record<string, string> = {};
@@ -106,15 +95,20 @@ const SeasonDetail = () => {
           played_at: m.played_at,
           duration_minutes: m.duration_minutes,
           image_url: m.image_url,
+          first_player_id: (m as any).first_player_id || null,
           game_name: gameMap[m.game_id] || '?',
+          game_id: m.game_id,
           results: (resRes.data || [])
             .filter(r => r.match_id === m.id)
             .sort((a, b) => a.position - b.position)
             .map(r => ({
               player_name: pMap[r.player_id] || '?',
+              player_id: r.player_id,
               position: r.position,
               score: r.score || 0,
               mmr_change: r.mmr_change || 0,
+              mmr_before: r.mmr_before || 1000,
+              mmr_after: r.mmr_after || 1000,
             })),
         })));
       }
@@ -123,6 +117,68 @@ const SeasonDetail = () => {
     };
     fetchAll();
   }, [id]);
+
+  // Fetch rankings when game filter changes
+  useEffect(() => {
+    if (!id) return;
+    const fetchRankings = async () => {
+      let query = supabase
+        .from('mmr_ratings')
+        .select('player_id, current_mmr, games_played, wins, game_id')
+        .eq('season_id', id)
+        .order('current_mmr', { ascending: false });
+
+      if (selectedGameId !== 'all') {
+        query = query.eq('game_id', selectedGameId);
+      }
+
+      const { data: rData } = await query;
+
+      if (rData && rData.length > 0) {
+        // If "all", aggregate per player
+        let aggregated: RankingEntry[];
+        if (selectedGameId === 'all') {
+          const agg: Record<string, { mmr: number; gp: number; wins: number }> = {};
+          for (const r of rData) {
+            if (!agg[r.player_id]) agg[r.player_id] = { mmr: 0, gp: 0, wins: 0 };
+            agg[r.player_id].mmr += r.current_mmr;
+            agg[r.player_id].gp += r.games_played;
+            agg[r.player_id].wins += r.wins;
+          }
+          // Count how many games each player has ratings for, average MMR
+          const gameCount: Record<string, number> = {};
+          for (const r of rData) {
+            gameCount[r.player_id] = (gameCount[r.player_id] || 0) + 1;
+          }
+          const playerIds = Object.keys(agg);
+          const { data: profiles } = await supabase.from('profiles').select('id, name').in('id', playerIds);
+          const pMap: Record<string, string> = {};
+          for (const p of (profiles || [])) pMap[p.id] = p.name;
+          aggregated = playerIds
+            .map(pid => ({
+              player_id: pid,
+              current_mmr: Math.round(agg[pid].mmr / gameCount[pid]),
+              games_played: agg[pid].gp,
+              wins: agg[pid].wins,
+              player_name: pMap[pid] || 'Unknown',
+            }))
+            .sort((a, b) => b.current_mmr - a.current_mmr);
+        } else {
+          const playerIds = rData.map(r => r.player_id);
+          const { data: profiles } = await supabase.from('profiles').select('id, name').in('id', playerIds);
+          const pMap: Record<string, string> = {};
+          for (const p of (profiles || [])) pMap[p.id] = p.name;
+          aggregated = rData.map(r => ({ ...r, player_name: pMap[r.player_id] || 'Unknown' }));
+        }
+        setRankings(aggregated);
+      } else {
+        setRankings([]);
+      }
+    };
+    fetchRankings();
+  }, [id, selectedGameId]);
+
+  const filteredMatches = selectedGameId === 'all' ? matches : matches.filter(m => m.game_id === selectedGameId);
 
   if (loading) {
     return (
@@ -133,9 +189,7 @@ const SeasonDetail = () => {
   }
 
   if (!season) {
-    return (
-      <div className="container py-10 text-center text-muted-foreground">Season não encontrada.</div>
-    );
+    return <div className="container py-10 text-center text-muted-foreground">Season não encontrada.</div>;
   }
 
   return (
@@ -148,10 +202,28 @@ const SeasonDetail = () => {
           <Badge className={statusColors[season.status]}>{statusLabels[season.status]}</Badge>
         </div>
         {season.description && <p className="text-muted-foreground mt-2">{season.description}</p>}
-        <div className="flex items-center gap-2 text-sm text-muted-foreground mt-2">
-          <Calendar className="h-4 w-4" />
-          <span>{new Date(season.start_date).toLocaleDateString('pt-BR')} — {new Date(season.end_date).toLocaleDateString('pt-BR')}</span>
+        <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2 flex-wrap">
+          <span className="flex items-center gap-1"><Calendar className="h-4 w-4" />{new Date(season.start_date).toLocaleDateString('pt-BR')} — {new Date(season.end_date).toLocaleDateString('pt-BR')}</span>
         </div>
+        {season.prize && (
+          <div className="mt-3 p-3 rounded-lg border border-gold/30 bg-gold/5">
+            <div className="flex items-center gap-2 text-gold text-sm font-medium mb-1">
+              <Award className="h-4 w-4" /> Premiação
+            </div>
+            <p className="text-sm">{season.prize}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Game filter */}
+      <div className="mb-6">
+        <Select value={selectedGameId} onValueChange={setSelectedGameId}>
+          <SelectTrigger className="w-[250px]"><SelectValue placeholder="Filtrar por jogo" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os jogos (média)</SelectItem>
+            {games.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
       <Tabs defaultValue="ranking" className="space-y-6">
@@ -192,50 +264,69 @@ const SeasonDetail = () => {
 
         {/* Matches Tab */}
         <TabsContent value="matches">
-          {matches.length === 0 ? (
+          {filteredMatches.length === 0 ? (
             <Card className="bg-card border-border">
               <CardContent className="py-12 text-center text-muted-foreground">Nenhuma partida registrada.</CardContent>
             </Card>
           ) : (
-            <div className="space-y-4">
-              {matches.map(m => (
-                <Card key={m.id} className="bg-card border-border">
-                  <CardContent className="py-4 space-y-3">
-                    <div className="flex items-center justify-between flex-wrap gap-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant="outline">{m.game_name}</Badge>
-                        {m.duration_minutes && (
-                          <span className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Clock className="h-3 w-3" /> {m.duration_minutes} min
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {m.image_url && (
-                          <a href={m.image_url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
-                            <Image className="h-4 w-4" />
-                          </a>
-                        )}
-                        <span className="text-xs text-muted-foreground">{new Date(m.played_at).toLocaleDateString('pt-BR')}</span>
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      {m.results.map((r, i) => (
-                        <div key={i} className="flex items-center gap-3 text-sm">
-                          <Badge variant={r.position === 1 ? 'default' : 'secondary'} className={`w-8 justify-center ${r.position === 1 ? 'bg-gold text-black' : ''}`}>
-                            {r.position}º
-                          </Badge>
-                          <span className="flex-1 font-medium">{r.player_name}</span>
-                          <span className="text-muted-foreground">{r.score} pts</span>
-                          <span className={`text-xs font-medium ${r.mmr_change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                            {r.mmr_change >= 0 ? '+' : ''}{r.mmr_change}
-                          </span>
+            <div className="space-y-3">
+              {filteredMatches.map(m => {
+                const isExpanded = expandedMatch === m.id;
+                const winner = m.results.find(r => r.position === 1);
+                return (
+                  <Card key={m.id} className="bg-card border-border hover:border-gold/20 transition-colors cursor-pointer" onClick={() => setExpandedMatch(isExpanded ? null : m.id)}>
+                    <CardContent className="py-4 space-y-3">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="outline">{m.game_name}</Badge>
+                          {winner && <span className="text-sm font-medium text-gold">🏆 {winner.player_name}</span>}
+                          {m.duration_minutes && (
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Clock className="h-3 w-3" /> {m.duration_minutes} min
+                            </span>
+                          )}
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">{new Date(m.played_at).toLocaleDateString('pt-BR')}</span>
+                          {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                        </div>
+                      </div>
+
+                      {isExpanded && (
+                        <div className="space-y-4 pt-2 border-t border-border" onClick={e => e.stopPropagation()}>
+                          {/* Match image */}
+                          {m.image_url && (
+                            <div className="rounded-lg overflow-hidden border border-border">
+                              <img src={m.image_url} alt="Partida" className="w-full max-h-80 object-cover" />
+                            </div>
+                          )}
+
+                          {/* Results */}
+                          <div className="space-y-2">
+                            {m.results.map((r, i) => (
+                              <div key={i} className="flex items-center gap-3 text-sm p-2 rounded-lg bg-secondary/30">
+                                <Badge variant={r.position === 1 ? 'default' : 'secondary'} className={`w-8 justify-center ${r.position === 1 ? 'bg-gold text-black' : ''}`}>
+                                  {r.position}º
+                                </Badge>
+                                <span className="flex-1 font-medium">
+                                  {r.player_name}
+                                  {r.player_id === m.first_player_id && (
+                                    <Badge variant="outline" className="ml-2 text-xs border-gold/50 text-gold">First</Badge>
+                                  )}
+                                </span>
+                                <span className="text-muted-foreground">{r.score} pts</span>
+                                <span className={`text-xs font-medium ${r.mmr_change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                  {r.mmr_change >= 0 ? '+' : ''}{r.mmr_change} MMR
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
         </TabsContent>
@@ -255,9 +346,7 @@ const SeasonDetail = () => {
                       {g.image_url ? (
                         <img src={g.image_url} alt={g.name} className="h-12 w-12 rounded object-cover" />
                       ) : (
-                        <div className="h-12 w-12 rounded bg-secondary flex items-center justify-center text-gold font-bold text-lg">
-                          {g.name.charAt(0)}
-                        </div>
+                        <div className="h-12 w-12 rounded bg-secondary flex items-center justify-center text-gold font-bold text-lg">{g.name.charAt(0)}</div>
                       )}
                       <div>
                         <p className="font-semibold">{g.name}</p>
@@ -271,16 +360,12 @@ const SeasonDetail = () => {
                     <div className="flex gap-2 flex-wrap">
                       {g.rules_url && (
                         <a href={g.rules_url} target="_blank" rel="noopener noreferrer">
-                          <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1">
-                            <ExternalLink className="h-3 w-3" /> Regras
-                          </Badge>
+                          <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1"><ExternalLink className="h-3 w-3" /> Regras</Badge>
                         </a>
                       )}
                       {g.video_url && (
                         <a href={g.video_url} target="_blank" rel="noopener noreferrer">
-                          <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1">
-                            <Video className="h-3 w-3" /> Vídeo
-                          </Badge>
+                          <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1"><Video className="h-3 w-3" /> Vídeo</Badge>
                         </a>
                       )}
                     </div>

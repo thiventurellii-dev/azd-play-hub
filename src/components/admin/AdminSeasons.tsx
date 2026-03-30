@@ -3,32 +3,20 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { Plus, Trash2, Gamepad2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, Gamepad2, ChevronDown, ChevronUp, Trophy } from 'lucide-react';
 
 interface Season {
-  id: string;
-  name: string;
-  description: string;
-  start_date: string;
-  end_date: string;
-  status: string;
+  id: string; name: string; description: string; start_date: string; end_date: string; status: string; prize: string;
 }
+interface Game { id: string; name: string; }
 
-interface Game {
-  id: string;
-  name: string;
-}
-
-const statusLabels: Record<string, string> = {
-  upcoming: 'Em breve',
-  active: 'Ativa',
-  finished: 'Finalizada',
-};
+const statusLabels: Record<string, string> = { upcoming: 'Em breve', active: 'Ativa', finished: 'Finalizada' };
 
 const AdminSeasons = () => {
   const [seasons, setSeasons] = useState<Season[]>([]);
@@ -36,6 +24,7 @@ const AdminSeasons = () => {
   const [seasonGamesMap, setSeasonGamesMap] = useState<Record<string, string[]>>({});
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [prize, setPrize] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [status, setStatus] = useState('upcoming');
@@ -48,9 +37,8 @@ const AdminSeasons = () => {
       supabase.from('games').select('id, name').order('name'),
       supabase.from('season_games').select('season_id, game_id'),
     ]);
-    setSeasons(seasonsRes.data || []);
+    setSeasons((seasonsRes.data || []).map(s => ({ ...s, prize: (s as any).prize || '' })));
     setGames(gamesRes.data || []);
-
     const map: Record<string, string[]> = {};
     for (const sg of (sgRes.data || [])) {
       if (!map[sg.season_id]) map[sg.season_id] = [];
@@ -62,21 +50,17 @@ const AdminSeasons = () => {
   useEffect(() => { fetchData(); }, []);
 
   const handleCreate = async () => {
-    if (!name || !startDate || !endDate) return toast.error('Preencha todos os campos');
+    if (!name || !startDate || !endDate) return toast.error('Preencha todos os campos obrigatórios');
     const { data, error } = await supabase
       .from('seasons')
-      .insert({ name, description, start_date: startDate, end_date: endDate, status })
-      .select()
-      .single();
+      .insert({ name, description, start_date: startDate, end_date: endDate, status, prize } as any)
+      .select().single();
     if (error) return toast.error(error.message);
-
     if (selectedGames.length > 0) {
-      const sgInserts = selectedGames.map(gid => ({ season_id: data.id, game_id: gid }));
-      await supabase.from('season_games').insert(sgInserts);
+      await supabase.from('season_games').insert(selectedGames.map(gid => ({ season_id: data.id, game_id: gid })));
     }
-
     toast.success('Season criada!');
-    setName(''); setDescription(''); setStartDate(''); setEndDate(''); setSelectedGames([]);
+    setName(''); setDescription(''); setPrize(''); setStartDate(''); setEndDate(''); setSelectedGames([]);
     fetchData();
   };
 
@@ -98,12 +82,8 @@ const AdminSeasons = () => {
   };
 
   const toggleNewGameSelection = (gameId: string) => {
-    setSelectedGames(prev =>
-      prev.includes(gameId) ? prev.filter(id => id !== gameId) : [...prev, gameId]
-    );
+    setSelectedGames(prev => prev.includes(gameId) ? prev.filter(id => id !== gameId) : [...prev, gameId]);
   };
-
-  const getGameName = (id: string) => games.find(g => g.id === id)?.name || id;
 
   return (
     <div className="space-y-6">
@@ -112,11 +92,11 @@ const AdminSeasons = () => {
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>Nome</Label>
+              <Label>Nome *</Label>
               <Input value={name} onChange={e => setName(e.target.value)} placeholder="Season 1" />
             </div>
             <div className="space-y-2">
-              <Label>Status</Label>
+              <Label>Status *</Label>
               <Select value={status} onValueChange={setStatus}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -127,17 +107,21 @@ const AdminSeasons = () => {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Início</Label>
+              <Label>Início *</Label>
               <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Fim</Label>
+              <Label>Fim *</Label>
               <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
             </div>
           </div>
           <div className="space-y-2">
             <Label>Descrição</Label>
             <Input value={description} onChange={e => setDescription(e.target.value)} placeholder="Descrição da season" />
+          </div>
+          <div className="space-y-2">
+            <Label>Premiação</Label>
+            <Textarea value={prize} onChange={e => setPrize(e.target.value)} placeholder="Descreva a premiação da season (ex: Troféu + R$100 para o 1º lugar)" rows={3} />
           </div>
 
           <div className="space-y-2">
@@ -148,10 +132,7 @@ const AdminSeasons = () => {
               <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                 {games.map(g => (
                   <label key={g.id} className="flex items-center gap-2 rounded-md border border-border p-2 cursor-pointer hover:bg-secondary/50 transition-colors">
-                    <Checkbox
-                      checked={selectedGames.includes(g.id)}
-                      onCheckedChange={() => toggleNewGameSelection(g.id)}
-                    />
+                    <Checkbox checked={selectedGames.includes(g.id)} onCheckedChange={() => toggleNewGameSelection(g.id)} />
                     <span className="text-sm">{g.name}</span>
                   </label>
                 ))}
@@ -172,12 +153,11 @@ const AdminSeasons = () => {
               <CardContent className="py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-semibold">{s.name}</p>
                       <Badge variant="secondary" className="text-xs">{statusLabels[s.status] || s.status}</Badge>
-                      <Badge variant="outline" className="text-xs">
-                        <Gamepad2 className="h-3 w-3 mr-1" />{sgames.length} jogos
-                      </Badge>
+                      <Badge variant="outline" className="text-xs"><Gamepad2 className="h-3 w-3 mr-1" />{sgames.length} jogos</Badge>
+                      {s.prize && <Badge variant="outline" className="text-xs border-gold/50 text-gold"><Trophy className="h-3 w-3 mr-1" />Premiação</Badge>}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">{s.start_date} — {s.end_date}</p>
                   </div>
@@ -185,28 +165,30 @@ const AdminSeasons = () => {
                     <Button variant="ghost" size="icon" onClick={() => setExpandedSeason(isExpanded ? null : s.id)}>
                       {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(s.id)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleDelete(s.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                   </div>
                 </div>
-
                 {isExpanded && (
-                  <div className="mt-4 pt-4 border-t border-border">
-                    <Label className="text-sm mb-2 block">Jogos vinculados à season:</Label>
-                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                      {games.map(g => {
-                        const isLinked = sgames.includes(g.id);
-                        return (
-                          <label key={g.id} className="flex items-center gap-2 rounded-md border border-border p-2 cursor-pointer hover:bg-secondary/50 transition-colors">
-                            <Checkbox
-                              checked={isLinked}
-                              onCheckedChange={() => toggleGameInSeason(s.id, g.id, isLinked)}
-                            />
-                            <span className="text-sm">{g.name}</span>
-                          </label>
-                        );
-                      })}
+                  <div className="mt-4 pt-4 border-t border-border space-y-4">
+                    {s.prize && (
+                      <div>
+                        <Label className="text-sm text-muted-foreground">Premiação:</Label>
+                        <p className="text-sm mt-1">{s.prize}</p>
+                      </div>
+                    )}
+                    <div>
+                      <Label className="text-sm mb-2 block">Jogos vinculados:</Label>
+                      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                        {games.map(g => {
+                          const isLinked = sgames.includes(g.id);
+                          return (
+                            <label key={g.id} className="flex items-center gap-2 rounded-md border border-border p-2 cursor-pointer hover:bg-secondary/50 transition-colors">
+                              <Checkbox checked={isLinked} onCheckedChange={() => toggleGameInSeason(s.id, g.id, isLinked)} />
+                              <span className="text-sm">{g.name}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                 )}

@@ -14,24 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      community_rules: {
+        Row: {
+          content: string
+          id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          content?: string
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          content?: string
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       games: {
         Row: {
           created_at: string
           id: string
           image_url: string | null
+          max_players: number | null
+          min_players: number | null
           name: string
+          rules_url: string | null
+          video_url: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           image_url?: string | null
+          max_players?: number | null
+          min_players?: number | null
           name: string
+          rules_url?: string | null
+          video_url?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           image_url?: string | null
+          max_players?: number | null
+          min_players?: number | null
           name?: string
+          rules_url?: string | null
+          video_url?: string | null
         }
         Relationships: []
       }

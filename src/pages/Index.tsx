@@ -22,7 +22,7 @@ const Index = () => (
         transition={{ duration: 0.6 }}
         className="relative"
       >
-        <img src={logo} alt="AzD" className="h-32 w-32 mx-auto mb-8 invert drop-shadow-[0_0_30px_hsl(43,100%,50%,0.3)]" />
+        <img src={logo} alt="AzD" className="h-32 w-32 mx-auto mb-8 drop-shadow-[0_0_30px_hsl(43,100%,50%,0.3)]" />
       </motion.div>
       <motion.h1
         initial={{ opacity: 0, y: 20 }}

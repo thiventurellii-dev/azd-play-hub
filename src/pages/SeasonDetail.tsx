@@ -307,9 +307,7 @@ const SeasonDetail = () => {
                         <div className="space-y-4 pt-2 border-t border-border" onClick={e => e.stopPropagation()}>
                           {/* Match image */}
                           {m.image_url && (
-                            <div className="rounded-lg overflow-hidden border border-border">
-                              <img src={m.image_url} alt="Partida" className="w-full max-h-80 object-cover" />
-                            </div>
+                            <MatchImage src={m.image_url} />
                           )}
 
                           {/* Results */}

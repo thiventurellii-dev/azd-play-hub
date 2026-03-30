@@ -206,7 +206,7 @@ const AdminMatches = () => {
           season_id: seasonId,
           game_id: gameId,
           duration_minutes: parseInt(duration) || null,
-          played_at: new Date().toISOString(),
+          played_at: new Date(`${playedDate}T${playedTime}`).toISOString(),
           image_url: imageUrl,
           first_player_id: firstPlayerId,
         } as any)

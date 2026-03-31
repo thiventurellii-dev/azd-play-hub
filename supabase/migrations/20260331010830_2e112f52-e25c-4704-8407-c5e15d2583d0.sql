@@ -1,0 +1,2 @@
+ALTER TABLE mmr_ratings DROP CONSTRAINT IF EXISTS mmr_ratings_player_id_season_id_key;
+ALTER TABLE mmr_ratings ADD CONSTRAINT mmr_ratings_player_id_season_id_game_id_key UNIQUE (player_id, season_id, game_id);

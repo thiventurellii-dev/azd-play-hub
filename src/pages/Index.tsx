@@ -23,7 +23,7 @@ const Index = () => (
         Ami<span className="text-gold">z</span>ade
       </motion.h1>
       <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="relative mt-4 max-w-lg text-lg text-muted-foreground">
-        A comunidade definitiva de board games. Rankings competitivos, seasons emocionantes e muito mais.
+        Mais do que jogos, construímos amizades. Seasons competitivas com premiações, rankings e muita diversão na mesa.
       </motion.p>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="relative mt-8 flex gap-4">
         <Link to="/register"><Button variant="gold" size="lg">Começar agora</Button></Link>

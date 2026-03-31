@@ -184,9 +184,9 @@ const SeasonDetail = () => {
             .sort((a, b) => b.current_mmr - a.current_mmr);
         } else {
           const playerIds = rData.map(r => r.player_id);
-          const { data: profiles } = await supabase.from('profiles').select('id, name').in('id', playerIds);
+          const { data: profiles } = await supabase.from('profiles').select('id, name, nickname').in('id', playerIds);
           const pMap: Record<string, string> = {};
-          for (const p of (profiles || [])) pMap[p.id] = p.name;
+          for (const p of (profiles || [])) pMap[p.id] = (p as any).nickname || p.name;
           aggregated = rData.map(r => ({ ...r, player_name: pMap[r.player_id] || 'Unknown' }));
         }
         setRankings(aggregated);

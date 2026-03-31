@@ -326,7 +326,7 @@ const AdminMatches = () => {
                         <SelectContent>
                           {players.map(p => (
                             <SelectItem key={p.id} value={p.id} disabled={results.some((rr, ii) => ii !== i && rr.player_id === p.id)}>
-                              {p.name}
+                              {(p as any).nickname || p.name}
                             </SelectItem>
                           ))}
                         </SelectContent>

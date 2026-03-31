@@ -7,33 +7,23 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Pencil } from 'lucide-react';
-
-const countryCodes = [
-  { code: '+55', label: '🇧🇷 +55' },
-  { code: '+1', label: '🇺🇸 +1' },
-  { code: '+351', label: '🇵🇹 +351' },
-  { code: '+34', label: '🇪🇸 +34' },
-  { code: '+44', label: '🇬🇧 +44' },
-  { code: '+49', label: '🇩🇪 +49' },
-  { code: '+33', label: '🇫🇷 +33' },
-  { code: '+39', label: '🇮🇹 +39' },
-  { code: '+81', label: '🇯🇵 +81' },
-  { code: '+82', label: '🇰🇷 +82' },
-  { code: '+86', label: '🇨🇳 +86' },
-  { code: '+54', label: '🇦🇷 +54' },
-  { code: '+56', label: '🇨🇱 +56' },
-  { code: '+57', label: '🇨🇴 +57' },
-  { code: '+52', label: '🇲🇽 +52' },
-];
+import { Pencil, Lock } from 'lucide-react';
+import { brazilianStates, citiesByState, pronounsOptions, countryCodes, formatPhone, unformatPhone } from '@/lib/brazil-data';
 
 const Profile = () => {
   const { user, role } = useAuth();
   const [editing, setEditing] = useState(false);
   const [profile, setProfile] = useState<any>(null);
-  const [form, setForm] = useState({ name: '', nickname: '', phone: '', country_code: '+55', state: '', city: '', birth_date: '', gender: '', email: '' });
+  const [form, setForm] = useState({ name: '', nickname: '', phone: '', country_code: '+55', state: '', city: '', birth_date: '', gender: '', pronouns: '', email: '' });
   const [saving, setSaving] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
+
+  const cities = citiesByState[form.state] || [];
 
   useEffect(() => {
     if (!user) return;
@@ -43,12 +33,13 @@ const Profile = () => {
         setForm({
           name: data.name || '',
           nickname: (data as any).nickname || '',
-          phone: (data as any).phone || '',
+          phone: formatPhone((data as any).phone || ''),
           country_code: (data as any).country_code || '+55',
           state: (data as any).state || '',
           city: (data as any).city || '',
           birth_date: (data as any).birth_date || '',
           gender: (data as any).gender || '',
+          pronouns: (data as any).pronouns || '',
           email: (data as any).email || user.email || '',
         });
       }
@@ -57,30 +48,53 @@ const Profile = () => {
 
   const handleSave = async () => {
     if (!user) return;
-    if (!form.name || !form.nickname || !form.phone || !form.state || !form.city || !form.birth_date || !form.gender) {
+    if (!form.name || !form.nickname || !form.phone || !form.state || !form.city || !form.birth_date || !form.gender || !form.pronouns) {
       return toast.error('Preencha todos os campos obrigatórios');
     }
     setSaving(true);
     const { error } = await supabase.from('profiles').update({
       name: form.name,
       nickname: form.nickname,
-      phone: form.phone,
+      phone: unformatPhone(form.phone),
       country_code: form.country_code,
       state: form.state,
       city: form.city,
       birth_date: form.birth_date,
       gender: form.gender,
+      pronouns: form.pronouns,
       email: form.email,
     } as any).eq('id', user.id);
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success('Perfil atualizado!');
     setEditing(false);
-    setProfile({ ...profile, ...form });
+    setProfile({ ...profile, ...form, phone: unformatPhone(form.phone) });
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPassword || !confirmPassword) return toast.error('Preencha ambos os campos de senha');
+    if (newPassword !== confirmPassword) return toast.error('As senhas não coincidem');
+    if (newPassword.length < 8) return toast.error('Mínimo 8 caracteres');
+    if (!/[A-Z]/.test(newPassword)) return toast.error('Inclua ao menos uma letra maiúscula');
+    if (!/[a-z]/.test(newPassword)) return toast.error('Inclua ao menos uma letra minúscula');
+    if (!/[^A-Za-z0-9]/.test(newPassword)) return toast.error('Inclua ao menos um caractere especial');
+
+    setSavingPassword(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setSavingPassword(false);
+    if (error) return toast.error(error.message);
+    toast.success('Senha alterada com sucesso!');
+    setChangingPassword(false);
+    setNewPassword('');
+    setConfirmPassword('');
   };
 
   const genderLabels: Record<string, string> = {
-    masculino: 'Masculino', feminino: 'Feminino', 'nao-binario': 'Não-binário', outro: 'Outro', 'prefiro-nao-dizer': 'Prefiro não dizer',
+    masculino: 'Masculino', feminino: 'Feminino', nao_binario: 'Não-binário', 'nao-binario': 'Não-binário', outro: 'Outro', prefiro_nao_dizer: 'Prefiro não dizer', 'prefiro-nao-dizer': 'Prefiro não dizer',
+  };
+
+  const pronounsLabels: Record<string, string> = {
+    'ele/dele': 'Ele/Dele', 'ela/dela': 'Ela/Dela', 'elu/delu': 'Elu/Delu', prefiro_nao_dizer: 'Prefiro não dizer',
   };
 
   return (
@@ -113,12 +127,12 @@ const Profile = () => {
             <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Nome Completo *</Label>
-                  <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
+                  <Label>Nickname *</Label>
+                  <Input value={form.nickname} onChange={e => setForm({ ...form, nickname: e.target.value })} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Nickname *</Label>
-                  <Input value={form.nickname} onChange={e => setForm({ ...form, nickname: e.target.value })} required />
+                  <Label>Nome Completo *</Label>
+                  <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
                 </div>
               </div>
               <div className="space-y-2">
@@ -129,28 +143,43 @@ const Profile = () => {
                 <Label>Telefone *</Label>
                 <div className="flex gap-2">
                   <Select value={form.country_code} onValueChange={v => setForm({ ...form, country_code: v })}>
-                    <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="w-[110px]"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {countryCodes.map(c => <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
-                  <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value.replace(/\D/g, '') })} className="flex-1" required />
+                  <Input
+                    value={form.phone}
+                    onChange={e => setForm({ ...form, phone: formatPhone(e.target.value) })}
+                    placeholder="(11) 99999-9999"
+                    className="flex-1"
+                  />
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Estado *</Label>
-                  <Input value={form.state} onChange={e => setForm({ ...form, state: e.target.value })} required />
+                  <Select value={form.state} onValueChange={v => setForm({ ...form, state: v, city: '' })}>
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      {brazilianStates.map(s => <SelectItem key={s.uf} value={s.uf}>{s.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>Cidade *</Label>
-                  <Input value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} required />
+                  <Select value={form.city} onValueChange={v => setForm({ ...form, city: v })} disabled={!form.state}>
+                    <SelectTrigger><SelectValue placeholder={form.state ? 'Selecione' : 'Selecione o estado'} /></SelectTrigger>
+                    <SelectContent>
+                      {cities.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Data de Nascimento *</Label>
-                  <Input type="date" value={form.birth_date} onChange={e => setForm({ ...form, birth_date: e.target.value })} required />
+                  <Input type="date" value={form.birth_date} onChange={e => setForm({ ...form, birth_date: e.target.value })} />
                 </div>
                 <div className="space-y-2">
                   <Label>Gênero *</Label>
@@ -159,12 +188,21 @@ const Profile = () => {
                     <SelectContent>
                       <SelectItem value="masculino">Masculino</SelectItem>
                       <SelectItem value="feminino">Feminino</SelectItem>
-                      <SelectItem value="nao-binario">Não-binário</SelectItem>
+                      <SelectItem value="nao_binario">Não-binário</SelectItem>
                       <SelectItem value="outro">Outro</SelectItem>
-                      <SelectItem value="prefiro-nao-dizer">Prefiro não dizer</SelectItem>
+                      <SelectItem value="prefiro_nao_dizer">Prefiro não dizer</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Como devo me referir a você? *</Label>
+                <Select value={form.pronouns} onValueChange={v => setForm({ ...form, pronouns: v })}>
+                  <SelectTrigger><SelectValue placeholder="Selecione seus pronomes" /></SelectTrigger>
+                  <SelectContent>
+                    {pronounsOptions.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex gap-2">
                 <Button variant="gold" onClick={handleSave} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
@@ -174,14 +212,43 @@ const Profile = () => {
           ) : (
             <div className="grid gap-3 sm:grid-cols-2 text-sm">
               <div><span className="text-muted-foreground">E-mail:</span> <span className="font-medium">{profile?.email || user?.email}</span></div>
-              <div><span className="text-muted-foreground">Telefone:</span> <span className="font-medium">{profile?.country_code} {profile?.phone || '—'}</span></div>
-              <div><span className="text-muted-foreground">Estado:</span> <span className="font-medium">{profile?.state || '—'}</span></div>
+              <div><span className="text-muted-foreground">Telefone:</span> <span className="font-medium">{profile?.country_code} {profile?.phone ? formatPhone(profile.phone) : '—'}</span></div>
+              <div><span className="text-muted-foreground">Estado:</span> <span className="font-medium">{brazilianStates.find(s => s.uf === profile?.state)?.name || profile?.state || '—'}</span></div>
               <div><span className="text-muted-foreground">Cidade:</span> <span className="font-medium">{profile?.city || '—'}</span></div>
               <div><span className="text-muted-foreground">Nascimento:</span> <span className="font-medium">{profile?.birth_date ? new Date(profile.birth_date + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</span></div>
               <div><span className="text-muted-foreground">Gênero:</span> <span className="font-medium">{genderLabels[profile?.gender] || '—'}</span></div>
+              <div><span className="text-muted-foreground">Pronomes:</span> <span className="font-medium">{pronounsLabels[profile?.pronouns] || '—'}</span></div>
               <div><span className="text-muted-foreground">Membro desde:</span> <span className="font-medium">{user?.created_at ? new Date(user.created_at).toLocaleDateString('pt-BR') : '—'}</span></div>
             </div>
           )}
+
+          <Separator className="my-6" />
+
+          <div>
+            {changingPassword ? (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2"><Lock className="h-4 w-4" /> Alterar Senha</h3>
+                <div className="space-y-2">
+                  <Label>Nova Senha</Label>
+                  <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Mínimo 8 caracteres, 1 maiúscula, 1 minúscula, 1 especial" />
+                </div>
+                <div className="space-y-2">
+                  <Label>Confirmar Nova Senha</Label>
+                  <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Digite a senha novamente" />
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="gold" onClick={handleChangePassword} disabled={savingPassword}>
+                    {savingPassword ? 'Salvando...' : 'Alterar Senha'}
+                  </Button>
+                  <Button variant="outline" onClick={() => { setChangingPassword(false); setNewPassword(''); setConfirmPassword(''); }}>Cancelar</Button>
+                </div>
+              </div>
+            ) : (
+              <Button variant="outline" onClick={() => setChangingPassword(true)}>
+                <Lock className="h-4 w-4 mr-1" /> Alterar Senha
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

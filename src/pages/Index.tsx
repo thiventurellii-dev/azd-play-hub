@@ -5,10 +5,10 @@ import { motion } from 'framer-motion';
 import logo from '@/assets/azd-logo.png';
 
 const features = [
-  { icon: Gamepad2, title: 'Jogos', desc: 'Biblioteca completa de board games com regras e vídeos explicativos.' },
-  { icon: Calendar, title: 'Seasons', desc: 'Competições por temporadas com rankings independentes e jogos selecionados.' },
-  { icon: Users, title: 'Comunidade', desc: 'Perfis de jogadores, histórico de partidas e estatísticas detalhadas.' },
-  { icon: Zap, title: 'MMR', desc: 'Sistema de MMR, adaptado para board games com múltiplos jogadores.' },
+  { icon: Gamepad2, title: 'Jogos', desc: 'Biblioteca completa de board games com regras e vídeos explicativos.', link: '/games' },
+  { icon: Calendar, title: 'Seasons', desc: 'Competições por temporadas com rankings independentes e jogos selecionados.', link: '/seasons' },
+  { icon: Users, title: 'Comunidade', desc: 'Perfis de jogadores, histórico de partidas e estatísticas detalhadas.', link: '/players' },
+  { icon: Zap, title: 'MMR', desc: 'Sistema de MMR, adaptado para board games com múltiplos jogadores.', link: '/seasons' },
 ];
 
 const Index = () => (
@@ -35,17 +35,18 @@ const Index = () => (
     <section className="container py-20">
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {features.map((f, i) => (
-          <motion.div
-            key={f.title}
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 + i * 0.1 }}
-            className="rounded-xl border border-border bg-card p-6 hover:border-gold/30 hover:glow-gold transition-all duration-300"
-          >
-            <f.icon className="h-8 w-8 text-gold mb-4" />
-            <h3 className="text-lg font-semibold mb-2">{f.title}</h3>
-            <p className="text-sm text-muted-foreground">{f.desc}</p>
-          </motion.div>
+          <Link key={f.title} to={f.link}>
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 + i * 0.1 }}
+              className="rounded-xl border border-border bg-card p-6 hover:border-gold/30 hover:glow-gold transition-all duration-300 cursor-pointer h-full"
+            >
+              <f.icon className="h-8 w-8 text-gold mb-4" />
+              <h3 className="text-lg font-semibold mb-2">{f.title}</h3>
+              <p className="text-sm text-muted-foreground">{f.desc}</p>
+            </motion.div>
+          </Link>
         ))}
       </div>
     </section>

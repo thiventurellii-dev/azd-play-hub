@@ -299,17 +299,9 @@ const SeasonDetail = () => {
                   <Card key={m.id} className="bg-card border-border hover:border-gold/20 transition-colors cursor-pointer" onClick={() => setExpandedMatch(isExpanded ? null : m.id)}>
                     <CardContent className="py-4 space-y-3">
                       <div className="flex items-center justify-between flex-wrap gap-2">
-                        <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap">
                           <Badge variant="outline">{m.game_name}</Badge>
                           {winner && <span className="text-sm font-medium text-gold">🏆 {winner.player_name}</span>}
-                          {m.first_player_id && (() => {
-                            const fp = m.results.find(r => r.player_id === m.first_player_id);
-                            return fp ? (
-                              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                <Flag className="h-3 w-3 text-gold" /> {fp.player_name}
-                              </span>
-                            ) : null;
-                          })()}
                           {m.duration_minutes && (
                             <span className="text-xs text-muted-foreground flex items-center gap-1">
                               <Clock className="h-3 w-3" /> {m.duration_minutes} min
@@ -317,7 +309,7 @@ const SeasonDetail = () => {
                           )}
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground">{new Date(m.played_at).toLocaleDateString('pt-BR')}</span>
+                          <span className="text-xs text-muted-foreground">{new Date(m.played_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</span>
                           {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                         </div>
                       </div>

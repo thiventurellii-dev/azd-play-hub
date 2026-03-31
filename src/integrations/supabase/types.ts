@@ -214,6 +214,7 @@ export type Database = {
           name: string
           nickname: string | null
           phone: string | null
+          pronouns: string | null
           state: string | null
           updated_at: string
         }
@@ -229,6 +230,7 @@ export type Database = {
           name?: string
           nickname?: string | null
           phone?: string | null
+          pronouns?: string | null
           state?: string | null
           updated_at?: string
         }
@@ -244,6 +246,7 @@ export type Database = {
           name?: string
           nickname?: string | null
           phone?: string | null
+          pronouns?: string | null
           state?: string | null
           updated_at?: string
         }

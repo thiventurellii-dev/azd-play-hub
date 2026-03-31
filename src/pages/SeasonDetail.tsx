@@ -170,9 +170,9 @@ const SeasonDetail = () => {
             gameCount[r.player_id] = (gameCount[r.player_id] || 0) + 1;
           }
           const playerIds = Object.keys(agg);
-          const { data: profiles } = await supabase.from('profiles').select('id, name').in('id', playerIds);
+          const { data: profiles } = await supabase.from('profiles').select('id, name, nickname').in('id', playerIds);
           const pMap: Record<string, string> = {};
-          for (const p of (profiles || [])) pMap[p.id] = p.name;
+          for (const p of (profiles || [])) pMap[p.id] = (p as any).nickname || p.name;
           aggregated = playerIds
             .map(pid => ({
               player_id: pid,

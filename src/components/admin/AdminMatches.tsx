@@ -46,7 +46,7 @@ const AdminMatches = () => {
       const [s, g, p] = await Promise.all([
         supabase.from('seasons').select('id, name').order('start_date', { ascending: false }),
         supabase.from('games').select('id, name').order('name'),
-        supabase.from('profiles').select('id, name').order('name'),
+        supabase.from('profiles').select('id, name, nickname').order('name'),
       ]);
       setSeasons(s.data || []);
       setGames(g.data || []);

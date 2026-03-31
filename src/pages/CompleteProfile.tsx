@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,55 +9,44 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import logo from '@/assets/azd-logo.png';
 import { toast } from 'sonner';
-
-const countryCodes = [
-  { code: '+55', label: '🇧🇷 +55' },
-  { code: '+1', label: '🇺🇸 +1' },
-  { code: '+351', label: '🇵🇹 +351' },
-  { code: '+34', label: '🇪🇸 +34' },
-  { code: '+44', label: '🇬🇧 +44' },
-  { code: '+49', label: '🇩🇪 +49' },
-  { code: '+33', label: '🇫🇷 +33' },
-  { code: '+39', label: '🇮🇹 +39' },
-  { code: '+81', label: '🇯🇵 +81' },
-  { code: '+82', label: '🇰🇷 +82' },
-  { code: '+86', label: '🇨🇳 +86' },
-  { code: '+54', label: '🇦🇷 +54' },
-  { code: '+56', label: '🇨🇱 +56' },
-  { code: '+57', label: '🇨🇴 +57' },
-  { code: '+52', label: '🇲🇽 +52' },
-];
+import { brazilianStates, citiesByState, pronounsOptions, countryCodes, formatPhone, unformatPhone } from '@/lib/brazil-data';
 
 const CompleteProfile = () => {
   const { user, setProfileCompleted } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({
     name: user?.user_metadata?.name || '',
+    nickname: user?.user_metadata?.name || '',
     phone: '',
     country_code: '+55',
     state: '',
     city: '',
     birth_date: '',
     gender: '',
+    pronouns: '',
   });
   const [saving, setSaving] = useState(false);
 
+  const cities = useMemo(() => citiesByState[form.state] || [], [form.state]);
+
   const handleSave = async () => {
     if (!user) return;
-    if (!form.name || !form.phone || !form.state || !form.city || !form.birth_date || !form.gender) {
+    if (!form.name || !form.nickname || !form.phone || !form.state || !form.city || !form.birth_date || !form.gender || !form.pronouns) {
       return toast.error('Preencha todos os campos obrigatórios');
     }
     setSaving(true);
     const { error } = await supabase.from('profiles').update({
       name: form.name,
-      phone: form.phone,
+      nickname: form.nickname,
+      phone: unformatPhone(form.phone),
       country_code: form.country_code,
       state: form.state,
       city: form.city,
       birth_date: form.birth_date,
       gender: form.gender,
+      pronouns: form.pronouns,
       email: user.email || '',
-    }).eq('id', user.id);
+    } as any).eq('id', user.id);
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success('Perfil completo!');
@@ -66,46 +55,68 @@ const CompleteProfile = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
+    <div className="flex min-h-screen items-center justify-center p-4 bg-background">
       <Card className="w-full max-w-lg bg-card border-border">
         <CardHeader className="text-center">
-          <img src={logo} alt="AzD" className="h-16 w-16 mx-auto mb-4 invert" />
+          <img src={logo} alt="AzD" className="h-20 mx-auto mb-4 invert object-contain" />
           <CardTitle className="text-2xl">Complete seu Perfil</CardTitle>
           <CardDescription>Preencha todos os dados para continuar</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>Nome Completo *</Label>
-              <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Seu nome completo" required />
+              <Label>Nickname *</Label>
+              <Input value={form.nickname} onChange={e => setForm({ ...form, nickname: e.target.value })} placeholder="Seu apelido na comunidade" />
             </div>
             <div className="space-y-2">
-              <Label>Telefone *</Label>
-              <div className="flex gap-2">
-                <Select value={form.country_code} onValueChange={v => setForm({ ...form, country_code: v })}>
-                  <SelectTrigger className="w-[110px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {countryCodes.map(c => <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value.replace(/\D/g, '') })} placeholder="11999999999" className="flex-1" required />
-              </div>
+              <Label>Nome Completo *</Label>
+              <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Seu nome completo" />
             </div>
           </div>
+
+          <div className="space-y-2">
+            <Label>Telefone *</Label>
+            <div className="flex gap-2">
+              <Select value={form.country_code} onValueChange={v => setForm({ ...form, country_code: v })}>
+                <SelectTrigger className="w-[110px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {countryCodes.map(c => <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Input
+                value={form.phone}
+                onChange={e => setForm({ ...form, phone: formatPhone(e.target.value) })}
+                placeholder="(11) 99999-9999"
+                className="flex-1"
+              />
+            </div>
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Estado *</Label>
-              <Input value={form.state} onChange={e => setForm({ ...form, state: e.target.value })} placeholder="SP" required />
+              <Select value={form.state} onValueChange={v => setForm({ ...form, state: v, city: '' })}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  {brazilianStates.map(s => <SelectItem key={s.uf} value={s.uf}>{s.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Cidade *</Label>
-              <Input value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} placeholder="São Paulo" required />
+              <Select value={form.city} onValueChange={v => setForm({ ...form, city: v })} disabled={!form.state}>
+                <SelectTrigger><SelectValue placeholder={form.state ? 'Selecione' : 'Selecione o estado'} /></SelectTrigger>
+                <SelectContent>
+                  {cities.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
           </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Data de Nascimento *</Label>
-              <Input type="date" value={form.birth_date} onChange={e => setForm({ ...form, birth_date: e.target.value })} required />
+              <Input type="date" value={form.birth_date} onChange={e => setForm({ ...form, birth_date: e.target.value })} />
             </div>
             <div className="space-y-2">
               <Label>Gênero *</Label>
@@ -114,13 +125,24 @@ const CompleteProfile = () => {
                 <SelectContent>
                   <SelectItem value="masculino">Masculino</SelectItem>
                   <SelectItem value="feminino">Feminino</SelectItem>
-                  <SelectItem value="nao-binario">Não-binário</SelectItem>
+                  <SelectItem value="nao_binario">Não-binário</SelectItem>
                   <SelectItem value="outro">Outro</SelectItem>
-                  <SelectItem value="prefiro-nao-dizer">Prefiro não dizer</SelectItem>
+                  <SelectItem value="prefiro_nao_dizer">Prefiro não dizer</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
+
+          <div className="space-y-2">
+            <Label>Como devo me referir a você? *</Label>
+            <Select value={form.pronouns} onValueChange={v => setForm({ ...form, pronouns: v })}>
+              <SelectTrigger><SelectValue placeholder="Selecione seus pronomes" /></SelectTrigger>
+              <SelectContent>
+                {pronounsOptions.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+
           <Button variant="gold" onClick={handleSave} disabled={saving} className="w-full">
             {saving ? 'Salvando...' : 'Completar Perfil'}
           </Button>

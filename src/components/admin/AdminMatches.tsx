@@ -91,9 +91,9 @@ const AdminMatches = () => {
     for (const g of (gamesRes.data || [])) gameMap[g.id] = g.name;
 
     const playerIds = [...new Set((resultsRes.data || []).map(r => r.player_id))];
-    const { data: profilesData } = await supabase.from('profiles').select('id, name').in('id', playerIds);
+    const { data: profilesData } = await supabase.from('profiles').select('id, name, nickname').in('id', playerIds);
     const playerMap: Record<string, string> = {};
-    for (const p of (profilesData || [])) playerMap[p.id] = p.name;
+    for (const p of (profilesData || [])) playerMap[p.id] = (p as any).nickname || p.name;
 
     setMatches(matchData.map(m => ({
       id: m.id,

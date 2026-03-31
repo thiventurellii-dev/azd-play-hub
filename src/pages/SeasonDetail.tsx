@@ -105,9 +105,9 @@ const SeasonDetail = () => {
         for (const g of (gamesRes.data || [])) gameMap[g.id] = g.name;
 
         const playerIds = [...new Set((resRes.data || []).map(r => r.player_id))];
-        const { data: profiles } = await supabase.from('profiles').select('id, name').in('id', playerIds);
+        const { data: profiles } = await supabase.from('profiles').select('id, name, nickname').in('id', playerIds);
         const pMap: Record<string, string> = {};
-        for (const p of (profiles || [])) pMap[p.id] = p.name;
+        for (const p of (profiles || [])) pMap[p.id] = (p as any).nickname || p.name;
 
         setMatches(mData.map(m => ({
           id: m.id,

@@ -2,7 +2,7 @@ import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 const ProtectedRoute = ({ children, adminOnly = false }: { children: React.ReactNode; adminOnly?: boolean }) => {
-  const { user, isAdmin, loading } = useAuth();
+  const { user, isAdmin, loading, profileCompleted } = useAuth();
 
   if (loading) {
     return (
@@ -13,6 +13,7 @@ const ProtectedRoute = ({ children, adminOnly = false }: { children: React.React
   }
 
   if (!user) return <Navigate to="/login" replace />;
+  if (user && !profileCompleted) return <Navigate to="/complete-profile" replace />;
   if (adminOnly && !isAdmin) return <Navigate to="/" replace />;
 
   return <>{children}</>;

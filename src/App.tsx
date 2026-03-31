@@ -9,6 +9,7 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index.tsx";
 import Login from "./pages/Login.tsx";
 import Register from "./pages/Register.tsx";
+import CompleteProfile from "./pages/CompleteProfile.tsx";
 import Seasons from "./pages/Seasons.tsx";
 import SeasonDetail from "./pages/SeasonDetail.tsx";
 import Games from "./pages/Games.tsx";
@@ -32,6 +33,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/complete-profile" element={<CompleteProfile />} />
               <Route path="/seasons" element={<Seasons />} />
               <Route path="/seasons/:id" element={<SeasonDetail />} />
               <Route path="/games" element={<Games />} />

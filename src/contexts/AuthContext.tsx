@@ -9,9 +9,11 @@ interface AuthContextType {
   session: Session | null;
   role: UserRole | null;
   loading: boolean;
+  profileCompleted: boolean;
   signUp: (email: string, password: string, name: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  setProfileCompleted: (v: boolean) => void;
   isAdmin: boolean;
 }
 
@@ -22,6 +24,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileCompleted, setProfileCompleted] = useState(true);
 
   const fetchRole = async (userId: string) => {
     const { data } = await supabase
@@ -32,14 +35,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setRole((data?.role as UserRole) || 'player');
   };
 
+  const checkProfileCompleted = async (userId: string) => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('name, phone, state, city, birth_date, gender')
+      .eq('id', userId)
+      .single();
+    if (data) {
+      const complete = !!(data.name && data.phone && data.state && data.city && data.birth_date && data.gender);
+      setProfileCompleted(complete);
+    }
+  };
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        setTimeout(() => fetchRole(session.user.id), 0);
+        setTimeout(() => {
+          fetchRole(session.user.id);
+          checkProfileCompleted(session.user.id);
+        }, 0);
       } else {
         setRole(null);
+        setProfileCompleted(true);
       }
       setLoading(false);
     });
@@ -49,6 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchRole(session.user.id);
+        checkProfileCompleted(session.user.id);
       }
       setLoading(false);
     });
@@ -75,7 +95,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, role, loading, signUp, signIn, signOut, isAdmin: role === 'admin' }}>
+    <AuthContext.Provider value={{ user, session, role, loading, profileCompleted, signUp, signIn, signOut, setProfileCompleted, isAdmin: role === 'admin' }}>
       {children}
     </AuthContext.Provider>
   );

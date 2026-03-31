@@ -38,11 +38,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const checkProfileCompleted = async (userId: string) => {
     const { data } = await supabase
       .from('profiles')
-      .select('name, phone, state, city, birth_date, gender')
+      .select('name, nickname, phone, state, city, birth_date, gender, pronouns')
       .eq('id', userId)
       .single();
     if (data) {
-      const complete = !!(data.name && data.phone && data.state && data.city && data.birth_date && data.gender);
+      const complete = !!((data as any).nickname && data.name && data.phone && data.state && data.city && data.birth_date && data.gender && (data as any).pronouns);
       setProfileCompleted(complete);
     }
   };

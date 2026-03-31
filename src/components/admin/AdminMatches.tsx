@@ -46,7 +46,7 @@ const AdminMatches = () => {
       const [s, g, p] = await Promise.all([
         supabase.from('seasons').select('id, name').order('start_date', { ascending: false }),
         supabase.from('games').select('id, name').order('name'),
-        supabase.from('profiles').select('id, name').order('name'),
+        supabase.from('profiles').select('id, name, nickname').order('name'),
       ]);
       setSeasons(s.data || []);
       setGames(g.data || []);
@@ -91,9 +91,9 @@ const AdminMatches = () => {
     for (const g of (gamesRes.data || [])) gameMap[g.id] = g.name;
 
     const playerIds = [...new Set((resultsRes.data || []).map(r => r.player_id))];
-    const { data: profilesData } = await supabase.from('profiles').select('id, name').in('id', playerIds);
+    const { data: profilesData } = await supabase.from('profiles').select('id, name, nickname').in('id', playerIds);
     const playerMap: Record<string, string> = {};
-    for (const p of (profilesData || [])) playerMap[p.id] = p.name;
+    for (const p of (profilesData || [])) playerMap[p.id] = (p as any).nickname || p.name;
 
     setMatches(matchData.map(m => ({
       id: m.id,
@@ -326,7 +326,7 @@ const AdminMatches = () => {
                         <SelectContent>
                           {players.map(p => (
                             <SelectItem key={p.id} value={p.id} disabled={results.some((rr, ii) => ii !== i && rr.player_id === p.id)}>
-                              {p.name}
+                              {(p as any).nickname || p.name}
                             </SelectItem>
                           ))}
                         </SelectContent>

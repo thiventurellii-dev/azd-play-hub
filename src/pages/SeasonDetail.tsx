@@ -105,9 +105,9 @@ const SeasonDetail = () => {
         for (const g of (gamesRes.data || [])) gameMap[g.id] = g.name;
 
         const playerIds = [...new Set((resRes.data || []).map(r => r.player_id))];
-        const { data: profiles } = await supabase.from('profiles').select('id, name').in('id', playerIds);
+        const { data: profiles } = await supabase.from('profiles').select('id, name, nickname').in('id', playerIds);
         const pMap: Record<string, string> = {};
-        for (const p of (profiles || [])) pMap[p.id] = p.name;
+        for (const p of (profiles || [])) pMap[p.id] = (p as any).nickname || p.name;
 
         setMatches(mData.map(m => ({
           id: m.id,
@@ -170,9 +170,9 @@ const SeasonDetail = () => {
             gameCount[r.player_id] = (gameCount[r.player_id] || 0) + 1;
           }
           const playerIds = Object.keys(agg);
-          const { data: profiles } = await supabase.from('profiles').select('id, name').in('id', playerIds);
+          const { data: profiles } = await supabase.from('profiles').select('id, name, nickname').in('id', playerIds);
           const pMap: Record<string, string> = {};
-          for (const p of (profiles || [])) pMap[p.id] = p.name;
+          for (const p of (profiles || [])) pMap[p.id] = (p as any).nickname || p.name;
           aggregated = playerIds
             .map(pid => ({
               player_id: pid,
@@ -184,9 +184,9 @@ const SeasonDetail = () => {
             .sort((a, b) => b.current_mmr - a.current_mmr);
         } else {
           const playerIds = rData.map(r => r.player_id);
-          const { data: profiles } = await supabase.from('profiles').select('id, name').in('id', playerIds);
+          const { data: profiles } = await supabase.from('profiles').select('id, name, nickname').in('id', playerIds);
           const pMap: Record<string, string> = {};
-          for (const p of (profiles || [])) pMap[p.id] = p.name;
+          for (const p of (profiles || [])) pMap[p.id] = (p as any).nickname || p.name;
           aggregated = rData.map(r => ({ ...r, player_name: pMap[r.player_id] || 'Unknown' }));
         }
         setRankings(aggregated);

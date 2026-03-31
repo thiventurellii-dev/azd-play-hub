@@ -54,14 +54,14 @@ const Rankings = () => {
       setLoading(true);
       const { data } = await supabase
         .from('mmr_ratings')
-        .select('player_id, current_mmr, games_played, wins, profiles(name)')
+        .select('player_id, current_mmr, games_played, wins, profiles(name, nickname)')
         .eq('season_id', selectedSeason)
         .order('current_mmr', { ascending: false });
 
       if (data) {
         setRankings(data.map((r: any) => ({
           ...r,
-          player_name: r.profiles?.name || 'Unknown',
+          player_name: r.profiles?.nickname || r.profiles?.name || 'Unknown',
         })));
       }
       setLoading(false);

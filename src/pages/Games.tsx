@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ExternalLink, Video, Users, ChevronDown, ChevronUp } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { ExternalLink, Video, Users, Calendar } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface Game {
   id: string;
@@ -15,18 +16,54 @@ interface Game {
   max_players: number | null;
 }
 
+interface SeasonLink {
+  season_id: string;
+  season_name: string;
+  status: string;
+}
+
+const statusLabels: Record<string, string> = { active: 'Ativa', upcoming: 'Em breve', finished: 'Finalizada' };
+const statusColors: Record<string, string> = {
+  active: 'bg-green-500/20 text-green-400 border-green-500/30',
+  upcoming: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  finished: 'bg-muted text-muted-foreground border-border',
+};
+
 const Games = () => {
   const [games, setGames] = useState<Game[]>([]);
+  const [gameSeasons, setGameSeasons] = useState<Record<string, SeasonLink[]>>({});
   const [loading, setLoading] = useState(true);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetch = async () => {
-      const { data } = await supabase.from('games').select('*').order('name');
-      setGames(data || []);
+    const fetchData = async () => {
+      const [gamesRes, sgRes] = await Promise.all([
+        supabase.from('games').select('*').order('name'),
+        supabase.from('season_games').select('game_id, season_id'),
+      ]);
+
+      const games = gamesRes.data || [];
+      const sgData = sgRes.data || [];
+      setGames(games);
+
+      if (sgData.length > 0) {
+        const seasonIds = [...new Set(sgData.map(sg => sg.season_id))];
+        const { data: seasons } = await supabase.from('seasons').select('id, name, status').in('id', seasonIds);
+        const seasonMap: Record<string, { name: string; status: string }> = {};
+        for (const s of (seasons || [])) seasonMap[s.id] = { name: s.name, status: s.status };
+
+        const map: Record<string, SeasonLink[]> = {};
+        for (const sg of sgData) {
+          const s = seasonMap[sg.season_id];
+          if (!s) continue;
+          if (!map[sg.game_id]) map[sg.game_id] = [];
+          map[sg.game_id].push({ season_id: sg.season_id, season_name: s.name, status: s.status });
+        }
+        setGameSeasons(map);
+      }
+
       setLoading(false);
     };
-    fetch();
+    fetchData();
   }, []);
 
   return (
@@ -45,81 +82,75 @@ const Games = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {games.map((g, i) => {
-            const isOpen = expandedId === g.id;
+            const seasons = gameSeasons[g.id] || [];
             return (
               <motion.div key={g.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                <Card
-                  className="bg-card border-border hover:border-gold/20 transition-colors h-full cursor-pointer"
-                  onClick={() => setExpandedId(isOpen ? null : g.id)}
-                >
-                  <CardContent className="py-4 space-y-3">
-                    <div className="flex items-center gap-3">
+                <Card className="bg-card border-border hover:border-gold/20 transition-colors h-full">
+                  <CardContent className="py-5 space-y-4">
+                    {/* Header */}
+                    <div className="flex items-start gap-4">
                       {g.image_url ? (
-                        <img src={g.image_url} alt={g.name} className="h-12 w-12 rounded object-cover" />
+                        <img src={g.image_url} alt={g.name} className="h-16 w-16 rounded-lg object-cover flex-shrink-0" />
                       ) : (
-                        <div className="h-12 w-12 rounded bg-secondary flex items-center justify-center text-gold font-bold text-lg">
+                        <div className="h-16 w-16 rounded-lg bg-secondary flex items-center justify-center text-gold font-bold text-2xl flex-shrink-0">
                           {g.name.charAt(0)}
                         </div>
                       )}
-                      <div className="flex-1">
-                        <p className="font-semibold">{g.name}</p>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-bold">{g.name}</h3>
                         {(g.min_players || g.max_players) && (
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Users className="h-3 w-3" /> {g.min_players || '?'}–{g.max_players || '?'} jogadores
+                          <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                            <Users className="h-4 w-4" /> {g.min_players || '?'}–{g.max_players || '?'} jogadores
                           </p>
                         )}
                       </div>
-                      {isOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                     </div>
 
-                    <AnimatePresence>
-                      {isOpen && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="overflow-hidden"
-                        >
-                          <div className="pt-2 border-t border-border space-y-3">
-                            {g.image_url && (
-                              <img src={g.image_url} alt={g.name} className="w-full h-40 object-cover rounded" />
-                            )}
-                            <div className="grid grid-cols-2 gap-2 text-sm">
-                              <div>
-                                <p className="text-muted-foreground text-xs">Mín. Jogadores</p>
-                                <p className="font-medium">{g.min_players ?? '—'}</p>
-                              </div>
-                              <div>
-                                <p className="text-muted-foreground text-xs">Máx. Jogadores</p>
-                                <p className="font-medium">{g.max_players ?? '—'}</p>
-                              </div>
-                            </div>
-                            <div className="flex gap-2 flex-wrap">
-                              {g.rules_url && (
-                                <a href={g.rules_url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}>
-                                  <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1">
-                                    <ExternalLink className="h-3 w-3" /> Regras
-                                  </Badge>
-                                </a>
-                              )}
-                              {g.video_url && (
-                                <a href={g.video_url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}>
-                                  <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1">
-                                    <Video className="h-3 w-3" /> Vídeo
-                                  </Badge>
-                                </a>
-                              )}
-                            </div>
-                            {!g.rules_url && !g.video_url && (
-                              <p className="text-xs text-muted-foreground">Nenhum link disponível.</p>
-                            )}
-                          </div>
-                        </motion.div>
+                    {/* Links */}
+                    <div className="flex gap-2 flex-wrap">
+                      {g.rules_url && (
+                        <a href={g.rules_url} target="_blank" rel="noopener noreferrer">
+                          <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1.5 py-1">
+                            <ExternalLink className="h-3.5 w-3.5" /> Regras
+                          </Badge>
+                        </a>
                       )}
-                    </AnimatePresence>
+                      {g.video_url && (
+                        <a href={g.video_url} target="_blank" rel="noopener noreferrer">
+                          <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1.5 py-1">
+                            <Video className="h-3.5 w-3.5" /> Vídeo Explicativo
+                          </Badge>
+                        </a>
+                      )}
+                      {!g.rules_url && !g.video_url && (
+                        <p className="text-xs text-muted-foreground italic">Nenhum link disponível.</p>
+                      )}
+                    </div>
+
+                    {/* Seasons */}
+                    {seasons.length > 0 && (
+                      <div className="border-t border-border pt-3">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
+                          <Calendar className="h-3 w-3" /> Seasons
+                        </p>
+                        <div className="flex gap-2 flex-wrap">
+                          {seasons.map(s => (
+                            <Link key={s.season_id} to={`/seasons/${s.season_id}`}>
+                              <Badge className={`${statusColors[s.status] || 'bg-muted text-muted-foreground border-border'} cursor-pointer text-xs`}>
+                                {s.season_name} — {statusLabels[s.status] || s.status}
+                              </Badge>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {seasons.length === 0 && (
+                      <div className="border-t border-border pt-3">
+                        <p className="text-xs text-muted-foreground italic">Não vinculado a nenhuma season.</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </motion.div>

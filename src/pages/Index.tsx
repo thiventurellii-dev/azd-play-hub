@@ -5,10 +5,10 @@ import { motion } from 'framer-motion';
 import logo from '@/assets/azd-logo.png';
 
 const features = [
-  { icon: Gamepad2, title: 'Jogos', desc: 'Biblioteca completa de board games com regras e vídeos explicativos.' },
-  { icon: Calendar, title: 'Seasons', desc: 'Competições por temporadas com rankings independentes e jogos selecionados.' },
-  { icon: Users, title: 'Comunidade', desc: 'Perfis de jogadores, histórico de partidas e estatísticas detalhadas.' },
-  { icon: Zap, title: 'MMR', desc: 'Sistema de MMR, adaptado para board games com múltiplos jogadores.' },
+  { icon: Gamepad2, title: 'Jogos', desc: 'Biblioteca completa de board games com regras e vídeos explicativos.', link: '/games' },
+  { icon: Calendar, title: 'Seasons', desc: 'Competições por temporadas com rankings independentes e jogos selecionados.', link: '/seasons' },
+  { icon: Users, title: 'Comunidade', desc: 'Perfis de jogadores, histórico de partidas e estatísticas detalhadas.', link: '/players' },
+  { icon: Zap, title: 'MMR', desc: 'Sistema de MMR, adaptado para board games com múltiplos jogadores.', link: '/seasons' },
 ];
 
 const Index = () => (

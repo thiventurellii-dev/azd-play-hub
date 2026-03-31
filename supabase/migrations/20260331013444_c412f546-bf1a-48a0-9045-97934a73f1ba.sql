@@ -1,0 +1,2 @@
+UPDATE games SET image_url = 'https://tlygyryaiwjcamzgnixg.supabase.co/storage/v1/object/public/match-images/game-logos/brass-birmingham-cover.png' WHERE name = 'Brass Birmingham';
+UPDATE games SET image_url = 'https://tlygyryaiwjcamzgnixg.supabase.co/storage/v1/object/public/match-images/game-logos/ruins-of-arnak-cover.png' WHERE name = 'Ruins of Arnak';

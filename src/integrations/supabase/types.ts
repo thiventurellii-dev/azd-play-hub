@@ -35,6 +35,202 @@ export type Database = {
         }
         Relationships: []
       }
+      blood_characters: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          name_en: string
+          role_type: Database["public"]["Enums"]["blood_role_type"]
+          script_id: string
+          team: Database["public"]["Enums"]["blood_team"]
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          name_en: string
+          role_type: Database["public"]["Enums"]["blood_role_type"]
+          script_id: string
+          team: Database["public"]["Enums"]["blood_team"]
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          name_en?: string
+          role_type?: Database["public"]["Enums"]["blood_role_type"]
+          script_id?: string
+          team?: Database["public"]["Enums"]["blood_team"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blood_characters_script_id_fkey"
+            columns: ["script_id"]
+            isOneToOne: false
+            referencedRelation: "blood_scripts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blood_match_players: {
+        Row: {
+          character_id: string
+          created_at: string
+          id: string
+          match_id: string
+          player_id: string
+          team: Database["public"]["Enums"]["blood_team"]
+        }
+        Insert: {
+          character_id: string
+          created_at?: string
+          id?: string
+          match_id: string
+          player_id: string
+          team: Database["public"]["Enums"]["blood_team"]
+        }
+        Update: {
+          character_id?: string
+          created_at?: string
+          id?: string
+          match_id?: string
+          player_id?: string
+          team?: Database["public"]["Enums"]["blood_team"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blood_match_players_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "blood_characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blood_match_players_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "blood_matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blood_matches: {
+        Row: {
+          created_at: string
+          duration_minutes: number | null
+          id: string
+          played_at: string
+          script_id: string
+          season_id: string
+          storyteller_player_id: string
+          winning_team: Database["public"]["Enums"]["blood_team"]
+        }
+        Insert: {
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          played_at?: string
+          script_id: string
+          season_id: string
+          storyteller_player_id: string
+          winning_team: Database["public"]["Enums"]["blood_team"]
+        }
+        Update: {
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          played_at?: string
+          script_id?: string
+          season_id?: string
+          storyteller_player_id?: string
+          winning_team?: Database["public"]["Enums"]["blood_team"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blood_matches_script_id_fkey"
+            columns: ["script_id"]
+            isOneToOne: false
+            referencedRelation: "blood_scripts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blood_matches_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blood_mmr_ratings: {
+        Row: {
+          games_as_storyteller: number
+          games_played: number
+          id: string
+          player_id: string
+          season_id: string
+          total_points: number
+          updated_at: string
+          wins_evil: number
+          wins_good: number
+        }
+        Insert: {
+          games_as_storyteller?: number
+          games_played?: number
+          id?: string
+          player_id: string
+          season_id: string
+          total_points?: number
+          updated_at?: string
+          wins_evil?: number
+          wins_good?: number
+        }
+        Update: {
+          games_as_storyteller?: number
+          games_played?: number
+          id?: string
+          player_id?: string
+          season_id?: string
+          total_points?: number
+          updated_at?: string
+          wins_evil?: number
+          wins_good?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blood_mmr_ratings_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blood_scripts: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       community_rules: {
         Row: {
           content: string
@@ -297,6 +493,39 @@ export type Database = {
         }
         Relationships: []
       }
+      season_blood_scripts: {
+        Row: {
+          id: string
+          script_id: string
+          season_id: string
+        }
+        Insert: {
+          id?: string
+          script_id: string
+          season_id: string
+        }
+        Update: {
+          id?: string
+          script_id?: string
+          season_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "season_blood_scripts_script_id_fkey"
+            columns: ["script_id"]
+            isOneToOne: false
+            referencedRelation: "blood_scripts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "season_blood_scripts_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       season_games: {
         Row: {
           game_id: string
@@ -343,6 +572,7 @@ export type Database = {
           prize_3rd: number | null
           start_date: string
           status: string
+          type: Database["public"]["Enums"]["season_type"]
         }
         Insert: {
           created_at?: string
@@ -356,6 +586,7 @@ export type Database = {
           prize_3rd?: number | null
           start_date: string
           status?: string
+          type?: Database["public"]["Enums"]["season_type"]
         }
         Update: {
           created_at?: string
@@ -369,6 +600,7 @@ export type Database = {
           prize_3rd?: number | null
           start_date?: string
           status?: string
+          type?: Database["public"]["Enums"]["season_type"]
         }
         Relationships: []
       }
@@ -435,6 +667,9 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "player" | "super_admin"
+      blood_role_type: "townsfolk" | "outsider" | "minion" | "demon"
+      blood_team: "good" | "evil"
+      season_type: "boardgame" | "blood"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -563,6 +798,9 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "player", "super_admin"],
+      blood_role_type: ["townsfolk", "outsider", "minion", "demon"],
+      blood_team: ["good", "evil"],
+      season_type: ["boardgame", "blood"],
     },
   },
 } as const

@@ -14,9 +14,10 @@ import { Plus, Trash2, Gamepad2, ChevronDown, ChevronUp, Trophy, Pencil } from '
 
 interface Season {
   id: string; name: string; description: string; start_date: string; end_date: string; status: string;
-  prize_1st: number; prize_2nd: number; prize_3rd: number;
+  prize_1st: number; prize_2nd: number; prize_3rd: number; type: 'boardgame' | 'blood';
 }
 interface Game { id: string; name: string; }
+interface BloodScript { id: string; name: string; }
 
 const statusLabels: Record<string, string> = { upcoming: 'Em breve', active: 'Ativa', finished: 'Finalizada' };
 
@@ -36,6 +37,10 @@ const AdminSeasons = () => {
   const [selectedGames, setSelectedGames] = useState<string[]>([]);
   const [expandedSeason, setExpandedSeason] = useState<string | null>(null);
   const [gamesOpen, setGamesOpen] = useState(false);
+  const [seasonType, setSeasonType] = useState<'boardgame' | 'blood'>('boardgame');
+  const [bloodScripts, setBloodScripts] = useState<BloodScript[]>([]);
+  const [selectedScripts, setSelectedScripts] = useState<string[]>([]);
+  const [seasonBloodScriptsMap, setSeasonBloodScriptsMap] = useState<Record<string, string[]>>({});
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingSeason, setEditingSeason] = useState<Season | null>(null);
@@ -43,24 +48,34 @@ const AdminSeasons = () => {
   const [editGamesOpen, setEditGamesOpen] = useState(false);
 
   const fetchData = async () => {
-    const [seasonsRes, gamesRes, sgRes] = await Promise.all([
+    const [seasonsRes, gamesRes, sgRes, bsRes, sbsRes] = await Promise.all([
       supabase.from('seasons').select('*').order('start_date', { ascending: false }),
       supabase.from('games').select('id, name').order('name'),
       supabase.from('season_games').select('season_id, game_id'),
+      supabase.from('blood_scripts').select('id, name'),
+      supabase.from('season_blood_scripts').select('season_id, script_id'),
     ]);
     setSeasons((seasonsRes.data || []).map(s => ({
       ...s,
       prize_1st: s.prize_1st || 0,
       prize_2nd: s.prize_2nd || 0,
       prize_3rd: s.prize_3rd || 0,
+      type: (s as any).type || 'boardgame',
     })));
     setGames(gamesRes.data || []);
+    setBloodScripts((bsRes.data || []) as BloodScript[]);
     const map: Record<string, string[]> = {};
     for (const sg of (sgRes.data || [])) {
       if (!map[sg.season_id]) map[sg.season_id] = [];
       map[sg.season_id].push(sg.game_id);
     }
     setSeasonGamesMap(map);
+    const bsMap: Record<string, string[]> = {};
+    for (const sbs of ((sbsRes.data || []) as any[])) {
+      if (!bsMap[sbs.season_id]) bsMap[sbs.season_id] = [];
+      bsMap[sbs.season_id].push(sbs.script_id);
+    }
+    setSeasonBloodScriptsMap(bsMap);
   };
 
   useEffect(() => { fetchData(); }, []);
@@ -74,14 +89,18 @@ const AdminSeasons = () => {
         prize_1st: parseInt(prize1st) || 0,
         prize_2nd: parseInt(prize2nd) || 0,
         prize_3rd: parseInt(prize3rd) || 0,
-      })
+        type: seasonType,
+      } as any)
       .select().single();
     if (error) return notify('error', error.message);
-    if (selectedGames.length > 0) {
+    if (seasonType === 'boardgame' && selectedGames.length > 0) {
       await supabase.from('season_games').insert(selectedGames.map(gid => ({ season_id: data.id, game_id: gid })));
     }
+    if (seasonType === 'blood' && selectedScripts.length > 0) {
+      await supabase.from('season_blood_scripts').insert(selectedScripts.map(sid => ({ season_id: data.id, script_id: sid })) as any);
+    }
     notify('success', 'Season criada!');
-    setName(''); setDescription(''); setPrize1st(''); setPrize2nd(''); setPrize3rd(''); setStartDate(''); setEndDate(''); setSelectedGames([]);
+    setName(''); setDescription(''); setPrize1st(''); setPrize2nd(''); setPrize3rd(''); setStartDate(''); setEndDate(''); setSelectedGames([]); setSelectedScripts([]);
     fetchData();
   };
 
@@ -156,10 +175,20 @@ const AdminSeasons = () => {
       <Card className="bg-card border-border">
         <CardHeader><CardTitle>Nova Season</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
               <Label>Nome *</Label>
               <Input value={name} onChange={e => setName(e.target.value)} placeholder="Season 1" />
+            </div>
+            <div className="space-y-2">
+              <Label>Tipo *</Label>
+              <Select value={seasonType} onValueChange={v => setSeasonType(v as 'boardgame' | 'blood')}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="boardgame">🎲 Boardgame</SelectItem>
+                  <SelectItem value="blood">🩸 Blood on the Clocktower</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Status *</Label>
@@ -204,29 +233,48 @@ const AdminSeasons = () => {
             </div>
           </div>
 
-          <Collapsible open={gamesOpen} onOpenChange={setGamesOpen}>
-            <CollapsibleTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
-                <Gamepad2 className="h-4 w-4" />
-                Jogos desta Season ({selectedGames.length})
-                {gamesOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="mt-3">
-              {games.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nenhum jogo cadastrado.</p>
-              ) : (
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {games.map(g => (
-                    <label key={g.id} className="flex items-center gap-2 rounded-md border border-border p-2 cursor-pointer hover:bg-secondary/50 transition-colors">
-                      <Checkbox checked={selectedGames.includes(g.id)} onCheckedChange={() => toggleNewGameSelection(g.id)} />
-                      <span className="text-sm">{g.name}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </CollapsibleContent>
-          </Collapsible>
+          {seasonType === 'boardgame' && (
+            <Collapsible open={gamesOpen} onOpenChange={setGamesOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Gamepad2 className="h-4 w-4" />
+                  Jogos desta Season ({selectedGames.length})
+                  {gamesOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-3">
+                {games.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhum jogo cadastrado.</p>
+                ) : (
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {games.map(g => (
+                      <label key={g.id} className="flex items-center gap-2 rounded-md border border-border p-2 cursor-pointer hover:bg-secondary/50 transition-colors">
+                        <Checkbox checked={selectedGames.includes(g.id)} onCheckedChange={() => toggleNewGameSelection(g.id)} />
+                        <span className="text-sm">{g.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+
+          {seasonType === 'blood' && (
+            <div className="space-y-2">
+              <Label>Scripts Ativos *</Label>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {bloodScripts.map(bs => (
+                  <label key={bs.id} className="flex items-center gap-2 rounded-md border border-border p-2 cursor-pointer hover:bg-secondary/50 transition-colors">
+                    <Checkbox
+                      checked={selectedScripts.includes(bs.id)}
+                      onCheckedChange={() => setSelectedScripts(prev => prev.includes(bs.id) ? prev.filter(id => id !== bs.id) : [...prev, bs.id])}
+                    />
+                    <span className="text-sm">{bs.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           <Button variant="gold" onClick={handleCreate}><Plus className="h-4 w-4 mr-1" /> Criar Season</Button>
         </CardContent>
@@ -244,8 +292,10 @@ const AdminSeasons = () => {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-semibold">{s.name}</p>
+                      <Badge variant="outline" className="text-xs">{s.type === 'blood' ? '🩸 Blood' : '🎲 Boardgame'}</Badge>
                       <Badge variant="secondary" className="text-xs">{statusLabels[s.status] || s.status}</Badge>
-                      <Badge variant="outline" className="text-xs"><Gamepad2 className="h-3 w-3 mr-1" />{sgames.length} jogos</Badge>
+                      {s.type === 'boardgame' && <Badge variant="outline" className="text-xs"><Gamepad2 className="h-3 w-3 mr-1" />{sgames.length} jogos</Badge>}
+                      {s.type === 'blood' && <Badge variant="outline" className="text-xs">{(seasonBloodScriptsMap[s.id] || []).length} scripts</Badge>}
                       {total > 0 && <Badge variant="outline" className="text-xs border-gold/50 text-gold"><Trophy className="h-3 w-3 mr-1" />R$ {total}</Badge>}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">{s.start_date} — {s.end_date}</p>

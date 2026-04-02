@@ -59,7 +59,7 @@ const AdminMatches = () => {
   useEffect(() => {
     const fetchBase = async () => {
       const [s, g, p] = await Promise.all([
-        supabase.from('seasons').select('id, name').order('start_date', { ascending: false }),
+        supabase.from('seasons').select('id, name').eq('type', 'boardgame' as any).order('start_date', { ascending: false }),
         supabase.from('games').select('id, name').order('name'),
         supabase.from('profiles').select('id, name, nickname').order('name'),
       ]);

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, ChevronRight, Gamepad2 } from 'lucide-react';
+import { Calendar, ChevronRight, Gamepad2, Trophy } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface Season {

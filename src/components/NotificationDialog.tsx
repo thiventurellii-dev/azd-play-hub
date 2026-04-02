@@ -1,4 +1,4 @@
-import { useState, createContext, useContext, useCallback, ReactNode } from 'react';
+import { useState, useEffect, createContext, useContext, useCallback, ReactNode, useRef } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,15 +12,21 @@ import { CheckCircle, XCircle, Info } from 'lucide-react';
 
 type NotificationType = 'success' | 'error' | 'info';
 
+interface NotifyOptions {
+  autoClose?: number; // ms, 0 = manual only
+  onClose?: () => void;
+}
+
 interface NotificationState {
   open: boolean;
   type: NotificationType;
   title: string;
   message: string;
+  options?: NotifyOptions;
 }
 
 interface NotificationContextType {
-  notify: (type: NotificationType, message: string, title?: string) => void;
+  notify: (type: NotificationType, message: string, title?: string, options?: NotifyOptions) => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | null>(null);
@@ -44,30 +50,48 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
     title: '',
     message: '',
   });
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const notify = useCallback((type: NotificationType, message: string, title?: string) => {
+  const close = useCallback(() => {
+    setState(s => {
+      s.options?.onClose?.();
+      return { ...s, open: false };
+    });
+  }, []);
+
+  const notify = useCallback((type: NotificationType, message: string, title?: string, options?: NotifyOptions) => {
+    if (timerRef.current) clearTimeout(timerRef.current);
     setState({
       open: true,
       type,
       title: title || defaultTitles[type],
       message,
+      options,
     });
   }, []);
+
+  useEffect(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (state.open && state.options?.autoClose) {
+      timerRef.current = setTimeout(close, state.options.autoClose);
+    }
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, [state.open, state.options, close]);
 
   return (
     <NotificationContext.Provider value={{ notify }}>
       {children}
-      <AlertDialog open={state.open} onOpenChange={(open) => setState(s => ({ ...s, open }))}>
-        <AlertDialogContent className="max-w-sm">
+      <AlertDialog open={state.open} onOpenChange={(open) => { if (!open) close(); }}>
+        <AlertDialogContent className="max-w-sm animate-scale-in">
           <AlertDialogHeader className="items-center text-center">
-            {icons[state.type]}
-            <AlertDialogTitle className="mt-2">{state.title}</AlertDialogTitle>
-            <AlertDialogDescription className="text-center">
+            <div className="animate-fade-in">{icons[state.type]}</div>
+            <AlertDialogTitle className="mt-2 animate-fade-in">{state.title}</AlertDialogTitle>
+            <AlertDialogDescription className="text-center animate-fade-in">
               {state.message}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="justify-center sm:justify-center">
-            <AlertDialogAction className="min-w-[100px]">OK</AlertDialogAction>
+            <AlertDialogAction className="min-w-[100px]" onClick={close}>OK</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

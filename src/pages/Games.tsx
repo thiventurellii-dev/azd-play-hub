@@ -24,6 +24,20 @@ interface SeasonLink {
   status: string;
 }
 
+interface BloodScript {
+  id: string;
+  name: string;
+  description: string | null;
+}
+
+interface BloodCharacter {
+  id: string;
+  script_id: string;
+  name: string;
+  name_en: string;
+  team: 'good' | 'evil';
+  role_type: 'townsfolk' | 'outsider' | 'minion' | 'demon';
+}
 const statusLabels: Record<string, string> = { active: 'Ativa', upcoming: 'Em breve', finished: 'Finalizada' };
 const statusColors: Record<string, string> = {
   active: 'bg-green-500/20 text-green-400 border-green-500/30',

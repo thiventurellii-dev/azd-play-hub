@@ -18,6 +18,8 @@ interface Season {
   prize_1st: number;
   prize_2nd: number;
   prize_3rd: number;
+  prize_4th_6th: number;
+  prize_7th_10th: number;
   type: 'boardgame' | 'blood';
 }
 
@@ -62,11 +64,12 @@ const Seasons = () => {
         prize_1st: s.prize_1st || 0,
         prize_2nd: s.prize_2nd || 0,
         prize_3rd: s.prize_3rd || 0,
+        prize_4th_6th: (s as any).prize_4th_6th || 0,
+        prize_7th_10th: (s as any).prize_7th_10th || 0,
         type: (s as any).type || 'boardgame',
       }));
       setSeasons(seasonsData);
 
-      // Board games
       const sgData = sgRes.data || [];
       if (sgData.length > 0) {
         const gameIds = [...new Set(sgData.map(sg => sg.game_id))];
@@ -82,7 +85,6 @@ const Seasons = () => {
         setSeasonGames(map);
       }
 
-      // Blood scripts
       const sbsData = (sbsRes.data || []) as any[];
       if (sbsData.length > 0) {
         const scriptIds = [...new Set(sbsData.map(s => s.script_id))];
@@ -106,10 +108,45 @@ const Seasons = () => {
   const boardgameSeasons = seasons.filter(s => s.type === 'boardgame');
   const bloodSeasons = seasons.filter(s => s.type === 'blood');
 
+  const renderPrize = (s: Season) => {
+    const isBlood = s.type === 'blood';
+    if (isBlood) {
+      const total = s.prize_1st + s.prize_4th_6th + s.prize_7th_10th;
+      if (total <= 0) return null;
+      return (
+        <div className="mt-2 space-y-1">
+          <div className="flex items-center gap-1.5 text-sm text-gold">
+            <Trophy className="h-3.5 w-3.5 flex-shrink-0" />
+            <span className="font-semibold">R$ {total} em premiação</span>
+          </div>
+          <div className="flex gap-3 text-xs text-muted-foreground">
+            {s.prize_1st > 0 && <span>🥇 1º-3º R$ {s.prize_1st}</span>}
+            {s.prize_4th_6th > 0 && <span>🥈 4º-6º R$ {s.prize_4th_6th}</span>}
+            {s.prize_7th_10th > 0 && <span>🥉 7º-10º R$ {s.prize_7th_10th}</span>}
+          </div>
+        </div>
+      );
+    }
+    const total = s.prize_1st + s.prize_2nd + s.prize_3rd;
+    if (total <= 0) return null;
+    return (
+      <div className="mt-2 space-y-1">
+        <div className="flex items-center gap-1.5 text-sm text-gold">
+          <Trophy className="h-3.5 w-3.5 flex-shrink-0" />
+          <span className="font-semibold">R$ {total} em premiação</span>
+        </div>
+        <div className="flex gap-3 text-xs text-muted-foreground">
+          {s.prize_1st > 0 && <span>🥇 R$ {s.prize_1st}</span>}
+          {s.prize_2nd > 0 && <span>🥈 R$ {s.prize_2nd}</span>}
+          {s.prize_3rd > 0 && <span>🥉 R$ {s.prize_3rd}</span>}
+        </div>
+      </div>
+    );
+  };
+
   const renderSeasonCard = (s: Season, i: number) => {
     const games = seasonGames[s.id] || [];
     const scripts = seasonScripts[s.id] || [];
-    const total = s.prize_1st + s.prize_2nd + s.prize_3rd;
     return (
       <motion.div key={s.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
         <Link to={`/seasons/${s.id}`}>
@@ -138,19 +175,7 @@ const Seasons = () => {
                     <span className="truncate">{scripts.join(', ')}</span>
                   </div>
                 )}
-                {total > 0 && (
-                  <div className="mt-2 space-y-1">
-                    <div className="flex items-center gap-1.5 text-sm text-gold">
-                      <Trophy className="h-3.5 w-3.5 flex-shrink-0" />
-                      <span className="font-semibold">R$ {total} em premiação</span>
-                    </div>
-                    <div className="flex gap-3 text-xs text-muted-foreground">
-                      {s.prize_1st > 0 && <span>🥇 R$ {s.prize_1st}</span>}
-                      {s.prize_2nd > 0 && <span>🥈 R$ {s.prize_2nd}</span>}
-                      {s.prize_3rd > 0 && <span>🥉 R$ {s.prize_3rd}</span>}
-                    </div>
-                  </div>
-                )}
+                {renderPrize(s)}
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Calendar className="h-3 w-3" />

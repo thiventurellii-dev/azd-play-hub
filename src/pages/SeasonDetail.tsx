@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 
 interface Season {
   id: string; name: string; description: string | null; start_date: string; end_date: string; status: string; prize: string; type: 'boardgame' | 'blood';
+  prize_1st: number; prize_2nd: number; prize_3rd: number; prize_4th_6th: number; prize_7th_10th: number;
 }
 
 interface RankingEntry {
@@ -88,7 +89,7 @@ const SeasonDetail = () => {
     if (!id) return;
     const fetchAll = async () => {
       const { data: sData } = await supabase.from('seasons').select('*').eq('id', id).single();
-      const seasonData: Season | null = sData ? { ...sData, prize: (sData as any).prize || '', type: (sData as any).type || 'boardgame' } : null;
+      const seasonData: Season | null = sData ? { ...sData, prize: (sData as any).prize || '', type: (sData as any).type || 'boardgame', prize_1st: sData.prize_1st || 0, prize_2nd: sData.prize_2nd || 0, prize_3rd: sData.prize_3rd || 0, prize_4th_6th: (sData as any).prize_4th_6th || 0, prize_7th_10th: (sData as any).prize_7th_10th || 0 } : null;
       setSeason(seasonData);
 
       if (seasonData?.type === 'blood') {
@@ -275,12 +276,37 @@ const SeasonDetail = () => {
         <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2 flex-wrap">
           <span className="flex items-center gap-1"><Calendar className="h-4 w-4" />{new Date(season.start_date).toLocaleDateString('pt-BR')} — {new Date(season.end_date).toLocaleDateString('pt-BR')}</span>
         </div>
-        {season.prize && (
-          <div className="mt-3 p-3 rounded-lg border border-gold/30 bg-gold/5">
-            <div className="flex items-center gap-2 text-gold text-sm font-medium mb-1"><Award className="h-4 w-4" /> Premiação</div>
-            <p className="text-sm">{season.prize}</p>
-          </div>
-        )}
+        {(() => {
+          const isBlood = season.type === 'blood';
+          if (isBlood) {
+            const total = (season.prize_1st || 0) + (season.prize_4th_6th || 0) + (season.prize_7th_10th || 0);
+            if (total <= 0 && !season.prize) return null;
+            return (
+              <div className="mt-3 p-3 rounded-lg border border-gold/30 bg-gold/5">
+                <div className="flex items-center gap-2 text-gold text-sm font-medium mb-1"><Award className="h-4 w-4" /> Premiação — R$ {total}</div>
+                <div className="flex gap-4 text-sm flex-wrap">
+                  {season.prize_1st > 0 && <span>🥇 1º-3º: <strong>R$ {season.prize_1st}</strong></span>}
+                  {season.prize_4th_6th > 0 && <span>🥈 4º-6º: <strong>R$ {season.prize_4th_6th}</strong></span>}
+                  {season.prize_7th_10th > 0 && <span>🥉 7º-10º: <strong>R$ {season.prize_7th_10th}</strong></span>}
+                </div>
+                {season.prize && <p className="text-sm mt-1">{season.prize}</p>}
+              </div>
+            );
+          }
+          const total = (season.prize_1st || 0) + (season.prize_2nd || 0) + (season.prize_3rd || 0);
+          if (total <= 0 && !season.prize) return null;
+          return (
+            <div className="mt-3 p-3 rounded-lg border border-gold/30 bg-gold/5">
+              <div className="flex items-center gap-2 text-gold text-sm font-medium mb-1"><Award className="h-4 w-4" /> Premiação — R$ {total}</div>
+              <div className="flex gap-4 text-sm flex-wrap">
+                {season.prize_1st > 0 && <span>🥇 1º: <strong>R$ {season.prize_1st}</strong></span>}
+                {season.prize_2nd > 0 && <span>🥈 2º: <strong>R$ {season.prize_2nd}</strong></span>}
+                {season.prize_3rd > 0 && <span>🥉 3º: <strong>R$ {season.prize_3rd}</strong></span>}
+              </div>
+              {season.prize && <p className="text-sm mt-1">{season.prize}</p>}
+            </div>
+          );
+        })()}
       </div>
 
       {isBlood ? (

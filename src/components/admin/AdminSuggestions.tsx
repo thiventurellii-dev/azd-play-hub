@@ -43,7 +43,7 @@ const AdminSuggestions = () => {
   const { notify } = useNotification();
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState<SortOption>('date_desc');
+  const [sortBy, setSortBy] = useState<SortOption>('priority_desc');
 
   const fetchSuggestions = async () => {
     const { data } = await supabase.from('suggestions').select('*').order('created_at', { ascending: false });

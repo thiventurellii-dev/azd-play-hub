@@ -264,6 +264,21 @@ const Games = () => {
                     </div>
                   </div>
 
+                  {seasons.length > 0 && (
+                    <div className="border-t border-border pt-3">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
+                        <Calendar className="h-3 w-3" /> Seasons
+                      </p>
+                      <div className="flex gap-2 flex-wrap">
+                        {seasons.map(ss => (
+                          <Badge key={ss.season_id} className={`${statusColors[ss.status] || 'bg-muted text-muted-foreground border-border'} text-xs`}>
+                            {ss.season_name}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {isExpanded && (
                     <div className="border-t border-border pt-3 space-y-2">
                       {goodChars.length > 0 && (

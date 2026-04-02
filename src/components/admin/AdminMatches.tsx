@@ -8,12 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Plus, Trash2, UserPlus, Upload, Image } from 'lucide-react';
+import { Plus, Trash2, UserPlus, Upload, Image, Pencil, Search } from 'lucide-react';
 
 interface Season { id: string; name: string; }
 interface Game { id: string; name: string; }
-interface Player { id: string; name: string; }
+interface Player { id: string; name: string; nickname?: string; }
 interface MatchResult { player_id: string; position: number; score: number; is_first_player: boolean; }
 interface MatchRecord {
   id: string;
@@ -21,9 +22,11 @@ interface MatchRecord {
   duration_minutes: number | null;
   image_url: string | null;
   first_player_id: string | null;
+  season_id: string;
+  game_id: string;
   season: { name: string };
   game: { name: string };
-  results: { player_name: string; position: number; score: number; mmr_before: number; mmr_change: number; mmr_after: number; is_first: boolean }[];
+  results: { player_id: string; player_name: string; position: number; score: number; mmr_before: number; mmr_change: number; mmr_after: number; is_first: boolean }[];
 }
 
 const AdminMatches = () => {
@@ -40,6 +43,16 @@ const AdminMatches = () => {
   const [results, setResults] = useState<MatchResult[]>([{ player_id: '', position: 1, score: 0, is_first_player: false }]);
   const [saving, setSaving] = useState(false);
   const [matches, setMatches] = useState<MatchRecord[]>([]);
+
+  // Filters
+  const [filterSeason, setFilterSeason] = useState('all');
+  const [filterDate, setFilterDate] = useState('');
+
+  // Edit state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingMatch, setEditingMatch] = useState<MatchRecord | null>(null);
+  const [editForm, setEditForm] = useState({ played_date: '', played_time: '', duration: '', season_id: '', game_id: '' });
+  const [editResults, setEditResults] = useState<MatchResult[]>([]);
 
   useEffect(() => {
     const fetchBase = async () => {
@@ -71,7 +84,7 @@ const AdminMatches = () => {
       .from('matches')
       .select('id, played_at, duration_minutes, image_url, first_player_id, season_id, game_id')
       .order('played_at', { ascending: false })
-      .limit(20);
+      .limit(100);
 
     if (!matchData || matchData.length === 0) { setMatches([]); return; }
 
@@ -101,12 +114,15 @@ const AdminMatches = () => {
       duration_minutes: m.duration_minutes,
       image_url: m.image_url,
       first_player_id: (m as any).first_player_id || null,
+      season_id: m.season_id,
+      game_id: m.game_id,
       season: { name: seasonMap[m.season_id] || '?' },
       game: { name: gameMap[m.game_id] || '?' },
       results: (resultsRes.data || [])
         .filter(r => r.match_id === m.id)
         .sort((a, b) => a.position - b.position)
         .map(r => ({
+          player_id: r.player_id,
           player_name: playerMap[r.player_id] || '?',
           position: r.position,
           score: r.score || 0,
@@ -122,7 +138,6 @@ const AdminMatches = () => {
   const updateResult = (i: number, field: keyof MatchResult, value: any) => {
     const updated = [...results];
     if (field === 'is_first_player' && value === true) {
-      // Only one first player
       updated.forEach((r, idx) => { r.is_first_player = idx === i; });
     } else {
       (updated[i] as any)[field] = value;
@@ -159,12 +174,10 @@ const AdminMatches = () => {
       return toast.error('Preencha Season, Jogo, Data/Hora e todos os jogadores');
     }
     setSaving(true);
-
     try {
       const playerIds = results.map(r => r.player_id);
       const firstPlayerId = results.find(r => r.is_first_player)?.player_id || null;
 
-      // Fetch MMR for this season+game combo
       const { data: mmrData } = await supabase
         .from('mmr_ratings')
         .select('player_id, current_mmr, games_played, wins, game_id')
@@ -203,24 +216,17 @@ const AdminMatches = () => {
       const { data: match, error: matchErr } = await supabase
         .from('matches')
         .insert({
-          season_id: seasonId,
-          game_id: gameId,
+          season_id: seasonId, game_id: gameId,
           duration_minutes: parseInt(duration) || null,
           played_at: new Date(`${playedDate}T${playedTime}`).toISOString(),
-          image_url: imageUrl,
-          first_player_id: firstPlayerId,
+          image_url: imageUrl, first_player_id: firstPlayerId,
         } as any)
-        .select()
-        .single();
+        .select().single();
       if (matchErr) throw matchErr;
 
       const matchResults = results.map(r => ({
-        match_id: match.id,
-        player_id: r.player_id,
-        position: r.position,
-        score: r.score,
-        mmr_before: mmrMap[r.player_id],
-        mmr_change: eloChanges[r.player_id],
+        match_id: match.id, player_id: r.player_id, position: r.position, score: r.score,
+        mmr_before: mmrMap[r.player_id], mmr_change: eloChanges[r.player_id],
         mmr_after: mmrMap[r.player_id] + eloChanges[r.player_id],
       }));
       const { error: resErr } = await supabase.from('match_results').insert(matchResults);
@@ -228,25 +234,17 @@ const AdminMatches = () => {
 
       for (const r of results) {
         const isWin = r.position === 1;
-        await supabase
-          .from('mmr_ratings')
-          .update({
-            current_mmr: mmrMap[r.player_id] + eloChanges[r.player_id],
-            games_played: gpMap[r.player_id] + 1,
-            wins: winsMap[r.player_id] + (isWin ? 1 : 0),
-            updated_at: new Date().toISOString(),
-          })
-          .eq('player_id', r.player_id)
-          .eq('season_id', seasonId)
-          .eq('game_id', gameId);
+        await supabase.from('mmr_ratings').update({
+          current_mmr: mmrMap[r.player_id] + eloChanges[r.player_id],
+          games_played: gpMap[r.player_id] + 1,
+          wins: winsMap[r.player_id] + (isWin ? 1 : 0),
+          updated_at: new Date().toISOString(),
+        }).eq('player_id', r.player_id).eq('season_id', seasonId).eq('game_id', gameId);
       }
 
       toast.success('Partida registrada com sucesso!');
       setResults([{ player_id: '', position: 1, score: 0, is_first_player: false }]);
-      setDuration('');
-      setPlayedDate('');
-      setPlayedTime('');
-      setImageFile(null);
+      setDuration(''); setPlayedDate(''); setPlayedTime(''); setImageFile(null);
       fetchMatches();
     } catch (err: any) {
       toast.error(err.message || 'Erro ao registrar partida');
@@ -254,6 +252,66 @@ const AdminMatches = () => {
       setSaving(false);
     }
   };
+
+  // Edit match
+  const openEditMatch = (m: MatchRecord) => {
+    setEditingMatch(m);
+    const d = new Date(m.played_at);
+    setEditForm({
+      played_date: d.toISOString().split('T')[0],
+      played_time: d.toTimeString().slice(0, 5),
+      duration: m.duration_minutes ? String(m.duration_minutes) : '',
+      season_id: m.season_id,
+      game_id: m.game_id,
+    });
+    setEditResults(m.results.map(r => ({
+      player_id: r.player_id, position: r.position, score: r.score, is_first_player: r.is_first,
+    })));
+    setEditDialogOpen(true);
+  };
+
+  const handleEditMatchSave = async () => {
+    if (!editingMatch) return;
+    const { error } = await supabase.from('matches').update({
+      season_id: editForm.season_id,
+      game_id: editForm.game_id,
+      duration_minutes: parseInt(editForm.duration) || null,
+      played_at: new Date(`${editForm.played_date}T${editForm.played_time}`).toISOString(),
+    } as any).eq('id', editingMatch.id);
+    if (error) return toast.error(error.message);
+
+    // Update results
+    for (const r of editResults) {
+      await supabase.from('match_results').update({
+        position: r.position, score: r.score,
+      }).eq('match_id', editingMatch.id).eq('player_id', r.player_id);
+    }
+
+    // Update first player
+    const firstPlayer = editResults.find(r => r.is_first_player);
+    if (firstPlayer) {
+      await supabase.from('matches').update({ first_player_id: firstPlayer.player_id } as any).eq('id', editingMatch.id);
+    }
+
+    toast.success('Partida atualizada!');
+    setEditDialogOpen(false);
+    fetchMatches();
+  };
+
+  // Filtered matches
+  const filteredMatches = matches.filter(m => {
+    if (filterSeason !== 'all' && m.season_id !== filterSeason) return false;
+    if (filterDate && !m.played_at.startsWith(filterDate)) return false;
+    return true;
+  });
+
+  // Group by season
+  const groupedMatches: Record<string, MatchRecord[]> = {};
+  for (const m of filteredMatches) {
+    const key = m.season.name;
+    if (!groupedMatches[key]) groupedMatches[key] = [];
+    groupedMatches[key].push(m);
+  }
 
   return (
     <div className="space-y-6">
@@ -366,19 +424,45 @@ const AdminMatches = () => {
         </CardContent>
       </Card>
 
-      {matches.length > 0 && (
-        <Card className="bg-card border-border">
-          <CardHeader><CardTitle>Últimas Partidas</CardTitle></CardHeader>
+      {/* Filters */}
+      <Card className="bg-card border-border">
+        <CardContent className="py-4">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Filtros:</span>
+            </div>
+            <Select value={filterSeason} onValueChange={setFilterSeason}>
+              <SelectTrigger className="w-[200px]"><SelectValue placeholder="Filtrar por Season" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as Seasons</SelectItem>
+                {seasons.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)} className="w-[180px]" placeholder="Filtrar por data" />
+            {(filterSeason !== 'all' || filterDate) && (
+              <Button variant="ghost" size="sm" onClick={() => { setFilterSeason('all'); setFilterDate(''); }}>Limpar</Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Grouped matches */}
+      {Object.entries(groupedMatches).map(([seasonName, seasonMatches]) => (
+        <Card key={seasonName} className="bg-card border-border">
+          <CardHeader><CardTitle className="text-lg">{seasonName}</CardTitle></CardHeader>
           <CardContent className="space-y-4">
-            {matches.map(m => (
+            {seasonMatches.map(m => (
               <div key={m.id} className="rounded-lg border border-border p-4 space-y-3">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Badge variant="secondary">{m.season.name}</Badge>
                     <Badge variant="outline">{m.game.name}</Badge>
                     {m.duration_minutes && <span className="text-xs text-muted-foreground">{m.duration_minutes} min</span>}
                   </div>
                   <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" onClick={() => openEditMatch(m)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
                     {m.image_url && (
                       <a href={m.image_url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
                         <Image className="h-4 w-4" />
@@ -426,7 +510,79 @@ const AdminMatches = () => {
             ))}
           </CardContent>
         </Card>
+      ))}
+
+      {filteredMatches.length === 0 && matches.length > 0 && (
+        <p className="text-center text-muted-foreground py-8">Nenhuma partida encontrada com os filtros selecionados.</p>
       )}
+
+      {/* Edit Match Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Editar Partida</DialogTitle></DialogHeader>
+          <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Season</Label>
+                <Select value={editForm.season_id} onValueChange={v => setEditForm({ ...editForm, season_id: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {seasons.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Jogo</Label>
+                <Select value={editForm.game_id} onValueChange={v => setEditForm({ ...editForm, game_id: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {games.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Data</Label>
+                <Input type="date" value={editForm.played_date} onChange={e => setEditForm({ ...editForm, played_date: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Hora</Label>
+                <Input type="time" value={editForm.played_time} onChange={e => setEditForm({ ...editForm, played_time: e.target.value })} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Duração (min)</Label>
+              <Input type="number" value={editForm.duration} onChange={e => setEditForm({ ...editForm, duration: e.target.value })} />
+            </div>
+
+            <Label>Resultados</Label>
+            {editResults.map((r, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <span className="text-sm w-[120px] truncate">{players.find(p => p.id === r.player_id)?.nickname || players.find(p => p.id === r.player_id)?.name || '?'}</span>
+                <Input type="number" min={1} value={r.position} onChange={e => {
+                  const updated = [...editResults];
+                  updated[i].position = parseInt(e.target.value) || 1;
+                  setEditResults(updated);
+                }} className="w-[70px]" placeholder="Pos" />
+                <Input type="number" value={r.score} onChange={e => {
+                  const updated = [...editResults];
+                  updated[i].score = parseInt(e.target.value) || 0;
+                  setEditResults(updated);
+                }} className="w-[80px]" placeholder="Pts" />
+                <div className="flex items-center gap-1">
+                  <Checkbox checked={r.is_first_player} onCheckedChange={(checked) => {
+                    const updated = [...editResults];
+                    updated.forEach((rr, idx) => { rr.is_first_player = idx === i && !!checked; });
+                    setEditResults(updated);
+                  }} />
+                  <span className="text-xs">1º</span>
+                </div>
+              </div>
+            ))}
+
+            <Button variant="gold" onClick={handleEditMatchSave} className="w-full">Salvar Alterações</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

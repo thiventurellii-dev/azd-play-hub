@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, ChevronRight, Gamepad2 } from 'lucide-react';
+import { Calendar, ChevronRight, Gamepad2, Trophy } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface Season {
@@ -14,6 +14,9 @@ interface Season {
   end_date: string;
   status: string;
   prize: string | null;
+  prize_1st: number;
+  prize_2nd: number;
+  prize_3rd: number;
 }
 
 interface SeasonGame {
@@ -57,6 +60,9 @@ const Seasons = () => {
       const seasonsData: Season[] = (seasonsRes.data || []).map(s => ({
         ...s,
         status: computeStatus(s.start_date, s.end_date),
+        prize_1st: (s as any).prize_1st || 0,
+        prize_2nd: (s as any).prize_2nd || 0,
+        prize_3rd: (s as any).prize_3rd || 0,
       }));
       setSeasons(seasonsData);
 
@@ -102,6 +108,7 @@ const Seasons = () => {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {seasons.map((s, i) => {
             const games = seasonGames[s.id] || [];
+            const total = s.prize_1st + s.prize_2nd + s.prize_3rd;
             return (
               <motion.div key={s.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
                 <Link to={`/seasons/${s.id}`}>
@@ -122,6 +129,19 @@ const Seasons = () => {
                           <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-2">
                             <Gamepad2 className="h-3.5 w-3.5 flex-shrink-0" />
                             <span className="truncate">{games.join(', ')}</span>
+                          </div>
+                        )}
+                        {total > 0 && (
+                          <div className="mt-2 space-y-1">
+                            <div className="flex items-center gap-1.5 text-sm text-gold">
+                              <Trophy className="h-3.5 w-3.5 flex-shrink-0" />
+                              <span className="font-semibold">R$ {total} em premiação</span>
+                            </div>
+                            <div className="flex gap-3 text-xs text-muted-foreground">
+                              {s.prize_1st > 0 && <span>🥇 R${s.prize_1st}</span>}
+                              {s.prize_2nd > 0 && <span>🥈 R${s.prize_2nd}</span>}
+                              {s.prize_3rd > 0 && <span>🥉 R${s.prize_3rd}</span>}
+                            </div>
                           </div>
                         )}
                       </div>

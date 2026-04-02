@@ -131,6 +131,7 @@ const Games = () => {
   const scriptImages: Record<string, string> = {
     'trouble brewing': troubleBrewingImg,
     'bad moon rising': badMoonRisingImg,
+    'over the river': overTheRiverImg,
   };
 
   const getScriptImage = (name: string) => scriptImages[name.toLowerCase()] || null;

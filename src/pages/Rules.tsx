@@ -77,11 +77,6 @@ const Rules = () => {
           <h1 className="text-3xl font-bold">Regras</h1>
           <p className="text-muted-foreground mt-1">Regras da comunidade AzD</p>
         </div>
-        {isAdmin && !editing && (
-          <Button variant="outline" onClick={startEditing}>
-            <Edit3 className="h-4 w-4 mr-1" /> Editar
-          </Button>
-        )}
       </div>
 
       {editing ? (

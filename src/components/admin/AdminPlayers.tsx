@@ -216,6 +216,22 @@ const AdminPlayers = () => {
     return 'Player';
   };
 
+  const handleApprove = async (player: PlayerWithRole) => {
+    const { error } = await supabase.from('profiles').update({ status: 'active' } as any).eq('id', player.id);
+    if (error) return toast.error(error.message);
+    toast.success(`${player.nickname || player.name} aprovado!`);
+    fetchPlayers();
+  };
+
+  const handleReject = async (player: PlayerWithRole) => {
+    const { error } = await supabase.from('profiles').update({ status: 'disabled' } as any).eq('id', player.id);
+    if (error) return toast.error(error.message);
+    toast.success(`${player.nickname || player.name} rejeitado.`);
+    fetchPlayers();
+  };
+
+  const pendingApprovalPlayers = players.filter(p => p.status === 'pending_approval');
+
   return (
     <div className="space-y-6">
       <Card className="bg-card border-border">

@@ -231,46 +231,73 @@ const AdminBloodMatches = () => {
     }
   };
 
-  const updateRatings = async (sId: string, stId: string, allPlayers: BloodPlayerEntry[], wTeam: string) => {
-    const allPlayerIds = [...new Set([stId, ...allPlayers.map(p => p.player_id)])];
-    const { data: existingRatings } = await supabase
-      .from('blood_mmr_ratings')
-      .select('*')
-      .eq('season_id', sId)
-      .in('player_id', allPlayerIds);
+  const recalculateSeasonRatings = async (sId: string) => {
+    // Fetch all matches for this season
+    const { data: sMatches } = await supabase
+      .from('blood_matches')
+      .select('id, storyteller_player_id, winning_team')
+      .eq('season_id', sId);
+    if (!sMatches || sMatches.length === 0) return;
 
-    const ratingsMap: Record<string, any> = {};
-    for (const r of ((existingRatings || []) as any[])) ratingsMap[r.player_id] = r;
+    // Fetch all match players for these matches
+    const matchIds = sMatches.map(m => m.id);
+    const { data: sPlayers } = await supabase
+      .from('blood_match_players')
+      .select('match_id, player_id, team')
+      .in('match_id', matchIds);
 
-    for (const pid of allPlayerIds) {
-      const existing = ratingsMap[pid];
-      const isStoryteller = pid === stId;
-      const playerEntry = allPlayers.find(p => p.player_id === pid);
-      const isWinner = playerEntry ? playerEntry.team === wTeam : false;
-      const isEvil = playerEntry?.team === 'evil';
-      const isGood = playerEntry?.team === 'good';
+    // Build ratings from scratch
+    const ratings: Record<string, { games_played: number; wins_evil: number; wins_good: number; games_as_storyteller: number }> = {};
 
-      const gamesPlayed = (existing?.games_played || 0) + 1;
-      const winsEvil = (existing?.wins_evil || 0) + (isWinner && isEvil ? 1 : 0);
-      const winsGood = (existing?.wins_good || 0) + (isWinner && isGood ? 1 : 0);
-      const gamesAsStoryteller = (existing?.games_as_storyteller || 0) + (isStoryteller && !playerEntry ? 1 : 0);
-      const totalPoints = gamesPlayed + (winsEvil * 2) + winsGood;
+    const ensure = (pid: string) => {
+      if (!ratings[pid]) ratings[pid] = { games_played: 0, wins_evil: 0, wins_good: 0, games_as_storyteller: 0 };
+    };
 
-      if (existing) {
-        await supabase.from('blood_mmr_ratings').update({
-          total_points: totalPoints, games_played: gamesPlayed,
-          wins_evil: winsEvil, wins_good: winsGood,
-          games_as_storyteller: gamesAsStoryteller, updated_at: new Date().toISOString(),
-        } as any).eq('id', existing.id);
-      } else {
-        await supabase.from('blood_mmr_ratings').insert({
-          player_id: pid, season_id: sId,
-          total_points: totalPoints, games_played: gamesPlayed,
-          wins_evil: winsEvil, wins_good: winsGood,
-          games_as_storyteller: gamesAsStoryteller,
-        } as any);
+    for (const match of sMatches) {
+      const matchPlayers = (sPlayers || []).filter(p => p.match_id === match.id);
+      const storytellerId = match.storyteller_player_id;
+
+      // Storyteller: +1 game played, +1 storyteller game, no win bonus
+      ensure(storytellerId);
+      const stIsAlsoPlayer = matchPlayers.some(p => p.player_id === storytellerId);
+      if (!stIsAlsoPlayer) {
+        ratings[storytellerId].games_played += 1;
+        ratings[storytellerId].games_as_storyteller += 1;
+      }
+
+      // Players
+      for (const mp of matchPlayers) {
+        ensure(mp.player_id);
+        ratings[mp.player_id].games_played += 1;
+        if (mp.player_id === storytellerId) {
+          ratings[mp.player_id].games_as_storyteller += 1;
+        }
+        const won = mp.team === match.winning_team;
+        if (won && mp.team === 'evil') ratings[mp.player_id].wins_evil += 1;
+        if (won && mp.team === 'good') ratings[mp.player_id].wins_good += 1;
       }
     }
+
+    // Delete old ratings for this season and insert new
+    await supabase.from('blood_mmr_ratings').delete().eq('season_id', sId);
+
+    const inserts = Object.entries(ratings).map(([player_id, r]) => ({
+      player_id,
+      season_id: sId,
+      games_played: r.games_played,
+      wins_evil: r.wins_evil,
+      wins_good: r.wins_good,
+      games_as_storyteller: r.games_as_storyteller,
+      total_points: r.games_played + (r.wins_evil * 2) + r.wins_good,
+    }));
+
+    if (inserts.length > 0) {
+      await supabase.from('blood_mmr_ratings').insert(inserts as any);
+    }
+  };
+
+  const updateRatings = async (sId: string, _stId: string, _allPlayers: BloodPlayerEntry[], _wTeam: string) => {
+    await recalculateSeasonRatings(sId);
   };
 
   const openEditMatch = (m: any) => {

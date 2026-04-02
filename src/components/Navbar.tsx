@@ -146,16 +146,20 @@ const Navbar = () => {
               </Button>
             </Link>
           ))}
-          <a href="https://discord.gg/6UpSEaSdj" target="_blank" rel="noopener noreferrer" onClick={() => setMobileOpen(false)}>
-            <Button variant="ghost" className="w-full justify-start gap-2">
-              <DiscordIcon size={16} /> Discord
-            </Button>
-          </a>
-          <a href="https://chat.whatsapp.com/D3zwwp30YY0CtVkCGmBzX3" target="_blank" rel="noopener noreferrer" onClick={() => setMobileOpen(false)}>
-            <Button variant="ghost" className="w-full justify-start gap-2">
-              <MessageCircle className="h-4 w-4" /> WhatsApp
-            </Button>
-          </a>
+          {contactLinks.discord && (
+            <a href={contactLinks.discord} target="_blank" rel="noopener noreferrer" onClick={() => setMobileOpen(false)}>
+              <Button variant="ghost" className="w-full justify-start gap-2">
+                <DiscordIcon size={16} /> Discord
+              </Button>
+            </a>
+          )}
+          {contactLinks.whatsapp && (
+            <a href={contactLinks.whatsapp} target="_blank" rel="noopener noreferrer" onClick={() => setMobileOpen(false)}>
+              <Button variant="ghost" className="w-full justify-start gap-2">
+                <MessageCircle className="h-4 w-4" /> WhatsApp
+              </Button>
+            </a>
+          )}
           {isAdmin && (
             <Link to="/admin" onClick={() => setMobileOpen(false)}>
               <Button variant="ghost" className="w-full justify-start gap-2 text-gold">

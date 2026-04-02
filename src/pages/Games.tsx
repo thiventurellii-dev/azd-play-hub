@@ -51,6 +51,9 @@ const Games = () => {
   const [avgDurations, setAvgDurations] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
+  const [bloodScripts, setBloodScripts] = useState<BloodScript[]>([]);
+  const [bloodCharacters, setBloodCharacters] = useState<BloodCharacter[]>([]);
+  const [expandedScript, setExpandedScript] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {

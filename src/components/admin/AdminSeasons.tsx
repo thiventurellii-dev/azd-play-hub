@@ -14,9 +14,10 @@ import { Plus, Trash2, Gamepad2, ChevronDown, ChevronUp, Trophy, Pencil } from '
 
 interface Season {
   id: string; name: string; description: string; start_date: string; end_date: string; status: string;
-  prize_1st: number; prize_2nd: number; prize_3rd: number;
+  prize_1st: number; prize_2nd: number; prize_3rd: number; type: 'boardgame' | 'blood';
 }
 interface Game { id: string; name: string; }
+interface BloodScript { id: string; name: string; }
 
 const statusLabels: Record<string, string> = { upcoming: 'Em breve', active: 'Ativa', finished: 'Finalizada' };
 

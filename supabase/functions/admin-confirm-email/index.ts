@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
     const data = await res.json();
     if (!res.ok) throw new Error(JSON.stringify(data));
 
-    if (error) throw error;
+    
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

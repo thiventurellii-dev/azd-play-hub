@@ -142,7 +142,7 @@ const AdminSuggestions = () => {
               </TableCell>
               <TableCell>
                 {showActions ? (
-                  <Select value={s.complexity} onValueChange={(v) => updateSuggestion(s.id, { complexity: v })}>
+                  <Select value={s.complexity} onValueChange={(v) => updateSuggestion(s.id, { complexity: v }, true)}>
                     <SelectTrigger className="h-8 w-[120px] text-xs">
                       <SelectValue />
                     </SelectTrigger>

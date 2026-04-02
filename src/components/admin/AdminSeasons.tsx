@@ -21,6 +21,7 @@ interface Game { id: string; name: string; }
 const statusLabels: Record<string, string> = { upcoming: 'Em breve', active: 'Ativa', finished: 'Finalizada' };
 
 const AdminSeasons = () => {
+  const { notify } = useNotification();
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [games, setGames] = useState<Game[]>([]);
   const [seasonGamesMap, setSeasonGamesMap] = useState<Record<string, string[]>>({});

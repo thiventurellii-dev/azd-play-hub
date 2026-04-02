@@ -12,6 +12,7 @@ const DiscordIcon = ({ size = 20 }: { size?: number }) => (
 );
 
 const AdminContato = () => {
+  const { notify } = useNotification();
   const [discordUrl, setDiscordUrl] = useState('');
   const [whatsappUrl, setWhatsappUrl] = useState('');
   const [editing, setEditing] = useState(false);

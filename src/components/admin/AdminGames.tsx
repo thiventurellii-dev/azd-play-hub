@@ -19,6 +19,7 @@ interface Game {
 }
 
 const AdminGames = () => {
+  const { notify } = useNotification();
   const [games, setGames] = useState<Game[]>([]);
   const [name, setName] = useState('');
   const [imageUrl, setImageUrl] = useState('');

@@ -14,6 +14,7 @@ interface Suggestion {
 }
 
 const AdminSuggestions = () => {
+  const { notify } = useNotification();
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(true);
 

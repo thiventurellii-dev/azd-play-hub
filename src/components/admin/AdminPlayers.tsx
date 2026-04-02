@@ -35,6 +35,7 @@ const statusLabels: Record<string, string> = { pending: 'Cadastro Pendente', pen
 const statusColors: Record<string, string> = { pending: 'bg-yellow-500/20 text-yellow-400', pending_approval: 'bg-orange-500/20 text-orange-400', active: 'bg-green-500/20 text-green-400', disabled: 'bg-red-500/20 text-red-400' };
 
 const AdminPlayers = () => {
+  const { notify } = useNotification();
   const { role: currentRole } = useAuth();
   const isSuperAdmin = currentRole === 'super_admin';
   const [players, setPlayers] = useState<PlayerWithRole[]>([]);

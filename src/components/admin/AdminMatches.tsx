@@ -31,6 +31,7 @@ interface MatchRecord {
 }
 
 const AdminMatches = () => {
+  const { notify } = useNotification();
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [games, setGames] = useState<Game[]>([]);
   const [seasonGames, setSeasonGames] = useState<Game[]>([]);

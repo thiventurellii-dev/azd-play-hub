@@ -7,6 +7,7 @@ import { useNotification } from '@/components/NotificationDialog';
 import { Save } from 'lucide-react';
 
 const AdminAboutUs = () => {
+  const { notify } = useNotification();
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

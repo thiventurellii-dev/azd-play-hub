@@ -175,10 +175,20 @@ const AdminSeasons = () => {
       <Card className="bg-card border-border">
         <CardHeader><CardTitle>Nova Season</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-2">
               <Label>Nome *</Label>
               <Input value={name} onChange={e => setName(e.target.value)} placeholder="Season 1" />
+            </div>
+            <div className="space-y-2">
+              <Label>Tipo *</Label>
+              <Select value={seasonType} onValueChange={v => setSeasonType(v as 'boardgame' | 'blood')}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="boardgame">🎲 Boardgame</SelectItem>
+                  <SelectItem value="blood">🩸 Blood on the Clocktower</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Status *</Label>

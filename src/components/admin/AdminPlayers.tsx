@@ -132,6 +132,16 @@ const AdminPlayers = () => {
     } as any).eq('id', editingPlayer.id);
     if (error) return toast.error(error.message);
 
+    // Update auth email if changed
+    if (form.email !== editingPlayer.email) {
+      const { data: emailData, error: emailError } = await supabase.functions.invoke('admin-update-email', {
+        body: { user_id: editingPlayer.id, email: form.email },
+      });
+      if (emailError || emailData?.error) {
+        toast.error(emailData?.error || emailError?.message || 'Erro ao atualizar e-mail de login');
+      }
+    }
+
     // Update role (only if allowed)
     if (editingPlayer.role !== editRole) {
       if (editingPlayer.role === 'super_admin' && !isSuperAdmin) {

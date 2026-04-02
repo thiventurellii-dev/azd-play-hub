@@ -95,7 +95,7 @@ const Register = () => {
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-lg bg-card border-border">
         <CardHeader className="text-center">
-          <img src={logo} alt="AzD" className="h-16 w-16 mx-auto mb-4 invert" />
+          <img src={logo} alt="AzD" className="h-16 w-16 mx-auto mb-4" />
           <CardTitle className="text-2xl">Faça parte da comunidade</CardTitle>
           <CardDescription>Preencha todos os dados para se cadastrar</CardDescription>
         </CardHeader>

@@ -9,6 +9,7 @@ import { ExternalLink, Video, Users, Calendar, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import troubleBrewingImg from '@/assets/trouble-brewing.jpg';
 import badMoonRisingImg from '@/assets/bad-moon-rising.jpg';
+import overTheRiverImg from '@/assets/over-the-river.png';
 interface Game {
   id: string;
   name: string;
@@ -55,15 +56,17 @@ const Games = () => {
   const [bloodScripts, setBloodScripts] = useState<BloodScript[]>([]);
   const [bloodCharacters, setBloodCharacters] = useState<BloodCharacter[]>([]);
   const [expandedScript, setExpandedScript] = useState<string | null>(null);
+  const [scriptSeasons, setScriptSeasons] = useState<Record<string, SeasonLink[]>>({});
 
   useEffect(() => {
     const fetchData = async () => {
-      const [gamesRes, sgRes, matchesRes, scriptsRes, charsRes] = await Promise.all([
+      const [gamesRes, sgRes, matchesRes, scriptsRes, charsRes, sbsRes] = await Promise.all([
         supabase.from('games').select('*').order('name'),
         supabase.from('season_games').select('game_id, season_id'),
         supabase.from('matches').select('game_id, duration_minutes'),
         supabase.from('blood_scripts').select('*').order('name'),
         supabase.from('blood_characters').select('*').order('team, role_type, name'),
+        supabase.from('season_blood_scripts').select('season_id, script_id'),
       ]);
 
       const gamesData = gamesRes.data || [];
@@ -86,6 +89,23 @@ const Games = () => {
           map[sg.game_id].push({ season_id: sg.season_id, season_name: s.name, status: s.status });
         }
         setGameSeasons(map);
+      }
+
+      // Map seasons to blood scripts
+      const sbsData = (sbsRes.data || []) as any[];
+      if (sbsData.length > 0) {
+        const bsSeasonIds = [...new Set(sbsData.map((s: any) => s.season_id))];
+        const { data: bsSeasons } = await supabase.from('seasons').select('id, name, status').in('id', bsSeasonIds);
+        const bsSeasonMap: Record<string, { name: string; status: string }> = {};
+        for (const s of (bsSeasons || [])) bsSeasonMap[s.id] = { name: s.name, status: s.status };
+        const bsMap: Record<string, SeasonLink[]> = {};
+        for (const sbs of sbsData) {
+          const s = bsSeasonMap[sbs.season_id];
+          if (!s) continue;
+          if (!bsMap[sbs.script_id]) bsMap[sbs.script_id] = [];
+          bsMap[sbs.script_id].push({ season_id: sbs.season_id, season_name: s.name, status: s.status });
+        }
+        setScriptSeasons(bsMap);
       }
 
       const matchesData = matchesRes.data || [];
@@ -111,6 +131,7 @@ const Games = () => {
   const scriptImages: Record<string, string> = {
     'trouble brewing': troubleBrewingImg,
     'bad moon rising': badMoonRisingImg,
+    'over the river': overTheRiverImg,
   };
 
   const getScriptImage = (name: string) => scriptImages[name.toLowerCase()] || null;
@@ -218,6 +239,7 @@ const Games = () => {
           const goodChars = chars.filter(c => c.team === 'good');
           const evilChars = chars.filter(c => c.team === 'evil');
           const isExpanded = expandedScript === s.id;
+          const seasons = scriptSeasons[s.id] || [];
           return (
             <motion.div key={s.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
               <Card
@@ -243,6 +265,21 @@ const Games = () => {
                       </div>
                     </div>
                   </div>
+
+                  {seasons.length > 0 && (
+                    <div className="border-t border-border pt-3">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
+                        <Calendar className="h-3 w-3" /> Seasons
+                      </p>
+                      <div className="flex gap-2 flex-wrap">
+                        {seasons.map(ss => (
+                          <Badge key={ss.season_id} className={`${statusColors[ss.status] || 'bg-muted text-muted-foreground border-border'} text-xs`}>
+                            {ss.season_name}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {isExpanded && (
                     <div className="border-t border-border pt-3 space-y-2">

@@ -292,8 +292,10 @@ const AdminSeasons = () => {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="font-semibold">{s.name}</p>
+                      <Badge variant="outline" className="text-xs">{s.type === 'blood' ? '🩸 Blood' : '🎲 Boardgame'}</Badge>
                       <Badge variant="secondary" className="text-xs">{statusLabels[s.status] || s.status}</Badge>
-                      <Badge variant="outline" className="text-xs"><Gamepad2 className="h-3 w-3 mr-1" />{sgames.length} jogos</Badge>
+                      {s.type === 'boardgame' && <Badge variant="outline" className="text-xs"><Gamepad2 className="h-3 w-3 mr-1" />{sgames.length} jogos</Badge>}
+                      {s.type === 'blood' && <Badge variant="outline" className="text-xs">{(seasonBloodScriptsMap[s.id] || []).length} scripts</Badge>}
                       {total > 0 && <Badge variant="outline" className="text-xs border-gold/50 text-gold"><Trophy className="h-3 w-3 mr-1" />R$ {total}</Badge>}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">{s.start_date} — {s.end_date}</p>

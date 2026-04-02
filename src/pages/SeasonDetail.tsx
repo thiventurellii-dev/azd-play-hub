@@ -381,9 +381,20 @@ const SeasonDetail = () => {
                         </div>
                         {isExpanded && (
                           <div className="space-y-2 pt-2 border-t border-border" onClick={e => e.stopPropagation()}>
-                            {m.players.map((p, i) => (
-                              <div key={i} className={`flex items-center gap-2 text-sm p-2 rounded ${p.team === 'evil' ? 'bg-red-500/10' : 'bg-blue-500/10'}`}>
-                                <span>{p.team === 'evil' ? '💀' : '🛡️'}</span>
+                            <div className="flex items-center gap-2 text-sm p-2 rounded bg-gold/10">
+                              <span className="text-gold">📖</span>
+                              <span className="font-medium text-gold">Narrador: {m.storyteller_name}</span>
+                            </div>
+                            {m.players.filter((p: any) => p.team === 'evil').map((p: any, i: number) => (
+                              <div key={`evil-${i}`} className="flex items-center gap-2 text-sm p-2 rounded bg-red-500/10">
+                                <span className="text-red-400">💀</span>
+                                <span className="font-medium">{p.player_name}</span>
+                                <span className="text-muted-foreground">— {p.character_name}</span>
+                              </div>
+                            ))}
+                            {m.players.filter((p: any) => p.team === 'good').map((p: any, i: number) => (
+                              <div key={`good-${i}`} className="flex items-center gap-2 text-sm p-2 rounded bg-blue-500/10">
+                                <span className="text-blue-400">🛡️</span>
                                 <span className="font-medium">{p.player_name}</span>
                                 <span className="text-muted-foreground">— {p.character_name}</span>
                               </div>

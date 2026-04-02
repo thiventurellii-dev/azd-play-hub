@@ -29,12 +29,28 @@ const CompleteProfile = () => {
 
   const cities = useMemo(() => citiesByState[form.state] || [], [form.state]);
 
+  const [currentStatus, setCurrentStatus] = useState<string>('pending');
+
+  // Fetch current status to determine flow
+  useState(() => {
+    if (user) {
+      supabase.from('profiles').select('status').eq('id', user.id).single().then(({ data }) => {
+        if (data) setCurrentStatus((data as any).status || 'pending');
+      });
+    }
+  });
+
   const handleSave = async () => {
     if (!user) return;
     if (!form.name || !form.nickname || !form.phone || !form.state || !form.city || !form.birth_date || !form.gender || !form.pronouns) {
       return notify('error', 'Preencha todos os campos obrigatórios');
     }
     setSaving(true);
+
+    // pending = admin/script created → goes directly to active
+    // pending_approval = community signup → stays pending_approval for admin review
+    const newStatus = currentStatus === 'pending' ? 'active' : 'pending_approval';
+
     const { error } = await supabase.from('profiles').update({
       name: form.name,
       nickname: form.nickname,
@@ -46,7 +62,7 @@ const CompleteProfile = () => {
       gender: form.gender,
       pronouns: form.pronouns,
       email: user.email || '',
-      status: 'pending_approval',
+      status: newStatus,
     } as any).eq('id', user.id);
     setSaving(false);
     if (error) return notify('error', error.message);

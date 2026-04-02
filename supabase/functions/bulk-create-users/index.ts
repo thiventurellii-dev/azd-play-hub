@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
     if (error) {
       results.push({ email: u.email, error: error.message });
     } else {
-      await supabase.from("profiles").update({ nickname: u.nick }).eq("id", data.user.id);
+      await supabase.from("profiles").update({ nickname: u.nick, status: "pending" }).eq("id", data.user.id);
       results.push({ email: u.email, id: data.user.id, nick: u.nick });
     }
   }

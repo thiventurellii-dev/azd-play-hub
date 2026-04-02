@@ -89,14 +89,18 @@ const AdminSeasons = () => {
         prize_1st: parseInt(prize1st) || 0,
         prize_2nd: parseInt(prize2nd) || 0,
         prize_3rd: parseInt(prize3rd) || 0,
-      })
+        type: seasonType,
+      } as any)
       .select().single();
     if (error) return notify('error', error.message);
-    if (selectedGames.length > 0) {
+    if (seasonType === 'boardgame' && selectedGames.length > 0) {
       await supabase.from('season_games').insert(selectedGames.map(gid => ({ season_id: data.id, game_id: gid })));
     }
+    if (seasonType === 'blood' && selectedScripts.length > 0) {
+      await supabase.from('season_blood_scripts').insert(selectedScripts.map(sid => ({ season_id: data.id, script_id: sid })) as any);
+    }
     notify('success', 'Season criada!');
-    setName(''); setDescription(''); setPrize1st(''); setPrize2nd(''); setPrize3rd(''); setStartDate(''); setEndDate(''); setSelectedGames([]);
+    setName(''); setDescription(''); setPrize1st(''); setPrize2nd(''); setPrize3rd(''); setStartDate(''); setEndDate(''); setSelectedGames([]); setSelectedScripts([]);
     fetchData();
   };
 

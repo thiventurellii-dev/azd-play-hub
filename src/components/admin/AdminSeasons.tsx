@@ -48,24 +48,34 @@ const AdminSeasons = () => {
   const [editGamesOpen, setEditGamesOpen] = useState(false);
 
   const fetchData = async () => {
-    const [seasonsRes, gamesRes, sgRes] = await Promise.all([
+    const [seasonsRes, gamesRes, sgRes, bsRes, sbsRes] = await Promise.all([
       supabase.from('seasons').select('*').order('start_date', { ascending: false }),
       supabase.from('games').select('id, name').order('name'),
       supabase.from('season_games').select('season_id, game_id'),
+      supabase.from('blood_scripts').select('id, name'),
+      supabase.from('season_blood_scripts').select('season_id, script_id'),
     ]);
     setSeasons((seasonsRes.data || []).map(s => ({
       ...s,
       prize_1st: s.prize_1st || 0,
       prize_2nd: s.prize_2nd || 0,
       prize_3rd: s.prize_3rd || 0,
+      type: (s as any).type || 'boardgame',
     })));
     setGames(gamesRes.data || []);
+    setBloodScripts((bsRes.data || []) as BloodScript[]);
     const map: Record<string, string[]> = {};
     for (const sg of (sgRes.data || [])) {
       if (!map[sg.season_id]) map[sg.season_id] = [];
       map[sg.season_id].push(sg.game_id);
     }
     setSeasonGamesMap(map);
+    const bsMap: Record<string, string[]> = {};
+    for (const sbs of ((sbsRes.data || []) as any[])) {
+      if (!bsMap[sbs.season_id]) bsMap[sbs.season_id] = [];
+      bsMap[sbs.season_id].push(sbs.script_id);
+    }
+    setSeasonBloodScriptsMap(bsMap);
   };
 
   useEffect(() => { fetchData(); }, []);

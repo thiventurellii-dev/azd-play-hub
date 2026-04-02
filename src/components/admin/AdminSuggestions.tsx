@@ -119,7 +119,10 @@ const AdminSuggestions = () => {
                 {format(new Date(s.created_at), 'dd/MM/yyyy')}
               </TableCell>
               <TableCell className="text-sm font-medium">{s.author_name || 'Anônimo'}</TableCell>
-              <TableCell className="text-sm text-muted-foreground max-w-[400px]">
+              <TableCell className="text-sm text-muted-foreground max-w-[400px] cursor-pointer" onClick={(e) => {
+                const target = e.currentTarget.querySelector('p');
+                if (target) target.classList.toggle('line-clamp-3');
+              }}>
                 <p className="whitespace-pre-wrap break-words line-clamp-3">{s.text}</p>
               </TableCell>
               <TableCell>

@@ -276,7 +276,7 @@ const SeasonDetail = () => {
                     <p className="text-center text-sm">{r.games_played}</p>
                     <p className="text-center text-sm">{r.wins}</p>
                     <p className="text-center text-sm">{r.games_played > 0 ? Math.round((r.wins / r.games_played) * 100) : 0}%</p>
-                    <p className="text-right text-lg font-bold text-gold">{r.current_mmr}</p>
+                    <p className="text-right text-lg font-bold text-gold">{Number(r.current_mmr).toFixed(2)}</p>
                   </div>
                 </motion.div>
               ))}

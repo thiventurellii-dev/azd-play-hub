@@ -72,15 +72,19 @@ const CompleteProfile = () => {
   };
 
   if (submitted) {
+    const isDirectActive = currentStatus === 'pending';
     return (
       <div className="flex min-h-screen items-center justify-center p-4 bg-background">
         <Card className="w-full max-w-lg bg-card border-border">
           <CardHeader className="text-center">
             <img src={logo} alt="AzD" className="h-20 mx-auto mb-4 invert object-contain" />
-            <CardTitle className="text-2xl">Cadastro enviado!</CardTitle>
+            <CardTitle className="text-2xl">
+              {isDirectActive ? 'Cadastro completo!' : 'Cadastro enviado!'}
+            </CardTitle>
             <CardDescription className="text-base mt-2">
-              Seu perfil foi completado com sucesso. Um administrador irá analisar e aprovar seu cadastro em breve.
-              Você será notificado quando tiver acesso completo à plataforma.
+              {isDirectActive
+                ? 'Seu perfil foi completado com sucesso. Você já pode acessar a plataforma!'
+                : 'Seu perfil foi completado com sucesso. Um administrador irá analisar e aprovar seu cadastro em breve. Você será notificado quando tiver acesso completo à plataforma.'}
             </CardDescription>
           </CardHeader>
         </Card>

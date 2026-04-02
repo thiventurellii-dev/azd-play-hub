@@ -5,23 +5,24 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
+import { useNotification } from '@/components/NotificationDialog';
 import { Lightbulb, Send } from 'lucide-react';
 
 const Suggestions = () => {
   const [name, setName] = useState('');
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
+  const { notify } = useNotification();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = text.trim();
     if (!trimmed) {
-      toast.error('Descreva sua sugestão antes de enviar.');
+      notify('error', 'Descreva sua sugestão antes de enviar.');
       return;
     }
     if (trimmed.length > 2000) {
-      toast.error('A sugestão deve ter no máximo 2000 caracteres.');
+      notify('error', 'A sugestão deve ter no máximo 2000 caracteres.');
       return;
     }
     setSending(true);
@@ -29,9 +30,9 @@ const Suggestions = () => {
       .from('suggestions')
       .insert({ text: trimmed, author_name: name.trim() || 'Anônimo' });
     if (error) {
-      toast.error('Erro ao enviar sugestão.');
+      notify('error', 'Erro ao enviar sugestão.');
     } else {
-      toast.success('Sugestão enviada com sucesso! Obrigado.');
+      notify('success', 'Sugestão enviada com sucesso! Obrigado.');
       setText('');
       setName('');
     }

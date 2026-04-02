@@ -4,11 +4,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from 'sonner';
+import { useNotification } from '@/components/NotificationDialog';
 import { Pencil, Save, X } from 'lucide-react';
 
 const AboutUs = () => {
   const { isAdmin } = useAuth();
+  const { notify } = useNotification();
   const [content, setContent] = useState('');
   const [editContent, setEditContent] = useState('');
   const [editing, setEditing] = useState(false);
@@ -26,16 +27,15 @@ const AboutUs = () => {
   const handleSave = async () => {
     const { error } = await supabase.from('about_us').update({ content: editContent } as any).neq('id', '00000000-0000-0000-0000-000000000000');
     if (error) {
-      // Try updating by selecting the first row
       const { data: rows } = await supabase.from('about_us').select('id').limit(1).single();
       if (rows) {
         const { error: err2 } = await supabase.from('about_us').update({ content: editContent } as any).eq('id', rows.id);
-        if (err2) return toast.error(err2.message);
+        if (err2) return notify('error', err2.message);
       }
     }
     setContent(editContent);
     setEditing(false);
-    toast.success('Conteúdo atualizado!');
+    notify('success', 'Conteúdo atualizado!');
   };
 
   if (loading) {
@@ -81,7 +81,6 @@ const AboutUs = () => {
           ) : (
             <div className="prose prose-invert max-w-none whitespace-pre-wrap text-foreground">
               {content.split('\n').map((line, i) => {
-                // Simple bold markdown rendering
                 const parts = line.split(/(\*\*.*?\*\*)/g);
                 return (
                   <p key={i} className={line.trim() === '' ? 'h-4' : 'mb-3 text-muted-foreground'}>

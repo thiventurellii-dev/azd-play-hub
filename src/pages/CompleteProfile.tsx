@@ -7,11 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import logo from '@/assets/azd-logo.png';
-import { toast } from 'sonner';
+import { useNotification } from '@/components/NotificationDialog';
 import { brazilianStates, citiesByState, pronounsOptions, countryCodes, formatPhone, unformatPhone } from '@/lib/brazil-data';
 
 const CompleteProfile = () => {
   const { user, setProfileCompleted } = useAuth();
+  const { notify } = useNotification();
   const [form, setForm] = useState({
     name: user?.user_metadata?.name || '',
     nickname: user?.user_metadata?.name || '',
@@ -31,7 +32,7 @@ const CompleteProfile = () => {
   const handleSave = async () => {
     if (!user) return;
     if (!form.name || !form.nickname || !form.phone || !form.state || !form.city || !form.birth_date || !form.gender || !form.pronouns) {
-      return toast.error('Preencha todos os campos obrigatórios');
+      return notify('error', 'Preencha todos os campos obrigatórios');
     }
     setSaving(true);
     const { error } = await supabase.from('profiles').update({
@@ -48,7 +49,7 @@ const CompleteProfile = () => {
       status: 'pending_approval',
     } as any).eq('id', user.id);
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) return notify('error', error.message);
     
     setSubmitted(true);
     setProfileCompleted(true);

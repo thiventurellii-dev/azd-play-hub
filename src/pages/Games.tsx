@@ -48,7 +48,6 @@ const Games = () => {
       const gamesData = gamesRes.data || [];
       setGames(gamesData);
 
-      // Seasons per game
       const sgData = sgRes.data || [];
       if (sgData.length > 0) {
         const seasonIds = [...new Set(sgData.map(sg => sg.season_id))];
@@ -65,7 +64,6 @@ const Games = () => {
         setGameSeasons(map);
       }
 
-      // Avg duration per game
       const matchesData = matchesRes.data || [];
       const durMap: Record<string, { total: number; count: number }> = {};
       for (const m of matchesData) {
@@ -135,6 +133,23 @@ const Games = () => {
                             <p className="text-sm text-muted-foreground flex items-center gap-1">
                               <Clock className="h-4 w-4" /> ~{avgDur} min
                             </p>
+                          )}
+                        </div>
+                        {/* Links on card */}
+                        <div className="flex gap-2 mt-2 flex-wrap">
+                          {g.rules_url && (
+                            <a href={g.rules_url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}>
+                              <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1 py-1 px-2 text-xs">
+                                <ExternalLink className="h-3 w-3" /> Regras
+                              </Badge>
+                            </a>
+                          )}
+                          {g.video_url && (
+                            <a href={g.video_url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}>
+                              <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1 py-1 px-2 text-xs">
+                                <Video className="h-3 w-3" /> Vídeo
+                              </Badge>
+                            </a>
                           )}
                         </div>
                       </div>

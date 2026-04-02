@@ -19,11 +19,6 @@ interface Season {
   prize_3rd: number;
 }
 
-interface SeasonGame {
-  season_id: string;
-  game_name: string;
-}
-
 const statusColors: Record<string, string> = {
   active: 'bg-green-500/20 text-green-400 border-green-500/30',
   upcoming: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
@@ -60,9 +55,9 @@ const Seasons = () => {
       const seasonsData: Season[] = (seasonsRes.data || []).map(s => ({
         ...s,
         status: computeStatus(s.start_date, s.end_date),
-        prize_1st: (s as any).prize_1st || 0,
-        prize_2nd: (s as any).prize_2nd || 0,
-        prize_3rd: (s as any).prize_3rd || 0,
+        prize_1st: s.prize_1st || 0,
+        prize_2nd: s.prize_2nd || 0,
+        prize_3rd: s.prize_3rd || 0,
       }));
       setSeasons(seasonsData);
 
@@ -138,9 +133,9 @@ const Seasons = () => {
                               <span className="font-semibold">R$ {total} em premiação</span>
                             </div>
                             <div className="flex gap-3 text-xs text-muted-foreground">
-                              {s.prize_1st > 0 && <span>🥇 R${s.prize_1st}</span>}
-                              {s.prize_2nd > 0 && <span>🥈 R${s.prize_2nd}</span>}
-                              {s.prize_3rd > 0 && <span>🥉 R${s.prize_3rd}</span>}
+                              {s.prize_1st > 0 && <span>🥇 R$ {s.prize_1st}</span>}
+                              {s.prize_2nd > 0 && <span>🥈 R$ {s.prize_2nd}</span>}
+                              {s.prize_3rd > 0 && <span>🥉 R$ {s.prize_3rd}</span>}
                             </div>
                           </div>
                         )}

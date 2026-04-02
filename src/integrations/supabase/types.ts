@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      about_us: {
+        Row: {
+          content: string
+          id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          content?: string
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          content?: string
+          id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       community_rules: {
         Row: {
           content: string

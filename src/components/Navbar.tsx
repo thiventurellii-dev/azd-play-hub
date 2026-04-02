@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Users, Calendar, Shield, LogOut, Menu, X, Gamepad2, BookOpen, User, Lock, Pencil } from 'lucide-react';
+import { Users, Calendar, Shield, LogOut, Menu, X, Gamepad2, BookOpen, User, Lock, Pencil, Info } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import logo from '@/assets/azd-logo.png';
 import { useState } from 'react';
@@ -26,6 +26,7 @@ const Navbar = () => {
     { to: '/players', label: 'Jogadores', icon: Users },
     { to: '/rules', label: 'Regras', icon: BookOpen },
   ] : [
+    { to: '/about', label: 'Sobre Nós', icon: Info },
     { to: '/games', label: 'Jogos', icon: Gamepad2 },
     { to: '/rules', label: 'Regras', icon: BookOpen },
   ];

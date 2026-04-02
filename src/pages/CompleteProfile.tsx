@@ -32,13 +32,13 @@ const CompleteProfile = () => {
   const [currentStatus, setCurrentStatus] = useState<string>('pending');
 
   // Fetch current status to determine flow
-  useState(() => {
+  useEffect(() => {
     if (user) {
       supabase.from('profiles').select('status').eq('id', user.id).single().then(({ data }) => {
         if (data) setCurrentStatus((data as any).status || 'pending');
       });
     }
-  });
+  }, [user]);
 
   const handleSave = async () => {
     if (!user) return;

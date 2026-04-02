@@ -24,7 +24,10 @@ const Login = () => {
       notify('success', 'Login realizado com sucesso!');
       navigate('/');
     } catch (err: any) {
-      notify('error', err.message || 'Erro ao fazer login. Verifique seu e-mail e senha.');
+      const msg = err.message?.includes('Invalid login credentials')
+        ? 'E-mail ou senha incorretos. Verifique e tente novamente.'
+        : (err.message || 'Erro ao fazer login.');
+      notify('error', msg);
     } finally {
       setLoading(false);
     }

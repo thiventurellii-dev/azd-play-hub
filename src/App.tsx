@@ -35,10 +35,10 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/complete-profile" element={<CompleteProfile />} />
-              <Route path="/seasons" element={<Seasons />} />
-              <Route path="/seasons/:id" element={<SeasonDetail />} />
+              <Route path="/seasons" element={<ProtectedRoute><Seasons /></ProtectedRoute>} />
+              <Route path="/seasons/:id" element={<ProtectedRoute><SeasonDetail /></ProtectedRoute>} />
               <Route path="/games" element={<Games />} />
-              <Route path="/players" element={<Players />} />
+              <Route path="/players" element={<ProtectedRoute><Players /></ProtectedRoute>} />
               <Route path="/rules" element={<Rules />} />
               <Route path="/about" element={<AboutUs />} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

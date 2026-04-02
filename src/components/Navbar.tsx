@@ -33,6 +33,7 @@ const Navbar = () => {
   };
 
   const navLinks = user ? [
+    { to: '/about', label: 'Sobre Nós', icon: Info },
     { to: '/seasons', label: 'Seasons', icon: Calendar },
     { to: '/games', label: 'Jogos', icon: Gamepad2 },
     { to: '/players', label: 'Jogadores', icon: Users },

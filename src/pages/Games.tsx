@@ -233,7 +233,7 @@ const Games = () => {
         </CardContent>
       </Card>
     ) : (
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+    <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {bloodScripts.map((s, i) => {
           const chars = bloodCharacters.filter(c => c.script_id === s.id);
           const goodChars = chars.filter(c => c.team === 'good');
@@ -243,28 +243,29 @@ const Games = () => {
           return (
             <motion.div key={s.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
               <Card
-                className="bg-card border-border hover:border-gold/20 transition-colors cursor-pointer"
+                className="bg-card border-border hover:border-gold/20 transition-colors cursor-pointer h-full flex flex-col"
                 onClick={() => setExpandedScript(isExpanded ? null : s.id)}
               >
-                <CardContent className="py-5 space-y-3">
-                  <div className="flex items-start gap-4">
-                    {getScriptImage(s.name) ? (
-                      <img src={getScriptImage(s.name)!} alt={s.name} className="h-16 w-16 rounded-lg object-cover flex-shrink-0" loading="lazy" width={64} height={64} />
-                    ) : (
-                      <div className="h-16 w-16 rounded-lg bg-secondary flex items-center justify-center text-2xl flex-shrink-0">
-                        🩸
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-bold">{s.name}</h3>
-                      {s.description && <p className="text-sm text-muted-foreground mt-1">{s.description}</p>}
-                      <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1"><Users className="h-4 w-4" /> {chars.length} personagens</span>
-                        <span>👼 {goodChars.length}</span>
-                        <span>😈 {evilChars.length}</span>
-                      </div>
-                    </div>
-                  </div>
+                <CardContent className="py-5 space-y-3 flex-1 flex flex-col">
+                   <div className="flex items-start gap-4">
+                     {getScriptImage(s.name) ? (
+                       <img src={getScriptImage(s.name)!} alt={s.name} className="h-20 w-20 rounded-lg object-cover flex-shrink-0" loading="lazy" width={80} height={80} />
+                     ) : (
+                       <div className="h-20 w-20 rounded-lg bg-secondary flex items-center justify-center text-2xl flex-shrink-0">
+                         🩸
+                       </div>
+                     )}
+                     <div className="flex-1 min-w-0">
+                       <h3 className="text-lg font-bold">{s.name}</h3>
+                       {s.description && <p className="text-sm text-muted-foreground mt-1">{s.description}</p>}
+                       <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
+                         <span className="flex items-center gap-1"><Users className="h-4 w-4" /> {chars.length} personagens</span>
+                         <span>👼 {goodChars.length}</span>
+                         <span>😈 {evilChars.length}</span>
+                       </div>
+                     </div>
+                   </div>
+                   <div className="flex-1" />
 
                   {seasons.length > 0 && (
                     <div className="border-t border-border pt-3">

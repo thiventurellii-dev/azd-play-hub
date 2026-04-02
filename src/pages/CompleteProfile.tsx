@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -29,12 +29,28 @@ const CompleteProfile = () => {
 
   const cities = useMemo(() => citiesByState[form.state] || [], [form.state]);
 
+  const [currentStatus, setCurrentStatus] = useState<string>('pending');
+
+  // Fetch current status to determine flow
+  useEffect(() => {
+    if (user) {
+      supabase.from('profiles').select('status').eq('id', user.id).single().then(({ data }) => {
+        if (data) setCurrentStatus((data as any).status || 'pending');
+      });
+    }
+  }, [user]);
+
   const handleSave = async () => {
     if (!user) return;
     if (!form.name || !form.nickname || !form.phone || !form.state || !form.city || !form.birth_date || !form.gender || !form.pronouns) {
       return notify('error', 'Preencha todos os campos obrigatórios');
     }
     setSaving(true);
+
+    // pending = admin/script created → goes directly to active
+    // pending_approval = community signup → stays pending_approval for admin review
+    const newStatus = currentStatus === 'pending' ? 'active' : 'pending_approval';
+
     const { error } = await supabase.from('profiles').update({
       name: form.name,
       nickname: form.nickname,
@@ -46,7 +62,7 @@ const CompleteProfile = () => {
       gender: form.gender,
       pronouns: form.pronouns,
       email: user.email || '',
-      status: 'pending_approval',
+      status: newStatus,
     } as any).eq('id', user.id);
     setSaving(false);
     if (error) return notify('error', error.message);
@@ -56,15 +72,19 @@ const CompleteProfile = () => {
   };
 
   if (submitted) {
+    const isDirectActive = currentStatus === 'pending';
     return (
       <div className="flex min-h-screen items-center justify-center p-4 bg-background">
         <Card className="w-full max-w-lg bg-card border-border">
           <CardHeader className="text-center">
             <img src={logo} alt="AzD" className="h-20 mx-auto mb-4 invert object-contain" />
-            <CardTitle className="text-2xl">Cadastro enviado!</CardTitle>
+            <CardTitle className="text-2xl">
+              {isDirectActive ? 'Cadastro completo!' : 'Cadastro enviado!'}
+            </CardTitle>
             <CardDescription className="text-base mt-2">
-              Seu perfil foi completado com sucesso. Um administrador irá analisar e aprovar seu cadastro em breve.
-              Você será notificado quando tiver acesso completo à plataforma.
+              {isDirectActive
+                ? 'Seu perfil foi completado com sucesso. Você já pode acessar a plataforma!'
+                : 'Seu perfil foi completado com sucesso. Um administrador irá analisar e aprovar seu cadastro em breve. Você será notificado quando tiver acesso completo à plataforma.'}
             </CardDescription>
           </CardHeader>
         </Card>

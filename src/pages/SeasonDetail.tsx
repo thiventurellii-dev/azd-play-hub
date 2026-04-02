@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 
 interface Season {
   id: string; name: string; description: string | null; start_date: string; end_date: string; status: string; prize: string; type: 'boardgame' | 'blood';
+  prize_1st: number; prize_2nd: number; prize_3rd: number; prize_4th_6th: number; prize_7th_10th: number;
 }
 
 interface RankingEntry {

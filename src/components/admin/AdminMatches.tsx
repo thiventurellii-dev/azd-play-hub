@@ -148,25 +148,33 @@ const AdminMatches = () => {
   const removeResult = (i: number) => setResults(results.filter((_, idx) => idx !== i));
 
   const calculateElo = (results: MatchResult[], mmrMap: Record<string, number>) => {
-    const K = 32;
+    const K = 50;
     const n = results.length;
     const changes: Record<string, number> = {};
     for (const r of results) changes[r.player_id] = 0;
+
+    // Passo 1: ELO pairwise com K=50
     for (let i = 0; i < n; i++) {
       for (let j = i + 1; j < n; j++) {
         const rA = mmrMap[results[i].player_id] || 1000;
         const rB = mmrMap[results[j].player_id] || 1000;
         const eA = 1 / (1 + Math.pow(10, (rB - rA) / 400));
-        const eB = 1 - eA;
+        const eB = 1 / (1 + Math.pow(10, (rA - rB) / 400));
         let sA: number, sB: number;
         if (results[i].position < results[j].position) { sA = 1; sB = 0; }
         else if (results[i].position > results[j].position) { sA = 0; sB = 1; }
         else { sA = 0.5; sB = 0.5; }
-        const factor = K / (n - 1);
-        changes[results[i].player_id] += factor * (sA - eA);
-        changes[results[j].player_id] += factor * (sB - eB);
+        changes[results[i].player_id] += K * (sA - eA);
+        changes[results[j].player_id] += K * (sB - eB);
       }
     }
+
+    // Passo 2: Bônus fixo por posição — bonus = 5 * (N - posição)
+    for (const r of results) {
+      const bonus = 5 * (n - r.position);
+      changes[r.player_id] += bonus;
+    }
+
     return Object.fromEntries(Object.entries(changes).map(([id, change]) => [id, Math.round(change)]));
   };
 

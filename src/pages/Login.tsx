@@ -21,8 +21,10 @@ const Login = () => {
     setLoading(true);
     try {
       await signIn(email, password);
-      notify('success', 'Login realizado com sucesso!');
-      navigate('/');
+      notify('success', 'Login realizado com sucesso!', undefined, {
+        autoClose: 2000,
+        onClose: () => navigate('/'),
+      });
     } catch (err: any) {
       const msg = err.message?.includes('Invalid login credentials')
         ? 'E-mail ou senha incorretos. Verifique e tente novamente.'

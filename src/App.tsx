@@ -18,6 +18,7 @@ import Profile from "./pages/Profile.tsx";
 import Rules from "./pages/Rules.tsx";
 import Admin from "./pages/Admin.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import AboutUs from "./pages/AboutUs.tsx";
 
 const queryClient = new QueryClient();
 

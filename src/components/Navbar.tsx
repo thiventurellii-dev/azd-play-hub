@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Users, Calendar, Shield, LogOut, Menu, X, Gamepad2, BookOpen, User, Lock, Pencil, Info } from 'lucide-react';
+import { Users, Calendar, Shield, LogOut, Menu, X, Gamepad2, BookOpen, User, Lock, Pencil, Info, MessageCircle, Phone } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import logo from '@/assets/azd-logo.png';
 import { useState } from 'react';
@@ -51,12 +51,26 @@ const Navbar = () => {
               </Button>
             </Link>
           ))}
-          <a href="https://discord.gg/6UpSEaSdj" target="_blank" rel="noopener noreferrer">
-            <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
-              <DiscordIcon size={16} />
-              Discord
-            </Button>
-          </a>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
+                <Phone className="h-4 w-4" />
+                Contato
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <a href="https://discord.gg/6UpSEaSdj" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                  <DiscordIcon size={16} /> Discord
+                </a>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <a href="https://chat.whatsapp.com/D3zwwp30YY0CtVkCGmBzX3" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                  <MessageCircle className="h-4 w-4" /> WhatsApp
+                </a>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           {isAdmin && (
             <Link to="/admin">
               <Button variant="ghost" className="gap-2 text-gold hover:text-gold">
@@ -119,6 +133,11 @@ const Navbar = () => {
           <a href="https://discord.gg/6UpSEaSdj" target="_blank" rel="noopener noreferrer" onClick={() => setMobileOpen(false)}>
             <Button variant="ghost" className="w-full justify-start gap-2">
               <DiscordIcon size={16} /> Discord
+            </Button>
+          </a>
+          <a href="https://chat.whatsapp.com/D3zwwp30YY0CtVkCGmBzX3" target="_blank" rel="noopener noreferrer" onClick={() => setMobileOpen(false)}>
+            <Button variant="ghost" className="w-full justify-start gap-2">
+              <MessageCircle className="h-4 w-4" /> WhatsApp
             </Button>
           </a>
           {isAdmin && (

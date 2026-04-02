@@ -1,10 +1,11 @@
-import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Shield } from 'lucide-react';
 import AdminSeasons from '@/components/admin/AdminSeasons';
 import AdminGames from '@/components/admin/AdminGames';
 import AdminMatches from '@/components/admin/AdminMatches';
 import AdminPlayers from '@/components/admin/AdminPlayers';
+import AdminAboutUs from '@/components/admin/AdminAboutUs';
+import AdminContato from '@/components/admin/AdminContato';
 
 const Admin = () => {
   return (
@@ -23,12 +24,16 @@ const Admin = () => {
           <TabsTrigger value="games">Jogos</TabsTrigger>
           <TabsTrigger value="matches">Partidas</TabsTrigger>
           <TabsTrigger value="players">Jogadores</TabsTrigger>
+          <TabsTrigger value="about">Sobre Nós</TabsTrigger>
+          <TabsTrigger value="contato">Contato</TabsTrigger>
         </TabsList>
 
         <TabsContent value="seasons"><AdminSeasons /></TabsContent>
         <TabsContent value="games"><AdminGames /></TabsContent>
         <TabsContent value="matches"><AdminMatches /></TabsContent>
         <TabsContent value="players"><AdminPlayers /></TabsContent>
+        <TabsContent value="about"><AdminAboutUs /></TabsContent>
+        <TabsContent value="contato"><AdminContato /></TabsContent>
       </Tabs>
     </div>
   );

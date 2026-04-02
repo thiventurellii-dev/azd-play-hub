@@ -59,12 +59,13 @@ const Games = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [gamesRes, sgRes, matchesRes, scriptsRes, charsRes] = await Promise.all([
+      const [gamesRes, sgRes, matchesRes, scriptsRes, charsRes, sbsRes] = await Promise.all([
         supabase.from('games').select('*').order('name'),
         supabase.from('season_games').select('game_id, season_id'),
         supabase.from('matches').select('game_id, duration_minutes'),
         supabase.from('blood_scripts').select('*').order('name'),
         supabase.from('blood_characters').select('*').order('team, role_type, name'),
+        supabase.from('season_blood_scripts').select('season_id, script_id'),
       ]);
 
       const gamesData = gamesRes.data || [];

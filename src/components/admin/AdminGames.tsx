@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { toast } from 'sonner';
+import { useNotification } from '@/components/NotificationDialog';
 import { Plus, Trash2, ExternalLink, Video, Users, Pencil } from 'lucide-react';
 
 interface Game {

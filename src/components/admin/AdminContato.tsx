@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
+import { useNotification } from '@/components/NotificationDialog';
 import { Save, MessageCircle, Pencil, ExternalLink } from 'lucide-react';
 
 const DiscordIcon = ({ size = 20 }: { size?: number }) => (

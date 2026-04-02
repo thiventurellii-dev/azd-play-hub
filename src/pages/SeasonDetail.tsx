@@ -176,7 +176,7 @@ const SeasonDetail = () => {
           aggregated = playerIds
             .map(pid => ({
               player_id: pid,
-              current_mmr: Math.round(agg[pid].mmr / gameCount[pid]),
+              current_mmr: parseFloat((agg[pid].mmr / gameCount[pid]).toFixed(2)),
               games_played: agg[pid].gp,
               wins: agg[pid].wins,
               player_name: pMap[pid] || 'Unknown',

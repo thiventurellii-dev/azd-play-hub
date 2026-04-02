@@ -24,9 +24,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { data, error } = await supabaseAdmin.auth.admin.updateUser(user_id, {
-      email_confirm: true,
-    });
+    const res = await fetch(
+      `${Deno.env.get("SUPABASE_URL")}/auth/v1/admin/users/${user_id}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          "apikey": Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+        },
+        body: JSON.stringify({ email_confirm: true }),
+      }
+    );
+    const data = await res.json();
+    if (!res.ok) throw new Error(JSON.stringify(data));
 
     if (error) throw error;
 

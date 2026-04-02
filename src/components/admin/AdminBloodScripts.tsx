@@ -154,7 +154,16 @@ const AdminBloodScripts = () => {
   };
 
   const getScriptChars = (scriptId: string) => characters.filter(c => c.script_id === scriptId);
+  const getOtherChars = (scriptId: string) => characters.filter(c => c.script_id !== scriptId);
 
+  const handleAddExistingChar = async (scriptId: string) => {
+    if (!addExistingCharId) return notify('error', 'Selecione um personagem');
+    const { error } = await supabase.from('blood_characters').update({ script_id: scriptId }).eq('id', addExistingCharId);
+    if (error) return notify('error', error.message);
+    notify('success', 'Personagem adicionado ao script!');
+    setAddExistingCharId('');
+    fetchData();
+  };
   const teamColor = (team: string) => team === 'evil' ? 'text-red-400' : 'text-blue-400';
   const roleColor = (rt: string) => {
     if (rt === 'demon') return 'text-red-500';

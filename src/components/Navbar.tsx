@@ -15,6 +15,17 @@ const Navbar = () => {
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [contactLinks, setContactLinks] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    supabase.from('contact_links').select('name, url').then(({ data }) => {
+      if (data) {
+        const map: Record<string, string> = {};
+        for (const r of data) map[r.name] = r.url;
+        setContactLinks(map);
+      }
+    });
+  }, []);
 
   const handleSignOut = async () => {
     await signOut();

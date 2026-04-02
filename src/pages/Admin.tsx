@@ -4,6 +4,7 @@ import AdminSeasons from '@/components/admin/AdminSeasons';
 import AdminGames from '@/components/admin/AdminGames';
 import AdminMatches from '@/components/admin/AdminMatches';
 import AdminBloodMatches from '@/components/admin/AdminBloodMatches';
+import AdminBloodScripts from '@/components/admin/AdminBloodScripts';
 import AdminPlayers from '@/components/admin/AdminPlayers';
 import AdminAboutUs from '@/components/admin/AdminAboutUs';
 import AdminContato from '@/components/admin/AdminContato';

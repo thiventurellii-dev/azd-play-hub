@@ -22,7 +22,7 @@ const Login = () => {
     try {
       await signIn(email, password);
       notify('success', 'Login realizado com sucesso!', undefined, {
-        autoClose: 2000,
+        autoClose: 1000,
         onClose: () => navigate('/'),
       });
     } catch (err: any) {

@@ -234,6 +234,39 @@ const AdminPlayers = () => {
 
   return (
     <div className="space-y-6">
+      {/* Pending Approval Section */}
+      {pendingApprovalPlayers.length > 0 && (
+        <Card className="bg-card border-orange-500/30">
+          <CardHeader>
+            <CardTitle className="text-orange-400">Aguardando Aprovação ({pendingApprovalPlayers.length})</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {pendingApprovalPlayers.map(p => (
+              <div key={p.id} className="flex items-center justify-between rounded-lg border border-orange-500/20 p-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-gold font-bold">
+                    {(p.nickname || p.name)?.charAt(0)?.toUpperCase() || '?'}
+                  </div>
+                  <div>
+                    <p className="font-semibold">{p.nickname || p.name}</p>
+                    {p.name && p.nickname && <p className="text-xs text-muted-foreground">{p.name}</p>}
+                    <p className="text-xs text-muted-foreground">{p.email}</p>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="text-green-400 border-green-500/30 hover:bg-green-500/10" onClick={() => handleApprove(p)}>
+                    <Check className="h-4 w-4 mr-1" /> Aprovar
+                  </Button>
+                  <Button variant="outline" size="sm" className="text-red-400 border-red-500/30 hover:bg-red-500/10" onClick={() => handleReject(p)}>
+                    <XCircle className="h-4 w-4 mr-1" /> Rejeitar
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       <Card className="bg-card border-border">
         <CardHeader>
           <div className="flex items-center justify-between">

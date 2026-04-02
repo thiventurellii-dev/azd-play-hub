@@ -151,14 +151,14 @@ const Navbar = () => {
               </Button>
             </Link>
           ))}
-          {contactLinks.discord && (
+          {user && contactLinks.discord && (
             <a href={contactLinks.discord} target="_blank" rel="noopener noreferrer" onClick={() => setMobileOpen(false)}>
               <Button variant="ghost" className="w-full justify-start gap-2">
                 <DiscordIcon size={16} /> Discord
               </Button>
             </a>
           )}
-          {contactLinks.whatsapp && (
+          {user && contactLinks.whatsapp && (
             <a href={contactLinks.whatsapp} target="_blank" rel="noopener noreferrer" onClick={() => setMobileOpen(false)}>
               <Button variant="ghost" className="w-full justify-start gap-2">
                 <MessageCircle className="h-4 w-4" /> WhatsApp

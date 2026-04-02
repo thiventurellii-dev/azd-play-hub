@@ -41,6 +41,7 @@ const App = () => (
               <Route path="/seasons/:id" element={<ProtectedRoute><SeasonDetail /></ProtectedRoute>} />
               <Route path="/games" element={<Games />} />
               <Route path="/players" element={<ProtectedRoute><Players /></ProtectedRoute>} />
+              <Route path="/rankings" element={<ProtectedRoute><Rankings /></ProtectedRoute>} />
               <Route path="/rules" element={<Rules />} />
               <Route path="/about" element={<AboutUs />} />
               <Route path="/suggestions" element={<Suggestions />} />

@@ -353,6 +353,32 @@ const AdminSeasons = () => {
                 </div>
               </div>
             </div>
+            <div className="space-y-2">
+              <Collapsible open={editGamesOpen} onOpenChange={setEditGamesOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2 w-full justify-between">
+                    <span className="flex items-center gap-2">
+                      <Gamepad2 className="h-4 w-4" />
+                      Jogos vinculados ({editingSeason ? (seasonGamesMap[editingSeason.id] || []).length : 0})
+                    </span>
+                    {editGamesOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-3">
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {games.map(g => {
+                      const isLinked = editingSeason ? (seasonGamesMap[editingSeason.id] || []).includes(g.id) : false;
+                      return (
+                        <label key={g.id} className="flex items-center gap-2 rounded-md border border-border p-2 cursor-pointer hover:bg-secondary/50 transition-colors">
+                          <Checkbox checked={isLinked} onCheckedChange={() => editingSeason && toggleGameInSeason(editingSeason.id, g.id, isLinked)} />
+                          <span className="text-sm">{g.name}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+            </div>
             <Button variant="gold" onClick={handleEditSave} className="w-full">Salvar Alterações</Button>
           </div>
         </DialogContent>

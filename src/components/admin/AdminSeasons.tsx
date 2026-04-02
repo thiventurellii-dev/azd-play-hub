@@ -233,29 +233,48 @@ const AdminSeasons = () => {
             </div>
           </div>
 
-          <Collapsible open={gamesOpen} onOpenChange={setGamesOpen}>
-            <CollapsibleTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
-                <Gamepad2 className="h-4 w-4" />
-                Jogos desta Season ({selectedGames.length})
-                {gamesOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="mt-3">
-              {games.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nenhum jogo cadastrado.</p>
-              ) : (
-                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                  {games.map(g => (
-                    <label key={g.id} className="flex items-center gap-2 rounded-md border border-border p-2 cursor-pointer hover:bg-secondary/50 transition-colors">
-                      <Checkbox checked={selectedGames.includes(g.id)} onCheckedChange={() => toggleNewGameSelection(g.id)} />
-                      <span className="text-sm">{g.name}</span>
-                    </label>
-                  ))}
-                </div>
-              )}
-            </CollapsibleContent>
-          </Collapsible>
+          {seasonType === 'boardgame' && (
+            <Collapsible open={gamesOpen} onOpenChange={setGamesOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Gamepad2 className="h-4 w-4" />
+                  Jogos desta Season ({selectedGames.length})
+                  {gamesOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-3">
+                {games.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhum jogo cadastrado.</p>
+                ) : (
+                  <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {games.map(g => (
+                      <label key={g.id} className="flex items-center gap-2 rounded-md border border-border p-2 cursor-pointer hover:bg-secondary/50 transition-colors">
+                        <Checkbox checked={selectedGames.includes(g.id)} onCheckedChange={() => toggleNewGameSelection(g.id)} />
+                        <span className="text-sm">{g.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+
+          {seasonType === 'blood' && (
+            <div className="space-y-2">
+              <Label>Scripts Ativos *</Label>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {bloodScripts.map(bs => (
+                  <label key={bs.id} className="flex items-center gap-2 rounded-md border border-border p-2 cursor-pointer hover:bg-secondary/50 transition-colors">
+                    <Checkbox
+                      checked={selectedScripts.includes(bs.id)}
+                      onCheckedChange={() => setSelectedScripts(prev => prev.includes(bs.id) ? prev.filter(id => id !== bs.id) : [...prev, bs.id])}
+                    />
+                    <span className="text-sm">{bs.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
 
           <Button variant="gold" onClick={handleCreate}><Plus className="h-4 w-4 mr-1" /> Criar Season</Button>
         </CardContent>

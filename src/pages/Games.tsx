@@ -226,9 +226,13 @@ const Games = () => {
               >
                 <CardContent className="py-5 space-y-3">
                   <div className="flex items-start gap-4">
-                    <div className="h-16 w-16 rounded-lg bg-secondary flex items-center justify-center text-2xl flex-shrink-0">
-                      🩸
-                    </div>
+                    {getScriptImage(s.name) ? (
+                      <img src={getScriptImage(s.name)!} alt={s.name} className="h-16 w-16 rounded-lg object-cover flex-shrink-0" loading="lazy" width={64} height={64} />
+                    ) : (
+                      <div className="h-16 w-16 rounded-lg bg-secondary flex items-center justify-center text-2xl flex-shrink-0">
+                        🩸
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <h3 className="text-lg font-bold">{s.name}</h3>
                       {s.description && <p className="text-sm text-muted-foreground mt-1">{s.description}</p>}

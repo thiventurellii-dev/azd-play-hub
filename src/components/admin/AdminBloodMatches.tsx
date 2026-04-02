@@ -5,11 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useNotification } from '@/components/NotificationDialog';
-import { Plus, Trash2, UserPlus, ChevronDown, ChevronUp, Search, Skull, Shield } from 'lucide-react';
+import { Plus, Trash2, UserPlus, ChevronDown, ChevronUp, Search, Skull, Shield, Pencil } from 'lucide-react';
 
 interface Season { id: string; name: string; }
 interface BloodScript { id: string; name: string; }
@@ -38,6 +38,20 @@ const AdminBloodMatches = () => {
   const [matches, setMatches] = useState<any[]>([]);
   const [filterSeason, setFilterSeason] = useState('all');
   const [expandedSeasons, setExpandedSeasons] = useState<Record<string, boolean>>({});
+
+  // Edit state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingMatch, setEditingMatch] = useState<any>(null);
+  const [editSeasonId, setEditSeasonId] = useState('');
+  const [editScriptId, setEditScriptId] = useState('');
+  const [editPlayedDate, setEditPlayedDate] = useState('');
+  const [editPlayedTime, setEditPlayedTime] = useState('');
+  const [editDuration, setEditDuration] = useState('');
+  const [editStorytellerId, setEditStorytellerId] = useState('');
+  const [editWinningTeam, setEditWinningTeam] = useState<'good' | 'evil'>('good');
+  const [editEvilPlayers, setEditEvilPlayers] = useState<BloodPlayerEntry[]>([]);
+  const [editGoodPlayers, setEditGoodPlayers] = useState<BloodPlayerEntry[]>([]);
+  const [editSaving, setEditSaving] = useState(false);
 
   useEffect(() => {
     const fetchBase = async () => {
@@ -113,10 +127,20 @@ const AdminBloodMatches = () => {
   const evilChars = scriptCharacters.filter(c => c.team === 'evil');
   const goodChars = scriptCharacters.filter(c => c.team === 'good');
 
+  const editScriptCharacters = characters.filter(c => c.script_id === editScriptId);
+  const editEvilChars = editScriptCharacters.filter(c => c.team === 'evil');
+  const editGoodChars = editScriptCharacters.filter(c => c.team === 'good');
+
   const allSelectedPlayerIds = [
     storytellerId,
     ...evilPlayers.map(p => p.player_id),
     ...goodPlayers.map(p => p.player_id),
+  ].filter(Boolean);
+
+  const editAllSelectedPlayerIds = [
+    editStorytellerId,
+    ...editEvilPlayers.map(p => p.player_id),
+    ...editGoodPlayers.map(p => p.player_id),
   ].filter(Boolean);
 
   const addPlayer = (team: 'good' | 'evil') => {
@@ -136,6 +160,26 @@ const AdminBloodMatches = () => {
       const updated = [...goodPlayers];
       (updated[idx] as any)[field] = value;
       setGoodPlayers(updated);
+    }
+  };
+
+  const addEditPlayer = (team: 'good' | 'evil') => {
+    if (team === 'evil') setEditEvilPlayers([...editEvilPlayers, { player_id: '', character_id: '', team: 'evil' }]);
+    else setEditGoodPlayers([...editGoodPlayers, { player_id: '', character_id: '', team: 'good' }]);
+  };
+  const removeEditPlayer = (team: 'good' | 'evil', idx: number) => {
+    if (team === 'evil') setEditEvilPlayers(editEvilPlayers.filter((_, i) => i !== idx));
+    else setEditGoodPlayers(editGoodPlayers.filter((_, i) => i !== idx));
+  };
+  const updateEditPlayer = (team: 'good' | 'evil', idx: number, field: string, value: string) => {
+    if (team === 'evil') {
+      const updated = [...editEvilPlayers];
+      (updated[idx] as any)[field] = value;
+      setEditEvilPlayers(updated);
+    } else {
+      const updated = [...editGoodPlayers];
+      (updated[idx] as any)[field] = value;
+      setEditGoodPlayers(updated);
     }
   };
 
@@ -173,53 +217,7 @@ const AdminBloodMatches = () => {
       if (playersErr) throw playersErr;
 
       // Update blood_mmr_ratings
-      const allPlayerIds = [...new Set([storytellerId, ...allPlayers.map(p => p.player_id)])];
-      const { data: existingRatings } = await supabase
-        .from('blood_mmr_ratings')
-        .select('*')
-        .eq('season_id', seasonId)
-        .in('player_id', allPlayerIds);
-
-      const ratingsMap: Record<string, any> = {};
-      for (const r of ((existingRatings || []) as any[])) ratingsMap[r.player_id] = r;
-
-      for (const pid of allPlayerIds) {
-        const existing = ratingsMap[pid];
-        const isStoryteller = pid === storytellerId;
-        const playerEntry = allPlayers.find(p => p.player_id === pid);
-        const isWinner = playerEntry ? playerEntry.team === winningTeam : false;
-        const isEvil = playerEntry?.team === 'evil';
-        const isGood = playerEntry?.team === 'good';
-
-        const gamesPlayed = (existing?.games_played || 0) + 1;
-        const winsEvil = (existing?.wins_evil || 0) + (isWinner && isEvil ? 1 : 0);
-        const winsGood = (existing?.wins_good || 0) + (isWinner && isGood ? 1 : 0);
-        const gamesAsStoryteller = (existing?.games_as_storyteller || 0) + (isStoryteller && !playerEntry ? 1 : 0);
-
-        // Points: games_played * 1 + wins_evil * 2 + wins_good * 1
-        const totalPoints = gamesPlayed + (winsEvil * 2) + winsGood;
-
-        if (existing) {
-          await supabase.from('blood_mmr_ratings').update({
-            total_points: totalPoints,
-            games_played: gamesPlayed,
-            wins_evil: winsEvil,
-            wins_good: winsGood,
-            games_as_storyteller: gamesAsStoryteller,
-            updated_at: new Date().toISOString(),
-          } as any).eq('id', existing.id);
-        } else {
-          await supabase.from('blood_mmr_ratings').insert({
-            player_id: pid,
-            season_id: seasonId,
-            total_points: totalPoints,
-            games_played: gamesPlayed,
-            wins_evil: winsEvil,
-            wins_good: winsGood,
-            games_as_storyteller: gamesAsStoryteller,
-          } as any);
-        }
-      }
+      await updateRatings(seasonId, storytellerId, allPlayers, winningTeam);
 
       notify('success', 'Partida de Blood registrada!');
       setEvilPlayers([{ player_id: '', character_id: '', team: 'evil' }]);
@@ -233,6 +231,109 @@ const AdminBloodMatches = () => {
     }
   };
 
+  const updateRatings = async (sId: string, stId: string, allPlayers: BloodPlayerEntry[], wTeam: string) => {
+    const allPlayerIds = [...new Set([stId, ...allPlayers.map(p => p.player_id)])];
+    const { data: existingRatings } = await supabase
+      .from('blood_mmr_ratings')
+      .select('*')
+      .eq('season_id', sId)
+      .in('player_id', allPlayerIds);
+
+    const ratingsMap: Record<string, any> = {};
+    for (const r of ((existingRatings || []) as any[])) ratingsMap[r.player_id] = r;
+
+    for (const pid of allPlayerIds) {
+      const existing = ratingsMap[pid];
+      const isStoryteller = pid === stId;
+      const playerEntry = allPlayers.find(p => p.player_id === pid);
+      const isWinner = playerEntry ? playerEntry.team === wTeam : false;
+      const isEvil = playerEntry?.team === 'evil';
+      const isGood = playerEntry?.team === 'good';
+
+      const gamesPlayed = (existing?.games_played || 0) + 1;
+      const winsEvil = (existing?.wins_evil || 0) + (isWinner && isEvil ? 1 : 0);
+      const winsGood = (existing?.wins_good || 0) + (isWinner && isGood ? 1 : 0);
+      const gamesAsStoryteller = (existing?.games_as_storyteller || 0) + (isStoryteller && !playerEntry ? 1 : 0);
+      const totalPoints = gamesPlayed + (winsEvil * 2) + winsGood;
+
+      if (existing) {
+        await supabase.from('blood_mmr_ratings').update({
+          total_points: totalPoints, games_played: gamesPlayed,
+          wins_evil: winsEvil, wins_good: winsGood,
+          games_as_storyteller: gamesAsStoryteller, updated_at: new Date().toISOString(),
+        } as any).eq('id', existing.id);
+      } else {
+        await supabase.from('blood_mmr_ratings').insert({
+          player_id: pid, season_id: sId,
+          total_points: totalPoints, games_played: gamesPlayed,
+          wins_evil: winsEvil, wins_good: winsGood,
+          games_as_storyteller: gamesAsStoryteller,
+        } as any);
+      }
+    }
+  };
+
+  const openEditMatch = (m: any) => {
+    setEditingMatch(m);
+    setEditSeasonId(m.season_id);
+    setEditScriptId(m.script_id);
+    const d = new Date(m.played_at);
+    setEditPlayedDate(d.toISOString().split('T')[0]);
+    setEditPlayedTime(d.toTimeString().slice(0, 5));
+    setEditDuration(m.duration_minutes ? String(m.duration_minutes) : '');
+    setEditStorytellerId(m.storyteller_player_id);
+    setEditWinningTeam(m.winning_team);
+    setEditEvilPlayers(
+      m.players.filter((p: any) => p.team === 'evil').map((p: any) => ({ player_id: p.player_id, character_id: p.character_id, team: 'evil' as const }))
+    );
+    setEditGoodPlayers(
+      m.players.filter((p: any) => p.team === 'good').map((p: any) => ({ player_id: p.player_id, character_id: p.character_id, team: 'good' as const }))
+    );
+    setEditDialogOpen(true);
+  };
+
+  const handleEditSave = async () => {
+    if (!editingMatch) return;
+    if (!editSeasonId || !editScriptId || !editPlayedDate || !editPlayedTime || !editStorytellerId) {
+      return notify('error', 'Preencha todos os campos obrigatórios');
+    }
+    const allPlayers = [...editEvilPlayers, ...editGoodPlayers];
+    if (allPlayers.some(p => !p.player_id || !p.character_id)) {
+      return notify('error', 'Preencha jogador e personagem para todos os participantes');
+    }
+
+    setEditSaving(true);
+    try {
+      const { error: matchErr } = await supabase.from('blood_matches').update({
+        season_id: editSeasonId,
+        script_id: editScriptId,
+        played_at: new Date(`${editPlayedDate}T${editPlayedTime}`).toISOString(),
+        duration_minutes: parseInt(editDuration) || null,
+        storyteller_player_id: editStorytellerId,
+        winning_team: editWinningTeam,
+      } as any).eq('id', editingMatch.id);
+      if (matchErr) throw matchErr;
+
+      // Delete old players and insert new
+      await supabase.from('blood_match_players').delete().eq('match_id', editingMatch.id);
+      const matchPlayers = allPlayers.map(p => ({
+        match_id: editingMatch.id,
+        player_id: p.player_id,
+        character_id: p.character_id,
+        team: p.team,
+      }));
+      await supabase.from('blood_match_players').insert(matchPlayers as any);
+
+      notify('success', 'Partida atualizada!');
+      setEditDialogOpen(false);
+      fetchMatches();
+    } catch (err: any) {
+      notify('error', err.message || 'Erro ao atualizar partida');
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
   const filteredMatches = filterSeason === 'all' ? matches : matches.filter(m => m.season_id === filterSeason);
   const groupedMatches: Record<string, any[]> = {};
   for (const m of filteredMatches) {
@@ -240,6 +341,54 @@ const AdminBloodMatches = () => {
     if (!groupedMatches[key]) groupedMatches[key] = [];
     groupedMatches[key].push(m);
   }
+
+  const renderPlayerSelectors = (
+    team: 'evil' | 'good',
+    playersList: BloodPlayerEntry[],
+    chars: BloodCharacter[],
+    allSelected: string[],
+    onAdd: (t: 'evil' | 'good') => void,
+    onRemove: (t: 'evil' | 'good', i: number) => void,
+    onUpdate: (t: 'evil' | 'good', i: number, f: string, v: string) => void,
+  ) => {
+    const isEvil = team === 'evil';
+    return (
+      <div className={`space-y-3 p-4 rounded-lg border ${isEvil ? 'border-red-500/30 bg-red-500/5' : 'border-blue-500/30 bg-blue-500/5'}`}>
+        <div className="flex items-center gap-2">
+          {isEvil ? <Skull className="h-5 w-5 text-red-400" /> : <Shield className="h-5 w-5 text-blue-400" />}
+          <Label className={`${isEvil ? 'text-red-400' : 'text-blue-400'} font-semibold`}>{isEvil ? 'Time Maligno' : 'Time Benigno'}</Label>
+        </div>
+        {playersList.map((ep, i) => (
+          <div key={i} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] items-end">
+            <Select value={ep.player_id} onValueChange={v => onUpdate(team, i, 'player_id', v)}>
+              <SelectTrigger><SelectValue placeholder="Jogador" /></SelectTrigger>
+              <SelectContent>
+                {players.map(p => (
+                  <SelectItem key={p.id} value={p.id} disabled={allSelected.includes(p.id) && p.id !== ep.player_id}>
+                    {p.nickname || p.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={ep.character_id} onValueChange={v => onUpdate(team, i, 'character_id', v)}>
+              <SelectTrigger><SelectValue placeholder="Personagem" /></SelectTrigger>
+              <SelectContent>
+                {chars.map(c => <SelectItem key={c.id} value={c.id}>{c.name} ({c.role_type})</SelectItem>)}
+              </SelectContent>
+            </Select>
+            {playersList.length > 1 && (
+              <Button variant="ghost" size="icon" onClick={() => onRemove(team, i)}>
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            )}
+          </div>
+        ))}
+        <Button variant="outline" size="sm" onClick={() => onAdd(team)}>
+          <UserPlus className="h-4 w-4 mr-1" /> Adicionar Jogador {isEvil ? 'Maligno' : 'Benigno'}
+        </Button>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -304,77 +453,8 @@ const AdminBloodMatches = () => {
             </Select>
           </div>
 
-          {/* Evil Team */}
-          <div className="space-y-3 p-4 rounded-lg border border-red-500/30 bg-red-500/5">
-            <div className="flex items-center gap-2">
-              <Skull className="h-5 w-5 text-red-400" />
-              <Label className="text-red-400 font-semibold">Time Maligno</Label>
-            </div>
-            {evilPlayers.map((ep, i) => (
-              <div key={i} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] items-end">
-                <Select value={ep.player_id} onValueChange={v => updatePlayer('evil', i, 'player_id', v)}>
-                  <SelectTrigger><SelectValue placeholder="Jogador" /></SelectTrigger>
-                  <SelectContent>
-                    {players.map(p => (
-                      <SelectItem key={p.id} value={p.id} disabled={allSelectedPlayerIds.includes(p.id) && p.id !== ep.player_id}>
-                        {p.nickname || p.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={ep.character_id} onValueChange={v => updatePlayer('evil', i, 'character_id', v)}>
-                  <SelectTrigger><SelectValue placeholder="Personagem" /></SelectTrigger>
-                  <SelectContent>
-                    {evilChars.map(c => <SelectItem key={c.id} value={c.id}>{c.name} ({c.role_type})</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                {evilPlayers.length > 1 && (
-                  <Button variant="ghost" size="icon" onClick={() => removePlayer('evil', i)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                )}
-              </div>
-            ))}
-            <Button variant="outline" size="sm" onClick={() => addPlayer('evil')}>
-              <UserPlus className="h-4 w-4 mr-1" /> Adicionar Jogador Maligno
-            </Button>
-          </div>
-
-          {/* Good Team */}
-          <div className="space-y-3 p-4 rounded-lg border border-blue-500/30 bg-blue-500/5">
-            <div className="flex items-center gap-2">
-              <Shield className="h-5 w-5 text-blue-400" />
-              <Label className="text-blue-400 font-semibold">Time Benigno</Label>
-            </div>
-            {goodPlayers.map((gp, i) => (
-              <div key={i} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] items-end">
-                <Select value={gp.player_id} onValueChange={v => updatePlayer('good', i, 'player_id', v)}>
-                  <SelectTrigger><SelectValue placeholder="Jogador" /></SelectTrigger>
-                  <SelectContent>
-                    {players.map(p => (
-                      <SelectItem key={p.id} value={p.id} disabled={allSelectedPlayerIds.includes(p.id) && p.id !== gp.player_id}>
-                        {p.nickname || p.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={gp.character_id} onValueChange={v => updatePlayer('good', i, 'character_id', v)}>
-                  <SelectTrigger><SelectValue placeholder="Personagem" /></SelectTrigger>
-                  <SelectContent>
-                    {goodChars.map(c => <SelectItem key={c.id} value={c.id}>{c.name} ({c.role_type})</SelectItem>)}
-                  </SelectContent>
-                </Select>
-                {goodPlayers.length > 1 && (
-                  <Button variant="ghost" size="icon" onClick={() => removePlayer('good', i)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                )}
-              </div>
-            ))}
-            <Button variant="outline" size="sm" onClick={() => addPlayer('good')}>
-              <UserPlus className="h-4 w-4 mr-1" /> Adicionar Jogador Benigno
-            </Button>
-          </div>
+          {renderPlayerSelectors('evil', evilPlayers, evilChars, allSelectedPlayerIds, addPlayer, removePlayer, updatePlayer)}
+          {renderPlayerSelectors('good', goodPlayers, goodChars, allSelectedPlayerIds, addPlayer, removePlayer, updatePlayer)}
 
           <Button variant="gold" onClick={handleSubmit} disabled={saving}>
             {saving ? 'Salvando...' : 'Registrar Partida de Blood'}
@@ -425,7 +505,12 @@ const AdminBloodMatches = () => {
                         <span className="text-xs text-muted-foreground">Narrador: {m.storyteller_name}</span>
                         {m.duration_minutes && <span className="text-xs text-muted-foreground">{m.duration_minutes} min</span>}
                       </div>
-                      <span className="text-xs text-muted-foreground">{new Date(m.played_at).toLocaleDateString('pt-BR')}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">{new Date(m.played_at).toLocaleDateString('pt-BR')}</span>
+                        <Button variant="ghost" size="icon" onClick={() => openEditMatch(m)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                     {m.players.length > 0 && (
                       <div className="grid gap-1">
@@ -447,6 +532,79 @@ const AdminBloodMatches = () => {
           </Card>
         );
       })}
+
+      {/* Edit Match Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Editar Partida de Blood</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="space-y-2">
+                <Label>Season *</Label>
+                <Select value={editSeasonId} onValueChange={setEditSeasonId}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {seasons.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Script *</Label>
+                <Select value={editScriptId} onValueChange={setEditScriptId}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {scripts.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Storyteller *</Label>
+                <Select value={editStorytellerId} onValueChange={setEditStorytellerId}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {players.map(p => (
+                      <SelectItem key={p.id} value={p.id} disabled={editAllSelectedPlayerIds.includes(p.id) && p.id !== editStorytellerId}>
+                        {p.nickname || p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-2">
+                <Label>Data *</Label>
+                <Input type="date" value={editPlayedDate} onChange={e => setEditPlayedDate(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Hora *</Label>
+                <Input type="time" value={editPlayedTime} onChange={e => setEditPlayedTime(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Duração (min)</Label>
+                <Input type="number" value={editDuration} onChange={e => setEditDuration(e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Time Vencedor *</Label>
+              <Select value={editWinningTeam} onValueChange={v => setEditWinningTeam(v as 'good' | 'evil')}>
+                <SelectTrigger className="w-[250px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="good">🛡️ Time Benigno (Bom)</SelectItem>
+                  <SelectItem value="evil">💀 Time Maligno (Mal)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {renderPlayerSelectors('evil', editEvilPlayers, editEvilChars, editAllSelectedPlayerIds, addEditPlayer, removeEditPlayer, updateEditPlayer)}
+            {renderPlayerSelectors('good', editGoodPlayers, editGoodChars, editAllSelectedPlayerIds, addEditPlayer, removeEditPlayer, updateEditPlayer)}
+
+            <Button variant="gold" onClick={handleEditSave} disabled={editSaving} className="w-full">
+              {editSaving ? 'Salvando...' : 'Salvar Alterações'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

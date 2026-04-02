@@ -56,6 +56,27 @@ export type Database = {
         }
         Relationships: []
       }
+      contact_links: {
+        Row: {
+          id: string
+          name: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          updated_at?: string
+          url?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
       games: {
         Row: {
           created_at: string

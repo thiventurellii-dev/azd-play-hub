@@ -216,7 +216,7 @@ const AdminSeasons = () => {
             <Input type="number" value={values.p4} onChange={e => onChange('p4', e.target.value)} placeholder="200" />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">🥉 7º a 10º Lugar</Label>
+            <Label className="text-xs text-muted-foreground">🥉 7º a 9º Lugar (cada)</Label>
             <Input type="number" value={values.p5} onChange={e => onChange('p5', e.target.value)} placeholder="100" />
           </div>
         </div>

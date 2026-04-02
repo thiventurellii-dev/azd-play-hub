@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Plus, Trash2, ExternalLink, Video, Users } from 'lucide-react';
+import { Plus, Trash2, ExternalLink, Video, Users, Pencil } from 'lucide-react';
 
 interface Game {
   id: string;
@@ -25,6 +26,11 @@ const AdminGames = () => {
   const [videoUrl, setVideoUrl] = useState('');
   const [minPlayers, setMinPlayers] = useState('');
   const [maxPlayers, setMaxPlayers] = useState('');
+
+  // Edit state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingGame, setEditingGame] = useState<Game | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', image_url: '', rules_url: '', video_url: '', min_players: '', max_players: '' });
 
   const fetchGames = async () => {
     const { data } = await supabase.from('games').select('*').order('name');
@@ -53,6 +59,35 @@ const AdminGames = () => {
     const { error } = await supabase.from('games').delete().eq('id', id);
     if (error) return toast.error(error.message);
     toast.success('Jogo removido');
+    fetchGames();
+  };
+
+  const openEdit = (g: Game) => {
+    setEditingGame(g);
+    setEditForm({
+      name: g.name,
+      image_url: g.image_url || '',
+      rules_url: g.rules_url || '',
+      video_url: g.video_url || '',
+      min_players: g.min_players ? String(g.min_players) : '',
+      max_players: g.max_players ? String(g.max_players) : '',
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleEditSave = async () => {
+    if (!editingGame) return;
+    const { error } = await supabase.from('games').update({
+      name: editForm.name,
+      image_url: editForm.image_url || null,
+      rules_url: editForm.rules_url || null,
+      video_url: editForm.video_url || null,
+      min_players: editForm.min_players ? parseInt(editForm.min_players) : null,
+      max_players: editForm.max_players ? parseInt(editForm.max_players) : null,
+    }).eq('id', editingGame.id);
+    if (error) return toast.error(error.message);
+    toast.success('Jogo atualizado!');
+    setEditDialogOpen(false);
     fetchGames();
   };
 
@@ -100,9 +135,14 @@ const AdminGames = () => {
                   {g.image_url && <img src={g.image_url} alt={g.name} className="h-10 w-10 rounded object-cover" />}
                   <p className="font-semibold">{g.name}</p>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => handleDelete(g.id)}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="icon" onClick={() => openEdit(g)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" onClick={() => handleDelete(g.id)}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
               </div>
               <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                 {(g.min_players || g.max_players) && (
@@ -123,6 +163,42 @@ const AdminGames = () => {
           </Card>
         ))}
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Editar Jogo</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Nome</Label>
+                <Input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>URL da Imagem</Label>
+                <Input value={editForm.image_url} onChange={e => setEditForm({ ...editForm, image_url: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Link das Regras</Label>
+                <Input value={editForm.rules_url} onChange={e => setEditForm({ ...editForm, rules_url: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Vídeo Explicativo</Label>
+                <Input value={editForm.video_url} onChange={e => setEditForm({ ...editForm, video_url: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Mín. Jogadores</Label>
+                <Input type="number" value={editForm.min_players} onChange={e => setEditForm({ ...editForm, min_players: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Máx. Jogadores</Label>
+                <Input type="number" value={editForm.max_players} onChange={e => setEditForm({ ...editForm, max_players: e.target.value })} />
+              </div>
+            </div>
+            <Button variant="gold" onClick={handleEditSave} className="w-full">Salvar Alterações</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

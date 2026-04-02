@@ -196,7 +196,10 @@ const AdminSeasons = () => {
     setSelectedGames(prev => prev.includes(gameId) ? prev.filter(id => id !== gameId) : [...prev, gameId]);
   };
 
-  const totalPrize = (s: Season) => (s.prize_1st || 0) + (s.prize_2nd || 0) + (s.prize_3rd || 0) + (s.prize_4th_6th || 0) + (s.prize_7th_10th || 0);
+  const totalPrize = (s: Season) => {
+    if (s.type === 'blood') return (s.prize_1st * 3) + (s.prize_4th_6th * 3) + (s.prize_7th_10th * 3);
+    return (s.prize_1st || 0) + (s.prize_2nd || 0) + (s.prize_3rd || 0);
+  };
 
   const isBloodType = (s: Season) => s.type === 'blood';
 
@@ -205,15 +208,15 @@ const AdminSeasons = () => {
       return (
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="space-y-1">
-            <Label className="text-xs text-gold">🥇 1º a 3º Lugar</Label>
+            <Label className="text-xs text-gold">🥇 1º a 3º Lugar (cada)</Label>
             <Input type="number" value={values.p1} onChange={e => onChange('p1', e.target.value)} placeholder="300" />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">🥈 4º a 6º Lugar</Label>
+            <Label className="text-xs text-muted-foreground">🥈 4º a 6º Lugar (cada)</Label>
             <Input type="number" value={values.p4} onChange={e => onChange('p4', e.target.value)} placeholder="200" />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">🥉 7º a 10º Lugar</Label>
+            <Label className="text-xs text-muted-foreground">🥉 7º a 9º Lugar (cada)</Label>
             <Input type="number" value={values.p5} onChange={e => onChange('p5', e.target.value)} placeholder="100" />
           </div>
         </div>
@@ -245,9 +248,9 @@ const AdminSeasons = () => {
         <div>
           <Label className="text-sm text-muted-foreground">Premiação:</Label>
           <div className="flex gap-4 mt-1 text-sm flex-wrap">
-            {s.prize_1st > 0 && <span>🥇 1º-3º: <strong className="text-gold">R$ {s.prize_1st}</strong></span>}
-            {s.prize_4th_6th > 0 && <span>🥈 4º-6º: <strong>R$ {s.prize_4th_6th}</strong></span>}
-            {s.prize_7th_10th > 0 && <span>🥉 7º-10º: <strong>R$ {s.prize_7th_10th}</strong></span>}
+            {s.prize_1st > 0 && <span>🥇 1º-3º: <strong className="text-gold">R$ {s.prize_1st} cada</strong></span>}
+            {s.prize_4th_6th > 0 && <span>🥈 4º-6º: <strong>R$ {s.prize_4th_6th} cada</strong></span>}
+            {s.prize_7th_10th > 0 && <span>🥉 7º-9º: <strong>R$ {s.prize_7th_10th} cada</strong></span>}
           </div>
           <p className="text-xs text-muted-foreground mt-1">Total: R$ {total}</p>
         </div>

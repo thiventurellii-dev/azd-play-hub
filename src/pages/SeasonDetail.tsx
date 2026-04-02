@@ -279,15 +279,15 @@ const SeasonDetail = () => {
         {(() => {
           const isBlood = season.type === 'blood';
           if (isBlood) {
-            const total = (season.prize_1st || 0) + (season.prize_4th_6th || 0) + (season.prize_7th_10th || 0);
+            const total = ((season.prize_1st || 0) * 3) + ((season.prize_4th_6th || 0) * 3) + ((season.prize_7th_10th || 0) * 3);
             if (total <= 0 && !season.prize) return null;
             return (
               <div className="mt-3 p-3 rounded-lg border border-gold/30 bg-gold/5">
                 <div className="flex items-center gap-2 text-gold text-sm font-medium mb-1"><Award className="h-4 w-4" /> Premiação — R$ {total}</div>
                 <div className="flex gap-4 text-sm flex-wrap">
-                  {season.prize_1st > 0 && <span>🥇 1º-3º: <strong>R$ {season.prize_1st}</strong></span>}
-                  {season.prize_4th_6th > 0 && <span>🥈 4º-6º: <strong>R$ {season.prize_4th_6th}</strong></span>}
-                  {season.prize_7th_10th > 0 && <span>🥉 7º-10º: <strong>R$ {season.prize_7th_10th}</strong></span>}
+                  {season.prize_1st > 0 && <span>🥇 1º-3º: <strong>R$ {season.prize_1st} cada</strong></span>}
+                  {season.prize_4th_6th > 0 && <span>🥈 4º-6º: <strong>R$ {season.prize_4th_6th} cada</strong></span>}
+                  {season.prize_7th_10th > 0 && <span>🥉 7º-9º: <strong>R$ {season.prize_7th_10th} cada</strong></span>}
                 </div>
                 {season.prize && <p className="text-sm mt-1">{season.prize}</p>}
               </div>

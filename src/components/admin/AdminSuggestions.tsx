@@ -53,13 +53,13 @@ const AdminSuggestions = () => {
 
   useEffect(() => { fetchSuggestions(); }, []);
 
-  const updateSuggestion = async (id: string, updates: Partial<Suggestion>) => {
+  const updateSuggestion = async (id: string, updates: Partial<Suggestion>, silent = false) => {
     const { error } = await supabase.from('suggestions').update(updates).eq('id', id);
     if (error) {
       notify('error', 'Erro ao atualizar sugestão');
     } else {
       setSuggestions(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
-      notify('success', 'Sugestão atualizada');
+      if (!silent) notify('success', 'Sugestão atualizada');
     }
   };
 
@@ -124,7 +124,7 @@ const AdminSuggestions = () => {
               </TableCell>
               <TableCell>
                 {showActions ? (
-                  <Select value={s.priority} onValueChange={(v) => updateSuggestion(s.id, { priority: v })}>
+                  <Select value={s.priority} onValueChange={(v) => updateSuggestion(s.id, { priority: v }, true)}>
                     <SelectTrigger className="h-8 w-[120px] text-xs">
                       <SelectValue />
                     </SelectTrigger>
@@ -142,7 +142,7 @@ const AdminSuggestions = () => {
               </TableCell>
               <TableCell>
                 {showActions ? (
-                  <Select value={s.complexity} onValueChange={(v) => updateSuggestion(s.id, { complexity: v })}>
+                  <Select value={s.complexity} onValueChange={(v) => updateSuggestion(s.id, { complexity: v }, true)}>
                     <SelectTrigger className="h-8 w-[120px] text-xs">
                       <SelectValue />
                     </SelectTrigger>

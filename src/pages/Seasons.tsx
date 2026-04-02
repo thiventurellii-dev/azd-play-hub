@@ -14,6 +14,9 @@ interface Season {
   end_date: string;
   status: string;
   prize: string | null;
+  prize_1st: number;
+  prize_2nd: number;
+  prize_3rd: number;
 }
 
 interface SeasonGame {

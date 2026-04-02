@@ -71,16 +71,20 @@ const Navbar = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem asChild>
-                <a href="https://discord.gg/6UpSEaSdj" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
-                  <DiscordIcon size={16} /> Discord
-                </a>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <a href="https://chat.whatsapp.com/D3zwwp30YY0CtVkCGmBzX3" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
-                  <MessageCircle className="h-4 w-4" /> WhatsApp
-                </a>
-              </DropdownMenuItem>
+              {contactLinks.discord && (
+                <DropdownMenuItem asChild>
+                  <a href={contactLinks.discord} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                    <DiscordIcon size={16} /> Discord
+                  </a>
+                </DropdownMenuItem>
+              )}
+              {contactLinks.whatsapp && (
+                <DropdownMenuItem asChild>
+                  <a href={contactLinks.whatsapp} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                    <MessageCircle className="h-4 w-4" /> WhatsApp
+                  </a>
+                </DropdownMenuItem>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
           {isAdmin && (

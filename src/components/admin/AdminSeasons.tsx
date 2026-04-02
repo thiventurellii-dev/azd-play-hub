@@ -86,7 +86,11 @@ const AdminSeasons = () => {
   useEffect(() => { fetchData(); }, []);
 
   const handleCreate = async () => {
-    if (!name || !startDate || !endDate) return notify('error', 'Preencha todos os campos obrigatórios');
+    const missing: string[] = [];
+    if (!name) missing.push('Nome');
+    if (!startDate) missing.push('Início');
+    if (!endDate) missing.push('Fim');
+    if (missing.length > 0) return notify('error', `Preencha: ${missing.join(', ')}`);
     const { data, error } = await supabase
       .from('seasons')
       .insert({

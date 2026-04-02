@@ -16,6 +16,7 @@ import Games from "./pages/Games.tsx";
 import Players from "./pages/Players.tsx";
 import Profile from "./pages/Profile.tsx";
 import Rules from "./pages/Rules.tsx";
+import Suggestions from "./pages/Suggestions.tsx";
 import Admin from "./pages/Admin.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import AboutUs from "./pages/AboutUs.tsx";
@@ -41,6 +42,7 @@ const App = () => (
               <Route path="/players" element={<ProtectedRoute><Players /></ProtectedRoute>} />
               <Route path="/rules" element={<Rules />} />
               <Route path="/about" element={<AboutUs />} />
+              <Route path="/suggestions" element={<Suggestions />} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />

@@ -37,6 +37,10 @@ const AdminSeasons = () => {
   const [selectedGames, setSelectedGames] = useState<string[]>([]);
   const [expandedSeason, setExpandedSeason] = useState<string | null>(null);
   const [gamesOpen, setGamesOpen] = useState(false);
+  const [seasonType, setSeasonType] = useState<'boardgame' | 'blood'>('boardgame');
+  const [bloodScripts, setBloodScripts] = useState<BloodScript[]>([]);
+  const [selectedScripts, setSelectedScripts] = useState<string[]>([]);
+  const [seasonBloodScriptsMap, setSeasonBloodScriptsMap] = useState<Record<string, string[]>>({});
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingSeason, setEditingSeason] = useState<Season | null>(null);

@@ -230,7 +230,7 @@ const AdminPlayers = () => {
     fetchPlayers();
   };
 
-  const pendingApprovalPlayers = players.filter(p => p.status === 'pending_approval' || p.status === 'pending');
+  const pendingApprovalPlayers = players.filter(p => p.status === 'pending_approval');
 
   return (
     <div className="space-y-6">

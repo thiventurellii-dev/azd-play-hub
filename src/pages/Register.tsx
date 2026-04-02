@@ -19,6 +19,7 @@ const Register = () => {
     name: '',
     email: '',
     password: '',
+    confirmPassword: '',
     phone: '',
     country_code: '+55',
     state: '',

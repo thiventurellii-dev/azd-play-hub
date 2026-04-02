@@ -44,9 +44,21 @@ const LoggedInIndex = () => (
         Mais do que jogos, construímos amizades. Seasons competitivas com premiações, rankings e muita diversão na mesa.
       </motion.p>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="relative mt-8 flex flex-wrap justify-center gap-4">
-        <Link to="/seasons"><Button variant="gold" size="lg">Ver Seasons</Button></Link>
-        <Link to="/games"><Button variant="outline" size="lg">Explorar Jogos</Button></Link>
-        <Link to="/players"><Button variant="outline" size="lg">Conheça os Jogadores</Button></Link>
+        <Link to="/seasons">
+          <motion.div whileHover={{ scale: 1.08, y: -2 }} whileTap={{ scale: 0.97 }} transition={{ type: "spring", stiffness: 400, damping: 15 }}>
+            <Button variant="gold" size="lg">Ver Seasons</Button>
+          </motion.div>
+        </Link>
+        <Link to="/games">
+          <motion.div whileHover={{ scale: 1.08, y: -2 }} whileTap={{ scale: 0.97 }} transition={{ type: "spring", stiffness: 400, damping: 15 }}>
+            <Button variant="outline" size="lg">Explorar Jogos</Button>
+          </motion.div>
+        </Link>
+        <Link to="/players">
+          <motion.div whileHover={{ scale: 1.08, y: -2 }} whileTap={{ scale: 0.97 }} transition={{ type: "spring", stiffness: 400, damping: 15 }}>
+            <Button variant="outline" size="lg">Conheça os Jogadores</Button>
+          </motion.div>
+        </Link>
       </motion.div>
     </section>
   </div>

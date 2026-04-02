@@ -30,7 +30,12 @@ const Register = () => {
       toast.success('Conta criada! Verifique seu email para confirmar.');
       navigate('/login');
     } catch (err: any) {
-      toast.error(err.message || 'Erro ao criar conta');
+      // Generic error for duplicate email - don't reveal who owns it
+      if (err.message?.includes('already registered') || err.message?.includes('already been registered') || err.status === 422) {
+        toast.error('Este e-mail já está cadastrado. Tente fazer login ou use outro e-mail.');
+      } else {
+        toast.error(err.message || 'Erro ao criar conta');
+      }
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -13,7 +12,6 @@ import { brazilianStates, citiesByState, pronounsOptions, countryCodes, formatPh
 
 const CompleteProfile = () => {
   const { user, setProfileCompleted } = useAuth();
-  const navigate = useNavigate();
   const [form, setForm] = useState({
     name: user?.user_metadata?.name || '',
     nickname: user?.user_metadata?.name || '',
@@ -26,6 +24,7 @@ const CompleteProfile = () => {
     pronouns: '',
   });
   const [saving, setSaving] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const cities = useMemo(() => citiesByState[form.state] || [], [form.state]);
 
@@ -46,13 +45,31 @@ const CompleteProfile = () => {
       gender: form.gender,
       pronouns: form.pronouns,
       email: user.email || '',
+      status: 'pending_approval',
     } as any).eq('id', user.id);
     setSaving(false);
     if (error) return toast.error(error.message);
-    toast.success('Perfil completo!');
+    
+    setSubmitted(true);
     setProfileCompleted(true);
-    navigate('/');
   };
+
+  if (submitted) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4 bg-background">
+        <Card className="w-full max-w-lg bg-card border-border">
+          <CardHeader className="text-center">
+            <img src={logo} alt="AzD" className="h-20 mx-auto mb-4 invert object-contain" />
+            <CardTitle className="text-2xl">Cadastro enviado!</CardTitle>
+            <CardDescription className="text-base mt-2">
+              Seu perfil foi completado com sucesso. Um administrador irá analisar e aprovar seu cadastro em breve.
+              Você será notificado quando tiver acesso completo à plataforma.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4 bg-background">

@@ -16,6 +16,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   setProfileCompleted: (v: boolean) => void;
   isAdmin: boolean;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -54,8 +55,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const complete = !!((data as any).nickname && data.name && data.phone && data.state && data.city && data.birth_date && data.gender && (data as any).pronouns);
-      // Pending status or incomplete profile means must complete
-      setProfileCompleted(status === 'active' && complete);
+      
+      // pending = needs to complete profile
+      // pending_approval = profile complete, waiting admin approval
+      // active = fully approved
+      if (status === 'pending_approval') {
+        setProfileCompleted(true); // profile IS complete, just waiting approval
+      } else {
+        setProfileCompleted(status === 'active' && complete);
+      }
+    }
+  };
+
+  const refreshProfile = async () => {
+    if (user) {
+      await fetchRole(user.id);
+      await checkProfileCompleted(user.id);
     }
   };
 
@@ -108,7 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, role, loading, profileCompleted, playerStatus, signUp, signIn, signOut, setProfileCompleted, isAdmin: role === 'admin' || role === 'super_admin' }}>
+    <AuthContext.Provider value={{ user, session, role, loading, profileCompleted, playerStatus, signUp, signIn, signOut, setProfileCompleted, isAdmin: role === 'admin' || role === 'super_admin', refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

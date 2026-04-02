@@ -124,6 +124,11 @@ const Register = () => {
             </div>
 
             <div className="space-y-2">
+              <Label>Confirmar Senha *</Label>
+              <Input type="password" value={form.confirmPassword} onChange={e => updateField('confirmPassword', e.target.value)} placeholder="Digite a senha novamente" required />
+            </div>
+
+            <div className="space-y-2">
               <Label>Telefone *</Label>
               <div className="flex gap-2">
                 <Select value={form.country_code} onValueChange={v => updateField('country_code', v)}>

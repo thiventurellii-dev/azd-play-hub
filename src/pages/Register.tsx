@@ -46,34 +46,25 @@ const Register = () => {
 
     setLoading(true);
     try {
-      // 1. Create auth user
-      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      const { error: signUpError } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { name: nickname }, emailRedirectTo: window.location.origin },
+        options: {
+          data: {
+            full_name: name,
+            nickname,
+            phone: unformatPhone(phone),
+            country_code: form.country_code,
+            state,
+            city,
+            birth_date,
+            gender,
+            pronouns,
+          },
+          emailRedirectTo: window.location.origin,
+        },
       });
       if (signUpError) throw signUpError;
-
-      // 2. Update profile with full data
-      if (signUpData.user) {
-        const { error: profileError } = await supabase.from('profiles').update({
-          name,
-          nickname,
-          phone: unformatPhone(phone),
-          country_code: form.country_code,
-          state,
-          city,
-          birth_date,
-          gender,
-          pronouns,
-          email,
-          status: 'pending_approval',
-        } as any).eq('id', signUpData.user.id);
-
-        if (profileError) {
-          console.error('Profile update error:', profileError);
-        }
-      }
 
       toast.success('Cadastro enviado! Um administrador irá aprovar seu acesso. Verifique seu email para confirmar.');
       navigate('/login');

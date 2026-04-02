@@ -117,7 +117,7 @@ const Rankings = () => {
                     <p className="text-xs text-muted-foreground">{r.games_played} jogos • {r.wins} vitórias</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xl font-bold text-gold">{r.current_mmr}</p>
+                    <p className="text-xl font-bold text-gold">{Number(r.current_mmr).toFixed(2)}</p>
                     <p className="text-xs text-muted-foreground">MMR</p>
                   </div>
                 </CardContent>

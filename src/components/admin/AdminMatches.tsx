@@ -175,7 +175,7 @@ const AdminMatches = () => {
       changes[r.player_id] += bonus;
     }
 
-    return Object.fromEntries(Object.entries(changes).map(([id, change]) => [id, Math.round(change)]));
+    return Object.fromEntries(Object.entries(changes).map(([id, change]) => [id, parseFloat(change.toFixed(2))]));
   };
 
   const handleSubmit = async () => {

@@ -38,10 +38,12 @@ const Navbar = () => {
     { to: '/games', label: 'Jogos', icon: Gamepad2 },
     { to: '/players', label: 'Jogadores', icon: Users },
     { to: '/rules', label: 'Regras', icon: BookOpen },
+    { to: '/suggestions', label: 'Sugestões', icon: Lightbulb },
   ] : [
     { to: '/about', label: 'Sobre Nós', icon: Info },
     { to: '/games', label: 'Jogos', icon: Gamepad2 },
     { to: '/rules', label: 'Regras', icon: BookOpen },
+    { to: '/suggestions', label: 'Sugestões', icon: Lightbulb },
   ];
 
   return (

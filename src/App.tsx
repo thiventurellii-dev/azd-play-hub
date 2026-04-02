@@ -16,6 +16,7 @@ import Games from "./pages/Games.tsx";
 import Players from "./pages/Players.tsx";
 import Profile from "./pages/Profile.tsx";
 import Rules from "./pages/Rules.tsx";
+import Suggestions from "./pages/Suggestions.tsx";
 import Admin from "./pages/Admin.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import AboutUs from "./pages/AboutUs.tsx";

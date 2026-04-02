@@ -570,6 +570,8 @@ export type Database = {
           prize_1st: number | null
           prize_2nd: number | null
           prize_3rd: number | null
+          prize_4th_6th: number | null
+          prize_7th_10th: number | null
           start_date: string
           status: string
           type: Database["public"]["Enums"]["season_type"]
@@ -584,6 +586,8 @@ export type Database = {
           prize_1st?: number | null
           prize_2nd?: number | null
           prize_3rd?: number | null
+          prize_4th_6th?: number | null
+          prize_7th_10th?: number | null
           start_date: string
           status?: string
           type?: Database["public"]["Enums"]["season_type"]
@@ -598,6 +602,8 @@ export type Database = {
           prize_1st?: number | null
           prize_2nd?: number | null
           prize_3rd?: number | null
+          prize_4th_6th?: number | null
+          prize_7th_10th?: number | null
           start_date?: string
           status?: string
           type?: Database["public"]["Enums"]["season_type"]

@@ -414,7 +414,8 @@ const AdminPlayers = () => {
                 <Select value={editStatus} onValueChange={setEditStatus}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pending">Cadastro Pendente</SelectItem>
+                <SelectItem value="pending">Cadastro Pendente</SelectItem>
+                    <SelectItem value="pending_approval">Aguardando Aprovação</SelectItem>
                     <SelectItem value="active">Ativo</SelectItem>
                     <SelectItem value="disabled">Desativado</SelectItem>
                   </SelectContent>

@@ -55,6 +55,7 @@ const Games = () => {
   const [bloodScripts, setBloodScripts] = useState<BloodScript[]>([]);
   const [bloodCharacters, setBloodCharacters] = useState<BloodCharacter[]>([]);
   const [expandedScript, setExpandedScript] = useState<string | null>(null);
+  const [scriptSeasons, setScriptSeasons] = useState<Record<string, SeasonLink[]>>({});
 
   useEffect(() => {
     const fetchData = async () => {

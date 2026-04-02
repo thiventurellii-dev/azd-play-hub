@@ -66,30 +66,32 @@ const Navbar = () => {
               </Button>
             </Link>
           ))}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
-                <Phone className="h-4 w-4" />
-                Contato
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {contactLinks.discord && (
-                <DropdownMenuItem asChild>
-                  <a href={contactLinks.discord} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
-                    <DiscordIcon size={16} /> Discord
-                  </a>
-                </DropdownMenuItem>
-              )}
-              {contactLinks.whatsapp && (
-                <DropdownMenuItem asChild>
-                  <a href={contactLinks.whatsapp} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
-                    <MessageCircle className="h-4 w-4" /> WhatsApp
-                  </a>
-                </DropdownMenuItem>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {user && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
+                  <Phone className="h-4 w-4" />
+                  Contato
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {contactLinks.discord && (
+                  <DropdownMenuItem asChild>
+                    <a href={contactLinks.discord} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                      <DiscordIcon size={16} /> Discord
+                    </a>
+                  </DropdownMenuItem>
+                )}
+                {contactLinks.whatsapp && (
+                  <DropdownMenuItem asChild>
+                    <a href={contactLinks.whatsapp} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                      <MessageCircle className="h-4 w-4" /> WhatsApp
+                    </a>
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           {isAdmin && (
             <Link to="/admin">
               <Button variant="ghost" className="gap-2 text-gold hover:text-gold">
@@ -149,14 +151,14 @@ const Navbar = () => {
               </Button>
             </Link>
           ))}
-          {contactLinks.discord && (
+          {user && contactLinks.discord && (
             <a href={contactLinks.discord} target="_blank" rel="noopener noreferrer" onClick={() => setMobileOpen(false)}>
               <Button variant="ghost" className="w-full justify-start gap-2">
                 <DiscordIcon size={16} /> Discord
               </Button>
             </a>
           )}
-          {contactLinks.whatsapp && (
+          {user && contactLinks.whatsapp && (
             <a href={contactLinks.whatsapp} target="_blank" rel="noopener noreferrer" onClick={() => setMobileOpen(false)}>
               <Button variant="ghost" className="w-full justify-start gap-2">
                 <MessageCircle className="h-4 w-4" /> WhatsApp

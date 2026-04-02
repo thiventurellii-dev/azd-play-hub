@@ -124,7 +124,7 @@ const AdminSuggestions = () => {
               </TableCell>
               <TableCell>
                 {showActions ? (
-                  <Select value={s.priority} onValueChange={(v) => updateSuggestion(s.id, { priority: v })}>
+                  <Select value={s.priority} onValueChange={(v) => updateSuggestion(s.id, { priority: v }, true)}>
                     <SelectTrigger className="h-8 w-[120px] text-xs">
                       <SelectValue />
                     </SelectTrigger>

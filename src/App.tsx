@@ -1,9 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { NotificationProvider } from "@/components/NotificationDialog";
 import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Index from "./pages/Index.tsx";
@@ -27,31 +26,31 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <Layout>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/complete-profile" element={<CompleteProfile />} />
-              <Route path="/seasons" element={<ProtectedRoute><Seasons /></ProtectedRoute>} />
-              <Route path="/seasons/:id" element={<ProtectedRoute><SeasonDetail /></ProtectedRoute>} />
-              <Route path="/games" element={<Games />} />
-              <Route path="/players" element={<ProtectedRoute><Players /></ProtectedRoute>} />
-              <Route path="/rankings" element={<ProtectedRoute><Rankings /></ProtectedRoute>} />
-              <Route path="/rules" element={<Rules />} />
-              <Route path="/about" element={<AboutUs />} />
-              <Route path="/suggestions" element={<Suggestions />} />
-              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Layout>
-        </AuthProvider>
-      </BrowserRouter>
+      <NotificationProvider>
+        <BrowserRouter>
+          <AuthProvider>
+            <Layout>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/complete-profile" element={<CompleteProfile />} />
+                <Route path="/seasons" element={<ProtectedRoute><Seasons /></ProtectedRoute>} />
+                <Route path="/seasons/:id" element={<ProtectedRoute><SeasonDetail /></ProtectedRoute>} />
+                <Route path="/games" element={<Games />} />
+                <Route path="/players" element={<ProtectedRoute><Players /></ProtectedRoute>} />
+                <Route path="/rankings" element={<ProtectedRoute><Rankings /></ProtectedRoute>} />
+                <Route path="/rules" element={<Rules />} />
+                <Route path="/about" element={<AboutUs />} />
+                <Route path="/suggestions" element={<Suggestions />} />
+                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Layout>
+          </AuthProvider>
+        </BrowserRouter>
+      </NotificationProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );

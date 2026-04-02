@@ -95,7 +95,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, role, loading, profileCompleted, signUp, signIn, signOut, setProfileCompleted, isAdmin: role === 'admin' }}>
+    <AuthContext.Provider value={{ user, session, role, loading, profileCompleted, signUp, signIn, signOut, setProfileCompleted, isAdmin: role === 'admin' || role === 'super_admin' }}>
       {children}
     </AuthContext.Provider>
   );

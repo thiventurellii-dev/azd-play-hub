@@ -1,18 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Calendar, ChevronRight, Plus, Pencil } from 'lucide-react';
+import { Calendar, ChevronRight, Gamepad2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { toast } from 'sonner';
 
 interface Season {
   id: string;
@@ -24,6 +16,11 @@ interface Season {
   prize: string | null;
 }
 
+interface SeasonGame {
+  season_id: string;
+  game_name: string;
+}
+
 const statusColors: Record<string, string> = {
   active: 'bg-green-500/20 text-green-400 border-green-500/30',
   upcoming: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
@@ -31,78 +28,63 @@ const statusColors: Record<string, string> = {
 };
 const statusLabels: Record<string, string> = { active: 'Ativa', upcoming: 'Em breve', finished: 'Finalizada' };
 
-const emptyForm = { name: '', description: '', start_date: '', end_date: '', status: 'upcoming', prize: '' };
+const computeStatus = (start: string, end: string): string => {
+  const now = new Date();
+  const s = new Date(start + 'T00:00:00');
+  const e = new Date(end + 'T23:59:59');
+  if (now < s) return 'upcoming';
+  if (now > e) return 'finished';
+  return 'active';
+};
+
+const formatDate = (dateStr: string) => {
+  const [y, m, d] = dateStr.split('-');
+  return `${d}/${m}/${y}`;
+};
 
 const Seasons = () => {
-  const { isAdmin } = useAuth();
   const [seasons, setSeasons] = useState<Season[]>([]);
+  const [seasonGames, setSeasonGames] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingSeason, setEditingSeason] = useState<Season | null>(null);
-  const [form, setForm] = useState(emptyForm);
 
-  const fetchSeasons = async () => {
-    const { data } = await supabase.from('seasons').select('*').order('start_date', { ascending: false });
-    setSeasons(data || []);
-    setLoading(false);
-  };
+  useEffect(() => {
+    const fetch = async () => {
+      const [seasonsRes, sgRes] = await Promise.all([
+        supabase.from('seasons').select('*').order('start_date', { ascending: true }),
+        supabase.from('season_games').select('season_id, game_id'),
+      ]);
 
-  useEffect(() => { fetchSeasons(); }, []);
+      const seasonsData: Season[] = (seasonsRes.data || []).map(s => ({
+        ...s,
+        status: computeStatus(s.start_date, s.end_date),
+      }));
+      setSeasons(seasonsData);
 
-  const openCreate = () => {
-    setEditingSeason(null);
-    setForm(emptyForm);
-    setDialogOpen(true);
-  };
+      const sgData = sgRes.data || [];
+      if (sgData.length > 0) {
+        const gameIds = [...new Set(sgData.map(sg => sg.game_id))];
+        const { data: gamesData } = await supabase.from('games').select('id, name').in('id', gameIds);
+        const gameMap: Record<string, string> = {};
+        for (const g of (gamesData || [])) gameMap[g.id] = g.name;
 
-  const openEdit = (s: Season, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setEditingSeason(s);
-    setForm({
-      name: s.name,
-      description: s.description || '',
-      start_date: s.start_date,
-      end_date: s.end_date,
-      status: s.status,
-      prize: s.prize || '',
-    });
-    setDialogOpen(true);
-  };
+        const map: Record<string, string[]> = {};
+        for (const sg of sgData) {
+          if (!map[sg.season_id]) map[sg.season_id] = [];
+          const name = gameMap[sg.game_id];
+          if (name) map[sg.season_id].push(name);
+        }
+        setSeasonGames(map);
+      }
 
-  const handleSave = async () => {
-    if (!form.name || !form.start_date || !form.end_date) return toast.error('Preencha nome e datas');
-    const payload = {
-      name: form.name,
-      description: form.description || null,
-      start_date: form.start_date,
-      end_date: form.end_date,
-      status: form.status,
-      prize: form.prize || null,
+      setLoading(false);
     };
-
-    if (editingSeason) {
-      const { error } = await supabase.from('seasons').update(payload).eq('id', editingSeason.id);
-      if (error) return toast.error(error.message);
-      toast.success('Season atualizada!');
-    } else {
-      const { error } = await supabase.from('seasons').insert(payload);
-      if (error) return toast.error(error.message);
-      toast.success('Season criada!');
-    }
-    setDialogOpen(false);
-    fetchSeasons();
-  };
+    fetch();
+  }, []);
 
   return (
     <div className="container py-10">
-      <div className="flex items-center justify-between mb-2">
+      <div className="mb-2">
         <h1 className="text-3xl font-bold">Seasons</h1>
-        {isAdmin && (
-          <Button variant="gold" onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-1" /> Nova Season
-          </Button>
-        )}
       </div>
       <p className="text-muted-foreground mb-8">Temporadas de competição da comunidade</p>
 
@@ -118,84 +100,43 @@ const Seasons = () => {
         </Card>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {seasons.map((s, i) => (
-            <motion.div key={s.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-              <Link to={`/seasons/${s.id}`}>
-                <Card className="bg-card border-border hover:border-gold/20 transition-colors cursor-pointer group relative">
-                  {isAdmin && (
-                    <Button variant="ghost" size="icon" className="absolute top-3 right-3 z-10" onClick={(e) => openEdit(s, e)}>
-                      <Pencil className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-                    </Button>
-                  )}
-                  <CardHeader>
-                    <div className="flex items-center justify-between pr-8">
-                      <CardTitle className="text-xl">{s.name}</CardTitle>
-                      <div className="flex items-center gap-2">
-                        <Badge className={statusColors[s.status]}>{statusLabels[s.status]}</Badge>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-gold transition-colors" />
+          {seasons.map((s, i) => {
+            const games = seasonGames[s.id] || [];
+            return (
+              <motion.div key={s.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
+                <Link to={`/seasons/${s.id}`}>
+                  <Card className="bg-card border-border hover:border-gold/20 transition-colors cursor-pointer group h-full flex flex-col">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <CardTitle className="text-xl">{s.name}</CardTitle>
+                        <div className="flex items-center gap-2">
+                          <Badge className={statusColors[s.status]}>{statusLabels[s.status]}</Badge>
+                          <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-gold transition-colors" />
+                        </div>
                       </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {s.description && <p className="text-sm text-muted-foreground mb-4">{s.description}</p>}
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Calendar className="h-3 w-3" />
-                      <span>{new Date(s.start_date).toLocaleDateString('pt-BR')} — {new Date(s.end_date).toLocaleDateString('pt-BR')}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            </motion.div>
-          ))}
+                    </CardHeader>
+                    <CardContent className="flex-1 flex flex-col justify-between gap-3">
+                      <div>
+                        {s.description && <p className="text-sm text-muted-foreground mb-3">{s.description}</p>}
+                        {games.length > 0 && (
+                          <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-2">
+                            <Gamepad2 className="h-3.5 w-3.5 flex-shrink-0" />
+                            <span className="truncate">{games.join(', ')}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Calendar className="h-3 w-3" />
+                        <span>{formatDate(s.start_date)} — {formatDate(s.end_date)}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              </motion.div>
+            );
+          })}
         </div>
       )}
-
-      {/* Create/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingSeason ? 'Editar Season' : 'Nova Season'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Nome *</Label>
-              <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Season 1" />
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Data Início *</Label>
-                <Input type="date" value={form.start_date} onChange={e => setForm({ ...form, start_date: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Data Fim *</Label>
-                <Input type="date" value={form.end_date} onChange={e => setForm({ ...form, end_date: e.target.value })} />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Status</Label>
-              <Select value={form.status} onValueChange={v => setForm({ ...form, status: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="upcoming">Em breve</SelectItem>
-                  <SelectItem value="active">Ativa</SelectItem>
-                  <SelectItem value="finished">Finalizada</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Descrição</Label>
-              <Textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Descrição da season..." />
-            </div>
-            <div className="space-y-2">
-              <Label>Premiação</Label>
-              <Input value={form.prize} onChange={e => setForm({ ...form, prize: e.target.value })} placeholder="Descrição do prêmio" />
-            </div>
-            <Button variant="gold" onClick={handleSave} className="w-full">
-              {editingSeason ? 'Salvar Alterações' : 'Criar Season'}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

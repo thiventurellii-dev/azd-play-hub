@@ -1,16 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { ExternalLink, Video, Users, Calendar, Plus, Pencil } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ExternalLink, Video, Users, Calendar, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { toast } from 'sonner';
 
 interface Game {
   id: string;
@@ -35,98 +30,66 @@ const statusColors: Record<string, string> = {
   finished: 'bg-muted text-muted-foreground border-border',
 };
 
-const emptyForm = { name: '', image_url: '', rules_url: '', video_url: '', min_players: '', max_players: '' };
-
 const Games = () => {
-  const { isAdmin } = useAuth();
   const [games, setGames] = useState<Game[]>([]);
   const [gameSeasons, setGameSeasons] = useState<Record<string, SeasonLink[]>>({});
+  const [avgDurations, setAvgDurations] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingGame, setEditingGame] = useState<Game | null>(null);
-  const [form, setForm] = useState(emptyForm);
+  const [selectedGame, setSelectedGame] = useState<Game | null>(null);
 
-  const fetchData = async () => {
-    const [gamesRes, sgRes] = await Promise.all([
-      supabase.from('games').select('*').order('name'),
-      supabase.from('season_games').select('game_id, season_id'),
-    ]);
-    const games = gamesRes.data || [];
-    const sgData = sgRes.data || [];
-    setGames(games);
+  useEffect(() => {
+    const fetchData = async () => {
+      const [gamesRes, sgRes, matchesRes] = await Promise.all([
+        supabase.from('games').select('*').order('name'),
+        supabase.from('season_games').select('game_id, season_id'),
+        supabase.from('matches').select('game_id, duration_minutes'),
+      ]);
 
-    if (sgData.length > 0) {
-      const seasonIds = [...new Set(sgData.map(sg => sg.season_id))];
-      const { data: seasons } = await supabase.from('seasons').select('id, name, status').in('id', seasonIds);
-      const seasonMap: Record<string, { name: string; status: string }> = {};
-      for (const s of (seasons || [])) seasonMap[s.id] = { name: s.name, status: s.status };
-      const map: Record<string, SeasonLink[]> = {};
-      for (const sg of sgData) {
-        const s = seasonMap[sg.season_id];
-        if (!s) continue;
-        if (!map[sg.game_id]) map[sg.game_id] = [];
-        map[sg.game_id].push({ season_id: sg.season_id, season_name: s.name, status: s.status });
+      const gamesData = gamesRes.data || [];
+      setGames(gamesData);
+
+      // Seasons per game
+      const sgData = sgRes.data || [];
+      if (sgData.length > 0) {
+        const seasonIds = [...new Set(sgData.map(sg => sg.season_id))];
+        const { data: seasons } = await supabase.from('seasons').select('id, name, status').in('id', seasonIds);
+        const seasonMap: Record<string, { name: string; status: string }> = {};
+        for (const s of (seasons || [])) seasonMap[s.id] = { name: s.name, status: s.status };
+        const map: Record<string, SeasonLink[]> = {};
+        for (const sg of sgData) {
+          const s = seasonMap[sg.season_id];
+          if (!s) continue;
+          if (!map[sg.game_id]) map[sg.game_id] = [];
+          map[sg.game_id].push({ season_id: sg.season_id, season_name: s.name, status: s.status });
+        }
+        setGameSeasons(map);
       }
-      setGameSeasons(map);
-    }
-    setLoading(false);
-  };
 
-  useEffect(() => { fetchData(); }, []);
+      // Avg duration per game
+      const matchesData = matchesRes.data || [];
+      const durMap: Record<string, { total: number; count: number }> = {};
+      for (const m of matchesData) {
+        if (m.duration_minutes) {
+          if (!durMap[m.game_id]) durMap[m.game_id] = { total: 0, count: 0 };
+          durMap[m.game_id].total += m.duration_minutes;
+          durMap[m.game_id].count += 1;
+        }
+      }
+      const avgMap: Record<string, number> = {};
+      for (const [gid, d] of Object.entries(durMap)) {
+        avgMap[gid] = Math.round(d.total / d.count);
+      }
+      setAvgDurations(avgMap);
 
-  const openCreate = () => {
-    setEditingGame(null);
-    setForm(emptyForm);
-    setDialogOpen(true);
-  };
-
-  const openEdit = (g: Game, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditingGame(g);
-    setForm({
-      name: g.name,
-      image_url: g.image_url || '',
-      rules_url: g.rules_url || '',
-      video_url: g.video_url || '',
-      min_players: g.min_players?.toString() || '',
-      max_players: g.max_players?.toString() || '',
-    });
-    setDialogOpen(true);
-  };
-
-  const handleSave = async () => {
-    if (!form.name) return toast.error('Nome obrigatório');
-    const payload = {
-      name: form.name,
-      image_url: form.image_url || null,
-      rules_url: form.rules_url || null,
-      video_url: form.video_url || null,
-      min_players: form.min_players ? parseInt(form.min_players) : null,
-      max_players: form.max_players ? parseInt(form.max_players) : null,
+      setLoading(false);
     };
-
-    if (editingGame) {
-      const { error } = await supabase.from('games').update(payload).eq('id', editingGame.id);
-      if (error) return toast.error(error.message);
-      toast.success('Jogo atualizado!');
-    } else {
-      const { error } = await supabase.from('games').insert(payload);
-      if (error) return toast.error(error.message);
-      toast.success('Jogo criado!');
-    }
-    setDialogOpen(false);
     fetchData();
-  };
+  }, []);
 
   return (
     <div className="container py-10">
-      <div className="flex items-center justify-between mb-2">
+      <div className="mb-2">
         <h1 className="text-3xl font-bold">Jogos</h1>
-        {isAdmin && (
-          <Button variant="gold" onClick={openCreate}>
-            <Plus className="h-4 w-4 mr-1" /> Novo Jogo
-          </Button>
-        )}
       </div>
       <p className="text-muted-foreground mb-8">Biblioteca de jogos da comunidade AzD</p>
 
@@ -144,15 +107,14 @@ const Games = () => {
         <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {games.map((g, i) => {
             const seasons = gameSeasons[g.id] || [];
+            const avgDur = avgDurations[g.id];
             return (
               <motion.div key={g.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                <Card className="bg-card border-border hover:border-gold/20 transition-colors h-full relative">
-                  {isAdmin && (
-                    <Button variant="ghost" size="icon" className="absolute top-3 right-3 z-10" onClick={(e) => openEdit(g, e)}>
-                      <Pencil className="h-4 w-4 text-muted-foreground hover:text-foreground" />
-                    </Button>
-                  )}
-                  <CardContent className="py-5 space-y-4">
+                <Card
+                  className="bg-card border-border hover:border-gold/20 transition-colors h-full flex flex-col cursor-pointer"
+                  onClick={() => setSelectedGame(g)}
+                >
+                  <CardContent className="py-5 space-y-4 flex-1 flex flex-col">
                     <div className="flex items-start gap-4">
                       {g.image_url ? (
                         <img src={g.image_url} alt={g.name} className="h-16 w-16 rounded-lg object-cover flex-shrink-0" />
@@ -163,29 +125,23 @@ const Games = () => {
                       )}
                       <div className="flex-1 min-w-0">
                         <h3 className="text-lg font-bold">{g.name}</h3>
-                        {(g.min_players || g.max_players) && (
-                          <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-                            <Users className="h-4 w-4" /> {g.min_players || '?'}–{g.max_players || '?'} jogadores
-                          </p>
-                        )}
+                        <div className="flex items-center gap-3 mt-1 flex-wrap">
+                          {(g.min_players || g.max_players) && (
+                            <p className="text-sm text-muted-foreground flex items-center gap-1">
+                              <Users className="h-4 w-4" /> {g.min_players || '?'}–{g.max_players || '?'}
+                            </p>
+                          )}
+                          {avgDur && (
+                            <p className="text-sm text-muted-foreground flex items-center gap-1">
+                              <Clock className="h-4 w-4" /> ~{avgDur} min
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    <div className="flex gap-2 flex-wrap">
-                      {g.rules_url && (
-                        <a href={g.rules_url} target="_blank" rel="noopener noreferrer">
-                          <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1.5 py-1">
-                            <ExternalLink className="h-3.5 w-3.5" /> Regras
-                          </Badge>
-                        </a>
-                      )}
-                      {g.video_url && (
-                        <a href={g.video_url} target="_blank" rel="noopener noreferrer">
-                          <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1.5 py-1">
-                            <Video className="h-3.5 w-3.5" /> Vídeo Explicativo
-                          </Badge>
-                        </a>
-                      )}
-                    </div>
+
+                    <div className="flex-1" />
+
                     {seasons.length > 0 && (
                       <div className="border-t border-border pt-3">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
@@ -193,11 +149,9 @@ const Games = () => {
                         </p>
                         <div className="flex gap-2 flex-wrap">
                           {seasons.map(s => (
-                            <Link key={s.season_id} to={`/seasons/${s.season_id}`}>
-                              <Badge className={`${statusColors[s.status] || 'bg-muted text-muted-foreground border-border'} cursor-pointer text-xs`}>
-                                {s.season_name} — {statusLabels[s.status] || s.status}
-                              </Badge>
-                            </Link>
+                            <Badge key={s.season_id} className={`${statusColors[s.status] || 'bg-muted text-muted-foreground border-border'} text-xs`}>
+                              {s.season_name}
+                            </Badge>
                           ))}
                         </div>
                       </div>
@@ -215,44 +169,62 @@ const Games = () => {
         </div>
       )}
 
-      {/* Create/Edit Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingGame ? 'Editar Jogo' : 'Novo Jogo'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Nome *</Label>
-                <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Brass Birmingham" />
+      {/* Detail Dialog */}
+      <Dialog open={!!selectedGame} onOpenChange={(open) => !open && setSelectedGame(null)}>
+        {selectedGame && (
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{selectedGame.name}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              {selectedGame.image_url && (
+                <img src={selectedGame.image_url} alt={selectedGame.name} className="w-full h-48 object-cover rounded-lg" />
+              )}
+              <div className="flex items-center gap-4 flex-wrap text-sm text-muted-foreground">
+                {(selectedGame.min_players || selectedGame.max_players) && (
+                  <span className="flex items-center gap-1">
+                    <Users className="h-4 w-4" /> {selectedGame.min_players || '?'}–{selectedGame.max_players || '?'} jogadores
+                  </span>
+                )}
+                {avgDurations[selectedGame.id] && (
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-4 w-4" /> Média: ~{avgDurations[selectedGame.id]} min
+                  </span>
+                )}
               </div>
-              <div className="space-y-2">
-                <Label>URL da Imagem</Label>
-                <Input value={form.image_url} onChange={e => setForm({ ...form, image_url: e.target.value })} placeholder="https://..." />
+              <div className="flex gap-3 flex-wrap">
+                {selectedGame.rules_url && (
+                  <a href={selectedGame.rules_url} target="_blank" rel="noopener noreferrer">
+                    <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1.5 py-1.5 px-3">
+                      <ExternalLink className="h-3.5 w-3.5" /> Regras
+                    </Badge>
+                  </a>
+                )}
+                {selectedGame.video_url && (
+                  <a href={selectedGame.video_url} target="_blank" rel="noopener noreferrer">
+                    <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1.5 py-1.5 px-3">
+                      <Video className="h-3.5 w-3.5" /> Vídeo Explicativo
+                    </Badge>
+                  </a>
+                )}
               </div>
-              <div className="space-y-2">
-                <Label>Link das Regras</Label>
-                <Input value={form.rules_url} onChange={e => setForm({ ...form, rules_url: e.target.value })} placeholder="https://..." />
-              </div>
-              <div className="space-y-2">
-                <Label>Vídeo Explicativo</Label>
-                <Input value={form.video_url} onChange={e => setForm({ ...form, video_url: e.target.value })} placeholder="https://youtube.com/..." />
-              </div>
-              <div className="space-y-2">
-                <Label>Mín. Jogadores</Label>
-                <Input type="number" min={1} value={form.min_players} onChange={e => setForm({ ...form, min_players: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Máx. Jogadores</Label>
-                <Input type="number" min={1} value={form.max_players} onChange={e => setForm({ ...form, max_players: e.target.value })} />
-              </div>
+              {(gameSeasons[selectedGame.id] || []).length > 0 && (
+                <div className="border-t border-border pt-3">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Seasons</p>
+                  <div className="flex gap-2 flex-wrap">
+                    {(gameSeasons[selectedGame.id] || []).map(s => (
+                      <Link key={s.season_id} to={`/seasons/${s.season_id}`} onClick={() => setSelectedGame(null)}>
+                        <Badge className={`${statusColors[s.status]} cursor-pointer text-xs`}>
+                          {s.season_name} — {statusLabels[s.status]}
+                        </Badge>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-            <Button variant="gold" onClick={handleSave} className="w-full">
-              {editingGame ? 'Salvar Alterações' : 'Criar Jogo'}
-            </Button>
-          </div>
-        </DialogContent>
+          </DialogContent>
+        )}
       </Dialog>
     </div>
   );

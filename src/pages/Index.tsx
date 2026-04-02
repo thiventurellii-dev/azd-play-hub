@@ -20,7 +20,11 @@ const LoggedOutIndex = () => (
         Mais do que jogos, construímos amizades. Seasons competitivas com premiações, rankings e muita diversão na mesa.
       </motion.p>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="relative mt-8 flex flex-wrap justify-center gap-4">
-        <Link to="/register"><Button variant="gold" size="lg">Faça parte da comunidade</Button></Link>
+        <Link to="/register">
+          <motion.div whileHover={{ scale: 1.08, y: -2 }} whileTap={{ scale: 0.97 }} transition={{ type: "spring", stiffness: 400, damping: 15 }}>
+            <Button variant="gold" size="lg">Faça parte da comunidade</Button>
+          </motion.div>
+        </Link>
       </motion.div>
     </section>
   </div>

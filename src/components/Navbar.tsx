@@ -1,7 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Users, Calendar, Shield, LogOut, Menu, X, Gamepad2, BookOpen } from 'lucide-react';
+import { Users, Calendar, Shield, LogOut, Menu, X, Gamepad2, BookOpen, User, Lock, Pencil } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import logo from '@/assets/azd-logo.png';
 import { useState } from 'react';
 
@@ -60,13 +61,29 @@ const Navbar = () => {
           </a>
           {user ? (
             <>
-              <Link to="/profile">
-                <Button variant="ghost" size="sm">{user.user_metadata?.name || 'Perfil'}</Button>
-              </Link>
-              <Button variant="outline" size="sm" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4 mr-1" />
-                Sair
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-2">
+                    <User className="h-4 w-4" />
+                    {user.user_metadata?.name || 'Perfil'}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => navigate('/profile')}>
+                    <Pencil className="h-4 w-4 mr-2" />
+                    Editar Perfil
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/profile?tab=password')}>
+                    <Lock className="h-4 w-4 mr-2" />
+                    Alterar Senha
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sair
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           ) : (
             <>
@@ -109,7 +126,9 @@ const Navbar = () => {
             {user ? (
               <>
                 <Link to="/profile" onClick={() => setMobileOpen(false)}>
-                  <Button variant="ghost" className="w-full justify-start">Perfil</Button>
+                  <Button variant="ghost" className="w-full justify-start gap-2">
+                    <Pencil className="h-4 w-4" /> Editar Perfil
+                  </Button>
                 </Link>
                 <Button variant="outline" className="w-full" onClick={handleSignOut}>Sair</Button>
               </>

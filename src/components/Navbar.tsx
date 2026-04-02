@@ -144,7 +144,7 @@ const Navbar = () => {
                   <Button variant="ghost" className="w-full">Entrar</Button>
                 </Link>
                 <Link to="/register" onClick={() => setMobileOpen(false)}>
-                  <Button variant="gold" className="w-full">Cadastrar</Button>
+                  <Button variant="gold" className="w-full">Faça parte da comunidade</Button>
                 </Link>
               </>
             )}

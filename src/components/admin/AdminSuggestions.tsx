@@ -53,13 +53,13 @@ const AdminSuggestions = () => {
 
   useEffect(() => { fetchSuggestions(); }, []);
 
-  const updateSuggestion = async (id: string, updates: Partial<Suggestion>) => {
+  const updateSuggestion = async (id: string, updates: Partial<Suggestion>, silent = false) => {
     const { error } = await supabase.from('suggestions').update(updates).eq('id', id);
     if (error) {
       notify('error', 'Erro ao atualizar sugestão');
     } else {
       setSuggestions(prev => prev.map(s => s.id === id ? { ...s, ...updates } : s));
-      notify('success', 'Sugestão atualizada');
+      if (!silent) notify('success', 'Sugestão atualizada');
     }
   };
 

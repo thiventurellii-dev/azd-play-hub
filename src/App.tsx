@@ -20,6 +20,7 @@ import Suggestions from "./pages/Suggestions.tsx";
 import Admin from "./pages/Admin.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import AboutUs from "./pages/AboutUs.tsx";
+import Rankings from "./pages/Rankings.tsx";
 
 const queryClient = new QueryClient();
 

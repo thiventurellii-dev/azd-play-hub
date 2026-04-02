@@ -318,6 +318,31 @@ const AdminBloodScripts = () => {
                       </div>
                     )}
                     {chars.length === 0 && <p className="text-sm text-muted-foreground italic">Nenhum personagem cadastrado neste script.</p>}
+
+                    {/* Add existing character */}
+                    {getOtherChars(s.id).length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-border">
+                        <p className="text-sm font-medium mb-2 flex items-center gap-1"><UserPlus className="h-4 w-4" /> Adicionar personagem existente</p>
+                        <div className="flex items-center gap-2">
+                          <Select value={addExistingCharId} onValueChange={setAddExistingCharId}>
+                            <SelectTrigger className="flex-1"><SelectValue placeholder="Selecione um personagem" /></SelectTrigger>
+                            <SelectContent>
+                              {getOtherChars(s.id).map(c => {
+                                const fromScript = scripts.find(sc => sc.id === c.script_id);
+                                return (
+                                  <SelectItem key={c.id} value={c.id}>
+                                    {c.name} ({c.name_en}) — {teamLabels[c.team]}/{roleTypeLabels[c.role_type]} {fromScript ? `[${fromScript.name}]` : ''}
+                                  </SelectItem>
+                                );
+                              })}
+                            </SelectContent>
+                          </Select>
+                          <Button variant="gold" size="sm" onClick={() => handleAddExistingChar(s.id)}>
+                            <Plus className="h-4 w-4 mr-1" /> Adicionar
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>

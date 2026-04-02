@@ -10,6 +10,7 @@ interface AuthContextType {
   role: UserRole | null;
   loading: boolean;
   profileCompleted: boolean;
+  playerStatus: string;
   signUp: (email: string, password: string, name: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -25,6 +26,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileCompleted, setProfileCompleted] = useState(true);
+  const [playerStatus, setPlayerStatus] = useState('active');
 
   const fetchRole = async (userId: string) => {
     const { data } = await supabase
@@ -38,12 +40,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const checkProfileCompleted = async (userId: string) => {
     const { data } = await supabase
       .from('profiles')
-      .select('name, nickname, phone, state, city, birth_date, gender, pronouns')
+      .select('name, nickname, phone, state, city, birth_date, gender, pronouns, status')
       .eq('id', userId)
       .single();
     if (data) {
+      const status = (data as any).status || 'pending';
+      setPlayerStatus(status);
+
+      // If disabled, sign out
+      if (status === 'disabled') {
+        await supabase.auth.signOut();
+        return;
+      }
+
       const complete = !!((data as any).nickname && data.name && data.phone && data.state && data.city && data.birth_date && data.gender && (data as any).pronouns);
-      setProfileCompleted(complete);
+      // Pending status or incomplete profile means must complete
+      setProfileCompleted(status === 'active' && complete);
     }
   };
 
@@ -59,6 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setRole(null);
         setProfileCompleted(true);
+        setPlayerStatus('active');
       }
       setLoading(false);
     });
@@ -95,7 +108,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, role, loading, profileCompleted, signUp, signIn, signOut, setProfileCompleted, isAdmin: role === 'admin' || role === 'super_admin' }}>
+    <AuthContext.Provider value={{ user, session, role, loading, profileCompleted, playerStatus, signUp, signIn, signOut, setProfileCompleted, isAdmin: role === 'admin' || role === 'super_admin' }}>
       {children}
     </AuthContext.Provider>
   );

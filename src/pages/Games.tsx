@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExternalLink, Video, Users, Calendar, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -23,6 +24,20 @@ interface SeasonLink {
   status: string;
 }
 
+interface BloodScript {
+  id: string;
+  name: string;
+  description: string | null;
+}
+
+interface BloodCharacter {
+  id: string;
+  script_id: string;
+  name: string;
+  name_en: string;
+  team: 'good' | 'evil';
+  role_type: 'townsfolk' | 'outsider' | 'minion' | 'demon';
+}
 const statusLabels: Record<string, string> = { active: 'Ativa', upcoming: 'Em breve', finished: 'Finalizada' };
 const statusColors: Record<string, string> = {
   active: 'bg-green-500/20 text-green-400 border-green-500/30',
@@ -36,17 +51,25 @@ const Games = () => {
   const [avgDurations, setAvgDurations] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
+  const [bloodScripts, setBloodScripts] = useState<BloodScript[]>([]);
+  const [bloodCharacters, setBloodCharacters] = useState<BloodCharacter[]>([]);
+  const [expandedScript, setExpandedScript] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
-      const [gamesRes, sgRes, matchesRes] = await Promise.all([
+      const [gamesRes, sgRes, matchesRes, scriptsRes, charsRes] = await Promise.all([
         supabase.from('games').select('*').order('name'),
         supabase.from('season_games').select('game_id, season_id'),
         supabase.from('matches').select('game_id, duration_minutes'),
+        supabase.from('blood_scripts').select('*').order('name'),
+        supabase.from('blood_characters').select('*').order('team, role_type, name'),
       ]);
 
       const gamesData = gamesRes.data || [];
       setGames(gamesData);
+
+      setBloodScripts((scriptsRes.data || []) as BloodScript[]);
+      setBloodCharacters((charsRes.data || []) as BloodCharacter[]);
 
       const sgData = sgRes.data || [];
       if (sgData.length > 0) {
@@ -84,6 +107,169 @@ const Games = () => {
     fetchData();
   }, []);
 
+  const roleTypeLabels: Record<string, string> = { townsfolk: 'Cidadão', outsider: 'Forasteiro', minion: 'Lacaio', demon: 'Demônio' };
+
+  const renderBoardgames = () => (
+    games.length === 0 ? (
+      <Card className="bg-card border-border">
+        <CardContent className="py-12 text-center text-muted-foreground">
+          Nenhum jogo cadastrado ainda.
+        </CardContent>
+      </Card>
+    ) : (
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        {games.map((g, i) => {
+          const seasons = gameSeasons[g.id] || [];
+          const avgDur = avgDurations[g.id];
+          return (
+            <motion.div key={g.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+              <Card
+                className="bg-card border-border hover:border-gold/20 transition-colors h-full flex flex-col cursor-pointer"
+                onClick={() => setSelectedGame(g)}
+              >
+                <CardContent className="py-5 space-y-4 flex-1 flex flex-col">
+                  <div className="flex items-start gap-4">
+                    {g.image_url ? (
+                      <img src={g.image_url} alt={g.name} className="h-16 w-16 rounded-lg object-cover flex-shrink-0" />
+                    ) : (
+                      <div className="h-16 w-16 rounded-lg bg-secondary flex items-center justify-center text-gold font-bold text-2xl flex-shrink-0">
+                        {g.name.charAt(0)}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-bold">{g.name}</h3>
+                      <div className="flex items-center gap-3 mt-1 flex-wrap">
+                        {(g.min_players || g.max_players) && (
+                          <p className="text-sm text-muted-foreground flex items-center gap-1">
+                            <Users className="h-4 w-4" /> {g.min_players || '?'}–{g.max_players || '?'}
+                          </p>
+                        )}
+                        {avgDur && (
+                          <p className="text-sm text-muted-foreground flex items-center gap-1">
+                            <Clock className="h-4 w-4" /> ~{avgDur} min
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex gap-2 mt-2 flex-wrap">
+                        {g.rules_url && (
+                          <a href={g.rules_url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}>
+                            <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1 py-1 px-2 text-xs">
+                              <ExternalLink className="h-3 w-3" /> Regras
+                            </Badge>
+                          </a>
+                        )}
+                        {g.video_url && (
+                          <a href={g.video_url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}>
+                            <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1 py-1 px-2 text-xs">
+                              <Video className="h-3 w-3" /> Vídeo
+                            </Badge>
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex-1" />
+                  {seasons.length > 0 && (
+                    <div className="border-t border-border pt-3">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
+                        <Calendar className="h-3 w-3" /> Seasons
+                      </p>
+                      <div className="flex gap-2 flex-wrap">
+                        {seasons.map(s => (
+                          <Badge key={s.season_id} className={`${statusColors[s.status] || 'bg-muted text-muted-foreground border-border'} text-xs`}>
+                            {s.season_name}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {seasons.length === 0 && (
+                    <div className="border-t border-border pt-3">
+                      <p className="text-xs text-muted-foreground italic">Não vinculado a nenhuma season.</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          );
+        })}
+      </div>
+    )
+  );
+
+  const renderBloodScripts = () => (
+    bloodScripts.length === 0 ? (
+      <Card className="bg-card border-border">
+        <CardContent className="py-12 text-center text-muted-foreground">
+          Nenhum script de Blood on the Clocktower cadastrado.
+        </CardContent>
+      </Card>
+    ) : (
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        {bloodScripts.map((s, i) => {
+          const chars = bloodCharacters.filter(c => c.script_id === s.id);
+          const goodChars = chars.filter(c => c.team === 'good');
+          const evilChars = chars.filter(c => c.team === 'evil');
+          const isExpanded = expandedScript === s.id;
+          return (
+            <motion.div key={s.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+              <Card
+                className="bg-card border-border hover:border-gold/20 transition-colors cursor-pointer"
+                onClick={() => setExpandedScript(isExpanded ? null : s.id)}
+              >
+                <CardContent className="py-5 space-y-3">
+                  <div className="flex items-start gap-4">
+                    <div className="h-16 w-16 rounded-lg bg-secondary flex items-center justify-center text-2xl flex-shrink-0">
+                      🩸
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-bold">{s.name}</h3>
+                      {s.description && <p className="text-sm text-muted-foreground mt-1">{s.description}</p>}
+                      <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1"><Users className="h-4 w-4" /> {chars.length} personagens</span>
+                        <span>👼 {goodChars.length}</span>
+                        <span>😈 {evilChars.length}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {isExpanded && (
+                    <div className="border-t border-border pt-3 space-y-2">
+                      {goodChars.length > 0 && (
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">👼 Bem</p>
+                          <div className="flex flex-wrap gap-1">
+                            {goodChars.map(c => (
+                              <Badge key={c.id} variant="outline" className="text-xs">
+                                {c.name} <span className="text-muted-foreground ml-1">({roleTypeLabels[c.role_type]})</span>
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {evilChars.length > 0 && (
+                        <div>
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">😈 Mal</p>
+                          <div className="flex flex-wrap gap-1">
+                            {evilChars.map(c => (
+                              <Badge key={c.id} variant="outline" className="text-xs border-destructive/30">
+                                {c.name} <span className="text-muted-foreground ml-1">({roleTypeLabels[c.role_type]})</span>
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
+          );
+        })}
+      </div>
+    )
+  );
+
   return (
     <div className="container py-10">
       <div className="mb-2">
@@ -95,93 +281,19 @@ const Games = () => {
         <div className="flex justify-center py-20">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-gold border-t-transparent" />
         </div>
-      ) : games.length === 0 ? (
-        <Card className="bg-card border-border">
-          <CardContent className="py-12 text-center text-muted-foreground">
-            Nenhum jogo cadastrado ainda.
-          </CardContent>
-        </Card>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {games.map((g, i) => {
-            const seasons = gameSeasons[g.id] || [];
-            const avgDur = avgDurations[g.id];
-            return (
-              <motion.div key={g.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                <Card
-                  className="bg-card border-border hover:border-gold/20 transition-colors h-full flex flex-col cursor-pointer"
-                  onClick={() => setSelectedGame(g)}
-                >
-                  <CardContent className="py-5 space-y-4 flex-1 flex flex-col">
-                    <div className="flex items-start gap-4">
-                      {g.image_url ? (
-                        <img src={g.image_url} alt={g.name} className="h-16 w-16 rounded-lg object-cover flex-shrink-0" />
-                      ) : (
-                        <div className="h-16 w-16 rounded-lg bg-secondary flex items-center justify-center text-gold font-bold text-2xl flex-shrink-0">
-                          {g.name.charAt(0)}
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-bold">{g.name}</h3>
-                        <div className="flex items-center gap-3 mt-1 flex-wrap">
-                          {(g.min_players || g.max_players) && (
-                            <p className="text-sm text-muted-foreground flex items-center gap-1">
-                              <Users className="h-4 w-4" /> {g.min_players || '?'}–{g.max_players || '?'}
-                            </p>
-                          )}
-                          {avgDur && (
-                            <p className="text-sm text-muted-foreground flex items-center gap-1">
-                              <Clock className="h-4 w-4" /> ~{avgDur} min
-                            </p>
-                          )}
-                        </div>
-                        {/* Links on card */}
-                        <div className="flex gap-2 mt-2 flex-wrap">
-                          {g.rules_url && (
-                            <a href={g.rules_url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}>
-                              <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1 py-1 px-2 text-xs">
-                                <ExternalLink className="h-3 w-3" /> Regras
-                              </Badge>
-                            </a>
-                          )}
-                          {g.video_url && (
-                            <a href={g.video_url} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}>
-                              <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1 py-1 px-2 text-xs">
-                                <Video className="h-3 w-3" /> Vídeo
-                              </Badge>
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex-1" />
-
-                    {seasons.length > 0 && (
-                      <div className="border-t border-border pt-3">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
-                          <Calendar className="h-3 w-3" /> Seasons
-                        </p>
-                        <div className="flex gap-2 flex-wrap">
-                          {seasons.map(s => (
-                            <Badge key={s.season_id} className={`${statusColors[s.status] || 'bg-muted text-muted-foreground border-border'} text-xs`}>
-                              {s.season_name}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {seasons.length === 0 && (
-                      <div className="border-t border-border pt-3">
-                        <p className="text-xs text-muted-foreground italic">Não vinculado a nenhuma season.</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </motion.div>
-            );
-          })}
-        </div>
+        <Tabs defaultValue="boardgame" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="boardgame">🎲 Boardgames</TabsTrigger>
+            <TabsTrigger value="blood">🩸 Blood on the Clocktower</TabsTrigger>
+          </TabsList>
+          <TabsContent value="boardgame">
+            {renderBoardgames()}
+          </TabsContent>
+          <TabsContent value="blood">
+            {renderBloodScripts()}
+          </TabsContent>
+        </Tabs>
       )}
 
       {/* Detail Dialog */}

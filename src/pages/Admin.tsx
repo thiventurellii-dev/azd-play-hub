@@ -4,6 +4,7 @@ import AdminSeasons from '@/components/admin/AdminSeasons';
 import AdminGames from '@/components/admin/AdminGames';
 import AdminMatches from '@/components/admin/AdminMatches';
 import AdminBloodMatches from '@/components/admin/AdminBloodMatches';
+import AdminBloodScripts from '@/components/admin/AdminBloodScripts';
 import AdminPlayers from '@/components/admin/AdminPlayers';
 import AdminAboutUs from '@/components/admin/AdminAboutUs';
 import AdminContato from '@/components/admin/AdminContato';
@@ -24,6 +25,7 @@ const Admin = () => {
         <TabsList className="bg-secondary flex-wrap">
           <TabsTrigger value="seasons">Seasons</TabsTrigger>
           <TabsTrigger value="games">Jogos</TabsTrigger>
+          <TabsTrigger value="blood-scripts">Scripts Blood</TabsTrigger>
           <TabsTrigger value="matches">Partidas BG</TabsTrigger>
           <TabsTrigger value="blood-matches">Partidas Blood</TabsTrigger>
           <TabsTrigger value="players">Jogadores</TabsTrigger>
@@ -34,6 +36,7 @@ const Admin = () => {
 
         <TabsContent value="seasons"><AdminSeasons /></TabsContent>
         <TabsContent value="games"><AdminGames /></TabsContent>
+        <TabsContent value="blood-scripts"><AdminBloodScripts /></TabsContent>
         <TabsContent value="matches"><AdminMatches /></TabsContent>
         <TabsContent value="blood-matches"><AdminBloodMatches /></TabsContent>
         <TabsContent value="players"><AdminPlayers /></TabsContent>

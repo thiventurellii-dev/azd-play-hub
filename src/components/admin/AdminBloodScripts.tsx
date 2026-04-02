@@ -57,6 +57,9 @@ const AdminBloodScripts = () => {
   const [editingChar, setEditingChar] = useState<BloodCharacter | null>(null);
   const [editCharForm, setEditCharForm] = useState({ name: '', name_en: '', team: 'good' as 'good' | 'evil', role_type: 'townsfolk' as BloodCharacter['role_type'], description: '' });
 
+  // Add existing character to script
+  const [addExistingCharId, setAddExistingCharId] = useState<string>('');
+
   const fetchData = async () => {
     const [scriptsRes, charsRes] = await Promise.all([
       supabase.from('blood_scripts').select('*').order('name'),

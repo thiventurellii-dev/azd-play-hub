@@ -31,8 +31,8 @@ interface PlayerWithRole {
 
 const emptyForm = { name: '', nickname: '', email: '', phone: '', country_code: '+55', state: '', city: '', birth_date: '', gender: '', pronouns: '', password: '' };
 
-const statusLabels: Record<string, string> = { pending: 'Cadastro Pendente', pending_approval: 'Aguardando Aprovação', active: 'Ativo', disabled: 'Desativado' };
-const statusColors: Record<string, string> = { pending: 'bg-yellow-500/20 text-yellow-400', pending_approval: 'bg-orange-500/20 text-orange-400', active: 'bg-green-500/20 text-green-400', disabled: 'bg-red-500/20 text-red-400' };
+const statusLabels: Record<string, string> = { pending: 'Cadastro Pendente', pending_approval: 'Aguardando Aprovação', active: 'Ativo', disabled: 'Desativado', approved: 'Cadastro Pendente' };
+const statusColors: Record<string, string> = { pending: 'bg-yellow-500/20 text-yellow-400', pending_approval: 'bg-orange-500/20 text-orange-400', active: 'bg-green-500/20 text-green-400', disabled: 'bg-red-500/20 text-red-400', approved: 'bg-yellow-500/20 text-yellow-400' };
 
 const AdminPlayers = () => {
   const { notify } = useNotification();

@@ -56,13 +56,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const complete = !!((data as any).nickname && data.name && data.phone && data.state && data.city && data.birth_date && data.gender && (data as any).pronouns);
       
-      // pending = needs to complete profile
-      // pending_approval = profile complete, waiting admin approval
+      // pending = needs to complete profile (admin/script created)
+      // pending_approval = community signup, profile complete, waiting admin approval
       // active = fully approved
-      if (status === 'pending_approval') {
+      if (status === 'pending') {
+        setProfileCompleted(complete); // redirect to complete profile if not complete
+      } else if (status === 'pending_approval') {
         setProfileCompleted(true); // profile IS complete, just waiting approval
       } else {
-        setProfileCompleted(status === 'active' && complete);
+        setProfileCompleted(status === 'active');
       }
     }
   };

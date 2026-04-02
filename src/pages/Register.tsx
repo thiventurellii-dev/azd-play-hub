@@ -19,6 +19,7 @@ const Register = () => {
     name: '',
     email: '',
     password: '',
+    confirmPassword: '',
     phone: '',
     country_code: '+55',
     state: '',
@@ -42,6 +43,9 @@ const Register = () => {
     }
     if (!passwordRegex.test(password)) {
       return toast.error('A senha deve ter mínimo 8 caracteres, uma maiúscula, uma minúscula e um caractere especial');
+    }
+    if (password !== form.confirmPassword) {
+      return toast.error('As senhas não coincidem');
     }
 
     setLoading(true);
@@ -117,6 +121,11 @@ const Register = () => {
               <Label>Senha *</Label>
               <Input type="password" value={form.password} onChange={e => updateField('password', e.target.value)} placeholder="Mín. 8 caracteres" required />
               <p className="text-xs text-muted-foreground">Mínimo 8 caracteres, 1 maiúscula, 1 minúscula, 1 especial</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Confirmar Senha *</Label>
+              <Input type="password" value={form.confirmPassword} onChange={e => updateField('confirmPassword', e.target.value)} placeholder="Digite a senha novamente" required />
             </div>
 
             <div className="space-y-2">

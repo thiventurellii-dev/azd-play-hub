@@ -90,6 +90,23 @@ const Games = () => {
         setGameSeasons(map);
       }
 
+      // Map seasons to blood scripts
+      const sbsData = (sbsRes.data || []) as any[];
+      if (sbsData.length > 0) {
+        const bsSeasonIds = [...new Set(sbsData.map((s: any) => s.season_id))];
+        const { data: bsSeasons } = await supabase.from('seasons').select('id, name, status').in('id', bsSeasonIds);
+        const bsSeasonMap: Record<string, { name: string; status: string }> = {};
+        for (const s of (bsSeasons || [])) bsSeasonMap[s.id] = { name: s.name, status: s.status };
+        const bsMap: Record<string, SeasonLink[]> = {};
+        for (const sbs of sbsData) {
+          const s = bsSeasonMap[sbs.season_id];
+          if (!s) continue;
+          if (!bsMap[sbs.script_id]) bsMap[sbs.script_id] = [];
+          bsMap[sbs.script_id].push({ season_id: sbs.season_id, season_name: s.name, status: s.status });
+        }
+        setScriptSeasons(bsMap);
+      }
+
       const matchesData = matchesRes.data || [];
       const durMap: Record<string, { total: number; count: number }> = {};
       for (const m of matchesData) {

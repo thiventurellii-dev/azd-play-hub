@@ -233,7 +233,7 @@ const Games = () => {
         </CardContent>
       </Card>
     ) : (
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+    <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {bloodScripts.map((s, i) => {
           const chars = bloodCharacters.filter(c => c.script_id === s.id);
           const goodChars = chars.filter(c => c.team === 'good');
@@ -243,7 +243,7 @@ const Games = () => {
           return (
             <motion.div key={s.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
               <Card
-                className="bg-card border-border hover:border-gold/20 transition-colors cursor-pointer"
+                className="bg-card border-border hover:border-gold/20 transition-colors cursor-pointer h-full flex flex-col"
                 onClick={() => setExpandedScript(isExpanded ? null : s.id)}
               >
                 <CardContent className="py-5 space-y-3">

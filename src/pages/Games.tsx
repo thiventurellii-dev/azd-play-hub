@@ -7,7 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExternalLink, Video, Users, Calendar, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
-
+import troubleBrewingImg from '@/assets/trouble-brewing.jpg';
+import badMoonRisingImg from '@/assets/bad-moon-rising.jpg';
 interface Game {
   id: string;
   name: string;

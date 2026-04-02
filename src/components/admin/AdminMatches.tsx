@@ -9,8 +9,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
-import { Plus, Trash2, UserPlus, Upload, Image, Pencil, Search } from 'lucide-react';
+import { Plus, Trash2, UserPlus, Upload, Image, Pencil, Search, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface Season { id: string; name: string; }
 interface Game { id: string; name: string; }
@@ -44,15 +45,15 @@ const AdminMatches = () => {
   const [saving, setSaving] = useState(false);
   const [matches, setMatches] = useState<MatchRecord[]>([]);
 
-  // Filters
   const [filterSeason, setFilterSeason] = useState('all');
   const [filterDate, setFilterDate] = useState('');
 
-  // Edit state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingMatch, setEditingMatch] = useState<MatchRecord | null>(null);
   const [editForm, setEditForm] = useState({ played_date: '', played_time: '', duration: '', season_id: '', game_id: '' });
   const [editResults, setEditResults] = useState<MatchResult[]>([]);
+
+  const [expandedSeasons, setExpandedSeasons] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const fetchBase = async () => {
@@ -106,14 +107,14 @@ const AdminMatches = () => {
     const playerIds = [...new Set((resultsRes.data || []).map(r => r.player_id))];
     const { data: profilesData } = await supabase.from('profiles').select('id, name, nickname').in('id', playerIds);
     const playerMap: Record<string, string> = {};
-    for (const p of (profilesData || [])) playerMap[p.id] = (p as any).nickname || p.name;
+    for (const p of (profilesData || [])) playerMap[p.id] = p.nickname || p.name;
 
     setMatches(matchData.map(m => ({
       id: m.id,
       played_at: m.played_at,
       duration_minutes: m.duration_minutes,
       image_url: m.image_url,
-      first_player_id: (m as any).first_player_id || null,
+      first_player_id: m.first_player_id || null,
       season_id: m.season_id,
       game_id: m.game_id,
       season: { name: seasonMap[m.season_id] || '?' },
@@ -129,7 +130,7 @@ const AdminMatches = () => {
           mmr_before: r.mmr_before || 1000,
           mmr_change: r.mmr_change || 0,
           mmr_after: r.mmr_after || 1000,
-          is_first: r.player_id === (m as any).first_player_id,
+          is_first: r.player_id === m.first_player_id,
         })),
     })));
   };
@@ -220,7 +221,7 @@ const AdminMatches = () => {
           duration_minutes: parseInt(duration) || null,
           played_at: new Date(`${playedDate}T${playedTime}`).toISOString(),
           image_url: imageUrl, first_player_id: firstPlayerId,
-        } as any)
+        })
         .select().single();
       if (matchErr) throw matchErr;
 
@@ -253,7 +254,6 @@ const AdminMatches = () => {
     }
   };
 
-  // Edit match
   const openEditMatch = (m: MatchRecord) => {
     setEditingMatch(m);
     const d = new Date(m.played_at);
@@ -277,20 +277,18 @@ const AdminMatches = () => {
       game_id: editForm.game_id,
       duration_minutes: parseInt(editForm.duration) || null,
       played_at: new Date(`${editForm.played_date}T${editForm.played_time}`).toISOString(),
-    } as any).eq('id', editingMatch.id);
+    }).eq('id', editingMatch.id);
     if (error) return toast.error(error.message);
 
-    // Update results
     for (const r of editResults) {
       await supabase.from('match_results').update({
         position: r.position, score: r.score,
       }).eq('match_id', editingMatch.id).eq('player_id', r.player_id);
     }
 
-    // Update first player
     const firstPlayer = editResults.find(r => r.is_first_player);
     if (firstPlayer) {
-      await supabase.from('matches').update({ first_player_id: firstPlayer.player_id } as any).eq('id', editingMatch.id);
+      await supabase.from('matches').update({ first_player_id: firstPlayer.player_id }).eq('id', editingMatch.id);
     }
 
     toast.success('Partida atualizada!');
@@ -298,20 +296,22 @@ const AdminMatches = () => {
     fetchMatches();
   };
 
-  // Filtered matches
   const filteredMatches = matches.filter(m => {
     if (filterSeason !== 'all' && m.season_id !== filterSeason) return false;
     if (filterDate && !m.played_at.startsWith(filterDate)) return false;
     return true;
   });
 
-  // Group by season
   const groupedMatches: Record<string, MatchRecord[]> = {};
   for (const m of filteredMatches) {
     const key = m.season.name;
     if (!groupedMatches[key]) groupedMatches[key] = [];
     groupedMatches[key].push(m);
   }
+
+  const toggleSeasonExpanded = (name: string) => {
+    setExpandedSeasons(prev => ({ ...prev, [name]: !prev[name] }));
+  };
 
   return (
     <div className="space-y-6">
@@ -371,7 +371,7 @@ const AdminMatches = () => {
                   <TableHead className="w-[30%]">Jogador</TableHead>
                   <TableHead className="w-[15%]">Posição</TableHead>
                   <TableHead className="w-[15%]">Pontuação</TableHead>
-                  <TableHead className="w-[20%]">First Player</TableHead>
+                  <TableHead className="w-[20%]">Primeiro a Jogar</TableHead>
                   <TableHead className="w-[20%]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -384,7 +384,7 @@ const AdminMatches = () => {
                         <SelectContent>
                           {players.map(p => (
                             <SelectItem key={p.id} value={p.id} disabled={results.some((rr, ii) => ii !== i && rr.player_id === p.id)}>
-                              {(p as any).nickname || p.name}
+                              {p.nickname || p.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -447,70 +447,80 @@ const AdminMatches = () => {
         </CardContent>
       </Card>
 
-      {/* Grouped matches */}
-      {Object.entries(groupedMatches).map(([seasonName, seasonMatches]) => (
-        <Card key={seasonName} className="bg-card border-border">
-          <CardHeader><CardTitle className="text-lg">{seasonName}</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            {seasonMatches.map(m => (
-              <div key={m.id} className="rounded-lg border border-border p-4 space-y-3">
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Badge variant="outline">{m.game.name}</Badge>
-                    {m.duration_minutes && <span className="text-xs text-muted-foreground">{m.duration_minutes} min</span>}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => openEditMatch(m)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    {m.image_url && (
-                      <a href={m.image_url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
-                        <Image className="h-4 w-4" />
-                      </a>
-                    )}
-                    <span className="text-xs text-muted-foreground">{new Date(m.played_at).toLocaleDateString('pt-BR')}</span>
-                  </div>
-                </div>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Pos.</TableHead>
-                      <TableHead>Jogador</TableHead>
-                      <TableHead>Pontos</TableHead>
-                      <TableHead>MMR Antes</TableHead>
-                      <TableHead>Variação</TableHead>
-                      <TableHead>MMR Depois</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {m.results.map((r, i) => (
-                      <TableRow key={i}>
-                        <TableCell>
-                          <Badge variant={r.position === 1 ? 'default' : 'secondary'} className={r.position === 1 ? 'bg-gold text-black' : ''}>
-                            {r.position}º
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {r.player_name}
-                          {r.is_first && <Badge variant="outline" className="ml-2 text-xs border-gold/50 text-gold">First</Badge>}
-                        </TableCell>
-                        <TableCell>{r.score}</TableCell>
-                        <TableCell>{r.mmr_before}</TableCell>
-                        <TableCell>
-                          <span className={r.mmr_change >= 0 ? 'text-green-500' : 'text-red-500'}>
-                            {r.mmr_change >= 0 ? '+' : ''}{r.mmr_change}
-                          </span>
-                        </TableCell>
-                        <TableCell className="font-semibold">{r.mmr_after}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+      {/* Grouped matches - collapsible, default collapsed */}
+      {Object.entries(groupedMatches).map(([seasonName, seasonMatches]) => {
+        const isOpen = expandedSeasons[seasonName] || false;
+        return (
+          <Card key={seasonName} className="bg-card border-border">
+            <CardHeader className="cursor-pointer" onClick={() => toggleSeasonExpanded(seasonName)}>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">{seasonName} ({seasonMatches.length} partidas)</CardTitle>
+                {isOpen ? <ChevronUp className="h-5 w-5 text-muted-foreground" /> : <ChevronDown className="h-5 w-5 text-muted-foreground" />}
               </div>
-            ))}
-          </CardContent>
-        </Card>
-      ))}
+            </CardHeader>
+            {isOpen && (
+              <CardContent className="space-y-4">
+                {seasonMatches.map(m => (
+                  <div key={m.id} className="rounded-lg border border-border p-4 space-y-3">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="outline">{m.game.name}</Badge>
+                        {m.duration_minutes && <span className="text-xs text-muted-foreground">{m.duration_minutes} min</span>}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => openEditMatch(m)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        {m.image_url && (
+                          <a href={m.image_url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
+                            <Image className="h-4 w-4" />
+                          </a>
+                        )}
+                        <span className="text-xs text-muted-foreground">{new Date(m.played_at).toLocaleDateString('pt-BR')}</span>
+                      </div>
+                    </div>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Pos.</TableHead>
+                          <TableHead>Jogador</TableHead>
+                          <TableHead>Pontos</TableHead>
+                          <TableHead>MMR Antes</TableHead>
+                          <TableHead>Variação</TableHead>
+                          <TableHead>MMR Depois</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {m.results.map((r, i) => (
+                          <TableRow key={i}>
+                            <TableCell>
+                              <Badge variant={r.position === 1 ? 'default' : 'secondary'} className={r.position === 1 ? 'bg-gold text-black' : ''}>
+                                {r.position}º
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="font-medium">
+                              {r.player_name}
+                              {r.is_first && <Badge variant="outline" className="ml-2 text-xs border-gold/50 text-gold">First</Badge>}
+                            </TableCell>
+                            <TableCell>{r.score}</TableCell>
+                            <TableCell>{r.mmr_before}</TableCell>
+                            <TableCell>
+                              <span className={r.mmr_change >= 0 ? 'text-green-500' : 'text-red-500'}>
+                                {r.mmr_change >= 0 ? '+' : ''}{r.mmr_change}
+                              </span>
+                            </TableCell>
+                            <TableCell className="font-semibold">{r.mmr_after}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                ))}
+              </CardContent>
+            )}
+          </Card>
+        );
+      })}
 
       {filteredMatches.length === 0 && matches.length > 0 && (
         <p className="text-center text-muted-foreground py-8">Nenhuma partida encontrada com os filtros selecionados.</p>
@@ -555,29 +565,49 @@ const AdminMatches = () => {
             </div>
 
             <Label>Resultados</Label>
-            {editResults.map((r, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <span className="text-sm w-[120px] truncate">{players.find(p => p.id === r.player_id)?.nickname || players.find(p => p.id === r.player_id)?.name || '?'}</span>
-                <Input type="number" min={1} value={r.position} onChange={e => {
-                  const updated = [...editResults];
-                  updated[i].position = parseInt(e.target.value) || 1;
-                  setEditResults(updated);
-                }} className="w-[70px]" placeholder="Pos" />
-                <Input type="number" value={r.score} onChange={e => {
-                  const updated = [...editResults];
-                  updated[i].score = parseInt(e.target.value) || 0;
-                  setEditResults(updated);
-                }} className="w-[80px]" placeholder="Pts" />
-                <div className="flex items-center gap-1">
-                  <Checkbox checked={r.is_first_player} onCheckedChange={(checked) => {
-                    const updated = [...editResults];
-                    updated.forEach((rr, idx) => { rr.is_first_player = idx === i && !!checked; });
-                    setEditResults(updated);
-                  }} />
-                  <span className="text-xs">1º</span>
-                </div>
-              </div>
-            ))}
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Jogador</TableHead>
+                  <TableHead className="w-[80px]">Posição</TableHead>
+                  <TableHead className="w-[80px]">Pontuação</TableHead>
+                  <TableHead className="w-[100px]">Primeiro</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {editResults.map((r, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="text-sm truncate">
+                      {players.find(p => p.id === r.player_id)?.nickname || players.find(p => p.id === r.player_id)?.name || '?'}
+                    </TableCell>
+                    <TableCell>
+                      <Input type="number" min={1} value={r.position} onChange={e => {
+                        const updated = [...editResults];
+                        updated[i].position = parseInt(e.target.value) || 1;
+                        setEditResults(updated);
+                      }} className="w-[70px]" />
+                    </TableCell>
+                    <TableCell>
+                      <Input type="number" value={r.score} onChange={e => {
+                        const updated = [...editResults];
+                        updated[i].score = parseInt(e.target.value) || 0;
+                        setEditResults(updated);
+                      }} className="w-[80px]" />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Checkbox checked={r.is_first_player} onCheckedChange={(checked) => {
+                          const updated = [...editResults];
+                          updated.forEach((rr, idx) => { rr.is_first_player = idx === i && !!checked; });
+                          setEditResults(updated);
+                        }} />
+                        <span className="text-xs">1º</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
 
             <Button variant="gold" onClick={handleEditMatchSave} className="w-full">Salvar Alterações</Button>
           </div>

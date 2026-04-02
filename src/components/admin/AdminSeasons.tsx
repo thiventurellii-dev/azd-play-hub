@@ -3,17 +3,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { toast } from 'sonner';
 import { Plus, Trash2, Gamepad2, ChevronDown, ChevronUp, Trophy, Pencil } from 'lucide-react';
 
 interface Season {
-  id: string; name: string; description: string; start_date: string; end_date: string; status: string; prize: string;
+  id: string; name: string; description: string; start_date: string; end_date: string; status: string;
   prize_1st: number; prize_2nd: number; prize_3rd: number;
 }
 interface Game { id: string; name: string; }
@@ -26,7 +26,6 @@ const AdminSeasons = () => {
   const [seasonGamesMap, setSeasonGamesMap] = useState<Record<string, string[]>>({});
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [prize, setPrize] = useState('');
   const [prize1st, setPrize1st] = useState('');
   const [prize2nd, setPrize2nd] = useState('');
   const [prize3rd, setPrize3rd] = useState('');
@@ -35,11 +34,12 @@ const AdminSeasons = () => {
   const [status, setStatus] = useState('upcoming');
   const [selectedGames, setSelectedGames] = useState<string[]>([]);
   const [expandedSeason, setExpandedSeason] = useState<string | null>(null);
+  const [gamesOpen, setGamesOpen] = useState(false);
 
-  // Edit state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingSeason, setEditingSeason] = useState<Season | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', description: '', prize: '', prize_1st: '', prize_2nd: '', prize_3rd: '', start_date: '', end_date: '', status: '' });
+  const [editForm, setEditForm] = useState({ name: '', description: '', prize_1st: '', prize_2nd: '', prize_3rd: '', start_date: '', end_date: '', status: '' });
+  const [editGamesOpen, setEditGamesOpen] = useState(false);
 
   const fetchData = async () => {
     const [seasonsRes, gamesRes, sgRes] = await Promise.all([
@@ -49,10 +49,9 @@ const AdminSeasons = () => {
     ]);
     setSeasons((seasonsRes.data || []).map(s => ({
       ...s,
-      prize: (s as any).prize || '',
-      prize_1st: (s as any).prize_1st || 0,
-      prize_2nd: (s as any).prize_2nd || 0,
-      prize_3rd: (s as any).prize_3rd || 0,
+      prize_1st: s.prize_1st || 0,
+      prize_2nd: s.prize_2nd || 0,
+      prize_3rd: s.prize_3rd || 0,
     })));
     setGames(gamesRes.data || []);
     const map: Record<string, string[]> = {};
@@ -70,18 +69,18 @@ const AdminSeasons = () => {
     const { data, error } = await supabase
       .from('seasons')
       .insert({
-        name, description, start_date: startDate, end_date: endDate, status, prize,
+        name, description, start_date: startDate, end_date: endDate, status,
         prize_1st: parseInt(prize1st) || 0,
         prize_2nd: parseInt(prize2nd) || 0,
         prize_3rd: parseInt(prize3rd) || 0,
-      } as any)
+      })
       .select().single();
     if (error) return toast.error(error.message);
     if (selectedGames.length > 0) {
       await supabase.from('season_games').insert(selectedGames.map(gid => ({ season_id: data.id, game_id: gid })));
     }
     toast.success('Season criada!');
-    setName(''); setDescription(''); setPrize(''); setPrize1st(''); setPrize2nd(''); setPrize3rd(''); setStartDate(''); setEndDate(''); setSelectedGames([]);
+    setName(''); setDescription(''); setPrize1st(''); setPrize2nd(''); setPrize3rd(''); setStartDate(''); setEndDate(''); setSelectedGames([]);
     fetchData();
   };
 
@@ -98,7 +97,6 @@ const AdminSeasons = () => {
     setEditForm({
       name: s.name,
       description: s.description || '',
-      prize: s.prize || '',
       prize_1st: String(s.prize_1st || 0),
       prize_2nd: String(s.prize_2nd || 0),
       prize_3rd: String(s.prize_3rd || 0),
@@ -106,6 +104,7 @@ const AdminSeasons = () => {
       end_date: s.end_date,
       status: s.status,
     });
+    setEditGamesOpen(false);
     setEditDialogOpen(true);
   };
 
@@ -114,14 +113,13 @@ const AdminSeasons = () => {
     const { error } = await supabase.from('seasons').update({
       name: editForm.name,
       description: editForm.description,
-      prize: editForm.prize,
       prize_1st: parseInt(editForm.prize_1st) || 0,
       prize_2nd: parseInt(editForm.prize_2nd) || 0,
       prize_3rd: parseInt(editForm.prize_3rd) || 0,
       start_date: editForm.start_date,
       end_date: editForm.end_date,
       status: editForm.status,
-    } as any).eq('id', editingSeason.id);
+    }).eq('id', editingSeason.id);
     if (error) return toast.error(error.message);
     toast.success('Season atualizada!');
     setEditDialogOpen(false);
@@ -196,26 +194,29 @@ const AdminSeasons = () => {
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Descrição da Premiação (opcional)</Label>
-            <Textarea value={prize} onChange={e => setPrize(e.target.value)} placeholder="Detalhes extras sobre a premiação" rows={2} />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Jogos desta Season</Label>
-            {games.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhum jogo cadastrado. Adicione jogos na aba "Jogos" primeiro.</p>
-            ) : (
-              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {games.map(g => (
-                  <label key={g.id} className="flex items-center gap-2 rounded-md border border-border p-2 cursor-pointer hover:bg-secondary/50 transition-colors">
-                    <Checkbox checked={selectedGames.includes(g.id)} onCheckedChange={() => toggleNewGameSelection(g.id)} />
-                    <span className="text-sm">{g.name}</span>
-                  </label>
-                ))}
-              </div>
-            )}
-          </div>
+          <Collapsible open={gamesOpen} onOpenChange={setGamesOpen}>
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Gamepad2 className="h-4 w-4" />
+                Jogos desta Season ({selectedGames.length})
+                {gamesOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-3">
+              {games.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Nenhum jogo cadastrado.</p>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {games.map(g => (
+                    <label key={g.id} className="flex items-center gap-2 rounded-md border border-border p-2 cursor-pointer hover:bg-secondary/50 transition-colors">
+                      <Checkbox checked={selectedGames.includes(g.id)} onCheckedChange={() => toggleNewGameSelection(g.id)} />
+                      <span className="text-sm">{g.name}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </CollapsibleContent>
+          </Collapsible>
 
           <Button variant="gold" onClick={handleCreate}><Plus className="h-4 w-4 mr-1" /> Criar Season</Button>
         </CardContent>
@@ -262,26 +263,28 @@ const AdminSeasons = () => {
                         <p className="text-xs text-muted-foreground mt-1">Total: R$ {total}</p>
                       </div>
                     )}
-                    {s.prize && (
-                      <div>
-                        <Label className="text-sm text-muted-foreground">Detalhes:</Label>
-                        <p className="text-sm mt-1">{s.prize}</p>
-                      </div>
-                    )}
-                    <div>
-                      <Label className="text-sm mb-2 block">Jogos vinculados:</Label>
-                      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                        {games.map(g => {
-                          const isLinked = sgames.includes(g.id);
-                          return (
-                            <label key={g.id} className="flex items-center gap-2 rounded-md border border-border p-2 cursor-pointer hover:bg-secondary/50 transition-colors">
-                              <Checkbox checked={isLinked} onCheckedChange={() => toggleGameInSeason(s.id, g.id, isLinked)} />
-                              <span className="text-sm">{g.name}</span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    </div>
+                    <Collapsible>
+                      <CollapsibleTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-2">
+                          <Gamepad2 className="h-4 w-4" />
+                          Jogos vinculados ({sgames.length})
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="mt-3">
+                        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                          {games.map(g => {
+                            const isLinked = sgames.includes(g.id);
+                            return (
+                              <label key={g.id} className="flex items-center gap-2 rounded-md border border-border p-2 cursor-pointer hover:bg-secondary/50 transition-colors">
+                                <Checkbox checked={isLinked} onCheckedChange={() => toggleGameInSeason(s.id, g.id, isLinked)} />
+                                <span className="text-sm">{g.name}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
                   </div>
                 )}
               </CardContent>
@@ -340,10 +343,6 @@ const AdminSeasons = () => {
                   <Input type="number" value={editForm.prize_3rd} onChange={e => setEditForm({ ...editForm, prize_3rd: e.target.value })} />
                 </div>
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Detalhes da Premiação</Label>
-              <Textarea value={editForm.prize} onChange={e => setEditForm({ ...editForm, prize: e.target.value })} rows={2} />
             </div>
             <Button variant="gold" onClick={handleEditSave} className="w-full">Salvar Alterações</Button>
           </div>

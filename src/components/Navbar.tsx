@@ -95,7 +95,7 @@ const Navbar = () => {
           ) : (
             <>
               <Link to="/login"><Button variant="ghost" size="sm">Entrar</Button></Link>
-              <Link to="/register"><Button variant="gold" size="sm">Cadastrar</Button></Link>
+              <Link to="/register"><Button variant="gold" size="sm">Faça parte da comunidade</Button></Link>
             </>
           )}
         </div>

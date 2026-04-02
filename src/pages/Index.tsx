@@ -18,7 +18,6 @@ const DiscordIcon = ({ size = 20 }: { size?: number }) => (
 
 const LoggedOutIndex = () => (
   <div className="min-h-screen">
-    {/* Hero */}
     <section className="relative flex flex-col items-center justify-center px-4 py-32 text-center overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-gold/5 via-transparent to-transparent" />
       <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }} className="relative">
@@ -40,32 +39,11 @@ const LoggedOutIndex = () => (
         </a>
       </motion.div>
     </section>
-
-    {/* Features */}
-    <section className="container py-20">
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        {features.map((f, i) => (
-          <Link key={f.title} to={f.link}>
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 + i * 0.1 }}
-              className="rounded-xl border border-border bg-card p-6 hover:border-gold/30 hover:glow-gold transition-all duration-300 cursor-pointer h-full"
-            >
-              <f.icon className="h-8 w-8 text-gold mb-4" />
-              <h3 className="text-lg font-semibold mb-2">{f.title}</h3>
-              <p className="text-sm text-muted-foreground">{f.desc}</p>
-            </motion.div>
-          </Link>
-        ))}
-      </div>
-    </section>
   </div>
 );
 
 const LoggedInIndex = () => (
   <div className="min-h-screen">
-    {/* Hero */}
     <section className="relative flex flex-col items-center justify-center px-4 py-32 text-center overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-gold/5 via-transparent to-transparent" />
       <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }} className="relative">

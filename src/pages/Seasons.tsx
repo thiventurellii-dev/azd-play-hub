@@ -60,6 +60,9 @@ const Seasons = () => {
       const seasonsData: Season[] = (seasonsRes.data || []).map(s => ({
         ...s,
         status: computeStatus(s.start_date, s.end_date),
+        prize_1st: (s as any).prize_1st || 0,
+        prize_2nd: (s as any).prize_2nd || 0,
+        prize_3rd: (s as any).prize_3rd || 0,
       }));
       setSeasons(seasonsData);
 

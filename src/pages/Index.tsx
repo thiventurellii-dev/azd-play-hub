@@ -31,12 +31,6 @@ const LoggedOutIndex = () => (
       </motion.p>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="relative mt-8 flex flex-wrap justify-center gap-4">
         <Link to="/register"><Button variant="gold" size="lg">Faça parte da comunidade</Button></Link>
-        <a href="https://discord.gg/6UpSEaSdj" target="_blank" rel="noopener noreferrer">
-          <Button variant="outline" size="lg" className="gap-2">
-            <DiscordIcon size={20} />
-            Discord
-          </Button>
-        </a>
       </motion.div>
     </section>
   </div>

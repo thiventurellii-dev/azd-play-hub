@@ -89,7 +89,7 @@ const SeasonDetail = () => {
     if (!id) return;
     const fetchAll = async () => {
       const { data: sData } = await supabase.from('seasons').select('*').eq('id', id).single();
-      const seasonData: Season | null = sData ? { ...sData, prize: (sData as any).prize || '', type: (sData as any).type || 'boardgame' } : null;
+      const seasonData: Season | null = sData ? { ...sData, prize: (sData as any).prize || '', type: (sData as any).type || 'boardgame', prize_1st: sData.prize_1st || 0, prize_2nd: sData.prize_2nd || 0, prize_3rd: sData.prize_3rd || 0, prize_4th_6th: (sData as any).prize_4th_6th || 0, prize_7th_10th: (sData as any).prize_7th_10th || 0 } : null;
       setSeason(seasonData);
 
       if (seasonData?.type === 'blood') {

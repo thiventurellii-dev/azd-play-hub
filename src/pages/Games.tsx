@@ -9,6 +9,7 @@ import { ExternalLink, Video, Users, Calendar, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import troubleBrewingImg from '@/assets/trouble-brewing.jpg';
 import badMoonRisingImg from '@/assets/bad-moon-rising.jpg';
+import overTheRiverImg from '@/assets/over-the-river.png';
 interface Game {
   id: string;
   name: string;

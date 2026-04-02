@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useNotification } from '@/components/NotificationDialog';
-import { Plus, Trash2, Pencil, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, Pencil, ChevronDown, ChevronUp, UserPlus } from 'lucide-react';
 
 interface BloodScript {
   id: string;
@@ -56,6 +56,9 @@ const AdminBloodScripts = () => {
   const [editCharOpen, setEditCharOpen] = useState(false);
   const [editingChar, setEditingChar] = useState<BloodCharacter | null>(null);
   const [editCharForm, setEditCharForm] = useState({ name: '', name_en: '', team: 'good' as 'good' | 'evil', role_type: 'townsfolk' as BloodCharacter['role_type'], description: '' });
+
+  // Add existing character to script
+  const [addExistingCharId, setAddExistingCharId] = useState<string>('');
 
   const fetchData = async () => {
     const [scriptsRes, charsRes] = await Promise.all([
@@ -151,7 +154,16 @@ const AdminBloodScripts = () => {
   };
 
   const getScriptChars = (scriptId: string) => characters.filter(c => c.script_id === scriptId);
+  const getOtherChars = (scriptId: string) => characters.filter(c => c.script_id !== scriptId);
 
+  const handleAddExistingChar = async (scriptId: string) => {
+    if (!addExistingCharId) return notify('error', 'Selecione um personagem');
+    const { error } = await supabase.from('blood_characters').update({ script_id: scriptId }).eq('id', addExistingCharId);
+    if (error) return notify('error', error.message);
+    notify('success', 'Personagem adicionado ao script!');
+    setAddExistingCharId('');
+    fetchData();
+  };
   const teamColor = (team: string) => team === 'evil' ? 'text-red-400' : 'text-blue-400';
   const roleColor = (rt: string) => {
     if (rt === 'demon') return 'text-red-500';
@@ -306,6 +318,31 @@ const AdminBloodScripts = () => {
                       </div>
                     )}
                     {chars.length === 0 && <p className="text-sm text-muted-foreground italic">Nenhum personagem cadastrado neste script.</p>}
+
+                    {/* Add existing character */}
+                    {getOtherChars(s.id).length > 0 && (
+                      <div className="mt-3 pt-3 border-t border-border">
+                        <p className="text-sm font-medium mb-2 flex items-center gap-1"><UserPlus className="h-4 w-4" /> Adicionar personagem existente</p>
+                        <div className="flex items-center gap-2">
+                          <Select value={addExistingCharId} onValueChange={setAddExistingCharId}>
+                            <SelectTrigger className="flex-1"><SelectValue placeholder="Selecione um personagem" /></SelectTrigger>
+                            <SelectContent>
+                              {getOtherChars(s.id).map(c => {
+                                const fromScript = scripts.find(sc => sc.id === c.script_id);
+                                return (
+                                  <SelectItem key={c.id} value={c.id}>
+                                    {c.name} ({c.name_en}) — {teamLabels[c.team]}/{roleTypeLabels[c.role_type]} {fromScript ? `[${fromScript.name}]` : ''}
+                                  </SelectItem>
+                                );
+                              })}
+                            </SelectContent>
+                          </Select>
+                          <Button variant="gold" size="sm" onClick={() => handleAddExistingChar(s.id)}>
+                            <Plus className="h-4 w-4 mr-1" /> Adicionar
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>

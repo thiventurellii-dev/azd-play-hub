@@ -36,6 +36,7 @@ const Admin = () => {
 
         <TabsContent value="seasons"><AdminSeasons /></TabsContent>
         <TabsContent value="games"><AdminGames /></TabsContent>
+        <TabsContent value="blood-scripts"><AdminBloodScripts /></TabsContent>
         <TabsContent value="matches"><AdminMatches /></TabsContent>
         <TabsContent value="blood-matches"><AdminBloodMatches /></TabsContent>
         <TabsContent value="players"><AdminPlayers /></TabsContent>

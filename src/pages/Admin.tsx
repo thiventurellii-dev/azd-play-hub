@@ -25,6 +25,7 @@ const Admin = () => {
         <TabsList className="bg-secondary flex-wrap">
           <TabsTrigger value="seasons">Seasons</TabsTrigger>
           <TabsTrigger value="games">Jogos</TabsTrigger>
+          <TabsTrigger value="blood-scripts">Scripts Blood</TabsTrigger>
           <TabsTrigger value="matches">Partidas BG</TabsTrigger>
           <TabsTrigger value="blood-matches">Partidas Blood</TabsTrigger>
           <TabsTrigger value="players">Jogadores</TabsTrigger>

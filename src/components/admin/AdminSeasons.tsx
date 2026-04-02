@@ -128,6 +128,15 @@ const AdminSeasons = () => {
 
   const toggleGameInSeason = async (seasonId: string, gameId: string, isCurrently: boolean) => {
     if (isCurrently) {
+      // Check if there are matches for this game in this season
+      const { count } = await supabase
+        .from('matches')
+        .select('id', { count: 'exact', head: true })
+        .eq('season_id', seasonId)
+        .eq('game_id', gameId);
+      if (count && count > 0) {
+        return toast.error(`Não é possível remover: existem ${count} partida(s) registrada(s) para este jogo nesta season.`);
+      }
       await supabase.from('season_games').delete().eq('season_id', seasonId).eq('game_id', gameId);
     } else {
       await supabase.from('season_games').insert({ season_id: seasonId, game_id: gameId });

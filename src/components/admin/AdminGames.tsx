@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { toast } from 'sonner';
+import { useNotification } from '@/components/NotificationDialog';
 import { Plus, Trash2, ExternalLink, Video, Users, Pencil } from 'lucide-react';
 
 interface Game {
@@ -19,6 +19,7 @@ interface Game {
 }
 
 const AdminGames = () => {
+  const { notify } = useNotification();
   const [games, setGames] = useState<Game[]>([]);
   const [name, setName] = useState('');
   const [imageUrl, setImageUrl] = useState('');
@@ -40,7 +41,7 @@ const AdminGames = () => {
   useEffect(() => { fetchGames(); }, []);
 
   const handleCreate = async () => {
-    if (!name) return toast.error('Nome obrigatório');
+    if (!name) return notify('error', 'Nome obrigatório');
     const { error } = await supabase.from('games').insert({
       name,
       image_url: imageUrl || null,
@@ -49,16 +50,16 @@ const AdminGames = () => {
       min_players: minPlayers ? parseInt(minPlayers) : null,
       max_players: maxPlayers ? parseInt(maxPlayers) : null,
     });
-    if (error) return toast.error(error.message);
-    toast.success('Jogo adicionado!');
+    if (error) return notify('error', error.message);
+    notify('success', 'Jogo adicionado!');
     setName(''); setImageUrl(''); setRulesUrl(''); setVideoUrl(''); setMinPlayers(''); setMaxPlayers('');
     fetchGames();
   };
 
   const handleDelete = async (id: string) => {
     const { error } = await supabase.from('games').delete().eq('id', id);
-    if (error) return toast.error(error.message);
-    toast.success('Jogo removido');
+    if (error) return notify('error', error.message);
+    notify('success', 'Jogo removido');
     fetchGames();
   };
 
@@ -85,8 +86,8 @@ const AdminGames = () => {
       min_players: editForm.min_players ? parseInt(editForm.min_players) : null,
       max_players: editForm.max_players ? parseInt(editForm.max_players) : null,
     }).eq('id', editingGame.id);
-    if (error) return toast.error(error.message);
-    toast.success('Jogo atualizado!');
+    if (error) return notify('error', error.message);
+    notify('success', 'Jogo atualizado!');
     setEditDialogOpen(false);
     fetchGames();
   };

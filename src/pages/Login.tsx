@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import logo from '@/assets/azd-logo.png';
-import { toast } from 'sonner';
+import { useNotification } from '@/components/NotificationDialog';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -14,16 +14,17 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
   const navigate = useNavigate();
+  const { notify } = useNotification();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       await signIn(email, password);
-      toast.success('Login realizado com sucesso!');
+      notify('success', 'Login realizado com sucesso!');
       navigate('/');
     } catch (err: any) {
-      toast.error(err.message || 'Erro ao fazer login');
+      notify('error', err.message || 'Erro ao fazer login. Verifique seu e-mail e senha.');
     } finally {
       setLoading(false);
     }

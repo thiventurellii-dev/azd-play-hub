@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { toast } from 'sonner';
+import { useNotification } from '@/components/NotificationDialog';
 import { Plus, Trash2, Gamepad2, ChevronDown, ChevronUp, Trophy, Pencil } from 'lucide-react';
 
 interface Season {
@@ -21,6 +21,7 @@ interface Game { id: string; name: string; }
 const statusLabels: Record<string, string> = { upcoming: 'Em breve', active: 'Ativa', finished: 'Finalizada' };
 
 const AdminSeasons = () => {
+  const { notify } = useNotification();
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [games, setGames] = useState<Game[]>([]);
   const [seasonGamesMap, setSeasonGamesMap] = useState<Record<string, string[]>>({});
@@ -65,7 +66,7 @@ const AdminSeasons = () => {
   useEffect(() => { fetchData(); }, []);
 
   const handleCreate = async () => {
-    if (!name || !startDate || !endDate) return toast.error('Preencha todos os campos obrigatórios');
+    if (!name || !startDate || !endDate) return notify('error', 'Preencha todos os campos obrigatórios');
     const { data, error } = await supabase
       .from('seasons')
       .insert({
@@ -75,11 +76,11 @@ const AdminSeasons = () => {
         prize_3rd: parseInt(prize3rd) || 0,
       })
       .select().single();
-    if (error) return toast.error(error.message);
+    if (error) return notify('error', error.message);
     if (selectedGames.length > 0) {
       await supabase.from('season_games').insert(selectedGames.map(gid => ({ season_id: data.id, game_id: gid })));
     }
-    toast.success('Season criada!');
+    notify('success', 'Season criada!');
     setName(''); setDescription(''); setPrize1st(''); setPrize2nd(''); setPrize3rd(''); setStartDate(''); setEndDate(''); setSelectedGames([]);
     fetchData();
   };
@@ -87,8 +88,8 @@ const AdminSeasons = () => {
   const handleDelete = async (id: string) => {
     await supabase.from('season_games').delete().eq('season_id', id);
     const { error } = await supabase.from('seasons').delete().eq('id', id);
-    if (error) return toast.error(error.message);
-    toast.success('Season removida');
+    if (error) return notify('error', error.message);
+    notify('success', 'Season removida');
     fetchData();
   };
 
@@ -120,8 +121,8 @@ const AdminSeasons = () => {
       end_date: editForm.end_date,
       status: editForm.status,
     }).eq('id', editingSeason.id);
-    if (error) return toast.error(error.message);
-    toast.success('Season atualizada!');
+    if (error) return notify('error', error.message);
+    notify('success', 'Season atualizada!');
     setEditDialogOpen(false);
     fetchData();
   };
@@ -135,7 +136,7 @@ const AdminSeasons = () => {
         .eq('season_id', seasonId)
         .eq('game_id', gameId);
       if (count && count > 0) {
-        return toast.error(`Não é possível remover: existem ${count} partida(s) registrada(s) para este jogo nesta season.`);
+        return notify('error', `Não é possível remover: existem ${count} partida(s) registrada(s) para este jogo nesta season.`);
       }
       await supabase.from('season_games').delete().eq('season_id', seasonId).eq('game_id', gameId);
     } else {

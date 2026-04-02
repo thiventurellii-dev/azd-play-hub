@@ -3,10 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from 'sonner';
+import { useNotification } from '@/components/NotificationDialog';
 import { Save } from 'lucide-react';
 
 const AdminAboutUs = () => {
+  const { notify } = useNotification();
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -25,13 +26,13 @@ const AdminAboutUs = () => {
     const { data: rows } = await supabase.from('about_us').select('id').limit(1).single();
     if (rows) {
       const { error } = await supabase.from('about_us').update({ content } as any).eq('id', rows.id);
-      if (error) { setSaving(false); return toast.error(error.message); }
+      if (error) { setSaving(false); return notify('error', error.message); }
     } else {
       const { error } = await supabase.from('about_us').insert({ content } as any);
-      if (error) { setSaving(false); return toast.error(error.message); }
+      if (error) { setSaving(false); return notify('error', error.message); }
     }
     setSaving(false);
-    toast.success('Conteúdo do "Sobre Nós" atualizado!');
+    notify('success', 'Conteúdo do "Sobre Nós" atualizado!');
   };
 
   if (loading) return <div className="animate-pulse h-32 bg-muted rounded" />;

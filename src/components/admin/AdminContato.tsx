@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { toast } from 'sonner';
+import { useNotification } from '@/components/NotificationDialog';
 import { Save, MessageCircle, Pencil, ExternalLink } from 'lucide-react';
 
 const DiscordIcon = ({ size = 20 }: { size?: number }) => (
@@ -12,6 +12,7 @@ const DiscordIcon = ({ size = 20 }: { size?: number }) => (
 );
 
 const AdminContato = () => {
+  const { notify } = useNotification();
   const [discordUrl, setDiscordUrl] = useState('');
   const [whatsappUrl, setWhatsappUrl] = useState('');
   const [editing, setEditing] = useState(false);
@@ -37,8 +38,8 @@ const AdminContato = () => {
     const { error: e1 } = await supabase.from('contact_links').update({ url: discordUrl } as any).eq('name', 'discord');
     const { error: e2 } = await supabase.from('contact_links').update({ url: whatsappUrl } as any).eq('name', 'whatsapp');
     setSaving(false);
-    if (e1 || e2) return toast.error((e1 || e2)!.message);
-    toast.success('Links atualizados!');
+    if (e1 || e2) return notify('error', (e1 || e2)!.message);
+    notify('success', 'Links atualizados!');
     setEditing(false);
   };
 

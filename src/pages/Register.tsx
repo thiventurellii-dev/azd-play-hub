@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import logo from '@/assets/azd-logo.png';
-import { toast } from 'sonner';
+import { useNotification } from '@/components/NotificationDialog';
 import { brazilianStates, citiesByState, pronounsOptions, countryCodes, formatPhone, unformatPhone } from '@/lib/brazil-data';
 
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
@@ -31,6 +31,7 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
+  const { notify } = useNotification();
 
   const cities = useMemo(() => citiesByState[form.state] || [], [form.state]);
 
@@ -39,13 +40,13 @@ const Register = () => {
     const { nickname, name, email, password, phone, state, city, birth_date, gender, pronouns } = form;
 
     if (!nickname || !name || !email || !password || !phone || !state || !city || !birth_date || !gender || !pronouns) {
-      return toast.error('Preencha todos os campos obrigatórios');
+      return notify('error', 'Preencha todos os campos obrigatórios');
     }
     if (!passwordRegex.test(password)) {
-      return toast.error('A senha deve ter mínimo 8 caracteres, uma maiúscula, uma minúscula e um caractere especial');
+      return notify('error', 'A senha deve ter mínimo 8 caracteres, uma maiúscula, uma minúscula e um caractere especial');
     }
     if (password !== form.confirmPassword) {
-      return toast.error('As senhas não coincidem');
+      return notify('error', 'As senhas não coincidem');
     }
 
     setLoading(true);
@@ -70,13 +71,13 @@ const Register = () => {
       });
       if (signUpError) throw signUpError;
 
-      toast.success('Cadastro enviado! Um administrador irá aprovar seu acesso. Verifique seu email para confirmar.');
+      notify('info', 'Seu cadastro foi enviado com sucesso! Um administrador irá analisar e aprovar seu acesso em breve. Verifique seu e-mail para confirmar a conta.', 'Cadastro enviado!');
       navigate('/login');
     } catch (err: any) {
       if (err.message?.includes('already registered') || err.message?.includes('already been registered') || err.status === 422) {
-        toast.error('Este e-mail já está cadastrado. Tente fazer login ou use outro e-mail.');
+        notify('error', 'Este e-mail já está cadastrado. Tente fazer login ou use outro e-mail.');
       } else {
-        toast.error(err.message || 'Erro ao criar conta');
+        notify('error', err.message || 'Erro ao criar conta');
       }
     } finally {
       setLoading(false);

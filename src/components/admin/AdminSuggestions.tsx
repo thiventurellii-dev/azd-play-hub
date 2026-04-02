@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { useNotification } from '@/components/NotificationDialog';
 import { format } from 'date-fns';
 
 interface Suggestion {
@@ -14,6 +14,7 @@ interface Suggestion {
 }
 
 const AdminSuggestions = () => {
+  const { notify } = useNotification();
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -31,10 +32,10 @@ const AdminSuggestions = () => {
   const handleDelete = async (id: string) => {
     const { error } = await supabase.from('suggestions').delete().eq('id', id);
     if (error) {
-      toast.error('Erro ao remover sugestão');
+      notify('error', 'Erro ao remover sugestão');
     } else {
       setSuggestions(prev => prev.filter(s => s.id !== id));
-      toast.success('Sugestão removida');
+      notify('success', 'Sugestão removida');
     }
   };
 

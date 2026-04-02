@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
-import { toast } from 'sonner';
+import { useNotification } from '@/components/NotificationDialog';
 import { Shield, User, Pencil, Search, Lock, Crown, Plus, Check, XCircle } from 'lucide-react';
 import { brazilianStates, citiesByState, pronounsOptions, countryCodes, formatPhone, unformatPhone } from '@/lib/brazil-data';
 
@@ -35,6 +35,7 @@ const statusLabels: Record<string, string> = { pending: 'Cadastro Pendente', pen
 const statusColors: Record<string, string> = { pending: 'bg-yellow-500/20 text-yellow-400', pending_approval: 'bg-orange-500/20 text-orange-400', active: 'bg-green-500/20 text-green-400', disabled: 'bg-red-500/20 text-red-400' };
 
 const AdminPlayers = () => {
+  const { notify } = useNotification();
   const { role: currentRole } = useAuth();
   const isSuperAdmin = currentRole === 'super_admin';
   const [players, setPlayers] = useState<PlayerWithRole[]>([]);
@@ -130,7 +131,7 @@ const AdminPlayers = () => {
       pronouns: form.pronouns,
       status: editStatus,
     } as any).eq('id', editingPlayer.id);
-    if (error) return toast.error(error.message);
+    if (error) return notify('error', error.message);
 
     // Update auth email if changed
     if (form.email !== editingPlayer.email) {
@@ -138,37 +139,37 @@ const AdminPlayers = () => {
         body: { user_id: editingPlayer.id, email: form.email },
       });
       if (emailError || emailData?.error) {
-        toast.error(emailData?.error || emailError?.message || 'Erro ao atualizar e-mail de login');
+        notify('error', emailData?.error || emailError?.message || 'Erro ao atualizar e-mail de login');
       }
     }
 
     // Update role (only if allowed)
     if (editingPlayer.role !== editRole) {
       if (editingPlayer.role === 'super_admin' && !isSuperAdmin) {
-        toast.error('Apenas super admins podem alterar o role de super admins');
+        notify('error', 'Apenas super admins podem alterar o role de super admins');
       } else {
         await supabase.from('user_roles').upsert({ user_id: editingPlayer.id, role: editRole } as any, { onConflict: 'user_id' });
       }
     }
 
-    toast.success('Jogador atualizado!');
+    notify('success', 'Jogador atualizado!');
     setEditDialogOpen(false);
     fetchPlayers();
   };
 
   const handleCreate = async () => {
     if (!createForm.email || !createForm.nickname || !createForm.password) {
-      return toast.error('E-mail, nick e senha são obrigatórios');
+      return notify('error', 'E-mail, nick e senha são obrigatórios');
     }
-    if (createForm.password.length < 8) return toast.error('Senha deve ter no mínimo 8 caracteres');
+    if (createForm.password.length < 8) return notify('error', 'Senha deve ter no mínimo 8 caracteres');
 
     const { data, error } = await supabase.functions.invoke('bulk-create-users', {
       body: { users: [{ nick: createForm.nickname, email: createForm.email, password: createForm.password }] },
     });
-    if (error) return toast.error(error.message);
+    if (error) return notify('error', error.message);
 
     const result = data?.[0];
-    if (result?.error) return toast.error(result.error);
+    if (result?.error) return notify('error', result.error);
 
     if (result?.id) {
       await supabase.from('profiles').update({
@@ -182,7 +183,7 @@ const AdminPlayers = () => {
         pronouns: createForm.pronouns,
       } as any).eq('id', result.id);
     }
-    toast.success('Jogador criado!');
+    notify('success', 'Jogador criado!');
     setCreateDialogOpen(false);
     setCreateForm(emptyForm);
     fetchPlayers();
@@ -197,20 +198,20 @@ const AdminPlayers = () => {
   };
 
   const handleResetPassword = async () => {
-    if (!newPassword || !confirmPassword) return toast.error('Preencha ambos os campos');
-    if (newPassword !== confirmPassword) return toast.error('As senhas não coincidem');
-    if (newPassword.length < 8) return toast.error('Mínimo 8 caracteres');
-    if (!/[A-Z]/.test(newPassword)) return toast.error('Inclua ao menos uma letra maiúscula');
-    if (!/[a-z]/.test(newPassword)) return toast.error('Inclua ao menos uma letra minúscula');
-    if (!/[^A-Za-z0-9]/.test(newPassword)) return toast.error('Inclua ao menos um caractere especial');
+    if (!newPassword || !confirmPassword) return notify('error', 'Preencha ambos os campos');
+    if (newPassword !== confirmPassword) return notify('error', 'As senhas não coincidem');
+    if (newPassword.length < 8) return notify('error', 'Mínimo 8 caracteres');
+    if (!/[A-Z]/.test(newPassword)) return notify('error', 'Inclua ao menos uma letra maiúscula');
+    if (!/[a-z]/.test(newPassword)) return notify('error', 'Inclua ao menos uma letra minúscula');
+    if (!/[^A-Za-z0-9]/.test(newPassword)) return notify('error', 'Inclua ao menos um caractere especial');
 
     setResetting(true);
     const { data, error } = await supabase.functions.invoke('admin-reset-password', {
       body: { user_id: resetPlayerId, new_password: newPassword },
     });
     setResetting(false);
-    if (error || data?.error) return toast.error(data?.error || error?.message || 'Erro ao resetar senha');
-    toast.success(`Senha de ${resetPlayerName} resetada!`);
+    if (error || data?.error) return notify('error', data?.error || error?.message || 'Erro ao resetar senha');
+    notify('success', `Senha de ${resetPlayerName} resetada!`);
     setResetPasswordOpen(false);
   };
 
@@ -228,15 +229,15 @@ const AdminPlayers = () => {
 
   const handleApprove = async (player: PlayerWithRole) => {
     const { error } = await supabase.from('profiles').update({ status: 'active' } as any).eq('id', player.id);
-    if (error) return toast.error(error.message);
-    toast.success(`${player.nickname || player.name} aprovado!`);
+    if (error) return notify('error', error.message);
+    notify('success', `${player.nickname || player.name} aprovado!`);
     fetchPlayers();
   };
 
   const handleReject = async (player: PlayerWithRole) => {
     const { error } = await supabase.from('profiles').update({ status: 'disabled' } as any).eq('id', player.id);
-    if (error) return toast.error(error.message);
-    toast.success(`${player.nickname || player.name} rejeitado.`);
+    if (error) return notify('error', error.message);
+    notify('success', `${player.nickname || player.name} rejeitado.`);
     fetchPlayers();
   };
 

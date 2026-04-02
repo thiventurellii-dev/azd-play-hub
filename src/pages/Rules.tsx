@@ -4,10 +4,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { toast } from 'sonner';
+import { useNotification } from '@/components/NotificationDialog';
 import { Edit3, Save, X } from 'lucide-react';
 
 const Rules = () => {
+  const { notify } = useNotification();
   const { isAdmin } = useAuth();
   const [content, setContent] = useState('');
   const [editContent, setEditContent] = useState('');
@@ -35,11 +36,11 @@ const Rules = () => {
       .update({ content: editContent, updated_at: new Date().toISOString() })
       .not('id', 'is', null); // update all (single row)
     if (error) {
-      toast.error(error.message);
+      notify('error', error.message);
     } else {
       setContent(editContent);
       setEditing(false);
-      toast.success('Regras atualizadas!');
+      notify('success', 'Regras atualizadas!');
     }
     setSaving(false);
   };

@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { toast } from 'sonner';
+import { useNotification } from '@/components/NotificationDialog';
 import { Plus, Trash2, UserPlus, Upload, Image, Pencil, Search, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface Season { id: string; name: string; }
@@ -31,6 +31,7 @@ interface MatchRecord {
 }
 
 const AdminMatches = () => {
+  const { notify } = useNotification();
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [games, setGames] = useState<Game[]>([]);
   const [seasonGames, setSeasonGames] = useState<Game[]>([]);
@@ -180,7 +181,7 @@ const AdminMatches = () => {
 
   const handleSubmit = async () => {
     if (!seasonId || !gameId || !playedDate || !playedTime || results.some(r => !r.player_id)) {
-      return toast.error('Preencha Season, Jogo, Data/Hora e todos os jogadores');
+      return notify('error', 'Preencha Season, Jogo, Data/Hora e todos os jogadores');
     }
     setSaving(true);
     try {
@@ -251,12 +252,12 @@ const AdminMatches = () => {
         }).eq('player_id', r.player_id).eq('season_id', seasonId).eq('game_id', gameId);
       }
 
-      toast.success('Partida registrada com sucesso!');
+      notify('success', 'Partida registrada com sucesso!');
       setResults([{ player_id: '', position: 1, score: 0, is_first_player: false }]);
       setDuration(''); setPlayedDate(''); setPlayedTime(''); setImageFile(null);
       fetchMatches();
     } catch (err: any) {
-      toast.error(err.message || 'Erro ao registrar partida');
+      notify('error', err.message || 'Erro ao registrar partida');
     } finally {
       setSaving(false);
     }
@@ -286,7 +287,7 @@ const AdminMatches = () => {
       duration_minutes: parseInt(editForm.duration) || null,
       played_at: new Date(`${editForm.played_date}T${editForm.played_time}`).toISOString(),
     }).eq('id', editingMatch.id);
-    if (error) return toast.error(error.message);
+    if (error) return notify('error', error.message);
 
     for (const r of editResults) {
       await supabase.from('match_results').update({
@@ -299,7 +300,7 @@ const AdminMatches = () => {
       await supabase.from('matches').update({ first_player_id: firstPlayer.player_id }).eq('id', editingMatch.id);
     }
 
-    toast.success('Partida atualizada!');
+    notify('success', 'Partida atualizada!');
     setEditDialogOpen(false);
     fetchMatches();
   };

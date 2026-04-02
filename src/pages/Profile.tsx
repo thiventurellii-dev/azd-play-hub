@@ -8,12 +8,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { toast } from 'sonner';
+import { useNotification } from '@/components/NotificationDialog';
 import { Pencil, Lock } from 'lucide-react';
 import { brazilianStates, citiesByState, pronounsOptions, countryCodes, formatPhone, unformatPhone } from '@/lib/brazil-data';
 
 const Profile = () => {
   const { user, role } = useAuth();
+  const { notify } = useNotification();
   const [editing, setEditing] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const [form, setForm] = useState({ name: '', nickname: '', phone: '', country_code: '+55', state: '', city: '', birth_date: '', gender: '', pronouns: '', email: '' });
@@ -49,7 +50,7 @@ const Profile = () => {
   const handleSave = async () => {
     if (!user) return;
     if (!form.name || !form.nickname || !form.phone || !form.state || !form.city || !form.birth_date || !form.gender || !form.pronouns) {
-      return toast.error('Preencha todos os campos obrigatórios');
+      return notify('error', 'Preencha todos os campos obrigatórios');
     }
     setSaving(true);
     const { error } = await supabase.from('profiles').update({
@@ -65,25 +66,25 @@ const Profile = () => {
       email: form.email,
     } as any).eq('id', user.id);
     setSaving(false);
-    if (error) return toast.error(error.message);
-    toast.success('Perfil atualizado!');
+    if (error) return notify('error', error.message);
+    notify('success', 'Perfil atualizado!');
     setEditing(false);
     setProfile({ ...profile, ...form, phone: unformatPhone(form.phone) });
   };
 
   const handleChangePassword = async () => {
-    if (!newPassword || !confirmPassword) return toast.error('Preencha ambos os campos de senha');
-    if (newPassword !== confirmPassword) return toast.error('As senhas não coincidem');
-    if (newPassword.length < 8) return toast.error('Mínimo 8 caracteres');
-    if (!/[A-Z]/.test(newPassword)) return toast.error('Inclua ao menos uma letra maiúscula');
-    if (!/[a-z]/.test(newPassword)) return toast.error('Inclua ao menos uma letra minúscula');
-    if (!/[^A-Za-z0-9]/.test(newPassword)) return toast.error('Inclua ao menos um caractere especial');
+    if (!newPassword || !confirmPassword) return notify('error', 'Preencha ambos os campos de senha');
+    if (newPassword !== confirmPassword) return notify('error', 'As senhas não coincidem');
+    if (newPassword.length < 8) return notify('error', 'Mínimo 8 caracteres');
+    if (!/[A-Z]/.test(newPassword)) return notify('error', 'Inclua ao menos uma letra maiúscula');
+    if (!/[a-z]/.test(newPassword)) return notify('error', 'Inclua ao menos uma letra minúscula');
+    if (!/[^A-Za-z0-9]/.test(newPassword)) return notify('error', 'Inclua ao menos um caractere especial');
 
     setSavingPassword(true);
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     setSavingPassword(false);
-    if (error) return toast.error(error.message);
-    toast.success('Senha alterada com sucesso!');
+    if (error) return notify('error', error.message);
+    notify('success', 'Senha alterada com sucesso!');
     setChangingPassword(false);
     setNewPassword('');
     setConfirmPassword('');

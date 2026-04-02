@@ -16,10 +16,13 @@ const Navbar = () => {
     navigate('/');
   };
 
-  const navLinks = [
+  const navLinks = user ? [
     { to: '/seasons', label: 'Seasons', icon: Calendar },
     { to: '/games', label: 'Jogos', icon: Gamepad2 },
     { to: '/players', label: 'Jogadores', icon: Users },
+    { to: '/rules', label: 'Regras', icon: BookOpen },
+  ] : [
+    { to: '/games', label: 'Jogos', icon: Gamepad2 },
     { to: '/rules', label: 'Regras', icon: BookOpen },
   ];
 

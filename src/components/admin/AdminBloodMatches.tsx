@@ -351,6 +351,9 @@ const AdminBloodMatches = () => {
       }));
       await supabase.from('blood_match_players').insert(matchPlayers as any);
 
+      // Recalculate ratings for the season
+      await recalculateSeasonRatings(editSeasonId);
+
       notify('success', 'Partida atualizada!');
       setEditDialogOpen(false);
       fetchMatches();

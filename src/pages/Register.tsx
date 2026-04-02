@@ -44,6 +44,9 @@ const Register = () => {
     if (!passwordRegex.test(password)) {
       return toast.error('A senha deve ter mínimo 8 caracteres, uma maiúscula, uma minúscula e um caractere especial');
     }
+    if (password !== form.confirmPassword) {
+      return toast.error('As senhas não coincidem');
+    }
 
     setLoading(true);
     try {

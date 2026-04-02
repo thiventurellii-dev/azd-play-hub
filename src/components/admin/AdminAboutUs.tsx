@@ -25,13 +25,13 @@ const AdminAboutUs = () => {
     const { data: rows } = await supabase.from('about_us').select('id').limit(1).single();
     if (rows) {
       const { error } = await supabase.from('about_us').update({ content } as any).eq('id', rows.id);
-      if (error) { setSaving(false); return toast.error(error.message); }
+      if (error) { setSaving(false); return notify('error', error.message); }
     } else {
       const { error } = await supabase.from('about_us').insert({ content } as any);
-      if (error) { setSaving(false); return toast.error(error.message); }
+      if (error) { setSaving(false); return notify('error', error.message); }
     }
     setSaving(false);
-    toast.success('Conteúdo do "Sobre Nós" atualizado!');
+    notify('success', 'Conteúdo do "Sobre Nós" atualizado!');
   };
 
   if (loading) return <div className="animate-pulse h-32 bg-muted rounded" />;

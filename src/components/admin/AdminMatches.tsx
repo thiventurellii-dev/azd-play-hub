@@ -180,7 +180,7 @@ const AdminMatches = () => {
 
   const handleSubmit = async () => {
     if (!seasonId || !gameId || !playedDate || !playedTime || results.some(r => !r.player_id)) {
-      return toast.error('Preencha Season, Jogo, Data/Hora e todos os jogadores');
+      return notify('error', 'Preencha Season, Jogo, Data/Hora e todos os jogadores');
     }
     setSaving(true);
     try {
@@ -251,12 +251,12 @@ const AdminMatches = () => {
         }).eq('player_id', r.player_id).eq('season_id', seasonId).eq('game_id', gameId);
       }
 
-      toast.success('Partida registrada com sucesso!');
+      notify('success', 'Partida registrada com sucesso!');
       setResults([{ player_id: '', position: 1, score: 0, is_first_player: false }]);
       setDuration(''); setPlayedDate(''); setPlayedTime(''); setImageFile(null);
       fetchMatches();
     } catch (err: any) {
-      toast.error(err.message || 'Erro ao registrar partida');
+      notify('error', err.message || 'Erro ao registrar partida');
     } finally {
       setSaving(false);
     }
@@ -286,7 +286,7 @@ const AdminMatches = () => {
       duration_minutes: parseInt(editForm.duration) || null,
       played_at: new Date(`${editForm.played_date}T${editForm.played_time}`).toISOString(),
     }).eq('id', editingMatch.id);
-    if (error) return toast.error(error.message);
+    if (error) return notify('error', error.message);
 
     for (const r of editResults) {
       await supabase.from('match_results').update({
@@ -299,7 +299,7 @@ const AdminMatches = () => {
       await supabase.from('matches').update({ first_player_id: firstPlayer.player_id }).eq('id', editingMatch.id);
     }
 
-    toast.success('Partida atualizada!');
+    notify('success', 'Partida atualizada!');
     setEditDialogOpen(false);
     fetchMatches();
   };

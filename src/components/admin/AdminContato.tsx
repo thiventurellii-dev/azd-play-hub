@@ -37,8 +37,8 @@ const AdminContato = () => {
     const { error: e1 } = await supabase.from('contact_links').update({ url: discordUrl } as any).eq('name', 'discord');
     const { error: e2 } = await supabase.from('contact_links').update({ url: whatsappUrl } as any).eq('name', 'whatsapp');
     setSaving(false);
-    if (e1 || e2) return toast.error((e1 || e2)!.message);
-    toast.success('Links atualizados!');
+    if (e1 || e2) return notify('error', (e1 || e2)!.message);
+    notify('success', 'Links atualizados!');
     setEditing(false);
   };
 

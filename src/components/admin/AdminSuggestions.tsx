@@ -31,10 +31,10 @@ const AdminSuggestions = () => {
   const handleDelete = async (id: string) => {
     const { error } = await supabase.from('suggestions').delete().eq('id', id);
     if (error) {
-      toast.error('Erro ao remover sugestão');
+      notify('error', 'Erro ao remover sugestão');
     } else {
       setSuggestions(prev => prev.filter(s => s.id !== id));
-      toast.success('Sugestão removida');
+      notify('success', 'Sugestão removida');
     }
   };
 

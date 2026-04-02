@@ -108,8 +108,14 @@ const Games = () => {
     fetchData();
   }, []);
 
-  const roleTypeLabels: Record<string, string> = { townsfolk: 'Cidadão', outsider: 'Forasteiro', minion: 'Lacaio', demon: 'Demônio' };
+  const scriptImages: Record<string, string> = {
+    'trouble brewing': troubleBrewingImg,
+    'bad moon rising': badMoonRisingImg,
+  };
 
+  const getScriptImage = (name: string) => scriptImages[name.toLowerCase()] || null;
+
+  const roleTypeLabels: Record<string, string> = { townsfolk: 'Cidadão', outsider: 'Forasteiro', minion: 'Lacaio', demon: 'Demônio' };
   const renderBoardgames = () => (
     games.length === 0 ? (
       <Card className="bg-card border-border">

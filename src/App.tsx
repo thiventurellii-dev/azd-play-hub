@@ -40,6 +40,7 @@ const App = () => (
               <Route path="/games" element={<Games />} />
               <Route path="/players" element={<Players />} />
               <Route path="/rules" element={<Rules />} />
+              <Route path="/about" element={<AboutUs />} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />

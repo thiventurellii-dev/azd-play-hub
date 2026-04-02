@@ -375,20 +375,29 @@ export type Database = {
       suggestions: {
         Row: {
           author_name: string | null
+          complexity: string
           created_at: string
           id: string
+          priority: string
+          status: string
           text: string
         }
         Insert: {
           author_name?: string | null
+          complexity?: string
           created_at?: string
           id?: string
+          priority?: string
+          status?: string
           text: string
         }
         Update: {
           author_name?: string | null
+          complexity?: string
           created_at?: string
           id?: string
+          priority?: string
+          status?: string
           text?: string
         }
         Relationships: []

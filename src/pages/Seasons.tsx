@@ -111,7 +111,7 @@ const Seasons = () => {
   const renderPrize = (s: Season) => {
     const isBlood = s.type === 'blood';
     if (isBlood) {
-      const total = s.prize_1st + s.prize_4th_6th + s.prize_7th_10th;
+      const total = (s.prize_1st * 3) + (s.prize_4th_6th * 3) + (s.prize_7th_10th * 3);
       if (total <= 0) return null;
       return (
         <div className="mt-2 space-y-1">
@@ -120,9 +120,9 @@ const Seasons = () => {
             <span className="font-semibold">R$ {total} em premiação</span>
           </div>
           <div className="flex gap-3 text-xs text-muted-foreground">
-            {s.prize_1st > 0 && <span>🥇 1º-3º R$ {s.prize_1st}</span>}
-            {s.prize_4th_6th > 0 && <span>🥈 4º-6º R$ {s.prize_4th_6th}</span>}
-            {s.prize_7th_10th > 0 && <span>🥉 7º-10º R$ {s.prize_7th_10th}</span>}
+            {s.prize_1st > 0 && <span>🥇 1º-3º R$ {s.prize_1st} cada</span>}
+            {s.prize_4th_6th > 0 && <span>🥈 4º-6º R$ {s.prize_4th_6th} cada</span>}
+            {s.prize_7th_10th > 0 && <span>🥉 7º-9º R$ {s.prize_7th_10th} cada</span>}
           </div>
         </div>
       );

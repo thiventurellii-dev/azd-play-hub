@@ -208,7 +208,7 @@ const AdminSeasons = () => {
       return (
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="space-y-1">
-            <Label className="text-xs text-gold">🥇 1º a 3º Lugar</Label>
+            <Label className="text-xs text-gold">🥇 1º a 3º Lugar (cada)</Label>
             <Input type="number" value={values.p1} onChange={e => onChange('p1', e.target.value)} placeholder="300" />
           </div>
           <div className="space-y-1">

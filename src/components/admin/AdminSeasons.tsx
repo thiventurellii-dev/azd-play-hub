@@ -248,9 +248,9 @@ const AdminSeasons = () => {
         <div>
           <Label className="text-sm text-muted-foreground">Premiação:</Label>
           <div className="flex gap-4 mt-1 text-sm flex-wrap">
-            {s.prize_1st > 0 && <span>🥇 1º-3º: <strong className="text-gold">R$ {s.prize_1st}</strong></span>}
-            {s.prize_4th_6th > 0 && <span>🥈 4º-6º: <strong>R$ {s.prize_4th_6th}</strong></span>}
-            {s.prize_7th_10th > 0 && <span>🥉 7º-10º: <strong>R$ {s.prize_7th_10th}</strong></span>}
+            {s.prize_1st > 0 && <span>🥇 1º-3º: <strong className="text-gold">R$ {s.prize_1st} cada</strong></span>}
+            {s.prize_4th_6th > 0 && <span>🥈 4º-6º: <strong>R$ {s.prize_4th_6th} cada</strong></span>}
+            {s.prize_7th_10th > 0 && <span>🥉 7º-9º: <strong>R$ {s.prize_7th_10th} cada</strong></span>}
           </div>
           <p className="text-xs text-muted-foreground mt-1">Total: R$ {total}</p>
         </div>

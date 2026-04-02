@@ -196,7 +196,10 @@ const AdminSeasons = () => {
     setSelectedGames(prev => prev.includes(gameId) ? prev.filter(id => id !== gameId) : [...prev, gameId]);
   };
 
-  const totalPrize = (s: Season) => (s.prize_1st || 0) + (s.prize_2nd || 0) + (s.prize_3rd || 0) + (s.prize_4th_6th || 0) + (s.prize_7th_10th || 0);
+  const totalPrize = (s: Season) => {
+    if (s.type === 'blood') return (s.prize_1st * 3) + (s.prize_4th_6th * 3) + (s.prize_7th_10th * 3);
+    return (s.prize_1st || 0) + (s.prize_2nd || 0) + (s.prize_3rd || 0);
+  };
 
   const isBloodType = (s: Season) => s.type === 'blood';
 

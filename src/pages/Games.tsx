@@ -237,6 +237,8 @@ const Games = () => {
           const goodChars = chars.filter(c => c.team === 'good');
           const evilChars = chars.filter(c => c.team === 'evil');
           const isExpanded = expandedScript === s.id;
+          const seasons = scriptSeasons[s.id] || [];
+          const isExpanded = expandedScript === s.id;
           return (
             <motion.div key={s.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
               <Card

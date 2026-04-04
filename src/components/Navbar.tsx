@@ -24,6 +24,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  ArtSign,
 } from "@/components/ui/dropdown-menu";
 import logo from "@/assets/azd-logo.png";
 import { useState, useEffect } from "react";

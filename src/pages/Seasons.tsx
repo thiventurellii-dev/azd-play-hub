@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar, ChevronRight, Gamepad2, Trophy } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Calendar, ChevronRight, Gamepad2, Trophy } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface Season {
   id: string;
@@ -20,27 +20,27 @@ interface Season {
   prize_3rd: number;
   prize_4th_6th: number;
   prize_7th_10th: number;
-  type: 'boardgame' | 'blood';
+  type: "boardgame" | "blood";
 }
 
 const statusColors: Record<string, string> = {
-  active: 'bg-green-500/20 text-green-400 border-green-500/30',
-  upcoming: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  finished: 'bg-muted text-muted-foreground border-border',
+  active: "bg-green-500/20 text-green-400 border-green-500/30",
+  upcoming: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+  finished: "bg-muted text-muted-foreground border-border",
 };
-const statusLabels: Record<string, string> = { active: 'Ativa', upcoming: 'Em breve', finished: 'Finalizada' };
+const statusLabels: Record<string, string> = { active: "Ativa", upcoming: "Em breve", finished: "Finalizada" };
 
 const computeStatus = (start: string, end: string): string => {
   const now = new Date();
-  const s = new Date(start + 'T00:00:00');
-  const e = new Date(end + 'T23:59:59');
-  if (now < s) return 'upcoming';
-  if (now > e) return 'finished';
-  return 'active';
+  const s = new Date(start + "T00:00:00");
+  const e = new Date(end + "T23:59:59");
+  if (now < s) return "upcoming";
+  if (now > e) return "finished";
+  return "active";
 };
 
 const formatDate = (dateStr: string) => {
-  const [y, m, d] = dateStr.split('-');
+  const [y, m, d] = dateStr.split("-");
   return `${d}/${m}/${y}`;
 };
 
@@ -53,12 +53,12 @@ const Seasons = () => {
   useEffect(() => {
     const fetch = async () => {
       const [seasonsRes, sgRes, sbsRes] = await Promise.all([
-        supabase.from('seasons').select('*').order('start_date', { ascending: true }),
-        supabase.from('season_games').select('season_id, game_id'),
-        supabase.from('season_blood_scripts').select('season_id, script_id'),
+        supabase.from("seasons").select("*").order("start_date", { ascending: true }),
+        supabase.from("season_games").select("season_id, game_id"),
+        supabase.from("season_blood_scripts").select("season_id, script_id"),
       ]);
 
-      const seasonsData: Season[] = (seasonsRes.data || []).map(s => ({
+      const seasonsData: Season[] = (seasonsRes.data || []).map((s) => ({
         ...s,
         status: computeStatus(s.start_date, s.end_date),
         prize_1st: s.prize_1st || 0,
@@ -66,16 +66,16 @@ const Seasons = () => {
         prize_3rd: s.prize_3rd || 0,
         prize_4th_6th: (s as any).prize_4th_6th || 0,
         prize_7th_10th: (s as any).prize_7th_10th || 0,
-        type: (s as any).type || 'boardgame',
+        type: (s as any).type || "boardgame",
       }));
       setSeasons(seasonsData);
 
       const sgData = sgRes.data || [];
       if (sgData.length > 0) {
-        const gameIds = [...new Set(sgData.map(sg => sg.game_id))];
-        const { data: gamesData } = await supabase.from('games').select('id, name').in('id', gameIds);
+        const gameIds = [...new Set(sgData.map((sg) => sg.game_id))];
+        const { data: gamesData } = await supabase.from("games").select("id, name").in("id", gameIds);
         const gameMap: Record<string, string> = {};
-        for (const g of (gamesData || [])) gameMap[g.id] = g.name;
+        for (const g of gamesData || []) gameMap[g.id] = g.name;
         const map: Record<string, string[]> = {};
         for (const sg of sgData) {
           if (!map[sg.season_id]) map[sg.season_id] = [];
@@ -87,10 +87,10 @@ const Seasons = () => {
 
       const sbsData = (sbsRes.data || []) as any[];
       if (sbsData.length > 0) {
-        const scriptIds = [...new Set(sbsData.map(s => s.script_id))];
-        const { data: scriptsData } = await supabase.from('blood_scripts').select('id, name').in('id', scriptIds);
+        const scriptIds = [...new Set(sbsData.map((s) => s.script_id))];
+        const { data: scriptsData } = await supabase.from("blood_scripts").select("id, name").in("id", scriptIds);
         const scriptMap: Record<string, string> = {};
-        for (const s of ((scriptsData || []) as any[])) scriptMap[s.id] = s.name;
+        for (const s of (scriptsData || []) as any[]) scriptMap[s.id] = s.name;
         const map: Record<string, string[]> = {};
         for (const sbs of sbsData) {
           if (!map[sbs.season_id]) map[sbs.season_id] = [];
@@ -105,13 +105,13 @@ const Seasons = () => {
     fetch();
   }, []);
 
-  const boardgameSeasons = seasons.filter(s => s.type === 'boardgame');
-  const bloodSeasons = seasons.filter(s => s.type === 'blood');
+  const boardgameSeasons = seasons.filter((s) => s.type === "boardgame");
+  const bloodSeasons = seasons.filter((s) => s.type === "blood");
 
   const renderPrize = (s: Season) => {
-    const isBlood = s.type === 'blood';
+    const isBlood = s.type === "blood";
     if (isBlood) {
-      const total = (s.prize_1st * 3) + (s.prize_4th_6th * 3) + (s.prize_7th_10th * 3);
+      const total = s.prize_1st * 3 + s.prize_4th_6th * 3 + s.prize_7th_10th * 3;
       if (total <= 0) return null;
       return (
         <div className="mt-2 space-y-1">
@@ -122,7 +122,7 @@ const Seasons = () => {
           <div className="flex gap-3 text-xs text-muted-foreground">
             {s.prize_1st > 0 && <span>🥇 1º-3º R$ {s.prize_1st} cada</span>}
             {s.prize_4th_6th > 0 && <span>🥈 4º-6º R$ {s.prize_4th_6th} cada</span>}
-            {s.prize_7th_10th > 0 && <span>🥉 7º-9º R$ {s.prize_7th_10th} cada</span>}
+            {s.prize_7th_10th > 0 && <span>🥉 7º-10º R$ {s.prize_7th_10th} cada</span>}
           </div>
         </div>
       );
@@ -148,7 +148,12 @@ const Seasons = () => {
     const games = seasonGames[s.id] || [];
     const scripts = seasonScripts[s.id] || [];
     return (
-      <motion.div key={s.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
+      <motion.div
+        key={s.id}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: i * 0.1 }}
+      >
         <Link to={`/seasons/${s.id}`}>
           <Card className="bg-card border-border hover:border-gold/20 transition-colors cursor-pointer group h-full flex flex-col">
             <CardHeader className="pb-3">
@@ -163,23 +168,25 @@ const Seasons = () => {
             <CardContent className="flex-1 flex flex-col justify-between gap-3">
               <div>
                 {s.description && <p className="text-sm text-muted-foreground mb-3">{s.description}</p>}
-                {s.type === 'boardgame' && games.length > 0 && (
+                {s.type === "boardgame" && games.length > 0 && (
                   <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-2">
                     <Gamepad2 className="h-3.5 w-3.5 flex-shrink-0" />
-                    <span className="truncate">{games.join(', ')}</span>
+                    <span className="truncate">{games.join(", ")}</span>
                   </div>
                 )}
-                {s.type === 'blood' && scripts.length > 0 && (
+                {s.type === "blood" && scripts.length > 0 && (
                   <div className="flex items-center gap-1.5 text-sm text-muted-foreground mb-2">
                     <span className="flex-shrink-0">🩸</span>
-                    <span className="truncate">{scripts.join(', ')}</span>
+                    <span className="truncate">{scripts.join(", ")}</span>
                   </div>
                 )}
                 {renderPrize(s)}
               </div>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Calendar className="h-3 w-3" />
-                <span>{formatDate(s.start_date)} — {formatDate(s.end_date)}</span>
+                <span>
+                  {formatDate(s.start_date)} — {formatDate(s.end_date)}
+                </span>
               </div>
             </CardContent>
           </Card>
@@ -188,19 +195,14 @@ const Seasons = () => {
     );
   };
 
-  const renderSeasonList = (list: Season[]) => (
+  const renderSeasonList = (list: Season[]) =>
     list.length === 0 ? (
       <Card className="bg-card border-border">
-        <CardContent className="py-12 text-center text-muted-foreground">
-          Nenhuma season criada ainda.
-        </CardContent>
+        <CardContent className="py-12 text-center text-muted-foreground">Nenhuma season criada ainda.</CardContent>
       </Card>
     ) : (
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {list.map((s, i) => renderSeasonCard(s, i))}
-      </div>
-    )
-  );
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">{list.map((s, i) => renderSeasonCard(s, i))}</div>
+    );
 
   return (
     <div className="container py-10">
@@ -219,12 +221,8 @@ const Seasons = () => {
             <TabsTrigger value="boardgame">🎲 Boardgames</TabsTrigger>
             <TabsTrigger value="blood">🩸 Blood on the Clocktower</TabsTrigger>
           </TabsList>
-          <TabsContent value="boardgame">
-            {renderSeasonList(boardgameSeasons)}
-          </TabsContent>
-          <TabsContent value="blood">
-            {renderSeasonList(bloodSeasons)}
-          </TabsContent>
+          <TabsContent value="boardgame">{renderSeasonList(boardgameSeasons)}</TabsContent>
+          <TabsContent value="blood">{renderSeasonList(bloodSeasons)}</TabsContent>
         </Tabs>
       )}
     </div>

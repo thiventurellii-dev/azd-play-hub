@@ -17,6 +17,7 @@ import {
   MessageCircle,
   Phone,
   Lightbulb,
+  AtSign,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -24,7 +25,6 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  AtSign,
 } from "@/components/ui/dropdown-menu";
 import logo from "@/assets/azd-logo.png";
 import { useState, useEffect } from "react";

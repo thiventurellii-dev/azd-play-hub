@@ -99,7 +99,7 @@ const Navbar = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
-                  <Link className="h-4 w-4" />
+                  <AtSign className="h-4 w-4" />
                   Nossas Redes
                 </Button>
               </DropdownMenuTrigger>

@@ -1,14 +1,14 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield } from 'lucide-react';
-import AdminSeasons from '@/components/admin/AdminSeasons';
-import AdminGames from '@/components/admin/AdminGames';
-import AdminMatches from '@/components/admin/AdminMatches';
-import AdminBloodMatches from '@/components/admin/AdminBloodMatches';
-import AdminBloodScripts from '@/components/admin/AdminBloodScripts';
-import AdminPlayers from '@/components/admin/AdminPlayers';
-import AdminAboutUs from '@/components/admin/AdminAboutUs';
-import AdminContato from '@/components/admin/AdminContato';
-import AdminSuggestions from '@/components/admin/AdminSuggestions';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Shield } from "lucide-react";
+import AdminSeasons from "@/components/admin/AdminSeasons";
+import AdminGames from "@/components/admin/AdminGames";
+import AdminMatches from "@/components/admin/AdminMatches";
+import AdminBloodMatches from "@/components/admin/AdminBloodMatches";
+import AdminBloodScripts from "@/components/admin/AdminBloodScripts";
+import AdminPlayers from "@/components/admin/AdminPlayers";
+import AdminAboutUs from "@/components/admin/AdminAboutUs";
+import AdminContato from "@/components/admin/AdminContato";
+import AdminSuggestions from "@/components/admin/AdminSuggestions";
 
 const Admin = () => {
   return (
@@ -30,19 +30,37 @@ const Admin = () => {
           <TabsTrigger value="blood-matches">Partidas Blood</TabsTrigger>
           <TabsTrigger value="players">Jogadores</TabsTrigger>
           <TabsTrigger value="about">Sobre Nós</TabsTrigger>
-          <TabsTrigger value="contato">Contato</TabsTrigger>
+          <TabsTrigger value="contato">Nossas Redes</TabsTrigger>
           <TabsTrigger value="suggestions">Sugestões</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="seasons"><AdminSeasons /></TabsContent>
-        <TabsContent value="games"><AdminGames /></TabsContent>
-        <TabsContent value="blood-scripts"><AdminBloodScripts /></TabsContent>
-        <TabsContent value="matches"><AdminMatches /></TabsContent>
-        <TabsContent value="blood-matches"><AdminBloodMatches /></TabsContent>
-        <TabsContent value="players"><AdminPlayers /></TabsContent>
-        <TabsContent value="about"><AdminAboutUs /></TabsContent>
-        <TabsContent value="contato"><AdminContato /></TabsContent>
-        <TabsContent value="suggestions"><AdminSuggestions /></TabsContent>
+        <TabsContent value="seasons">
+          <AdminSeasons />
+        </TabsContent>
+        <TabsContent value="games">
+          <AdminGames />
+        </TabsContent>
+        <TabsContent value="blood-scripts">
+          <AdminBloodScripts />
+        </TabsContent>
+        <TabsContent value="matches">
+          <AdminMatches />
+        </TabsContent>
+        <TabsContent value="blood-matches">
+          <AdminBloodMatches />
+        </TabsContent>
+        <TabsContent value="players">
+          <AdminPlayers />
+        </TabsContent>
+        <TabsContent value="about">
+          <AdminAboutUs />
+        </TabsContent>
+        <TabsContent value="contato">
+          <AdminContato />
+        </TabsContent>
+        <TabsContent value="suggestions">
+          <AdminSuggestions />
+        </TabsContent>
       </Tabs>
     </div>
   );

@@ -1,13 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import MatchRoomCard from "@/components/matchrooms/MatchRoomCard";
 import CreateRoomDialog from "@/components/matchrooms/CreateRoomDialog";
 import NewMatchFlow from "@/components/matches/NewMatchFlow";
-import { Calendar, ClipboardList } from "lucide-react";
+import { Calendar, ClipboardList, Filter, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 
 interface MatchRoom {
   id: string; title: string; description: string | null; scheduled_at: string;
@@ -22,13 +24,16 @@ const MatchRooms = () => {
   const [matchFlowOpen, setMatchFlowOpen] = useState(false);
   const [prefill, setPrefill] = useState<any>(null);
 
-  // Check for prefill from navigation state
+  // Filters
+  const [gameFilter, setGameFilter] = useState('all');
+  const [availabilityFilter, setAvailabilityFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('all');
+
   useEffect(() => {
     const state = location.state as any;
     if (state?.prefill) {
       setPrefill(state.prefill);
       setMatchFlowOpen(true);
-      // Clear state
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
@@ -56,8 +61,40 @@ const MatchRooms = () => {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  const activeRooms = rooms.filter(r => r.status === "open" || r.status === "full" || r.status === "in_progress");
-  const pastRooms = rooms.filter(r => r.status === "finished" || r.status === "cancelled");
+  const games = useMemo(() => {
+    const unique = new Map<string, string>();
+    rooms.forEach(r => { if (r.game) unique.set(r.game.id, r.game.name); });
+    return Array.from(unique.entries()).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [rooms]);
+
+  const hasActiveFilters = gameFilter !== 'all' || availabilityFilter !== 'all' || dateFilter !== 'all';
+
+  const filterRooms = (list: MatchRoom[]) => {
+    return list.filter(r => {
+      if (gameFilter !== 'all' && r.game?.id !== gameFilter) return false;
+      if (availabilityFilter === 'available' && r.status !== 'open') return false;
+      if (availabilityFilter === 'full' && r.status !== 'full') return false;
+      if (dateFilter !== 'all') {
+        const d = new Date(r.scheduled_at);
+        const now = new Date();
+        if (dateFilter === 'today') {
+          if (d.toDateString() !== now.toDateString()) return false;
+        } else if (dateFilter === 'week') {
+          const weekAhead = new Date(now); weekAhead.setDate(weekAhead.getDate() + 7);
+          if (d > weekAhead) return false;
+        } else if (dateFilter === 'month') {
+          const monthAhead = new Date(now); monthAhead.setMonth(monthAhead.getMonth() + 1);
+          if (d > monthAhead) return false;
+        }
+      }
+      return true;
+    });
+  };
+
+  const activeRooms = filterRooms(rooms.filter(r => r.status === "open" || r.status === "full" || r.status === "in_progress"));
+  const pastRooms = filterRooms(rooms.filter(r => r.status === "finished" || r.status === "cancelled"));
+
+  const clearFilters = () => { setGameFilter('all'); setAvailabilityFilter('all'); setDateFilter('all'); };
 
   return (
     <div className="container py-10">
@@ -77,6 +114,40 @@ const MatchRooms = () => {
         </div>
       </div>
 
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        <Filter className="h-4 w-4 text-muted-foreground" />
+        <Select value={gameFilter} onValueChange={setGameFilter}>
+          <SelectTrigger className="w-[160px] h-9"><SelectValue placeholder="Jogo" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os jogos</SelectItem>
+            {games.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={availabilityFilter} onValueChange={setAvailabilityFilter}>
+          <SelectTrigger className="w-[140px] h-9"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas</SelectItem>
+            <SelectItem value="available">Com vagas</SelectItem>
+            <SelectItem value="full">Lotadas</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={dateFilter} onValueChange={setDateFilter}>
+          <SelectTrigger className="w-[130px] h-9"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Qualquer data</SelectItem>
+            <SelectItem value="today">Hoje</SelectItem>
+            <SelectItem value="week">Esta semana</SelectItem>
+            <SelectItem value="month">Este mês</SelectItem>
+          </SelectContent>
+        </Select>
+        {hasActiveFilters && (
+          <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1 text-muted-foreground hover:text-foreground">
+            <X className="h-3.5 w-3.5" /> Limpar
+          </Button>
+        )}
+      </div>
+
       {loading ? (
         <div className="flex justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-2 border-gold border-t-transparent" /></div>
       ) : (
@@ -89,8 +160,8 @@ const MatchRooms = () => {
             {activeRooms.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground">
                 <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="text-lg">Nenhuma sala aberta no momento</p>
-                <p className="text-sm mt-1">Crie uma sala para começar!</p>
+                <p className="text-lg">Nenhuma sala encontrada</p>
+                <p className="text-sm mt-1">{hasActiveFilters ? 'Tente ajustar os filtros' : 'Crie uma sala para começar!'}</p>
               </div>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -110,7 +181,6 @@ const MatchRooms = () => {
         </Tabs>
       )}
 
-      {/* Match Flow Dialog */}
       <Dialog open={matchFlowOpen} onOpenChange={setMatchFlowOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Registrar Resultado</DialogTitle></DialogHeader>

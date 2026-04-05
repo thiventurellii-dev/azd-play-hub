@@ -80,16 +80,20 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
   useEffect(() => {
     if (!gameId) { setScoringSchema(null); setGameFactions([]); return; }
     const fetchSchema = async () => {
-      const { data } = await supabase
-        .from('game_scoring_schemas')
-        .select('schema')
-        .eq('game_id', gameId)
-        .maybeSingle();
-      setScoringSchema(data?.schema || null);
+      const [schemaRes, gameRes] = await Promise.all([
+        supabase.from('game_scoring_schemas').select('schema').eq('game_id', gameId).maybeSingle(),
+        supabase.from('games').select('factions').eq('id', gameId).maybeSingle(),
+      ]);
+      setScoringSchema(schemaRes.data?.schema || null);
+      // Parse factions from game data
+      const fData = (gameRes.data as any)?.factions;
+      if (Array.isArray(fData)) {
+        setGameFactions(fData.map((f: any) => typeof f === 'string' ? f : f.name || ''));
+      } else {
+        setGameFactions([]);
+      }
     };
     fetchSchema();
-    // Factions from game data - would need a factions column, for now use empty
-    setGameFactions([]);
   }, [gameId]);
 
   const addEntry = () => setEntries([...entries, {

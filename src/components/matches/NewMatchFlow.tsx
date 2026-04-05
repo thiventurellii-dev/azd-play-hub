@@ -403,8 +403,8 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
             {entries.map((e, i) => (
               <div key={i} className="flex items-center gap-2 flex-wrap border border-border rounded-lg p-3">
                 <div className="flex-1 min-w-[180px] space-y-1">
-                  <Label className="text-xs">Jogador {!e.ghost_name && '*'}</Label>
-                  <Select value={e.player_id} onValueChange={v => { updateEntry(i, 'player_id', v); updateEntry(i, 'ghost_name', ''); }}>
+                  <Label className="text-xs">Jogador *</Label>
+                  <Select value={e.player_id} onValueChange={v => updateEntry(i, 'player_id', v)}>
                     <SelectTrigger><SelectValue placeholder="Buscar jogador..." /></SelectTrigger>
                     <SelectContent>
                       <div className="px-2 pb-2">
@@ -424,12 +424,6 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
                     </SelectContent>
                   </Select>
                 </div>
-                {!e.player_id && (
-                  <div className="min-w-[140px] space-y-1">
-                    <Label className="text-xs">👻 Fantasma</Label>
-                    <Input value={e.ghost_name} onChange={ev => updateEntry(i, 'ghost_name', ev.target.value)} placeholder="Nome do jogador" className="h-10" />
-                  </div>
-                )}
                 <div className="w-[80px] space-y-1">
                   <Label className="text-xs">Posição</Label>
                   <Input type="number" min={1} value={e.seat_position} onChange={ev => updateEntry(i, 'seat_position', parseInt(ev.target.value) || 1)} />

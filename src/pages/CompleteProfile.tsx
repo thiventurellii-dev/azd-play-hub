@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ import { brazilianStates, citiesByState, pronounsOptions, countryCodes, formatPh
 const CompleteProfile = () => {
   const { user, setProfileCompleted } = useAuth();
   const { notify } = useNotification();
+  const navigate = useNavigate();
   const [form, setForm] = useState({
     name: user?.user_metadata?.name || '',
     nickname: user?.user_metadata?.name || '',
@@ -25,13 +27,11 @@ const CompleteProfile = () => {
     pronouns: '',
   });
   const [saving, setSaving] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
 
   const cities = useMemo(() => citiesByState[form.state] || [], [form.state]);
 
   const [currentStatus, setCurrentStatus] = useState<string>('pending');
 
-  // Fetch current status to determine flow
   useEffect(() => {
     if (user) {
       supabase.from('profiles').select('status').eq('id', user.id).single().then(({ data }) => {
@@ -47,8 +47,6 @@ const CompleteProfile = () => {
     }
     setSaving(true);
 
-    // pending = admin/script created → goes directly to active
-    // pending_approval = community signup → stays pending_approval for admin review
     const newStatus = currentStatus === 'pending' ? 'active' : 'pending_approval';
 
     const { error } = await supabase.from('profiles').update({
@@ -67,30 +65,16 @@ const CompleteProfile = () => {
     setSaving(false);
     if (error) return notify('error', error.message);
     
-    setSubmitted(true);
     setProfileCompleted(true);
-  };
-
-  if (submitted) {
+    
     const isDirectActive = currentStatus === 'pending';
-    return (
-      <div className="flex min-h-screen items-center justify-center p-4 bg-background">
-        <Card className="w-full max-w-lg bg-card border-border">
-          <CardHeader className="text-center">
-            <img src={logo} alt="AzD" className="h-20 mx-auto mb-4 invert object-contain" />
-            <CardTitle className="text-2xl">
-              {isDirectActive ? 'Cadastro completo!' : 'Cadastro enviado!'}
-            </CardTitle>
-            <CardDescription className="text-base mt-2">
-              {isDirectActive
-                ? 'Seu perfil foi completado com sucesso. Você já pode acessar a plataforma!'
-                : 'Seu perfil foi completado com sucesso. Um administrador irá analisar e aprovar seu cadastro em breve. Você será notificado quando tiver acesso completo à plataforma.'}
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
+    const message = isDirectActive
+      ? 'Cadastro completo! Seu perfil foi completado com sucesso. Você já pode acessar a plataforma!'
+      : 'Cadastro enviado! Seu perfil foi completado. Um administrador irá analisar e aprovar seu cadastro em breve.';
+    
+    notify('success', message, { autoClose: true, onClose: () => navigate('/') });
+    setTimeout(() => navigate('/'), 2500);
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4 bg-background">

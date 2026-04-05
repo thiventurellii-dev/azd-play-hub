@@ -2,7 +2,7 @@ import { useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from './Navbar';
 
-const PUBLIC_ROUTES = ['/login', '/register', '/complete-profile'];
+const PUBLIC_ROUTES = ['/', '/login', '/register', '/complete-profile', '/about'];
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { user, loading, profileCompleted, playerStatus } = useAuth();

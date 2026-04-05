@@ -20,6 +20,7 @@ import Admin from "./pages/Admin.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import AboutUs from "./pages/AboutUs.tsx";
 import Rankings from "./pages/Rankings.tsx";
+import MatchRooms from "./pages/MatchRooms.tsx";
 
 const queryClient = new QueryClient();
 
@@ -35,14 +36,15 @@ const App = () => (
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/complete-profile" element={<CompleteProfile />} />
+                <Route path="/about" element={<AboutUs />} />
                 <Route path="/seasons" element={<ProtectedRoute><Seasons /></ProtectedRoute>} />
                 <Route path="/seasons/:id" element={<ProtectedRoute><SeasonDetail /></ProtectedRoute>} />
-                <Route path="/games" element={<Games />} />
+                <Route path="/games" element={<ProtectedRoute><Games /></ProtectedRoute>} />
                 <Route path="/players" element={<ProtectedRoute><Players /></ProtectedRoute>} />
                 <Route path="/rankings" element={<ProtectedRoute><Rankings /></ProtectedRoute>} />
-                <Route path="/rules" element={<Rules />} />
-                <Route path="/about" element={<AboutUs />} />
-                <Route path="/suggestions" element={<Suggestions />} />
+                <Route path="/rules" element={<ProtectedRoute><Rules /></ProtectedRoute>} />
+                <Route path="/suggestions" element={<ProtectedRoute><Suggestions /></ProtectedRoute>} />
+                <Route path="/partidas" element={<ProtectedRoute><MatchRooms /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
                 <Route path="*" element={<NotFound />} />

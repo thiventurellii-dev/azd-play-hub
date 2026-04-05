@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Shield, Calendar, Users, Trophy, FileText, AtSign, Lightbulb, Award, ClipboardList, Swords, ChevronDown } from "lucide-react";
+import { Shield, Calendar, Users, Trophy, FileText, AtSign, Lightbulb, Award, ClipboardList, Swords, ChevronDown, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import AdminSeasons from "@/components/admin/AdminSeasons";
 import AdminBloodMatches from "@/components/admin/AdminBloodMatches";
 import AdminBloodScripts from "@/components/admin/AdminBloodScripts";
@@ -11,6 +11,10 @@ import AdminScoringSchemas from "@/components/admin/AdminScoringSchemas";
 import AdminAchievements from "@/components/admin/AdminAchievements";
 import AdminMatches from "@/components/admin/AdminMatches";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface MenuGroup {
   label: string;

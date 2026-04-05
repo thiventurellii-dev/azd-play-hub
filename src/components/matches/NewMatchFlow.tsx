@@ -125,7 +125,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
 
   // Validate player count
   const playerCountValid = () => {
-    const count = entries.filter(e => e.player_id).length;
+    const count = entries.filter(e => e.player_id || e.ghost_name).length;
     if (!selectedGame) return count >= 1;
     const min = selectedGame.min_players || 1;
     const max = selectedGame.max_players || 99;

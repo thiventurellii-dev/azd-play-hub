@@ -43,8 +43,8 @@ const AdminMatchRooms = () => {
       ? await supabase.from("profiles").select("id, name, nickname").in("id", playerIds)
       : { data: [] };
 
-    const profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
-    const playerProfileMap = new Map(playerProfiles?.map((p) => [p.id, p]) || []);
+    const profileMap = new Map((profiles || []).map((p) => [p.id, p] as const));
+    const playerProfileMap = new Map((playerProfiles || []).map((p) => [p.id, p] as const));
 
     setRooms(
       roomsData.map((r: any) => ({

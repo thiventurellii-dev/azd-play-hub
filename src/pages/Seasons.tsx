@@ -197,6 +197,11 @@ const Seasons = () => {
               </div>
             </CardContent>
           </Link>
+          {isAdmin && (
+            <Button variant="ghost" size="icon" className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEdit(s); }}>
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
         </Card>
       </motion.div>
     );

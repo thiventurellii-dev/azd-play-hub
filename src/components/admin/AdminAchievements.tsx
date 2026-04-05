@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useNotification } from '@/components/NotificationDialog';
 import { Plus, Trash2, Award } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface Achievement {
   id: string;

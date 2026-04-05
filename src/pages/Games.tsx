@@ -214,7 +214,7 @@ const Games = () => {
 
     // Load scoring schema
     const { data: schemaData } = await supabase.from('game_scoring_schemas').select('schema').eq('game_id', g.id).maybeSingle();
-    setEditCategories(schemaData?.schema?.categories || []);
+    setEditCategories((schemaData?.schema as any)?.categories || []);
     setEditOpen(true);
   };
 

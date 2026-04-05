@@ -91,7 +91,9 @@ export const NotificationProvider = ({ children }: { children: ReactNode }) => {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="justify-center sm:justify-center">
-            <AlertDialogAction className="min-w-[100px]" onClick={close}>OK</AlertDialogAction>
+            <AlertDialogAction className="min-w-[100px] gap-2" onClick={close}>
+              <CheckCircle className="h-4 w-4" /> OK
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

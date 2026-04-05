@@ -326,7 +326,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
       onComplete?.();
       // Reset
       setStep(1);
-      setEntries([{ player_id: '', seat_position: 1, faction: '', is_new_player: false }]);
+      setEntries([{ player_id: '', ghost_name: '', seat_position: 1, faction: '', is_new_player: false }]);
       setPlayerScores([]);
       setDuration(''); setPlayedDate(''); setPlayedTime(''); setImageFile(null);
       setSeasonId('');

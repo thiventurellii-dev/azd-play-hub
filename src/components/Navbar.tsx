@@ -20,7 +20,6 @@ import {
   Gamepad2,
   ChevronDown,
   LayoutGrid,
-  Bell,
 } from "lucide-react";
 import {
   DropdownMenu,

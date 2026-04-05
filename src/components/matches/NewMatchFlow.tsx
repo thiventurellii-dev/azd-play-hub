@@ -46,8 +46,8 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [entries, setEntries] = useState<PlayerEntry[]>(
     prefilledPlayers?.map((pid, i) => ({
-      player_id: pid, ghost_name: '', seat_position: i + 1, faction: '', is_new_player: false,
-    })) || [{ player_id: '', ghost_name: '', seat_position: 1, faction: '', is_new_player: false }]
+      player_id: pid, seat_position: i + 1, faction: '', is_new_player: false,
+    })) || [{ player_id: '', seat_position: 1, faction: '', is_new_player: false }]
   );
   const [playerSearch, setPlayerSearch] = useState('');
 

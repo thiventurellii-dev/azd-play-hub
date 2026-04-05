@@ -308,9 +308,9 @@ const Navbar = () => {
               <ChevronDown className="h-3 w-3 ml-auto transition-transform group-open:rotate-180" />
             </summary>
             <div className="pl-6 space-y-1">
-              <Link to="/rules" onClick={closeMobile}>
+              <Link to="/documentos" onClick={closeMobile}>
                 <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
-                  Regras
+                  Documentos
                 </Button>
               </Link>
               <Link to="/games" onClick={closeMobile}>

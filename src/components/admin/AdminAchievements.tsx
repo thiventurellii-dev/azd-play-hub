@@ -106,6 +106,26 @@ const AdminAchievements = () => {
             <Label>Critério (visível para jogadores)</Label>
             <Input value={criteria} onChange={e => setCriteria(e.target.value)} placeholder="Ex: Vencer 10 partidas de Brass" />
           </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Tipo de Gatilho</Label>
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={triggerType}
+                onChange={e => setTriggerType(e.target.value)}
+              >
+                <option value="manual">Manual</option>
+                <option value="automatic">Automático</option>
+              </select>
+            </div>
+            {triggerType === 'automatic' && (
+              <div className="space-y-2">
+                <Label>Config JSON</Label>
+                <Input value={triggerConfig} onChange={e => setTriggerConfig(e.target.value)} placeholder='{"type":"first_win"}' />
+                <p className="text-xs text-muted-foreground">Tipos: first_win, total_games(n), win_streak(n), games_in_day(n)</p>
+              </div>
+            )}
+          </div>
           <Button variant="gold" onClick={handleCreate}><Plus className="h-4 w-4 mr-1" /> Criar</Button>
         </CardContent>
       </Card>

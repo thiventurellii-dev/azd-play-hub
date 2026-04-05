@@ -49,6 +49,7 @@ const Players = () => {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {players.map((p, i) => (
             <motion.div key={p.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+              <Link to={p.nickname ? `/perfil/${p.nickname}` : '#'}>
               <Card className="bg-card border-border hover:border-gold/20 transition-colors h-full">
                 <CardContent className="flex items-center gap-4 py-4 h-full">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-gold font-bold text-lg flex-shrink-0">

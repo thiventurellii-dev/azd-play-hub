@@ -94,6 +94,32 @@ const Profile = () => {
     setConfirmPassword('');
   };
 
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (file.size > 2 * 1024 * 1024) return notify('error', 'Imagem deve ter no máximo 2MB');
+    setUploadingAvatar(true);
+    const ext = file.name.split('.').pop();
+    const path = `${user.id}/avatar.${ext}`;
+    
+    // Delete old files in the folder
+    const { data: existing } = await supabase.storage.from('avatars').list(user.id);
+    if (existing && existing.length > 0) {
+      await supabase.storage.from('avatars').remove(existing.map(f => `${user.id}/${f.name}`));
+    }
+    
+    const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
+    if (uploadError) { setUploadingAvatar(false); return notify('error', uploadError.message); }
+    
+    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
+    const avatarUrl = urlData.publicUrl + '?t=' + Date.now();
+    
+    await supabase.from('profiles').update({ avatar_url: avatarUrl } as any).eq('id', user.id);
+    setProfile({ ...profile, avatar_url: avatarUrl });
+    setUploadingAvatar(false);
+    notify('success', 'Foto atualizada!');
+  };
+
   const genderLabels: Record<string, string> = {
     masculino: 'Masculino', feminino: 'Feminino', nao_binario: 'Não-binário', 'nao-binario': 'Não-binário', outro: 'Outro', prefiro_nao_dizer: 'Prefiro não dizer', 'prefiro-nao-dizer': 'Prefiro não dizer',
   };

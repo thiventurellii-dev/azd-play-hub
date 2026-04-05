@@ -170,11 +170,7 @@ const Seasons = () => {
     return (
       <motion.div key={s.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
         <Card className="bg-card border-border hover:border-gold/20 transition-colors h-full flex flex-col relative group">
-          {isAdmin && (
-            <Button variant="ghost" size="icon" className="absolute top-3 right-10 opacity-0 group-hover:opacity-100 transition-opacity z-10" onClick={(e) => { e.preventDefault(); openEdit(s); }}>
-              <Pencil className="h-4 w-4" />
-            </Button>
-          )}
+          {/* Edit button moved to bottom-right, rendered outside the Link */}
           <Link to={`/seasons/${s.id}`} className="flex-1 flex flex-col">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">

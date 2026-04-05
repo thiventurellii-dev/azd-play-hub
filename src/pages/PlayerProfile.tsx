@@ -34,6 +34,7 @@ const PlayerProfile = () => {
   const [gamePerformance, setGamePerformance] = useState<any[]>([]);
   const [opponents, setOpponents] = useState<{ name: string; games: number; wins: number }[]>([]);
   const [upcomingRooms, setUpcomingRooms] = useState<any[]>([]);
+  const [achievements, setAchievements] = useState<{ icon: string; name: string; description: string | null }[]>([]);
 
   const isOwnProfile = user && profile && user.id === profile.id;
 

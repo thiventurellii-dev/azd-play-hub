@@ -16,6 +16,7 @@ interface Game { id: string; name: string; slug: string | null; min_players: num
 interface Player { id: string; name: string; nickname?: string; }
 interface PlayerEntry {
   player_id: string;
+  ghost_name: string;
   seat_position: number;
   faction: string;
   is_new_player: boolean;

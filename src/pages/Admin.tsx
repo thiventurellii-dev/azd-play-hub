@@ -2,7 +2,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield } from "lucide-react";
 import AdminSeasons from "@/components/admin/AdminSeasons";
 import AdminGames from "@/components/admin/AdminGames";
-import AdminMatches from "@/components/admin/AdminMatches";
 import AdminBloodMatches from "@/components/admin/AdminBloodMatches";
 import AdminBloodScripts from "@/components/admin/AdminBloodScripts";
 import AdminPlayers from "@/components/admin/AdminPlayers";
@@ -11,6 +10,7 @@ import AdminContato from "@/components/admin/AdminContato";
 import AdminSuggestions from "@/components/admin/AdminSuggestions";
 import AdminMatchRooms from "@/components/admin/AdminMatchRooms";
 import AdminScoringSchemas from "@/components/admin/AdminScoringSchemas";
+import AdminAchievements from "@/components/admin/AdminAchievements";
 
 const Admin = () => {
   return (
@@ -28,26 +28,26 @@ const Admin = () => {
           <TabsTrigger value="seasons">Seasons</TabsTrigger>
           <TabsTrigger value="games">Jogos</TabsTrigger>
           <TabsTrigger value="blood-scripts">Scripts Blood</TabsTrigger>
-          <TabsTrigger value="matches">Partidas BG</TabsTrigger>
           <TabsTrigger value="blood-matches">Partidas Blood</TabsTrigger>
           <TabsTrigger value="rooms">Salas</TabsTrigger>
           <TabsTrigger value="players">Jogadores</TabsTrigger>
+          <TabsTrigger value="scoring">Pontuação</TabsTrigger>
+          <TabsTrigger value="achievements">Achievements</TabsTrigger>
           <TabsTrigger value="about">Sobre Nós</TabsTrigger>
           <TabsTrigger value="contato">Nossas Redes</TabsTrigger>
-          <TabsTrigger value="scoring">Pontuação</TabsTrigger>
           <TabsTrigger value="suggestions">Sugestões</TabsTrigger>
         </TabsList>
 
         <TabsContent value="seasons"><AdminSeasons /></TabsContent>
         <TabsContent value="games"><AdminGames /></TabsContent>
         <TabsContent value="blood-scripts"><AdminBloodScripts /></TabsContent>
-        <TabsContent value="matches"><AdminMatches /></TabsContent>
         <TabsContent value="blood-matches"><AdminBloodMatches /></TabsContent>
         <TabsContent value="rooms"><AdminMatchRooms /></TabsContent>
         <TabsContent value="players"><AdminPlayers /></TabsContent>
+        <TabsContent value="scoring"><AdminScoringSchemas /></TabsContent>
+        <TabsContent value="achievements"><AdminAchievements /></TabsContent>
         <TabsContent value="about"><AdminAboutUs /></TabsContent>
         <TabsContent value="contato"><AdminContato /></TabsContent>
-        <TabsContent value="scoring"><AdminScoringSchemas /></TabsContent>
         <TabsContent value="suggestions"><AdminSuggestions /></TabsContent>
       </Tabs>
     </div>

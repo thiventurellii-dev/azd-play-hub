@@ -14,6 +14,8 @@ interface Achievement {
   description: string | null;
   icon: string;
   criteria: string | null;
+  trigger_type: string;
+  trigger_config: any;
 }
 
 const AdminAchievements = () => {

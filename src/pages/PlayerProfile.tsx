@@ -178,29 +178,6 @@ const PlayerProfile = () => {
         setAchievements((achDefs || []) as any[]);
       }
 
-      // Ghost player suggestion (auto-match by name)
-      if (user && user.id === prof.id) {
-        const nameQuery = `%${prof.name.split(' ')[0]}%`;
-        const { data: ghosts } = await supabase
-          .from('ghost_players')
-          .select('id, display_name')
-          .is('linked_profile_id', null)
-          .ilike('display_name', nameQuery);
-        if (ghosts && ghosts.length > 0) {
-          const ghostIds = ghosts.map(g => g.id);
-          const { data: ghostResults } = await supabase
-            .from('match_results')
-            .select('ghost_player_id')
-            .in('ghost_player_id', ghostIds);
-          const countMap: Record<string, number> = {};
-          for (const r of ghostResults || []) {
-            if (r.ghost_player_id) countMap[r.ghost_player_id] = (countMap[r.ghost_player_id] || 0) + 1;
-          }
-          setGhostMatches(ghosts.filter(g => (countMap[g.id] || 0) > 0).map(g => ({
-            ghost_id: g.id, display_name: g.display_name, match_count: countMap[g.id] || 0,
-          })));
-        }
-      }
 
       setLoading(false);
     };

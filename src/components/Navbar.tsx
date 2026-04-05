@@ -45,6 +45,7 @@ const Navbar = () => {
   const [contactLinks, setContactLinks] = useState<Record<string, string>>({});
   const [pendingFriends, setPendingFriends] = useState(0);
   const [userNickname, setUserNickname] = useState<string | null>(null);
+  const [userAvatar, setUserAvatar] = useState<string | null>(null);
 
   useEffect(() => {
     supabase
@@ -72,11 +73,14 @@ const Navbar = () => {
       });
     supabase
       .from("profiles")
-      .select("nickname")
+      .select("nickname, avatar_url")
       .eq("id", user.id)
       .maybeSingle()
       .then(({ data }) => {
-        if (data) setUserNickname((data as any).nickname || null);
+        if (data) {
+          setUserNickname((data as any).nickname || null);
+          setUserAvatar((data as any).avatar_url || null);
+        }
       });
   }, [user]);
 
@@ -209,7 +213,11 @@ const Navbar = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-2 relative">
-                  <User className="h-4 w-4" />
+                  {userAvatar ? (
+                    <img src={userAvatar} alt="" className="h-6 w-6 rounded-full object-cover" />
+                  ) : (
+                    <User className="h-4 w-4" />
+                  )}
                   {user.user_metadata?.name || "Perfil"}
                   {pendingFriends > 0 && (
                     <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-[10px] font-bold text-black">

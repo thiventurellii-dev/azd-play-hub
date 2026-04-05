@@ -30,7 +30,8 @@ const CHART_COLORS = [
 
 const PlayerProfile = () => {
   const { nickname } = useParams();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const { notify } = useNotification();
   const [profile, setProfile] = useState<any>(null);
   const [role, setRole] = useState<string>("player");
   const [loading, setLoading] = useState(true);
@@ -39,6 +40,15 @@ const PlayerProfile = () => {
   const [opponents, setOpponents] = useState<{ name: string; games: number; wins: number }[]>([]);
   const [upcomingRooms, setUpcomingRooms] = useState<any[]>([]);
   const [achievements, setAchievements] = useState<{ icon: string; name: string; description: string | null }[]>([]);
+
+  // Ghost player claim
+  const [ghostMatches, setGhostMatches] = useState<{ ghost_id: string; display_name: string; match_count: number }[]>([]);
+  const [claimLoading, setClaimLoading] = useState(false);
+
+  // Admin ghost link
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [unlinkedGhosts, setUnlinkedGhosts] = useState<{ id: string; display_name: string }[]>([]);
+  const [selectedGhostId, setSelectedGhostId] = useState('');
 
   const isOwnProfile = user && profile && user.id === profile.id;
 

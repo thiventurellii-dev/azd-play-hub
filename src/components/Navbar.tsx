@@ -8,7 +8,7 @@ import {
   LogOut,
   Menu,
   X,
-  BookOpen,
+  FileText,
   User,
   Lock,
   Pencil,

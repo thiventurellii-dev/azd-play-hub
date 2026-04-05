@@ -132,7 +132,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
 
   const playerCountMessage = () => {
     if (!selectedGame) return '';
-    const count = entries.filter(e => e.player_id || e.ghost_name).length;
+    const count = entries.filter(e => e.player_id).length;
     const min = selectedGame.min_players || 1;
     const max = selectedGame.max_players || 99;
     if (count < min) return `Mínimo de ${min} jogadores necessários`;

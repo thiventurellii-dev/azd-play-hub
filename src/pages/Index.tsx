@@ -136,16 +136,13 @@ const LoggedInIndex = () => {
       const { data: results } = await supabase
         .from("match_results")
         .select("match_id, position, score")
-        .eq("player_id", user.id)
-        .order("match_id", { ascending: false })
-        .limit(5);
+        .eq("player_id", user.id);
       if (results && results.length > 0) {
-        const matchIds = results.map(r => r.match_id);
+        const matchIds = [...new Set(results.map(r => r.match_id))];
         const { data: matches } = await supabase
           .from("matches")
           .select("id, played_at, game:games(name)")
-          .in("id", matchIds)
-          .order("played_at", { ascending: false });
+          .in("id", matchIds);
         if (matches) {
           for (const m of matches as any[]) {
             const r = results.find(r => r.match_id === m.id);
@@ -165,15 +162,13 @@ const LoggedInIndex = () => {
       const { data: bloodPlays } = await supabase
         .from("blood_match_players")
         .select("match_id, team")
-        .eq("player_id", user.id)
-        .limit(5);
+        .eq("player_id", user.id);
       if (bloodPlays && bloodPlays.length > 0) {
-        const bMatchIds = bloodPlays.map(r => r.match_id);
+        const bMatchIds = [...new Set(bloodPlays.map(r => r.match_id))];
         const { data: bMatches } = await supabase
           .from("blood_matches")
           .select("id, played_at, winning_team, script:blood_scripts(name)")
-          .in("id", bMatchIds)
-          .order("played_at", { ascending: false });
+          .in("id", bMatchIds);
         if (bMatches) {
           for (const m of bMatches as any[]) {
             const bp = bloodPlays.find(p => p.match_id === m.id);
@@ -190,28 +185,33 @@ const LoggedInIndex = () => {
         }
       }
 
-      // Sort all by played_at desc, take 5
       allRecent.sort((a, b) => new Date(b.played_at).getTime() - new Date(a.played_at).getTime());
       setRecentMatches(allRecent.slice(0, 5));
 
-      // Active season
+      // Active boardgame season for home ranking card
       const now = new Date().toISOString().slice(0, 10);
       const { data: season } = await supabase
         .from("seasons")
         .select("id, name")
+        .eq("type", "boardgame")
         .lte("start_date", now)
         .gte("end_date", now)
+        .order("start_date", { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (season) {
+
+      if (!season) {
+        setActiveSeason(null);
+        setTopPlayers([]);
+      } else {
         setActiveSeason(season);
-        // Top 5 players in season
         const { data: ratings } = await supabase
           .from("mmr_ratings")
           .select("player_id, current_mmr, wins, games_played")
           .eq("season_id", season.id)
           .order("current_mmr", { ascending: false })
           .limit(5);
+
         if (ratings && ratings.length > 0) {
           const pIds = ratings.map(r => r.player_id);
           const { data: profiles } = await supabase
@@ -220,6 +220,8 @@ const LoggedInIndex = () => {
             .in("id", pIds);
           const pMap = new Map((profiles || []).map((p: any) => [p.id, p.nickname || p.name]));
           setTopPlayers(ratings.map(r => ({ ...r, name: pMap.get(r.player_id) || '?' })));
+        } else {
+          setTopPlayers([]);
         }
       }
     };

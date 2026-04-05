@@ -16,6 +16,8 @@ interface Game {
   video_url: string | null;
   min_players: number | null;
   max_players: number | null;
+  slug: string | null;
+  factions: any;
 }
 
 const AdminGames = () => {

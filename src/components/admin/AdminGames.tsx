@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useNotification } from '@/components/NotificationDialog';
@@ -16,6 +17,8 @@ interface Game {
   video_url: string | null;
   min_players: number | null;
   max_players: number | null;
+  slug: string | null;
+  factions: any;
 }
 
 const AdminGames = () => {
@@ -27,11 +30,12 @@ const AdminGames = () => {
   const [videoUrl, setVideoUrl] = useState('');
   const [minPlayers, setMinPlayers] = useState('');
   const [maxPlayers, setMaxPlayers] = useState('');
+  const [slug, setSlug] = useState('');
 
   // Edit state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingGame, setEditingGame] = useState<Game | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', image_url: '', rules_url: '', video_url: '', min_players: '', max_players: '' });
+  const [editForm, setEditForm] = useState({ name: '', image_url: '', rules_url: '', video_url: '', min_players: '', max_players: '', slug: '', factions: '' });
 
   const fetchGames = async () => {
     const { data } = await supabase.from('games').select('*').order('name');
@@ -42,8 +46,10 @@ const AdminGames = () => {
 
   const handleCreate = async () => {
     if (!name) return notify('error', 'Nome obrigatório');
+    const generatedSlug = slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     const { error } = await supabase.from('games').insert({
       name,
+      slug: generatedSlug,
       image_url: imageUrl || null,
       rules_url: rulesUrl || null,
       video_url: videoUrl || null,
@@ -52,7 +58,7 @@ const AdminGames = () => {
     });
     if (error) return notify('error', error.message);
     notify('success', 'Jogo adicionado!');
-    setName(''); setImageUrl(''); setRulesUrl(''); setVideoUrl(''); setMinPlayers(''); setMaxPlayers('');
+    setName(''); setImageUrl(''); setRulesUrl(''); setVideoUrl(''); setMinPlayers(''); setMaxPlayers(''); setSlug('');
     fetchGames();
   };
 
@@ -72,19 +78,31 @@ const AdminGames = () => {
       video_url: g.video_url || '',
       min_players: g.min_players ? String(g.min_players) : '',
       max_players: g.max_players ? String(g.max_players) : '',
+      slug: g.slug || '',
+      factions: g.factions ? JSON.stringify(g.factions, null, 2) : '',
     });
     setEditDialogOpen(true);
   };
 
   const handleEditSave = async () => {
     if (!editingGame) return;
+    let factions = null;
+    if (editForm.factions.trim()) {
+      try {
+        factions = JSON.parse(editForm.factions);
+      } catch {
+        return notify('error', 'JSON de facções inválido');
+      }
+    }
     const { error } = await supabase.from('games').update({
       name: editForm.name,
+      slug: editForm.slug || null,
       image_url: editForm.image_url || null,
       rules_url: editForm.rules_url || null,
       video_url: editForm.video_url || null,
       min_players: editForm.min_players ? parseInt(editForm.min_players) : null,
       max_players: editForm.max_players ? parseInt(editForm.max_players) : null,
+      factions,
     }).eq('id', editingGame.id);
     if (error) return notify('error', error.message);
     notify('success', 'Jogo atualizado!');
@@ -122,6 +140,10 @@ const AdminGames = () => {
               <Label>Máx. Jogadores</Label>
               <Input type="number" min={1} value={maxPlayers} onChange={e => setMaxPlayers(e.target.value)} placeholder="5" />
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Slug (URL amigável, auto-gerado se vazio)</Label>
+            <Input value={slug} onChange={e => setSlug(e.target.value)} placeholder="brass-birmingham" />
           </div>
           <Button variant="gold" onClick={handleCreate}><Plus className="h-4 w-4 mr-1" /> Adicionar Jogo</Button>
         </CardContent>
@@ -195,6 +217,19 @@ const AdminGames = () => {
                 <Label>Máx. Jogadores</Label>
                 <Input type="number" value={editForm.max_players} onChange={e => setEditForm({ ...editForm, max_players: e.target.value })} />
               </div>
+              <div className="space-y-2">
+                <Label>Slug (URL)</Label>
+                <Input value={editForm.slug} onChange={e => setEditForm({ ...editForm, slug: e.target.value })} placeholder="brass-birmingham" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Facções/Personagens (JSON, opcional)</Label>
+              <Textarea
+                value={editForm.factions}
+                onChange={e => setEditForm({ ...editForm, factions: e.target.value })}
+                placeholder='["Facção A", "Facção B"] ou [{"name":"...", "color":"..."}]'
+                className="min-h-[80px] font-mono text-xs"
+              />
             </div>
             <Button variant="gold" onClick={handleEditSave} className="w-full">Salvar Alterações</Button>
           </div>

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
-import { Trophy, Gamepad2, ArrowLeft, Calendar, Clock, Users } from "lucide-react";
+import { Trophy, Gamepad2, ArrowLeft, Calendar, Clock, Users, Award } from "lucide-react";
 import { motion } from "framer-motion";
 import FriendButton from "@/components/friendlist/FriendButton";
 import FriendsList from "@/components/friendlist/FriendsList";
@@ -34,6 +34,7 @@ const PlayerProfile = () => {
   const [gamePerformance, setGamePerformance] = useState<any[]>([]);
   const [opponents, setOpponents] = useState<{ name: string; games: number; wins: number }[]>([]);
   const [upcomingRooms, setUpcomingRooms] = useState<any[]>([]);
+  const [achievements, setAchievements] = useState<{ icon: string; name: string; description: string | null }[]>([]);
 
   const isOwnProfile = user && profile && user.id === profile.id;
 
@@ -153,6 +154,20 @@ const PlayerProfile = () => {
           for (const g of roomGames || []) rgMap[g.id] = g.name;
           setUpcomingRooms(rooms.map((r) => ({ ...r, game_name: rgMap[r.game_id] || "?" })));
         }
+      }
+
+      // Achievements
+      const { data: playerAchs } = await supabase
+        .from('player_achievements')
+        .select('achievement_id')
+        .eq('player_id', prof.id);
+      if (playerAchs && playerAchs.length > 0) {
+        const achIds = playerAchs.map((a: any) => a.achievement_id);
+        const { data: achDefs } = await supabase
+          .from('achievement_definitions')
+          .select('name, description, icon')
+          .in('id', achIds);
+        setAchievements((achDefs || []) as any[]);
       }
 
       setLoading(false);
@@ -305,12 +320,26 @@ const PlayerProfile = () => {
         </Card>
       )}
 
-      {/* Friends List - show on own profile */}
-      {isOwnProfile && (
-        <div>
-          <FriendsList />
-        </div>
+      {/* Achievements */}
+      {achievements.length > 0 && (
+        <Card className="bg-card border-border">
+          <CardContent className="pt-6">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Award className="h-5 w-5 text-gold" /> Conquistas
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {achievements.map((a, i) => (
+                <Badge key={i} variant="outline" className="text-sm py-1.5 px-3 border-gold/30">
+                  {a.icon} {a.name}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
+
+      {/* Friends List - always visible */}
+      <FriendsList />
 
       {/* Upcoming rooms */}
       {upcomingRooms.length > 0 && (

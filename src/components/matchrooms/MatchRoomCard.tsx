@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Calendar, Users, LogIn, Clock, Share2 } from "lucide-react";
+import { Calendar, Users, LogIn, Clock, Share2, ClipboardList } from "lucide-react";
 import { generateWhatsAppInvite, sendMatchNotification } from "@/lib/matchNotification";
 import { toast } from "sonner";
 import RoomComments from "./RoomComments";
@@ -43,6 +44,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 
 const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [players, setPlayers] = useState<RoomPlayer[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -237,6 +239,28 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
           {canInteract && (
             <Button variant="ghost" size="sm" className="min-h-[44px]" onClick={handleShare}>
               <Share2 className="h-4 w-4" />
+            </Button>
+          )}
+          {room.status === "finished" && user && (
+            <Button
+              variant="gold"
+              size="sm"
+              className="flex-1 min-h-[44px]"
+              onClick={() => {
+                // Navigate to partidas with pre-fill data via state
+                navigate("/partidas", {
+                  state: {
+                    prefill: {
+                      gameId: room.game.id,
+                      gameName: room.game.name,
+                      date: room.scheduled_at,
+                      playerIds: confirmed.map(p => p.player_id),
+                    }
+                  }
+                });
+              }}
+            >
+              <ClipboardList className="h-4 w-4 mr-1" /> Inserir Resultado
             </Button>
           )}
         </div>

@@ -213,7 +213,11 @@ const Navbar = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-2 relative">
-                  <User className="h-4 w-4" />
+                  {userAvatar ? (
+                    <img src={userAvatar} alt="" className="h-6 w-6 rounded-full object-cover" />
+                  ) : (
+                    <User className="h-4 w-4" />
+                  )}
                   {user.user_metadata?.name || "Perfil"}
                   {pendingFriends > 0 && (
                     <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-[10px] font-bold text-black">

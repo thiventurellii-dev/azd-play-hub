@@ -141,6 +141,10 @@ const AdminGames = () => {
               <Input type="number" min={1} value={maxPlayers} onChange={e => setMaxPlayers(e.target.value)} placeholder="5" />
             </div>
           </div>
+          <div className="space-y-2">
+            <Label>Slug (URL amigável, auto-gerado se vazio)</Label>
+            <Input value={slug} onChange={e => setSlug(e.target.value)} placeholder="brass-birmingham" />
+          </div>
           <Button variant="gold" onClick={handleCreate}><Plus className="h-4 w-4 mr-1" /> Adicionar Jogo</Button>
         </CardContent>
       </Card>

@@ -464,7 +464,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
             )}
             <div className="flex justify-between">
               <Button variant="outline" onClick={() => setStep(1)}><ChevronLeft className="h-4 w-4 mr-1" /> Voltar</Button>
-              <Button variant="gold" onClick={() => setStep(3)} disabled={entries.some(e => !e.player_id && !e.ghost_name) || !playerCountValid()}>
+              <Button variant="gold" onClick={() => setStep(3)} disabled={entries.some(e => !e.player_id) || !playerCountValid()}>
                 Próximo <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>

@@ -45,8 +45,10 @@ const AdminGames = () => {
 
   const handleCreate = async () => {
     if (!name) return notify('error', 'Nome obrigatório');
+    const generatedSlug = slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     const { error } = await supabase.from('games').insert({
       name,
+      slug: generatedSlug,
       image_url: imageUrl || null,
       rules_url: rulesUrl || null,
       video_url: videoUrl || null,
@@ -55,7 +57,7 @@ const AdminGames = () => {
     });
     if (error) return notify('error', error.message);
     notify('success', 'Jogo adicionado!');
-    setName(''); setImageUrl(''); setRulesUrl(''); setVideoUrl(''); setMinPlayers(''); setMaxPlayers('');
+    setName(''); setImageUrl(''); setRulesUrl(''); setVideoUrl(''); setMinPlayers(''); setMaxPlayers(''); setSlug('');
     fetchGames();
   };
 

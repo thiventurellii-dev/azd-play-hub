@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { useNotification } from '@/components/NotificationDialog';
 import { Pencil, Lock } from 'lucide-react';
 import { brazilianStates, citiesByState, pronounsOptions, countryCodes, formatPhone, unformatPhone } from '@/lib/brazil-data';
+import FriendsList from '@/components/friendlist/FriendsList';
 
 const Profile = () => {
   const { user, role } = useAuth();

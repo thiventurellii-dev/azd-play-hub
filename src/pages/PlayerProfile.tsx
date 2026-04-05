@@ -232,15 +232,6 @@ const PlayerProfile = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {isAdmin && !isOwnProfile && (
-                <Button variant="outline" size="sm" onClick={async () => {
-                  const { data } = await supabase.from('ghost_players').select('id, display_name').is('linked_profile_id', null).order('display_name');
-                  setUnlinkedGhosts((data || []) as any[]);
-                  setLinkDialogOpen(true);
-                }}>
-                  <LinkIcon className="h-4 w-4 mr-1" /> Vincular Fantasma
-                </Button>
-              )}
               <FriendButton targetUserId={profile.id} />
             </div>
           </CardContent>

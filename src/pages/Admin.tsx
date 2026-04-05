@@ -34,6 +34,7 @@ const Admin = () => {
           <TabsTrigger value="players">Jogadores</TabsTrigger>
           <TabsTrigger value="about">Sobre Nós</TabsTrigger>
           <TabsTrigger value="contato">Nossas Redes</TabsTrigger>
+          <TabsTrigger value="scoring">Pontuação</TabsTrigger>
           <TabsTrigger value="suggestions">Sugestões</TabsTrigger>
         </TabsList>
 

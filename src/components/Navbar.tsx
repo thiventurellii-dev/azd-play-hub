@@ -13,7 +13,7 @@ import {
   Lock,
   Pencil,
   Info,
-  MessageCircle,
+  
   Lightbulb,
   AtSign,
   Trophy,

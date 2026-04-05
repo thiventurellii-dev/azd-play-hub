@@ -297,6 +297,35 @@ export type Database = {
         }
         Relationships: []
       }
+      game_scoring_schemas: {
+        Row: {
+          created_at: string
+          game_id: string
+          id: string
+          schema: Json
+        }
+        Insert: {
+          created_at?: string
+          game_id: string
+          id?: string
+          schema?: Json
+        }
+        Update: {
+          created_at?: string
+          game_id?: string
+          id?: string
+          schema?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_scoring_schemas_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: true
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       games: {
         Row: {
           created_at: string
@@ -306,6 +335,7 @@ export type Database = {
           min_players: number | null
           name: string
           rules_url: string | null
+          slug: string | null
           video_url: string | null
         }
         Insert: {
@@ -316,6 +346,7 @@ export type Database = {
           min_players?: number | null
           name: string
           rules_url?: string | null
+          slug?: string | null
           video_url?: string | null
         }
         Update: {
@@ -326,13 +357,45 @@ export type Database = {
           min_players?: number | null
           name?: string
           rules_url?: string | null
+          slug?: string | null
           video_url?: string | null
         }
         Relationships: []
       }
+      match_result_scores: {
+        Row: {
+          category_key: string
+          id: string
+          match_result_id: string
+          value: number
+        }
+        Insert: {
+          category_key: string
+          id?: string
+          match_result_id: string
+          value?: number
+        }
+        Update: {
+          category_key?: string
+          id?: string
+          match_result_id?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_result_scores_match_result_id_fkey"
+            columns: ["match_result_id"]
+            isOneToOne: false
+            referencedRelation: "match_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_results: {
         Row: {
+          faction: string | null
           id: string
+          is_new_player: boolean | null
           match_id: string
           mmr_after: number | null
           mmr_before: number | null
@@ -340,9 +403,12 @@ export type Database = {
           player_id: string
           position: number
           score: number | null
+          seat_position: number | null
         }
         Insert: {
+          faction?: string | null
           id?: string
+          is_new_player?: boolean | null
           match_id: string
           mmr_after?: number | null
           mmr_before?: number | null
@@ -350,9 +416,12 @@ export type Database = {
           player_id: string
           position: number
           score?: number | null
+          seat_position?: number | null
         }
         Update: {
+          faction?: string | null
           id?: string
+          is_new_player?: boolean | null
           match_id?: string
           mmr_after?: number | null
           mmr_before?: number | null
@@ -360,6 +429,7 @@ export type Database = {
           player_id?: string
           position?: number
           score?: number | null
+          seat_position?: number | null
         }
         Relationships: [
           {

@@ -21,6 +21,8 @@ import NotFound from "./pages/NotFound.tsx";
 import AboutUs from "./pages/AboutUs.tsx";
 import Rankings from "./pages/Rankings.tsx";
 import MatchRooms from "./pages/MatchRooms.tsx";
+import GameDetail from "./pages/GameDetail.tsx";
+import PlayerProfile from "./pages/PlayerProfile.tsx";
 
 const queryClient = new QueryClient();
 
@@ -40,7 +42,9 @@ const App = () => (
                 <Route path="/seasons" element={<ProtectedRoute><Seasons /></ProtectedRoute>} />
                 <Route path="/seasons/:id" element={<ProtectedRoute><SeasonDetail /></ProtectedRoute>} />
                 <Route path="/games" element={<ProtectedRoute><Games /></ProtectedRoute>} />
+                <Route path="/jogos/:slug" element={<ProtectedRoute><GameDetail /></ProtectedRoute>} />
                 <Route path="/players" element={<ProtectedRoute><Players /></ProtectedRoute>} />
+                <Route path="/perfil/:nickname" element={<ProtectedRoute><PlayerProfile /></ProtectedRoute>} />
                 <Route path="/rankings" element={<ProtectedRoute><Rankings /></ProtectedRoute>} />
                 <Route path="/rules" element={<ProtectedRoute><Rules /></ProtectedRoute>} />
                 <Route path="/suggestions" element={<ProtectedRoute><Suggestions /></ProtectedRoute>} />

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -101,7 +102,14 @@ const Profile = () => {
 
   return (
     <div className="container py-10 max-w-2xl">
-      <h1 className="text-3xl font-bold mb-8">Meu Perfil</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold">Meu Perfil</h1>
+        {profile?.nickname && (
+          <Link to={`/perfil/${profile.nickname}`}>
+            <Button variant="outline" size="sm">Ver perfil público</Button>
+          </Link>
+        )}
+      </div>
       <Card className="bg-card border-border">
         <CardHeader>
           <div className="flex items-center justify-between">

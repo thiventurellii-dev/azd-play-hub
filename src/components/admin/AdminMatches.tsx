@@ -9,9 +9,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useNotification } from '@/components/NotificationDialog';
-import { Plus, Trash2, UserPlus, Upload, Image, Pencil, Search, ChevronDown, ChevronUp } from 'lucide-react';
+import { Trash2, UserPlus, Upload, Image, Pencil, Search, ChevronDown, ChevronUp } from 'lucide-react';
+import NewMatchFlow from '@/components/matches/NewMatchFlow';
 
 interface Season { id: string; name: string; }
 interface Game { id: string; name: string; }
@@ -324,114 +324,7 @@ const AdminMatches = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="bg-card border-border">
-        <CardHeader><CardTitle>Registrar Partida</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="space-y-2">
-              <Label>Season *</Label>
-              <Select value={seasonId} onValueChange={v => { setSeasonId(v); setGameId(''); }}>
-                <SelectTrigger><SelectValue placeholder="Selecione a season" /></SelectTrigger>
-                <SelectContent>
-                  {seasons.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Jogo *</Label>
-              <Select value={gameId} onValueChange={setGameId} disabled={!seasonId}>
-                <SelectTrigger><SelectValue placeholder={seasonId ? 'Selecione o jogo' : 'Selecione a season primeiro'} /></SelectTrigger>
-                <SelectContent>
-                  {seasonGames.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Data da Partida *</Label>
-              <Input type="date" value={playedDate} onChange={e => setPlayedDate(e.target.value)} required />
-            </div>
-            <div className="space-y-2">
-              <Label>Hora da Partida *</Label>
-              <Input type="time" value={playedTime} onChange={e => setPlayedTime(e.target.value)} required />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Duração (min)</Label>
-            <Input type="number" value={duration} onChange={e => setDuration(e.target.value)} placeholder="120" className="max-w-[200px]" />
-          </div>
-
-          <div className="space-y-2">
-            <Label>Foto da Partida (opcional)</Label>
-            <div className="flex items-center gap-3">
-              <label className="flex items-center gap-2 rounded-md border border-dashed border-border px-4 py-2 cursor-pointer hover:bg-secondary/50 transition-colors">
-                <Upload className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">{imageFile ? imageFile.name : 'Anexar imagem'}</span>
-                <input type="file" accept="image/*" className="hidden" onChange={e => setImageFile(e.target.files?.[0] || null)} />
-              </label>
-              {imageFile && <Button variant="ghost" size="sm" onClick={() => setImageFile(null)}>Remover</Button>}
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <Label>Resultados dos Jogadores *</Label>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[30%]">Jogador</TableHead>
-                  <TableHead className="w-[15%]">Posição</TableHead>
-                  <TableHead className="w-[15%]">Pontuação</TableHead>
-                  <TableHead className="w-[20%]">Primeiro a Jogar</TableHead>
-                  <TableHead className="w-[20%]"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {results.map((r, i) => (
-                  <TableRow key={i}>
-                    <TableCell>
-                      <Select value={r.player_id} onValueChange={v => updateResult(i, 'player_id', v)}>
-                        <SelectTrigger><SelectValue placeholder="Jogador" /></SelectTrigger>
-                        <SelectContent>
-                          {players.map(p => (
-                            <SelectItem key={p.id} value={p.id} disabled={results.some((rr, ii) => ii !== i && rr.player_id === p.id)}>
-                              {p.nickname || p.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell>
-                      <Input type="number" min={1} value={r.position} onChange={e => updateResult(i, 'position', parseInt(e.target.value) || 1)} />
-                    </TableCell>
-                    <TableCell>
-                      <Input type="number" value={r.score} onChange={e => updateResult(i, 'score', parseInt(e.target.value) || 0)} />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Checkbox checked={r.is_first_player} onCheckedChange={(checked) => updateResult(i, 'is_first_player', !!checked)} />
-                        <span className="text-xs text-muted-foreground">1º a jogar</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {results.length > 1 && (
-                        <Button variant="ghost" size="icon" onClick={() => removeResult(i)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            <Button variant="outline" size="sm" onClick={addResult}>
-              <UserPlus className="h-4 w-4 mr-1" /> Adicionar Jogador
-            </Button>
-          </div>
-
-          <Button variant="gold" onClick={handleSubmit} disabled={saving}>
-            {saving ? 'Salvando...' : 'Registrar Partida'}
-          </Button>
-        </CardContent>
-      </Card>
+      <NewMatchFlow onComplete={fetchMatches} />
 
       {/* Filters */}
       <Card className="bg-card border-border">

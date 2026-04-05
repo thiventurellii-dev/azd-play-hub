@@ -10,6 +10,7 @@ import AdminAboutUs from "@/components/admin/AdminAboutUs";
 import AdminContato from "@/components/admin/AdminContato";
 import AdminSuggestions from "@/components/admin/AdminSuggestions";
 import AdminMatchRooms from "@/components/admin/AdminMatchRooms";
+import AdminScoringSchemas from "@/components/admin/AdminScoringSchemas";
 
 const Admin = () => {
   return (
@@ -33,6 +34,7 @@ const Admin = () => {
           <TabsTrigger value="players">Jogadores</TabsTrigger>
           <TabsTrigger value="about">Sobre Nós</TabsTrigger>
           <TabsTrigger value="contato">Nossas Redes</TabsTrigger>
+          <TabsTrigger value="scoring">Pontuação</TabsTrigger>
           <TabsTrigger value="suggestions">Sugestões</TabsTrigger>
         </TabsList>
 
@@ -45,6 +47,7 @@ const Admin = () => {
         <TabsContent value="players"><AdminPlayers /></TabsContent>
         <TabsContent value="about"><AdminAboutUs /></TabsContent>
         <TabsContent value="contato"><AdminContato /></TabsContent>
+        <TabsContent value="scoring"><AdminScoringSchemas /></TabsContent>
         <TabsContent value="suggestions"><AdminSuggestions /></TabsContent>
       </Tabs>
     </div>

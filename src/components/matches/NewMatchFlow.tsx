@@ -1,0 +1,464 @@
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { useNotification } from '@/components/NotificationDialog';
+import { Upload, UserPlus, Trash2, Trophy, ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import ScoringSheet from './ScoringSheet';
+
+interface Season { id: string; name: string; }
+interface Game { id: string; name: string; slug: string | null; }
+interface Player { id: string; name: string; nickname?: string; }
+interface PlayerEntry {
+  player_id: string;
+  seat_position: number;
+  faction: string;
+  is_first_player: boolean;
+  is_new_player: boolean;
+}
+
+interface Props {
+  prefilledGameId?: string;
+  prefilledPlayers?: string[];
+  onComplete?: () => void;
+}
+
+const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, onComplete }: Props) => {
+  const { notify } = useNotification();
+  const [step, setStep] = useState(1);
+
+  // Step 1
+  const [seasons, setSeasons] = useState<Season[]>([]);
+  const [games, setGames] = useState<Game[]>([]);
+  const [seasonGames, setSeasonGames] = useState<Game[]>([]);
+  const [seasonId, setSeasonId] = useState('');
+  const [gameId, setGameId] = useState(prefilledGameId || '');
+  const [playedDate, setPlayedDate] = useState('');
+  const [playedTime, setPlayedTime] = useState('');
+  const [duration, setDuration] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+
+  // Step 2
+  const [allPlayers, setAllPlayers] = useState<Player[]>([]);
+  const [entries, setEntries] = useState<PlayerEntry[]>(
+    prefilledPlayers?.map((pid, i) => ({
+      player_id: pid, seat_position: i + 1, faction: '', is_first_player: false, is_new_player: false,
+    })) || [{ player_id: '', seat_position: 1, faction: '', is_first_player: false, is_new_player: false }]
+  );
+
+  // Step 3
+  const [scoringSchema, setScoringSchema] = useState<any>(null);
+  const [playerScores, setPlayerScores] = useState<any[]>([]);
+
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const fetchBase = async () => {
+      const [s, g, p] = await Promise.all([
+        supabase.from('seasons').select('id, name').eq('type', 'boardgame' as any).order('start_date', { ascending: false }),
+        supabase.from('games').select('id, name, slug').order('name'),
+        supabase.from('profiles').select('id, name, nickname').order('name'),
+      ]);
+      setSeasons(s.data || []);
+      setGames((g.data || []) as Game[]);
+      setAllPlayers(p.data || []);
+    };
+    fetchBase();
+  }, []);
+
+  useEffect(() => {
+    if (!seasonId) { setSeasonGames([]); return; }
+    const fetchSeasonGames = async () => {
+      const { data } = await supabase.from('season_games').select('game_id').eq('season_id', seasonId);
+      const gameIds = (data || []).map(sg => sg.game_id);
+      setSeasonGames(gameIds.length === 0 ? games : games.filter(g => gameIds.includes(g.id)));
+    };
+    fetchSeasonGames();
+  }, [seasonId, games]);
+
+  // Fetch scoring schema when game changes
+  useEffect(() => {
+    if (!gameId) { setScoringSchema(null); return; }
+    const fetchSchema = async () => {
+      const { data } = await supabase
+        .from('game_scoring_schemas')
+        .select('schema')
+        .eq('game_id', gameId)
+        .maybeSingle();
+      setScoringSchema(data?.schema || null);
+    };
+    fetchSchema();
+  }, [gameId]);
+
+  const addEntry = () => setEntries([...entries, {
+    player_id: '', seat_position: entries.length + 1, faction: '', is_first_player: false, is_new_player: false,
+  }]);
+
+  const updateEntry = (i: number, field: keyof PlayerEntry, value: any) => {
+    const updated = [...entries];
+    if (field === 'is_first_player' && value === true) {
+      updated.forEach((e, idx) => { e.is_first_player = idx === i; });
+    } else {
+      (updated[i] as any)[field] = value;
+    }
+    setEntries(updated);
+  };
+
+  const removeEntry = (i: number) => setEntries(entries.filter((_, idx) => idx !== i));
+
+  const scoringPlayers = entries.filter(e => e.player_id).map(e => {
+    const p = allPlayers.find(p => p.id === e.player_id);
+    return { id: e.player_id, name: p?.nickname || p?.name || '?' };
+  });
+
+  const calculateElo = (results: { player_id: string; position: number }[], mmrMap: Record<string, number>) => {
+    const K = 50;
+    const n = results.length;
+    const changes: Record<string, number> = {};
+    for (const r of results) changes[r.player_id] = 0;
+    for (let i = 0; i < n; i++) {
+      for (let j = i + 1; j < n; j++) {
+        const rA = mmrMap[results[i].player_id] || 1000;
+        const rB = mmrMap[results[j].player_id] || 1000;
+        const eA = 1 / (1 + Math.pow(10, (rB - rA) / 400));
+        const eB = 1 / (1 + Math.pow(10, (rA - rB) / 400));
+        let sA: number, sB: number;
+        if (results[i].position < results[j].position) { sA = 1; sB = 0; }
+        else if (results[i].position > results[j].position) { sA = 0; sB = 1; }
+        else { sA = 0.5; sB = 0.5; }
+        changes[results[i].player_id] += K * (sA - eA);
+        changes[results[j].player_id] += K * (sB - eB);
+      }
+    }
+    for (const r of results) {
+      changes[r.player_id] += 5 * (n - r.position);
+    }
+    return Object.fromEntries(Object.entries(changes).map(([id, change]) => [id, parseFloat(change.toFixed(2))]));
+  };
+
+  const handleSubmit = async () => {
+    if (!seasonId || !gameId || !playedDate || !playedTime || entries.some(e => !e.player_id)) {
+      return notify('error', 'Preencha Season, Jogo, Data/Hora e todos os jogadores');
+    }
+    setSaving(true);
+    try {
+      // Build results with positions based on scores
+      const sorted = [...playerScores].sort((a, b) => b.total - a.total);
+      const positionMap: Record<string, number> = {};
+      sorted.forEach((ps, i) => { positionMap[ps.player_id] = i + 1; });
+
+      // If no scores, use seat order
+      if (playerScores.length === 0) {
+        entries.forEach((e, i) => { positionMap[e.player_id] = i + 1; });
+      }
+
+      const playerIds = entries.map(e => e.player_id);
+      const firstPlayerId = entries.find(e => e.is_first_player)?.player_id || null;
+
+      const { data: mmrData } = await supabase
+        .from('mmr_ratings')
+        .select('player_id, current_mmr, games_played, wins, game_id')
+        .eq('season_id', seasonId)
+        .eq('game_id', gameId)
+        .in('player_id', playerIds);
+
+      const mmrMap: Record<string, number> = {};
+      const gpMap: Record<string, number> = {};
+      const winsMap: Record<string, number> = {};
+      for (const m of (mmrData || [])) {
+        mmrMap[m.player_id] = m.current_mmr;
+        gpMap[m.player_id] = m.games_played;
+        winsMap[m.player_id] = m.wins;
+      }
+
+      for (const pid of playerIds) {
+        if (!(pid in mmrMap)) {
+          mmrMap[pid] = 1000; gpMap[pid] = 0; winsMap[pid] = 0;
+          await supabase.from('mmr_ratings').insert({ player_id: pid, season_id: seasonId, game_id: gameId, current_mmr: 1000, games_played: 0, wins: 0 } as any);
+        }
+      }
+
+      const results = entries.map(e => ({ player_id: e.player_id, position: positionMap[e.player_id] || 1 }));
+      const eloChanges = calculateElo(results, mmrMap);
+
+      let imageUrl: string | null = null;
+      if (imageFile) {
+        const ext = imageFile.name.split('.').pop();
+        const path = `${seasonId}/${Date.now()}.${ext}`;
+        const { error: uploadErr } = await supabase.storage.from('match-images').upload(path, imageFile);
+        if (uploadErr) throw uploadErr;
+        const { data: urlData } = supabase.storage.from('match-images').getPublicUrl(path);
+        imageUrl = urlData.publicUrl;
+      }
+
+      const { data: match, error: matchErr } = await supabase
+        .from('matches')
+        .insert({
+          season_id: seasonId, game_id: gameId,
+          duration_minutes: parseInt(duration) || null,
+          played_at: new Date(`${playedDate}T${playedTime}`).toISOString(),
+          image_url: imageUrl, first_player_id: firstPlayerId,
+        })
+        .select().single();
+      if (matchErr) throw matchErr;
+
+      const matchResults = entries.map(e => {
+        const pos = positionMap[e.player_id] || 1;
+        const ps = playerScores.find(p => p.player_id === e.player_id);
+        return {
+          match_id: match.id, player_id: e.player_id,
+          position: pos, score: ps?.total || 0,
+          mmr_before: mmrMap[e.player_id], mmr_change: eloChanges[e.player_id],
+          mmr_after: mmrMap[e.player_id] + eloChanges[e.player_id],
+          seat_position: e.seat_position, faction: e.faction || null,
+          is_new_player: e.is_new_player,
+        };
+      });
+      const { data: insertedResults, error: resErr } = await supabase.from('match_results').insert(matchResults).select();
+      if (resErr) throw resErr;
+
+      // Insert detailed scores if schema exists
+      if (scoringSchema && playerScores.length > 0 && insertedResults) {
+        const detailedScores: any[] = [];
+        for (const ir of insertedResults) {
+          const ps = playerScores.find(p => p.player_id === ir.player_id);
+          if (ps?.scores) {
+            for (const [key, value] of Object.entries(ps.scores)) {
+              if (typeof value === 'number' && value !== 0) {
+                detailedScores.push({
+                  match_result_id: ir.id,
+                  category_key: key,
+                  value,
+                });
+              }
+            }
+          }
+        }
+        if (detailedScores.length > 0) {
+          await supabase.from('match_result_scores').insert(detailedScores);
+        }
+      }
+
+      // Update MMR
+      for (const e of entries) {
+        const pos = positionMap[e.player_id] || 1;
+        const isWin = pos === 1;
+        await supabase.from('mmr_ratings').update({
+          current_mmr: mmrMap[e.player_id] + eloChanges[e.player_id],
+          games_played: gpMap[e.player_id] + 1,
+          wins: winsMap[e.player_id] + (isWin ? 1 : 0),
+          updated_at: new Date().toISOString(),
+        }).eq('player_id', e.player_id).eq('season_id', seasonId).eq('game_id', gameId);
+      }
+
+      notify('success', 'Partida registrada com sucesso!');
+      onComplete?.();
+      // Reset
+      setStep(1);
+      setEntries([{ player_id: '', seat_position: 1, faction: '', is_first_player: false, is_new_player: false }]);
+      setPlayerScores([]);
+      setDuration(''); setPlayedDate(''); setPlayedTime(''); setImageFile(null);
+    } catch (err: any) {
+      notify('error', err.message || 'Erro ao registrar partida');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const gameName = games.find(g => g.id === gameId)?.name || '';
+
+  return (
+    <Card className="bg-card border-border">
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between">
+          <span>Nova Partida</span>
+          <div className="flex gap-1">
+            {[1, 2, 3, 4].map(s => (
+              <div key={s} className={`h-2 w-8 rounded-full ${s <= step ? 'bg-gold' : 'bg-secondary'}`} />
+            ))}
+          </div>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* STEP 1: Header */}
+        {step === 1 && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">1. Cabeçalho da Partida</h3>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Season *</Label>
+                <Select value={seasonId} onValueChange={v => { setSeasonId(v); setGameId(''); }}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>{seasons.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Jogo *</Label>
+                <Select value={gameId} onValueChange={setGameId} disabled={!seasonId}>
+                  <SelectTrigger><SelectValue placeholder={seasonId ? 'Selecione' : 'Selecione a season'} /></SelectTrigger>
+                  <SelectContent>{seasonGames.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Data *</Label>
+                <Input type="date" value={playedDate} onChange={e => setPlayedDate(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Hora *</Label>
+                <Input type="time" value={playedTime} onChange={e => setPlayedTime(e.target.value)} />
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Duração (min)</Label>
+                <Input type="number" value={duration} onChange={e => setDuration(e.target.value)} placeholder="120" />
+              </div>
+              <div className="space-y-2">
+                <Label>Foto (opcional)</Label>
+                <label className="flex items-center gap-2 rounded-md border border-dashed border-border px-4 py-2 cursor-pointer hover:bg-secondary/50 transition-colors">
+                  <Upload className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground truncate">{imageFile ? imageFile.name : 'Anexar imagem'}</span>
+                  <input type="file" accept="image/*" className="hidden" onChange={e => setImageFile(e.target.files?.[0] || null)} />
+                </label>
+              </div>
+            </div>
+            <div className="flex justify-end">
+              <Button variant="gold" onClick={() => setStep(2)} disabled={!seasonId || !gameId || !playedDate || !playedTime}>
+                Próximo <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 2: Players */}
+        {step === 2 && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">2. Jogadores</h3>
+            {entries.map((e, i) => (
+              <div key={i} className="flex items-center gap-2 flex-wrap border border-border rounded-lg p-3">
+                <div className="flex-1 min-w-[180px] space-y-1">
+                  <Label className="text-xs">Jogador *</Label>
+                  <Select value={e.player_id} onValueChange={v => updateEntry(i, 'player_id', v)}>
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      {allPlayers.map(p => (
+                        <SelectItem key={p.id} value={p.id} disabled={entries.some((ee, ii) => ii !== i && ee.player_id === p.id)}>
+                          {p.nickname || p.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="w-[70px] space-y-1">
+                  <Label className="text-xs">Mesa</Label>
+                  <Input type="number" min={1} value={e.seat_position} onChange={ev => updateEntry(i, 'seat_position', parseInt(ev.target.value) || 1)} />
+                </div>
+                <div className="w-[120px] space-y-1">
+                  <Label className="text-xs">Facção</Label>
+                  <Input value={e.faction} onChange={ev => updateEntry(i, 'faction', ev.target.value)} placeholder="Opcional" />
+                </div>
+                <div className="flex items-center gap-2 pt-5">
+                  <Checkbox checked={e.is_first_player} onCheckedChange={c => updateEntry(i, 'is_first_player', !!c)} />
+                  <span className="text-xs">1º</span>
+                </div>
+                <div className="flex items-center gap-2 pt-5">
+                  <Checkbox checked={e.is_new_player} onCheckedChange={c => updateEntry(i, 'is_new_player', !!c)} />
+                  <span className="text-xs">Novo</span>
+                </div>
+                {entries.length > 1 && (
+                  <Button variant="ghost" size="icon" className="mt-5" onClick={() => removeEntry(i)}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                )}
+              </div>
+            ))}
+            <Button variant="outline" size="sm" onClick={addEntry}>
+              <UserPlus className="h-4 w-4 mr-1" /> Adicionar Jogador
+            </Button>
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={() => setStep(1)}><ChevronLeft className="h-4 w-4 mr-1" /> Voltar</Button>
+              <Button variant="gold" onClick={() => setStep(3)} disabled={entries.some(e => !e.player_id)}>
+                Próximo <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 3: Scoring */}
+        {step === 3 && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">3. Pontuação — {gameName}</h3>
+            <ScoringSheet
+              schema={scoringSchema}
+              players={scoringPlayers}
+              onScoresChange={setPlayerScores}
+            />
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={() => setStep(2)}><ChevronLeft className="h-4 w-4 mr-1" /> Voltar</Button>
+              <Button variant="gold" onClick={() => setStep(4)}>
+                Próximo <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 4: Confirmation */}
+        {step === 4 && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">4. Confirmação</h3>
+            <div className="grid gap-2 text-sm">
+              <p><span className="text-muted-foreground">Season:</span> {seasons.find(s => s.id === seasonId)?.name}</p>
+              <p><span className="text-muted-foreground">Jogo:</span> {gameName}</p>
+              <p><span className="text-muted-foreground">Data:</span> {playedDate} {playedTime}</p>
+              {duration && <p><span className="text-muted-foreground">Duração:</span> {duration} min</p>}
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Jogadores & Pontuação:</p>
+              {(() => {
+                const sorted = [...playerScores].sort((a, b) => b.total - a.total);
+                return sorted.map((ps, i) => {
+                  const entry = entries.find(e => e.player_id === ps.player_id);
+                  return (
+                    <div key={ps.player_id} className={`flex items-center justify-between p-2 rounded ${i === 0 && ps.total > 0 ? 'border border-gold/30 bg-gold/5' : 'border border-border'}`}>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={i === 0 ? 'default' : 'secondary'} className={i === 0 ? 'bg-gold text-black' : ''}>
+                          {i + 1}º
+                        </Badge>
+                        <span className="font-medium">{ps.player_name}</span>
+                        {entry?.is_first_player && <Badge variant="outline" className="text-xs border-gold/50 text-gold">1º a jogar</Badge>}
+                        {entry?.is_new_player && <Badge variant="outline" className="text-xs">Novo</Badge>}
+                      </div>
+                      <span className="font-bold text-gold">{ps.total} pts</span>
+                    </div>
+                  );
+                });
+              })()}
+              {playerScores.length === 0 && entries.map((e, i) => {
+                const p = allPlayers.find(p => p.id === e.player_id);
+                return (
+                  <div key={e.player_id} className="flex items-center gap-2 p-2 border border-border rounded">
+                    <Badge variant="secondary">{i + 1}º</Badge>
+                    <span>{p?.nickname || p?.name}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="flex justify-between">
+              <Button variant="outline" onClick={() => setStep(3)}><ChevronLeft className="h-4 w-4 mr-1" /> Voltar</Button>
+              <Button variant="gold" onClick={handleSubmit} disabled={saving}>
+                <Check className="h-4 w-4 mr-1" /> {saving ? 'Salvando...' : 'Registrar Partida'}
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+export default NewMatchFlow;

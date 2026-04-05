@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Trophy, Medal } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -175,7 +176,9 @@ const Rankings = () => {
                     <CardContent className="flex items-center gap-4 py-4">
                       <div className="flex items-center justify-center w-10">{getRankIcon(i)}</div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold truncate">{r.player_name}</p>
+                        <p className="font-semibold truncate">
+                          <Link to={`/perfil/${r.player_name}`} className="hover:text-gold transition-colors">{r.player_name}</Link>
+                        </p>
                         <p className="text-xs text-muted-foreground">{r.games_played} jogos • {r.wins} vitórias</p>
                       </div>
                       <div className="text-right">
@@ -213,7 +216,9 @@ const Rankings = () => {
                       <CardContent className="flex items-center gap-4 py-4">
                         <div className="flex items-center justify-center w-10">{getRankIcon(i)}</div>
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold truncate">{r.player_name}</p>
+                          <p className="font-semibold truncate">
+                            <Link to={`/perfil/${r.player_name}`} className="hover:text-gold transition-colors">{r.player_name}</Link>
+                          </p>
                           <p className="text-xs text-muted-foreground">
                             {r.games_played} jogos • <span className="text-red-400">{r.wins_evil}V mal</span> • <span className="text-blue-400">{r.wins_good}V bem</span> • {winPct}% vitórias
                           </p>

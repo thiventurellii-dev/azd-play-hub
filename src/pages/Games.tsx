@@ -161,7 +161,14 @@ const Games = () => {
             >
               <Card
                 className="bg-card border-border hover:border-gold/20 transition-colors h-full flex flex-col cursor-pointer"
-                onClick={() => setSelectedGame(g)}
+                onClick={() => {
+                  const gameData = g as any;
+                  if (gameData.slug) {
+                    window.location.href = `/jogos/${gameData.slug}`;
+                  } else {
+                    setSelectedGame(g);
+                  }
+                }}
               >
                 <CardContent className="py-5 space-y-4 flex-1 flex flex-col">
                   <div className="flex items-start gap-4">

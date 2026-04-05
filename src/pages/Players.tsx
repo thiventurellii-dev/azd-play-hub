@@ -53,11 +53,14 @@ const Players = () => {
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-gold font-bold text-lg flex-shrink-0">
                     {(p.nickname || p.name)?.charAt(0)?.toUpperCase() || '?'}
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="font-semibold truncate">{p.name}</p>
                     {p.nickname && <p className="text-xs text-gold truncate">@{p.nickname}</p>}
                     {(p.city || p.state) && <p className="text-xs text-muted-foreground truncate">{[p.city, p.state].filter(Boolean).join(', ')}</p>}
                     <p className="text-xs text-muted-foreground">Desde {new Date(p.created_at).toLocaleDateString('pt-BR')}</p>
+                  </div>
+                  <div className="flex-shrink-0">
+                    <FriendButton targetUserId={p.id} />
                   </div>
                 </CardContent>
               </Card>

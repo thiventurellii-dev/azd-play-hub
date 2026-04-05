@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useNotification } from '@/components/NotificationDialog';
 import { Plus, Trash2, Award } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +20,22 @@ interface Achievement {
   trigger_config: any;
 }
 
+const TRIGGER_PRESETS = [
+  { value: 'first_win', label: 'Primeira Vitória', hasParam: false },
+  { value: 'total_games', label: 'Total de Partidas', hasParam: true, paramLabel: 'Qtd. de partidas' },
+  { value: 'win_streak', label: 'Sequência de Vitórias', hasParam: true, paramLabel: 'Qtd. de vitórias consecutivas' },
+  { value: 'games_in_day', label: 'Partidas no Dia', hasParam: true, paramLabel: 'Qtd. de partidas no dia' },
+];
+
+const formatTriggerConfig = (config: any): string => {
+  if (!config) return '';
+  if (config.type === 'first_win') return '🏆 Primeira Vitória';
+  if (config.type === 'total_games') return `🎮 ${config.n || '?'} partidas jogadas`;
+  if (config.type === 'win_streak') return `🔥 ${config.n || '?'} vitórias consecutivas`;
+  if (config.type === 'games_in_day') return `⚡ ${config.n || '?'} partidas em um dia`;
+  return JSON.stringify(config);
+};
+
 const AdminAchievements = () => {
   const { notify } = useNotification();
   const [achievements, setAchievements] = useState<Achievement[]>([]);
@@ -27,36 +44,50 @@ const AdminAchievements = () => {
   const [icon, setIcon] = useState('🏆');
   const [criteria, setCriteria] = useState('');
   const [triggerType, setTriggerType] = useState('manual');
-  const [triggerConfig, setTriggerConfig] = useState('');
 
-  const fetch = async () => {
+  // Trigger config
+  const [selectedPreset, setSelectedPreset] = useState('first_win');
+  const [triggerParam, setTriggerParam] = useState('');
+  const [customJson, setCustomJson] = useState('');
+
+  const fetchAchievements = async () => {
     const { data } = await supabase.from('achievement_definitions').select('*').order('created_at');
     setAchievements((data || []) as Achievement[]);
   };
 
-  useEffect(() => { fetch(); }, []);
+  useEffect(() => { fetchAchievements(); }, []);
+
+  const buildTriggerConfig = (): any => {
+    if (triggerType === 'manual') return null;
+    if (selectedPreset === 'custom') {
+      try { return JSON.parse(customJson); } catch { notify('error', 'JSON inválido'); return undefined; }
+    }
+    const preset = TRIGGER_PRESETS.find(p => p.value === selectedPreset);
+    if (!preset) return null;
+    if (preset.hasParam) return { type: preset.value, n: parseInt(triggerParam) || 1 };
+    return { type: preset.value };
+  };
 
   const handleCreate = async () => {
     if (!name) return notify('error', 'Nome obrigatório');
+    const config = buildTriggerConfig();
+    if (config === undefined) return; // JSON parse error
     const { error } = await supabase.from('achievement_definitions').insert({
-      name,
-      description: description || null,
-      icon: icon || '🏆',
-      criteria: criteria || null,
-      trigger_type: triggerType,
-      trigger_config: triggerConfig ? JSON.parse(triggerConfig) : null,
+      name, description: description || null, icon: icon || '🏆',
+      criteria: criteria || null, trigger_type: triggerType, trigger_config: config,
     } as any);
     if (error) return notify('error', error.message);
     notify('success', 'Achievement criado!');
-    setName(''); setDescription(''); setIcon('🏆'); setCriteria(''); setTriggerType('manual'); setTriggerConfig('');
-    fetch();
+    setName(''); setDescription(''); setIcon('🏆'); setCriteria('');
+    setTriggerType('manual'); setSelectedPreset('first_win'); setTriggerParam(''); setCustomJson('');
+    fetchAchievements();
   };
 
   const handleDelete = async (id: string) => {
     const { error } = await supabase.from('achievement_definitions').delete().eq('id', id);
     if (error) return notify('error', error.message);
     notify('success', 'Removido');
-    fetch();
+    fetchAchievements();
   };
 
   // Grant achievement to a player
@@ -73,8 +104,7 @@ const AdminAchievements = () => {
   const handleGrant = async () => {
     if (!grantPlayerId || !grantAchievementId) return notify('error', 'Selecione jogador e achievement');
     const { error } = await supabase.from('player_achievements').insert({
-      player_id: grantPlayerId,
-      achievement_id: grantAchievementId,
+      player_id: grantPlayerId, achievement_id: grantAchievementId,
     });
     if (error) {
       if (error.code === '23505') return notify('error', 'Jogador já possui este achievement');
@@ -83,6 +113,8 @@ const AdminAchievements = () => {
     notify('success', 'Achievement concedido!');
     setGrantPlayerId(''); setGrantAchievementId('');
   };
+
+  const currentPreset = TRIGGER_PRESETS.find(p => p.value === selectedPreset);
 
   return (
     <div className="space-y-6">
@@ -110,23 +142,41 @@ const AdminAchievements = () => {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Tipo de Gatilho</Label>
-              <select
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={triggerType}
-                onChange={e => setTriggerType(e.target.value)}
-              >
-                <option value="manual">Manual</option>
-                <option value="automatic">Automático</option>
-              </select>
+              <Select value={triggerType} onValueChange={v => setTriggerType(v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="manual">Manual</SelectItem>
+                  <SelectItem value="automatic">Automático</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             {triggerType === 'automatic' && (
               <div className="space-y-2">
-                <Label>Config JSON</Label>
-                <Input value={triggerConfig} onChange={e => setTriggerConfig(e.target.value)} placeholder='{"type":"first_win"}' />
-                <p className="text-xs text-muted-foreground">Tipos: first_win, total_games(n), win_streak(n), games_in_day(n)</p>
+                <Label>Gatilho</Label>
+                <Select value={selectedPreset} onValueChange={v => { setSelectedPreset(v); setTriggerParam(''); }}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {TRIGGER_PRESETS.map(p => (
+                      <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                    ))}
+                    <SelectItem value="custom">Personalizado (JSON)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             )}
           </div>
+          {triggerType === 'automatic' && currentPreset?.hasParam && (
+            <div className="space-y-2">
+              <Label>{currentPreset.paramLabel}</Label>
+              <Input type="number" value={triggerParam} onChange={e => setTriggerParam(e.target.value)} placeholder="Ex: 5" />
+            </div>
+          )}
+          {triggerType === 'automatic' && selectedPreset === 'custom' && (
+            <div className="space-y-2">
+              <Label>Config JSON</Label>
+              <Textarea value={customJson} onChange={e => setCustomJson(e.target.value)} placeholder='{"type":"custom_trigger"}' rows={3} className="font-mono text-xs" />
+            </div>
+          )}
           <Button variant="gold" onClick={handleCreate}><Plus className="h-4 w-4 mr-1" /> Criar</Button>
         </CardContent>
       </Card>
@@ -138,29 +188,25 @@ const AdminAchievements = () => {
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>Jogador</Label>
-              <select
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={grantPlayerId}
-                onChange={e => setGrantPlayerId(e.target.value)}
-              >
-                <option value="">Selecione...</option>
-                {players.map(p => (
-                  <option key={p.id} value={p.id}>{p.nickname || p.name}</option>
-                ))}
-              </select>
+              <Select value={grantPlayerId} onValueChange={setGrantPlayerId}>
+                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent>
+                  {players.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.nickname || p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Achievement</Label>
-              <select
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                value={grantAchievementId}
-                onChange={e => setGrantAchievementId(e.target.value)}
-              >
-                <option value="">Selecione...</option>
-                {achievements.map(a => (
-                  <option key={a.id} value={a.id}>{a.icon} {a.name}</option>
-                ))}
-              </select>
+              <Select value={grantAchievementId} onValueChange={setGrantAchievementId}>
+                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent>
+                  {achievements.map(a => (
+                    <SelectItem key={a.id} value={a.id}>{a.icon} {a.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <Button variant="gold" onClick={handleGrant}><Award className="h-4 w-4 mr-1" /> Conceder</Button>
@@ -176,7 +222,14 @@ const AdminAchievements = () => {
                 <p className="font-semibold">{a.icon} {a.name}</p>
                 {a.description && <p className="text-sm text-muted-foreground">{a.description}</p>}
                 {a.criteria && <p className="text-xs text-gold mt-1">📋 {a.criteria}</p>}
-                {a.trigger_type === 'automatic' && <Badge variant="outline" className="text-xs mt-1">⚡ Automático</Badge>}
+                {a.trigger_type === 'automatic' && (
+                  <div className="mt-1 space-y-0.5">
+                    <Badge variant="outline" className="text-xs">⚡ Automático</Badge>
+                    {a.trigger_config && (
+                      <p className="text-xs text-muted-foreground">{formatTriggerConfig(a.trigger_config)}</p>
+                    )}
+                  </div>
+                )}
               </div>
               <Button variant="ghost" size="icon" onClick={() => handleDelete(a.id)}>
                 <Trash2 className="h-4 w-4 text-destructive" />

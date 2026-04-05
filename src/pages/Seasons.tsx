@@ -246,7 +246,7 @@ const Seasons = () => {
             <div className="space-y-2"><Label>Descrição</Label><Textarea value={formDesc} onChange={e => setFormDesc(e.target.value)} /></div>
             <div className="space-y-2">
               <Label>Tipo</Label>
-              <Select value={formType} onValueChange={v => setFormType(v as any)}>
+              <Select value={formType} onValueChange={v => { setFormType(v as any); if (v !== 'boardgame') setFormGameId(''); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="boardgame">Boardgame</SelectItem>
@@ -254,6 +254,17 @@ const Seasons = () => {
                 </SelectContent>
               </Select>
             </div>
+            {formType === 'boardgame' && (
+              <div className="space-y-2">
+                <Label>Jogo</Label>
+                <Select value={formGameId} onValueChange={setFormGameId}>
+                  <SelectTrigger><SelectValue placeholder="Selecione o jogo" /></SelectTrigger>
+                  <SelectContent>
+                    {allGames.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="grid gap-4 grid-cols-2">
               <div className="space-y-2"><Label>Início *</Label><Input type="date" value={formStart} onChange={e => setFormStart(e.target.value)} /></div>
               <div className="space-y-2"><Label>Fim *</Label><Input type="date" value={formEnd} onChange={e => setFormEnd(e.target.value)} /></div>

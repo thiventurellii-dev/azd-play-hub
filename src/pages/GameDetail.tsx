@@ -414,13 +414,12 @@ const GameDetail = () => {
             {slide === 0 && (
               <motion.div key="personal" custom={-1} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.2 }}>
                 {personalStats ? (
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     {[
                       { label: 'Partidas', value: personalStats.games },
                       { label: '% Vitória', value: `${personalStats.winPct}%` },
                       { label: 'Pontuação Média', value: personalStats.avgScore },
                       { label: 'Maior Sequência', value: personalStats.bestStreak },
-                      { label: 'Sequência Atual', value: personalStats.currentStreak },
                     ].map((s, i) => (
                       <Card key={i} className="bg-card border-border">
                         <CardContent className="pt-6 text-center">

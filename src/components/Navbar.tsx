@@ -175,22 +175,22 @@ const Navbar = () => {
               <DropdownMenuContent align="end">
                 {contactLinks.discord && (
                   <DropdownMenuItem asChild>
-                    <a href={contactLinks.discord} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                    <a href={contactLinks.discord} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[#5865F2]">
                       <DiscordIcon size={16} /> Discord
                     </a>
                   </DropdownMenuItem>
                 )}
                 {contactLinks.whatsapp && (
                   <DropdownMenuItem asChild>
-                    <a href={contactLinks.whatsapp} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
-                      <MessageCircle className="h-4 w-4" /> WhatsApp BG
+                    <a href={contactLinks.whatsapp} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[#25D366]">
+                      <MessageCircle className="h-4 w-4" /> Boardgame
                     </a>
                   </DropdownMenuItem>
                 )}
                 {contactLinks.whatsapp_botc && (
                   <DropdownMenuItem asChild>
-                    <a href={contactLinks.whatsapp_botc} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
-                      <MessageCircle className="h-4 w-4" /> WhatsApp BotC
+                    <a href={contactLinks.whatsapp_botc} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[#25D366]">
+                      <MessageCircle className="h-4 w-4" /> Blood
                     </a>
                   </DropdownMenuItem>
                 )}

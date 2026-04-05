@@ -419,8 +419,8 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
             {entries.map((e, i) => (
               <div key={i} className="flex items-center gap-2 flex-wrap border border-border rounded-lg p-3">
                 <div className="flex-1 min-w-[180px] space-y-1">
-                  <Label className="text-xs">Jogador *</Label>
-                  <Select value={e.player_id} onValueChange={v => updateEntry(i, 'player_id', v)}>
+                  <Label className="text-xs">Jogador {!e.ghost_name && '*'}</Label>
+                  <Select value={e.player_id} onValueChange={v => { updateEntry(i, 'player_id', v); updateEntry(i, 'ghost_name', ''); }}>
                     <SelectTrigger><SelectValue placeholder="Buscar jogador..." /></SelectTrigger>
                     <SelectContent>
                       <div className="px-2 pb-2">
@@ -440,14 +440,33 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
                     </SelectContent>
                   </Select>
                 </div>
+                {!e.player_id && (
+                  <div className="min-w-[140px] space-y-1">
+                    <Label className="text-xs">👻 Fantasma</Label>
+                    <Input value={e.ghost_name} onChange={ev => updateEntry(i, 'ghost_name', ev.target.value)} placeholder="Nome do jogador" className="h-10" />
+                  </div>
+                )}
                 <div className="w-[80px] space-y-1">
                   <Label className="text-xs">Posição</Label>
                   <Input type="number" min={1} value={e.seat_position} onChange={ev => updateEntry(i, 'seat_position', parseInt(ev.target.value) || 1)} />
                 </div>
-                <div className="w-[120px] space-y-1">
-                  <Label className="text-xs">Facção</Label>
-                  <Input value={e.faction} onChange={ev => updateEntry(i, 'faction', ev.target.value)} placeholder="Opcional" />
-                </div>
+                {gameFactions.length > 0 ? (
+                  <div className="w-[120px] space-y-1">
+                    <Label className="text-xs">Facção</Label>
+                    <Select value={e.faction} onValueChange={v => updateEntry(i, 'faction', v)}>
+                      <SelectTrigger className="h-10"><SelectValue placeholder="Opcional" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Nenhuma</SelectItem>
+                        {gameFactions.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : (
+                  <div className="w-[120px] space-y-1">
+                    <Label className="text-xs">Facção</Label>
+                    <Input value={e.faction} onChange={ev => updateEntry(i, 'faction', ev.target.value)} placeholder="Opcional" />
+                  </div>
+                )}
                 <div className="flex items-center gap-2 pt-5">
                   <Checkbox checked={e.is_new_player} onCheckedChange={c => updateEntry(i, 'is_new_player', !!c)} />
                   <span className="text-xs">Novo</span>

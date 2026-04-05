@@ -359,14 +359,14 @@ const GameDetail = () => {
         {/* Stats Carousel */}
         <div className="relative">
           <div className="flex items-center justify-between mb-3">
-            <Button variant="ghost" size="icon" onClick={() => setSlide(s => Math.max(0, s - 1))} disabled={slide === 0}>
-              <ChevronLeft className="h-5 w-5" />
+            <Button variant="outline" size="icon" className="border-gold/30 hover:bg-gold/10 hover:border-gold/60 disabled:opacity-30" onClick={() => setSlide(s => Math.max(0, s - 1))} disabled={slide === 0}>
+              <ChevronLeft className="h-6 w-6 text-gold" />
             </Button>
             <h2 className="text-lg font-semibold text-center">
               {slide === 0 ? 'Estatísticas Pessoais' : slide === 1 ? 'Estatísticas Gerais' : 'Estatísticas Detalhadas'}
             </h2>
-            <Button variant="ghost" size="icon" onClick={() => setSlide(s => Math.min(2, s + 1))} disabled={slide === 2}>
-              <ChevronRight className="h-5 w-5" />
+            <Button variant="outline" size="icon" className="border-gold/30 hover:bg-gold/10 hover:border-gold/60 disabled:opacity-30" onClick={() => setSlide(s => Math.min(2, s + 1))} disabled={slide === 2}>
+              <ChevronRight className="h-6 w-6 text-gold" />
             </Button>
           </div>
           <div className="flex gap-1 justify-center mb-4">

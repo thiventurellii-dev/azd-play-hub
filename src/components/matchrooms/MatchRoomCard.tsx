@@ -174,10 +174,10 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
       <CardContent className="flex-1 flex flex-col gap-3">
         <div className="flex items-center gap-4 text-sm text-muted-foreground">
           <span className="flex items-center gap-1">
-            <Calendar className="h-3.5 w-3.5" /> {formattedDate}
+            <Calendar className="h-3.5 w-3.5 text-gold" /> {formattedDate}
           </span>
           <span className="flex items-center gap-1">
-            <Clock className="h-3.5 w-3.5" /> {formattedTime}
+            <Clock className="h-3.5 w-3.5 text-gold" /> {formattedTime}
           </span>
           <span className="flex items-center gap-1">
             <Users className="h-3.5 w-3.5" /> {confirmed.length}/{room.max_players}

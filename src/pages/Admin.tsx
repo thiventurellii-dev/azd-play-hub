@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield } from "lucide-react";
+import { Shield, Calendar, Gamepad2, Users, Trophy, MessageSquare, FileText, AtSign, Lightbulb, DoorOpen, Award, ClipboardList } from "lucide-react";
 import AdminSeasons from "@/components/admin/AdminSeasons";
 import AdminGames from "@/components/admin/AdminGames";
 import AdminBloodMatches from "@/components/admin/AdminBloodMatches";
@@ -24,19 +24,48 @@ const Admin = () => {
       </div>
 
       <Tabs defaultValue="seasons" className="space-y-6">
-        <TabsList className="bg-secondary flex-wrap">
-          <TabsTrigger value="seasons">Seasons</TabsTrigger>
-          <TabsTrigger value="games">Jogos</TabsTrigger>
-          <TabsTrigger value="blood-scripts">Scripts Blood</TabsTrigger>
-          <TabsTrigger value="blood-matches">Partidas Blood</TabsTrigger>
-          <TabsTrigger value="rooms">Salas</TabsTrigger>
-          <TabsTrigger value="players">Jogadores</TabsTrigger>
-          <TabsTrigger value="scoring">Pontuação</TabsTrigger>
-          <TabsTrigger value="achievements">Achievements</TabsTrigger>
-          <TabsTrigger value="about">Sobre Nós</TabsTrigger>
-          <TabsTrigger value="contato">Nossas Redes</TabsTrigger>
-          <TabsTrigger value="suggestions">Sugestões</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-4 px-4">
+          <TabsList className="bg-secondary/50 border border-border p-1 gap-1 flex-wrap min-w-max">
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 font-semibold hidden sm:inline">Competitivo</span>
+            <TabsTrigger value="seasons" className="gap-1.5 text-xs">
+              <Calendar className="h-3.5 w-3.5" /> Seasons
+            </TabsTrigger>
+            <TabsTrigger value="games" className="gap-1.5 text-xs">
+              <Gamepad2 className="h-3.5 w-3.5" /> Jogos
+            </TabsTrigger>
+            <TabsTrigger value="scoring" className="gap-1.5 text-xs">
+              <ClipboardList className="h-3.5 w-3.5" /> Pontuação
+            </TabsTrigger>
+            <TabsTrigger value="achievements" className="gap-1.5 text-xs">
+              <Award className="h-3.5 w-3.5" /> Achievements
+            </TabsTrigger>
+
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 font-semibold hidden sm:inline ml-2">Blood</span>
+            <TabsTrigger value="blood-scripts" className="gap-1.5 text-xs">
+              <FileText className="h-3.5 w-3.5" /> Scripts
+            </TabsTrigger>
+            <TabsTrigger value="blood-matches" className="gap-1.5 text-xs">
+              <Trophy className="h-3.5 w-3.5" /> Partidas Blood
+            </TabsTrigger>
+
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 font-semibold hidden sm:inline ml-2">Comunidade</span>
+            <TabsTrigger value="rooms" className="gap-1.5 text-xs">
+              <DoorOpen className="h-3.5 w-3.5" /> Salas
+            </TabsTrigger>
+            <TabsTrigger value="players" className="gap-1.5 text-xs">
+              <Users className="h-3.5 w-3.5" /> Jogadores
+            </TabsTrigger>
+            <TabsTrigger value="about" className="gap-1.5 text-xs">
+              <FileText className="h-3.5 w-3.5" /> Sobre Nós
+            </TabsTrigger>
+            <TabsTrigger value="contato" className="gap-1.5 text-xs">
+              <AtSign className="h-3.5 w-3.5" /> Redes
+            </TabsTrigger>
+            <TabsTrigger value="suggestions" className="gap-1.5 text-xs">
+              <Lightbulb className="h-3.5 w-3.5" /> Sugestões
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="seasons"><AdminSeasons /></TabsContent>
         <TabsContent value="games"><AdminGames /></TabsContent>

@@ -16,7 +16,8 @@ const DiscordIcon = ({ size = 20 }: { size?: number }) => (
 const AdminContato = () => {
   const { notify } = useNotification();
   const [discordUrl, setDiscordUrl] = useState("");
-  const [whatsappUrl, setWhatsappUrl] = useState("");
+  const [whatsappBgUrl, setWhatsappBgUrl] = useState("");
+  const [whatsappBotcUrl, setWhatsappBotcUrl] = useState("");
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -27,7 +28,8 @@ const AdminContato = () => {
       if (data) {
         for (const row of data) {
           if (row.name === "discord") setDiscordUrl(row.url);
-          if (row.name === "whatsapp") setWhatsappUrl(row.url);
+          if (row.name === "whatsapp") setWhatsappBgUrl(row.url);
+          if (row.name === "whatsapp_botc") setWhatsappBotcUrl(row.url);
         }
       }
       setLoading(false);
@@ -35,18 +37,25 @@ const AdminContato = () => {
     fetch();
   }, []);
 
+  const upsertLink = async (name: string, url: string) => {
+    const { data: existing } = await supabase.from("contact_links").select("id").eq("name", name).maybeSingle();
+    if (existing) {
+      return supabase.from("contact_links").update({ url } as any).eq("name", name);
+    } else {
+      return supabase.from("contact_links").insert({ name, url } as any);
+    }
+  };
+
   const handleSave = async () => {
     setSaving(true);
-    const { error: e1 } = await supabase
-      .from("contact_links")
-      .update({ url: discordUrl } as any)
-      .eq("name", "discord");
-    const { error: e2 } = await supabase
-      .from("contact_links")
-      .update({ url: whatsappUrl } as any)
-      .eq("name", "whatsapp");
+    const results = await Promise.all([
+      upsertLink("discord", discordUrl),
+      upsertLink("whatsapp", whatsappBgUrl),
+      upsertLink("whatsapp_botc", whatsappBotcUrl),
+    ]);
     setSaving(false);
-    if (e1 || e2) return notify("error", (e1 || e2)!.message);
+    const err = results.find(r => r.error);
+    if (err?.error) return notify("error", err.error.message);
     notify("success", "Links atualizados!");
     setEditing(false);
   };
@@ -70,57 +79,53 @@ const AdminContato = () => {
               <Label className="flex items-center gap-2">
                 <DiscordIcon size={16} /> Link do Discord
               </Label>
-              <Input
-                value={discordUrl}
-                onChange={(e) => setDiscordUrl(e.target.value)}
-                placeholder="https://discord.gg/..."
-              />
+              <Input value={discordUrl} onChange={(e) => setDiscordUrl(e.target.value)} placeholder="https://discord.gg/..." />
             </div>
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
-                <MessageCircle className="h-4 w-4" /> Whatsapp: BoardGame
+                <MessageCircle className="h-4 w-4" /> WhatsApp: BoardGame
               </Label>
-              <Input
-                value={whatsappUrl}
-                onChange={(e) => setWhatsappUrl(e.target.value)}
-                placeholder="https://chat.whatsapp.com/..."
-              />
+              <Input value={whatsappBgUrl} onChange={(e) => setWhatsappBgUrl(e.target.value)} placeholder="https://chat.whatsapp.com/..." />
             </div>
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
-                <MessageCircle className="h-4 w-4" /> Whatsapp: BotC
+                <MessageCircle className="h-4 w-4" /> WhatsApp: BotC
               </Label>
-              <Input
-                value={whatsappUrl}
-                onChange={(e) => setWhatsappUrl(e.target.value)}
-                placeholder="https://chat.whatsapp.com/..."
-              />
+              <Input value={whatsappBotcUrl} onChange={(e) => setWhatsappBotcUrl(e.target.value)} placeholder="https://chat.whatsapp.com/..." />
             </div>
             <div className="flex gap-2">
               <Button variant="gold" onClick={handleSave} disabled={saving}>
                 <Save className="h-4 w-4 mr-1" /> {saving ? "Salvando..." : "Salvar"}
               </Button>
-              <Button variant="outline" onClick={() => setEditing(false)}>
-                Cancelar
-              </Button>
+              <Button variant="outline" onClick={() => setEditing(false)}>Cancelar</Button>
             </div>
           </>
         ) : (
           <div className="flex flex-col sm:flex-row gap-4">
-            <a href={discordUrl} target="_blank" rel="noopener noreferrer" className="flex-1">
-              <Button variant="outline" className="w-full gap-2 h-16 text-lg">
-                <DiscordIcon size={24} />
-                Discord
-                <ExternalLink className="h-4 w-4 ml-auto opacity-50" />
-              </Button>
-            </a>
-            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="flex-1">
-              <Button variant="outline" className="w-full gap-2 h-16 text-lg">
-                <MessageCircle className="h-6 w-6" />
-                WhatsApp
-                <ExternalLink className="h-4 w-4 ml-auto opacity-50" />
-              </Button>
-            </a>
+            {discordUrl && (
+              <a href={discordUrl} target="_blank" rel="noopener noreferrer" className="flex-1">
+                <Button variant="outline" className="w-full gap-2 h-16 text-lg">
+                  <DiscordIcon size={24} /> Discord
+                  <ExternalLink className="h-4 w-4 ml-auto opacity-50" />
+                </Button>
+              </a>
+            )}
+            {whatsappBgUrl && (
+              <a href={whatsappBgUrl} target="_blank" rel="noopener noreferrer" className="flex-1">
+                <Button variant="outline" className="w-full gap-2 h-16 text-lg">
+                  <MessageCircle className="h-6 w-6" /> WhatsApp BG
+                  <ExternalLink className="h-4 w-4 ml-auto opacity-50" />
+                </Button>
+              </a>
+            )}
+            {whatsappBotcUrl && (
+              <a href={whatsappBotcUrl} target="_blank" rel="noopener noreferrer" className="flex-1">
+                <Button variant="outline" className="w-full gap-2 h-16 text-lg">
+                  <MessageCircle className="h-6 w-6" /> WhatsApp BotC
+                  <ExternalLink className="h-4 w-4 ml-auto opacity-50" />
+                </Button>
+              </a>
+            )}
           </div>
         )}
       </CardContent>

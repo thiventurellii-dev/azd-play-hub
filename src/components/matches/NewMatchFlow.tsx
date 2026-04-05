@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,37 +8,36 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { useNotification } from '@/components/NotificationDialog';
-import { Upload, UserPlus, Trash2, Trophy, ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import { Upload, UserPlus, Trash2, Trophy, ChevronLeft, ChevronRight, Check, Search } from 'lucide-react';
 import ScoringSheet from './ScoringSheet';
 
 interface Season { id: string; name: string; }
-interface Game { id: string; name: string; slug: string | null; }
+interface Game { id: string; name: string; slug: string | null; min_players: number | null; max_players: number | null; }
 interface Player { id: string; name: string; nickname?: string; }
 interface PlayerEntry {
   player_id: string;
   seat_position: number;
   faction: string;
-  is_first_player: boolean;
   is_new_player: boolean;
 }
 
 interface Props {
   prefilledGameId?: string;
   prefilledPlayers?: string[];
+  prefilledDate?: string;
   onComplete?: () => void;
 }
 
-const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, onComplete }: Props) => {
+const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComplete }: Props) => {
   const { notify } = useNotification();
   const [step, setStep] = useState(1);
 
   // Step 1
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [games, setGames] = useState<Game[]>([]);
-  const [seasonGames, setSeasonGames] = useState<Game[]>([]);
   const [seasonId, setSeasonId] = useState('');
   const [gameId, setGameId] = useState(prefilledGameId || '');
-  const [playedDate, setPlayedDate] = useState('');
+  const [playedDate, setPlayedDate] = useState(prefilledDate || '');
   const [playedTime, setPlayedTime] = useState('');
   const [duration, setDuration] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -47,21 +46,27 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, onComplete }: Props) 
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [entries, setEntries] = useState<PlayerEntry[]>(
     prefilledPlayers?.map((pid, i) => ({
-      player_id: pid, seat_position: i + 1, faction: '', is_first_player: false, is_new_player: false,
-    })) || [{ player_id: '', seat_position: 1, faction: '', is_first_player: false, is_new_player: false }]
+      player_id: pid, seat_position: i + 1, faction: '', is_new_player: false,
+    })) || [{ player_id: '', seat_position: 1, faction: '', is_new_player: false }]
   );
+  const [playerSearch, setPlayerSearch] = useState('');
 
   // Step 3
   const [scoringSchema, setScoringSchema] = useState<any>(null);
   const [playerScores, setPlayerScores] = useState<any[]>([]);
 
+  // Game factions
+  const [gameFactions, setGameFactions] = useState<string[]>([]);
+
   const [saving, setSaving] = useState(false);
+
+  const selectedGame = games.find(g => g.id === gameId);
 
   useEffect(() => {
     const fetchBase = async () => {
       const [s, g, p] = await Promise.all([
         supabase.from('seasons').select('id, name').eq('type', 'boardgame' as any).order('start_date', { ascending: false }),
-        supabase.from('games').select('id, name, slug').order('name'),
+        supabase.from('games').select('id, name, slug, min_players, max_players').order('name'),
         supabase.from('profiles').select('id, name, nickname').order('name'),
       ]);
       setSeasons(s.data || []);
@@ -71,19 +76,9 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, onComplete }: Props) 
     fetchBase();
   }, []);
 
+  // Fetch scoring schema + factions when game changes
   useEffect(() => {
-    if (!seasonId) { setSeasonGames([]); return; }
-    const fetchSeasonGames = async () => {
-      const { data } = await supabase.from('season_games').select('game_id').eq('season_id', seasonId);
-      const gameIds = (data || []).map(sg => sg.game_id);
-      setSeasonGames(gameIds.length === 0 ? games : games.filter(g => gameIds.includes(g.id)));
-    };
-    fetchSeasonGames();
-  }, [seasonId, games]);
-
-  // Fetch scoring schema when game changes
-  useEffect(() => {
-    if (!gameId) { setScoringSchema(null); return; }
+    if (!gameId) { setScoringSchema(null); setGameFactions([]); return; }
     const fetchSchema = async () => {
       const { data } = await supabase
         .from('game_scoring_schemas')
@@ -93,28 +88,53 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, onComplete }: Props) 
       setScoringSchema(data?.schema || null);
     };
     fetchSchema();
+    // Factions from game data - would need a factions column, for now use empty
+    setGameFactions([]);
   }, [gameId]);
 
   const addEntry = () => setEntries([...entries, {
-    player_id: '', seat_position: entries.length + 1, faction: '', is_first_player: false, is_new_player: false,
+    player_id: '', seat_position: entries.length + 1, faction: '', is_new_player: false,
   }]);
 
   const updateEntry = (i: number, field: keyof PlayerEntry, value: any) => {
     const updated = [...entries];
-    if (field === 'is_first_player' && value === true) {
-      updated.forEach((e, idx) => { e.is_first_player = idx === i; });
-    } else {
-      (updated[i] as any)[field] = value;
-    }
+    (updated[i] as any)[field] = value;
     setEntries(updated);
   };
 
   const removeEntry = (i: number) => setEntries(entries.filter((_, idx) => idx !== i));
 
+  const filteredPlayers = useMemo(() => {
+    if (!playerSearch) return allPlayers;
+    const q = playerSearch.toLowerCase();
+    return allPlayers.filter(p =>
+      (p.nickname || '').toLowerCase().includes(q) || p.name.toLowerCase().includes(q)
+    );
+  }, [allPlayers, playerSearch]);
+
   const scoringPlayers = entries.filter(e => e.player_id).map(e => {
     const p = allPlayers.find(p => p.id === e.player_id);
     return { id: e.player_id, name: p?.nickname || p?.name || '?' };
   });
+
+  // Validate player count
+  const playerCountValid = () => {
+    const count = entries.filter(e => e.player_id).length;
+    if (!selectedGame) return count >= 1;
+    const min = selectedGame.min_players || 1;
+    const max = selectedGame.max_players || 99;
+    return count >= min && count <= max;
+  };
+
+  const playerCountMessage = () => {
+    if (!selectedGame) return '';
+    const count = entries.filter(e => e.player_id).length;
+    const min = selectedGame.min_players || 1;
+    const max = selectedGame.max_players || 99;
+    if (count < min) return `Mínimo de ${min} jogadores necessários`;
+    if (count > max) return `Máximo de ${max} jogadores permitidos`;
+    return '';
+  };
 
   const calculateElo = (results: { player_id: string; position: number }[], mmrMap: Record<string, number>) => {
     const K = 50;
@@ -142,8 +162,8 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, onComplete }: Props) 
   };
 
   const handleSubmit = async () => {
-    if (!seasonId || !gameId || !playedDate || !playedTime || entries.some(e => !e.player_id)) {
-      return notify('error', 'Preencha Season, Jogo, Data/Hora e todos os jogadores');
+    if (!gameId || !playedDate || entries.some(e => !e.player_id)) {
+      return notify('error', 'Preencha Jogo, Data e todos os jogadores');
     }
     setSaving(true);
     try {
@@ -158,51 +178,72 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, onComplete }: Props) 
       }
 
       const playerIds = entries.map(e => e.player_id);
-      const firstPlayerId = entries.find(e => e.is_first_player)?.player_id || null;
 
-      const { data: mmrData } = await supabase
-        .from('mmr_ratings')
-        .select('player_id, current_mmr, games_played, wins, game_id')
-        .eq('season_id', seasonId)
-        .eq('game_id', gameId)
-        .in('player_id', playerIds);
+      // Only do MMR if season is selected
+      let mmrMap: Record<string, number> = {};
+      let gpMap: Record<string, number> = {};
+      let winsMap: Record<string, number> = {};
+      let eloChanges: Record<string, number> = {};
 
-      const mmrMap: Record<string, number> = {};
-      const gpMap: Record<string, number> = {};
-      const winsMap: Record<string, number> = {};
-      for (const m of (mmrData || [])) {
-        mmrMap[m.player_id] = m.current_mmr;
-        gpMap[m.player_id] = m.games_played;
-        winsMap[m.player_id] = m.wins;
-      }
+      if (seasonId) {
+        const { data: mmrData } = await supabase
+          .from('mmr_ratings')
+          .select('player_id, current_mmr, games_played, wins, game_id')
+          .eq('season_id', seasonId)
+          .eq('game_id', gameId)
+          .in('player_id', playerIds);
 
-      for (const pid of playerIds) {
-        if (!(pid in mmrMap)) {
-          mmrMap[pid] = 1000; gpMap[pid] = 0; winsMap[pid] = 0;
-          await supabase.from('mmr_ratings').insert({ player_id: pid, season_id: seasonId, game_id: gameId, current_mmr: 1000, games_played: 0, wins: 0 } as any);
+        for (const m of (mmrData || [])) {
+          mmrMap[m.player_id] = m.current_mmr;
+          gpMap[m.player_id] = m.games_played;
+          winsMap[m.player_id] = m.wins;
         }
-      }
 
-      const results = entries.map(e => ({ player_id: e.player_id, position: positionMap[e.player_id] || 1 }));
-      const eloChanges = calculateElo(results, mmrMap);
+        for (const pid of playerIds) {
+          if (!(pid in mmrMap)) {
+            mmrMap[pid] = 1000; gpMap[pid] = 0; winsMap[pid] = 0;
+            await supabase.from('mmr_ratings').insert({ player_id: pid, season_id: seasonId, game_id: gameId, current_mmr: 1000, games_played: 0, wins: 0 } as any);
+          }
+        }
+
+        const results = entries.map(e => ({ player_id: e.player_id, position: positionMap[e.player_id] || 1 }));
+        eloChanges = calculateElo(results, mmrMap);
+      }
 
       let imageUrl: string | null = null;
-      if (imageFile) {
+      if (imageFile && seasonId) {
         const ext = imageFile.name.split('.').pop();
         const path = `${seasonId}/${Date.now()}.${ext}`;
         const { error: uploadErr } = await supabase.storage.from('match-images').upload(path, imageFile);
         if (uploadErr) throw uploadErr;
         const { data: urlData } = supabase.storage.from('match-images').getPublicUrl(path);
         imageUrl = urlData.publicUrl;
+      } else if (imageFile) {
+        const ext = imageFile.name.split('.').pop();
+        const path = `general/${Date.now()}.${ext}`;
+        const { error: uploadErr } = await supabase.storage.from('match-images').upload(path, imageFile);
+        if (uploadErr) throw uploadErr;
+        const { data: urlData } = supabase.storage.from('match-images').getPublicUrl(path);
+        imageUrl = urlData.publicUrl;
+      }
+
+      const playedAt = playedTime
+        ? new Date(`${playedDate}T${playedTime}`).toISOString()
+        : new Date(`${playedDate}T00:00:00`).toISOString();
+
+      // Use a default season if not selected — find any active one or first one
+      const effectiveSeasonId = seasonId || seasons[0]?.id;
+      if (!effectiveSeasonId) {
+        return notify('error', 'Nenhuma season disponível. Peça ao admin para criar uma.');
       }
 
       const { data: match, error: matchErr } = await supabase
         .from('matches')
         .insert({
-          season_id: seasonId, game_id: gameId,
+          season_id: effectiveSeasonId, game_id: gameId,
           duration_minutes: parseInt(duration) || null,
-          played_at: new Date(`${playedDate}T${playedTime}`).toISOString(),
-          image_url: imageUrl, first_player_id: firstPlayerId,
+          played_at: playedAt,
+          image_url: imageUrl, first_player_id: null,
         })
         .select().single();
       if (matchErr) throw matchErr;
@@ -213,8 +254,9 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, onComplete }: Props) 
         return {
           match_id: match.id, player_id: e.player_id,
           position: pos, score: ps?.total || 0,
-          mmr_before: mmrMap[e.player_id], mmr_change: eloChanges[e.player_id],
-          mmr_after: mmrMap[e.player_id] + eloChanges[e.player_id],
+          mmr_before: mmrMap[e.player_id] || 1000,
+          mmr_change: eloChanges[e.player_id] || 0,
+          mmr_after: (mmrMap[e.player_id] || 1000) + (eloChanges[e.player_id] || 0),
           seat_position: e.seat_position, faction: e.faction || null,
           is_new_player: e.is_new_player,
         };
@@ -244,25 +286,28 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, onComplete }: Props) 
         }
       }
 
-      // Update MMR
-      for (const e of entries) {
-        const pos = positionMap[e.player_id] || 1;
-        const isWin = pos === 1;
-        await supabase.from('mmr_ratings').update({
-          current_mmr: mmrMap[e.player_id] + eloChanges[e.player_id],
-          games_played: gpMap[e.player_id] + 1,
-          wins: winsMap[e.player_id] + (isWin ? 1 : 0),
-          updated_at: new Date().toISOString(),
-        }).eq('player_id', e.player_id).eq('season_id', seasonId).eq('game_id', gameId);
+      // Update MMR only if season was selected
+      if (seasonId) {
+        for (const e of entries) {
+          const pos = positionMap[e.player_id] || 1;
+          const isWin = pos === 1;
+          await supabase.from('mmr_ratings').update({
+            current_mmr: mmrMap[e.player_id] + eloChanges[e.player_id],
+            games_played: gpMap[e.player_id] + 1,
+            wins: winsMap[e.player_id] + (isWin ? 1 : 0),
+            updated_at: new Date().toISOString(),
+          }).eq('player_id', e.player_id).eq('season_id', seasonId).eq('game_id', gameId);
+        }
       }
 
       notify('success', 'Partida registrada com sucesso!');
       onComplete?.();
       // Reset
       setStep(1);
-      setEntries([{ player_id: '', seat_position: 1, faction: '', is_first_player: false, is_new_player: false }]);
+      setEntries([{ player_id: '', seat_position: 1, faction: '', is_new_player: false }]);
       setPlayerScores([]);
       setDuration(''); setPlayedDate(''); setPlayedTime(''); setImageFile(null);
+      setSeasonId('');
     } catch (err: any) {
       notify('error', err.message || 'Erro ao registrar partida');
     } finally {
@@ -291,17 +336,22 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, onComplete }: Props) 
             <h3 className="text-lg font-semibold">1. Cabeçalho da Partida</h3>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Season *</Label>
-                <Select value={seasonId} onValueChange={v => { setSeasonId(v); setGameId(''); }}>
+                <Label>Jogo *</Label>
+                <Select value={gameId} onValueChange={setGameId}>
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{seasons.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    {games.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+                  </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Jogo *</Label>
-                <Select value={gameId} onValueChange={setGameId} disabled={!seasonId}>
-                  <SelectTrigger><SelectValue placeholder={seasonId ? 'Selecione' : 'Selecione a season'} /></SelectTrigger>
-                  <SelectContent>{seasonGames.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}</SelectContent>
+                <Label>Competitivo (opcional)</Label>
+                <Select value={seasonId} onValueChange={setSeasonId}>
+                  <SelectTrigger><SelectValue placeholder="Sem vínculo competitivo" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sem vínculo</SelectItem>
+                    {seasons.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                  </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
@@ -309,7 +359,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, onComplete }: Props) 
                 <Input type="date" value={playedDate} onChange={e => setPlayedDate(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Hora *</Label>
+                <Label>Hora (opcional)</Label>
                 <Input type="time" value={playedTime} onChange={e => setPlayedTime(e.target.value)} />
               </div>
             </div>
@@ -328,7 +378,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, onComplete }: Props) 
               </div>
             </div>
             <div className="flex justify-end">
-              <Button variant="gold" onClick={() => setStep(2)} disabled={!seasonId || !gameId || !playedDate || !playedTime}>
+              <Button variant="gold" onClick={() => setStep(2)} disabled={!gameId || !playedDate}>
                 Próximo <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
@@ -339,14 +389,28 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, onComplete }: Props) 
         {step === 2 && (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">2. Jogadores</h3>
+            {selectedGame && (
+              <p className="text-sm text-muted-foreground">
+                {selectedGame.name}: {selectedGame.min_players || '?'}–{selectedGame.max_players || '?'} jogadores
+              </p>
+            )}
             {entries.map((e, i) => (
               <div key={i} className="flex items-center gap-2 flex-wrap border border-border rounded-lg p-3">
                 <div className="flex-1 min-w-[180px] space-y-1">
                   <Label className="text-xs">Jogador *</Label>
                   <Select value={e.player_id} onValueChange={v => updateEntry(i, 'player_id', v)}>
-                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Buscar jogador..." /></SelectTrigger>
                     <SelectContent>
-                      {allPlayers.map(p => (
+                      <div className="px-2 pb-2">
+                        <Input
+                          placeholder="Buscar por nome..."
+                          value={playerSearch}
+                          onChange={ev => setPlayerSearch(ev.target.value)}
+                          className="h-8"
+                          onClick={ev => ev.stopPropagation()}
+                        />
+                      </div>
+                      {filteredPlayers.map(p => (
                         <SelectItem key={p.id} value={p.id} disabled={entries.some((ee, ii) => ii !== i && ee.player_id === p.id)}>
                           {p.nickname || p.name}
                         </SelectItem>
@@ -354,17 +418,13 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, onComplete }: Props) 
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="w-[70px] space-y-1">
-                  <Label className="text-xs">Mesa</Label>
+                <div className="w-[80px] space-y-1">
+                  <Label className="text-xs">Posição</Label>
                   <Input type="number" min={1} value={e.seat_position} onChange={ev => updateEntry(i, 'seat_position', parseInt(ev.target.value) || 1)} />
                 </div>
                 <div className="w-[120px] space-y-1">
                   <Label className="text-xs">Facção</Label>
                   <Input value={e.faction} onChange={ev => updateEntry(i, 'faction', ev.target.value)} placeholder="Opcional" />
-                </div>
-                <div className="flex items-center gap-2 pt-5">
-                  <Checkbox checked={e.is_first_player} onCheckedChange={c => updateEntry(i, 'is_first_player', !!c)} />
-                  <span className="text-xs">1º</span>
                 </div>
                 <div className="flex items-center gap-2 pt-5">
                   <Checkbox checked={e.is_new_player} onCheckedChange={c => updateEntry(i, 'is_new_player', !!c)} />
@@ -380,9 +440,12 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, onComplete }: Props) 
             <Button variant="outline" size="sm" onClick={addEntry}>
               <UserPlus className="h-4 w-4 mr-1" /> Adicionar Jogador
             </Button>
+            {playerCountMessage() && (
+              <p className="text-sm text-destructive">{playerCountMessage()}</p>
+            )}
             <div className="flex justify-between">
               <Button variant="outline" onClick={() => setStep(1)}><ChevronLeft className="h-4 w-4 mr-1" /> Voltar</Button>
-              <Button variant="gold" onClick={() => setStep(3)} disabled={entries.some(e => !e.player_id)}>
+              <Button variant="gold" onClick={() => setStep(3)} disabled={entries.some(e => !e.player_id) || !playerCountValid()}>
                 Próximo <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
@@ -412,9 +475,9 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, onComplete }: Props) 
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">4. Confirmação</h3>
             <div className="grid gap-2 text-sm">
-              <p><span className="text-muted-foreground">Season:</span> {seasons.find(s => s.id === seasonId)?.name}</p>
+              {seasonId && seasonId !== 'none' && <p><span className="text-muted-foreground">Competitivo:</span> {seasons.find(s => s.id === seasonId)?.name}</p>}
               <p><span className="text-muted-foreground">Jogo:</span> {gameName}</p>
-              <p><span className="text-muted-foreground">Data:</span> {playedDate} {playedTime}</p>
+              <p><span className="text-muted-foreground">Data:</span> {playedDate} {playedTime || ''}</p>
               {duration && <p><span className="text-muted-foreground">Duração:</span> {duration} min</p>}
             </div>
             <div className="space-y-2">
@@ -430,7 +493,6 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, onComplete }: Props) 
                           {i + 1}º
                         </Badge>
                         <span className="font-medium">{ps.player_name}</span>
-                        {entry?.is_first_player && <Badge variant="outline" className="text-xs border-gold/50 text-gold">1º a jogar</Badge>}
                         {entry?.is_new_player && <Badge variant="outline" className="text-xs">Novo</Badge>}
                       </div>
                       <span className="font-bold text-gold">{ps.total} pts</span>

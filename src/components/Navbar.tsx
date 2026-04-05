@@ -19,8 +19,8 @@ import {
   Trophy,
   Gamepad2,
   ChevronDown,
-  Box,
   LayoutGrid,
+  Bell,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -44,6 +44,8 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [contactLinks, setContactLinks] = useState<Record<string, string>>({});
+  const [pendingFriends, setPendingFriends] = useState(0);
+  const [userNickname, setUserNickname] = useState<string | null>(null);
 
   useEffect(() => {
     supabase
@@ -58,12 +60,35 @@ const Navbar = () => {
       });
   }, []);
 
+  // Fetch pending friend requests count and user nickname
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("friendships")
+      .select("id", { count: "exact", head: true })
+      .eq("friend_id", user.id)
+      .eq("status", "pending" as any)
+      .then(({ count }) => {
+        setPendingFriends(count || 0);
+      });
+    supabase
+      .from("profiles")
+      .select("nickname")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setUserNickname((data as any).nickname || null);
+      });
+  }, [user]);
+
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
   };
 
   const closeMobile = () => setMobileOpen(false);
+
+  const profileLink = userNickname ? `/perfil/${userNickname}` : "/profile";
 
   return (
     <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
@@ -127,10 +152,6 @@ const Navbar = () => {
               <DropdownMenuItem onClick={() => navigate("/games")}>
                 <Gamepad2 className="h-4 w-4 mr-2" /> Coleção de Jogos
               </DropdownMenuItem>
-              <DropdownMenuItem disabled className="opacity-50">
-                <Box className="h-4 w-4 mr-2" /> Materiais
-                <span className="ml-auto text-[10px] bg-muted px-1.5 py-0.5 rounded-full">Em breve</span>
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -141,7 +162,7 @@ const Navbar = () => {
           </Link>
 
           {/* Nossas Redes */}
-          {(contactLinks.discord || contactLinks.whatsapp) && (
+          {(contactLinks.discord || contactLinks.whatsapp || contactLinks.whatsapp_botc) && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="gap-1 text-muted-foreground hover:text-foreground">
@@ -151,25 +172,22 @@ const Navbar = () => {
               <DropdownMenuContent align="end">
                 {contactLinks.discord && (
                   <DropdownMenuItem asChild>
-                    <a
-                      href={contactLinks.discord}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2"
-                    >
+                    <a href={contactLinks.discord} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
                       <DiscordIcon size={16} /> Discord
                     </a>
                   </DropdownMenuItem>
                 )}
                 {contactLinks.whatsapp && (
                   <DropdownMenuItem asChild>
-                    <a
-                      href={contactLinks.whatsapp}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2"
-                    >
-                      <MessageCircle className="h-4 w-4" /> WhatsApp
+                    <a href={contactLinks.whatsapp} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                      <MessageCircle className="h-4 w-4" /> WhatsApp BG
+                    </a>
+                  </DropdownMenuItem>
+                )}
+                {contactLinks.whatsapp_botc && (
+                  <DropdownMenuItem asChild>
+                    <a href={contactLinks.whatsapp_botc} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
+                      <MessageCircle className="h-4 w-4" /> WhatsApp BotC
                     </a>
                   </DropdownMenuItem>
                 )}
@@ -191,12 +209,25 @@ const Navbar = () => {
           {user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-2">
+                <Button variant="ghost" size="sm" className="gap-2 relative">
                   <User className="h-4 w-4" />
                   {user.user_metadata?.name || "Perfil"}
+                  {pendingFriends > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-[10px] font-bold text-black">
+                      {pendingFriends}
+                    </span>
+                  )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => navigate(profileLink)}>
+                  <User className="h-4 w-4 mr-2" /> Meu Perfil
+                  {pendingFriends > 0 && (
+                    <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-gold text-[10px] font-bold text-black">
+                      {pendingFriends}
+                    </span>
+                  )}
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/profile")}>
                   <Pencil className="h-4 w-4 mr-2" /> Editar Perfil
                 </DropdownMenuItem>
@@ -287,9 +318,6 @@ const Navbar = () => {
                   Coleção de Jogos
                 </Button>
               </Link>
-              <Button variant="ghost" size="sm" className="w-full justify-start gap-2 opacity-50" disabled>
-                Materiais <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full ml-auto">Em breve</span>
-              </Button>
             </div>
           </details>
 
@@ -300,7 +328,7 @@ const Navbar = () => {
           </Link>
 
           {/* Nossas Redes accordion */}
-          {(contactLinks.discord || contactLinks.whatsapp) && (
+          {(contactLinks.discord || contactLinks.whatsapp || contactLinks.whatsapp_botc) && (
             <details className="group">
               <summary className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground">
                 <AtSign className="h-4 w-4" /> Nossas Redes
@@ -317,7 +345,14 @@ const Navbar = () => {
                 {contactLinks.whatsapp && (
                   <a href={contactLinks.whatsapp} target="_blank" rel="noopener noreferrer" onClick={closeMobile}>
                     <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
-                      <MessageCircle className="h-4 w-4" /> WhatsApp
+                      <MessageCircle className="h-4 w-4" /> WhatsApp BG
+                    </Button>
+                  </a>
+                )}
+                {contactLinks.whatsapp_botc && (
+                  <a href={contactLinks.whatsapp_botc} target="_blank" rel="noopener noreferrer" onClick={closeMobile}>
+                    <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
+                      <MessageCircle className="h-4 w-4" /> WhatsApp BotC
                     </Button>
                   </a>
                 )}
@@ -336,6 +371,16 @@ const Navbar = () => {
           <div className="pt-2 border-t border-border space-y-2">
             {user ? (
               <>
+                <Link to={profileLink} onClick={closeMobile}>
+                  <Button variant="ghost" className="w-full justify-start gap-2 relative">
+                    <User className="h-4 w-4" /> Meu Perfil
+                    {pendingFriends > 0 && (
+                      <span className="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-[10px] font-bold text-black">
+                        {pendingFriends}
+                      </span>
+                    )}
+                  </Button>
+                </Link>
                 <Link to="/profile" onClick={closeMobile}>
                   <Button variant="ghost" className="w-full justify-start gap-2">
                     <Pencil className="h-4 w-4" /> Editar Perfil

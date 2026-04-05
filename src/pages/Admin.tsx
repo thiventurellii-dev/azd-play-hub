@@ -47,6 +47,7 @@ const Admin = () => {
         <TabsContent value="players"><AdminPlayers /></TabsContent>
         <TabsContent value="about"><AdminAboutUs /></TabsContent>
         <TabsContent value="contato"><AdminContato /></TabsContent>
+        <TabsContent value="scoring"><AdminScoringSchemas /></TabsContent>
         <TabsContent value="suggestions"><AdminSuggestions /></TabsContent>
       </Tabs>
     </div>

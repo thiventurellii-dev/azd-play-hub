@@ -166,24 +166,11 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
   };
 
   const handleSubmit = async () => {
-    if (!gameId || !playedDate || entries.some(e => !e.player_id && !e.ghost_name)) {
+    if (!gameId || !playedDate || entries.some(e => !e.player_id)) {
       return notify('error', 'Preencha Jogo, Data e todos os jogadores');
     }
     setSaving(true);
     try {
-      // Create ghost players first
-      const ghostMap: Record<string, string> = {}; // ghost_name -> ghost_player_id
-      for (const e of entries) {
-        if (e.ghost_name && !e.player_id) {
-          const { data: ghost, error: gErr } = await supabase
-            .from('ghost_players')
-            .insert({ display_name: e.ghost_name })
-            .select()
-            .single();
-          if (gErr) throw gErr;
-          ghostMap[e.ghost_name] = ghost.id;
-        }
-      }
       // Build results with positions based on scores
       const sorted = [...playerScores].sort((a, b) => b.total - a.total);
       const positionMap: Record<string, number> = {};

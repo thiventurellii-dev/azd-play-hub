@@ -125,7 +125,7 @@ const Navbar = () => {
                 <BookOpen className="h-4 w-4 mr-2" /> Regras
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate("/games")}>
-                <Gamepad2 className="h-4 w-4 mr-2" /> Biblioteca de Jogos
+                <Gamepad2 className="h-4 w-4 mr-2" /> Coleção de Jogos
               </DropdownMenuItem>
               <DropdownMenuItem disabled className="opacity-50">
                 <Box className="h-4 w-4 mr-2" /> Materiais

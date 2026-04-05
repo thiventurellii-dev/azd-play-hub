@@ -175,6 +175,7 @@ const AdminAchievements = () => {
                 <p className="font-semibold">{a.icon} {a.name}</p>
                 {a.description && <p className="text-sm text-muted-foreground">{a.description}</p>}
                 {a.criteria && <p className="text-xs text-gold mt-1">📋 {a.criteria}</p>}
+                {a.trigger_type === 'automatic' && <Badge variant="outline" className="text-xs mt-1">⚡ Automático</Badge>}
               </div>
               <Button variant="ghost" size="icon" onClick={() => handleDelete(a.id)}>
                 <Trash2 className="h-4 w-4 text-destructive" />

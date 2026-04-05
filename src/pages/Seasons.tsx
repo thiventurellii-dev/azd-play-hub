@@ -53,6 +53,8 @@ const Seasons = () => {
   const [formStart, setFormStart] = useState('');
   const [formEnd, setFormEnd] = useState('');
   const [formType, setFormType] = useState<'boardgame' | 'blood'>('boardgame');
+  const [formGameId, setFormGameId] = useState('');
+  const [allGames, setAllGames] = useState<{ id: string; name: string }[]>([]);
 
   const fetchData = async () => {
     const [seasonsRes, sgRes, sbsRes] = await Promise.all([
@@ -94,19 +96,36 @@ const Seasons = () => {
 
   useEffect(() => { fetchData(); }, []);
 
-  const openCreate = () => { setEditId(null); setFormName(''); setFormDesc(''); setFormStart(''); setFormEnd(''); setFormType('boardgame'); setDialogOpen(true); };
-  const openEdit = (s: Season) => { setEditId(s.id); setFormName(s.name); setFormDesc(s.description || ''); setFormStart(s.start_date); setFormEnd(s.end_date); setFormType(s.type); setDialogOpen(true); };
+  useEffect(() => {
+    supabase.from('games').select('id, name').order('name').then(({ data }) => setAllGames(data || []));
+  }, []);
+
+  const openCreate = () => { setEditId(null); setFormName(''); setFormDesc(''); setFormStart(''); setFormEnd(''); setFormType('boardgame'); setFormGameId(''); setDialogOpen(true); };
+  const openEdit = async (s: Season) => {
+    setEditId(s.id); setFormName(s.name); setFormDesc(s.description || ''); setFormStart(s.start_date); setFormEnd(s.end_date); setFormType(s.type);
+    // Load linked game
+    const { data: sg } = await supabase.from('season_games').select('game_id').eq('season_id', s.id).limit(1);
+    setFormGameId(sg?.[0]?.game_id || '');
+    setDialogOpen(true);
+  };
 
   const handleSave = async () => {
     if (!formName || !formStart || !formEnd) return notify('error', 'Preencha nome e datas');
+    let seasonId = editId;
     if (editId) {
       const { error } = await supabase.from('seasons').update({ name: formName, description: formDesc || null, start_date: formStart, end_date: formEnd, type: formType as any }).eq('id', editId);
       if (error) return notify('error', error.message);
       notify('success', 'Season atualizada!');
     } else {
-      const { error } = await supabase.from('seasons').insert({ name: formName, description: formDesc || null, start_date: formStart, end_date: formEnd, type: formType as any });
+      const { data, error } = await supabase.from('seasons').insert({ name: formName, description: formDesc || null, start_date: formStart, end_date: formEnd, type: formType as any }).select().single();
       if (error) return notify('error', error.message);
+      seasonId = data.id;
       notify('success', 'Season criada!');
+    }
+    // Link game for boardgame seasons
+    if (seasonId && formType === 'boardgame' && formGameId) {
+      await supabase.from('season_games').delete().eq('season_id', seasonId);
+      await supabase.from('season_games').insert({ season_id: seasonId, game_id: formGameId });
     }
     setDialogOpen(false);
     fetchData();
@@ -151,11 +170,7 @@ const Seasons = () => {
     return (
       <motion.div key={s.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
         <Card className="bg-card border-border hover:border-gold/20 transition-colors h-full flex flex-col relative group">
-          {isAdmin && (
-            <Button variant="ghost" size="icon" className="absolute top-3 right-10 opacity-0 group-hover:opacity-100 transition-opacity z-10" onClick={(e) => { e.preventDefault(); openEdit(s); }}>
-              <Pencil className="h-4 w-4" />
-            </Button>
-          )}
+          {/* Edit button moved to bottom-right, rendered outside the Link */}
           <Link to={`/seasons/${s.id}`} className="flex-1 flex flex-col">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -182,6 +197,11 @@ const Seasons = () => {
               </div>
             </CardContent>
           </Link>
+          {isAdmin && (
+            <Button variant="ghost" size="icon" className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEdit(s); }}>
+              <Pencil className="h-4 w-4" />
+            </Button>
+          )}
         </Card>
       </motion.div>
     );
@@ -226,7 +246,7 @@ const Seasons = () => {
             <div className="space-y-2"><Label>Descrição</Label><Textarea value={formDesc} onChange={e => setFormDesc(e.target.value)} /></div>
             <div className="space-y-2">
               <Label>Tipo</Label>
-              <Select value={formType} onValueChange={v => setFormType(v as any)}>
+              <Select value={formType} onValueChange={v => { setFormType(v as any); if (v !== 'boardgame') setFormGameId(''); }}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="boardgame">Boardgame</SelectItem>
@@ -234,6 +254,17 @@ const Seasons = () => {
                 </SelectContent>
               </Select>
             </div>
+            {formType === 'boardgame' && (
+              <div className="space-y-2">
+                <Label>Jogo</Label>
+                <Select value={formGameId} onValueChange={setFormGameId}>
+                  <SelectTrigger><SelectValue placeholder="Selecione o jogo" /></SelectTrigger>
+                  <SelectContent>
+                    {allGames.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="grid gap-4 grid-cols-2">
               <div className="space-y-2"><Label>Início *</Label><Input type="date" value={formStart} onChange={e => setFormStart(e.target.value)} /></div>
               <div className="space-y-2"><Label>Fim *</Label><Input type="date" value={formEnd} onChange={e => setFormEnd(e.target.value)} /></div>

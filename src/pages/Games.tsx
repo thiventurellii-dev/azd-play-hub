@@ -6,10 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ExternalLink, Video, Users, Calendar, Clock, Plus } from "lucide-react";
+import { ExternalLink, Video, Users, Calendar, Clock, Plus, Pencil, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotification } from "@/components/NotificationDialog";
@@ -20,13 +22,16 @@ import overTheRiverImg from "@/assets/over-the-river.png";
 interface Game {
   id: string; name: string; image_url: string | null; rules_url: string | null;
   video_url: string | null; min_players: number | null; max_players: number | null;
-  slug: string | null;
+  slug: string | null; factions: any;
 }
 
 interface SeasonLink { season_id: string; season_name: string; status: string; }
 interface BloodScript { id: string; name: string; description: string | null; }
 interface BloodCharacter { id: string; script_id: string; name: string; name_en: string; team: "good" | "evil"; role_type: string; }
 interface GameTag { id: string; name: string; }
+
+interface ScoringSubcategory { key: string; label: string; type: string; }
+interface ScoringCategory { key: string; label: string; type: string; subcategories?: ScoringSubcategory[]; }
 
 const statusLabels: Record<string, string> = { active: "Ativa", upcoming: "Em breve", finished: "Finalizada" };
 const statusColors: Record<string, string> = {
@@ -35,8 +40,10 @@ const statusColors: Record<string, string> = {
   finished: "bg-muted text-muted-foreground border-border",
 };
 
+const generateKey = (label: string) => label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/(^_|_$)/g, '');
+
 const Games = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { notify } = useNotification();
   const navigate = useNavigate();
 
@@ -53,6 +60,7 @@ const Games = () => {
   // Tags
   const [allTags, setAllTags] = useState<GameTag[]>([]);
   const [gameTagMap, setGameTagMap] = useState<Record<string, string[]>>({});
+  const [gameTagIdMap, setGameTagIdMap] = useState<Record<string, string[]>>({}); // game_id -> tag_id[]
   const [tagFilter, setTagFilter] = useState('all');
 
   // Add game dialog
@@ -61,85 +69,103 @@ const Games = () => {
   const [newMinP, setNewMinP] = useState('');
   const [newMaxP, setNewMaxP] = useState('');
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const [gamesRes, sgRes, matchesRes, scriptsRes, charsRes, sbsRes, tagsRes, tagLinksRes] = await Promise.all([
-        supabase.from("games").select("*").order("name"),
-        supabase.from("season_games").select("game_id, season_id"),
-        supabase.from("matches").select("game_id, duration_minutes"),
-        supabase.from("blood_scripts").select("*").order("name"),
-        supabase.from("blood_characters").select("*").order("team, role_type, name"),
-        supabase.from("season_blood_scripts").select("season_id, script_id"),
-        supabase.from("game_tags").select("*").order("name"),
-        supabase.from("game_tag_links").select("game_id, tag_id"),
-      ]);
+  // Edit game dialog
+  const [editOpen, setEditOpen] = useState(false);
+  const [editGame, setEditGame] = useState<Game | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editImageUrl, setEditImageUrl] = useState('');
+  const [editRulesUrl, setEditRulesUrl] = useState('');
+  const [editVideoUrl, setEditVideoUrl] = useState('');
+  const [editMinP, setEditMinP] = useState('');
+  const [editMaxP, setEditMaxP] = useState('');
+  const [editSlug, setEditSlug] = useState('');
+  const [editFactions, setEditFactions] = useState('');
+  const [editCategories, setEditCategories] = useState<ScoringCategory[]>([]);
+  const [editTagIds, setEditTagIds] = useState<string[]>([]);
+  const [newTagName, setNewTagName] = useState('');
 
-      const gamesData = (gamesRes.data || []) as Game[];
-      setGames(gamesData);
-      setBloodScripts((scriptsRes.data || []) as BloodScript[]);
-      setBloodCharacters((charsRes.data || []) as BloodCharacter[]);
-      setAllTags((tagsRes.data || []) as GameTag[]);
+  const fetchData = async () => {
+    const [gamesRes, sgRes, matchesRes, scriptsRes, charsRes, sbsRes, tagsRes, tagLinksRes] = await Promise.all([
+      supabase.from("games").select("*").order("name"),
+      supabase.from("season_games").select("game_id, season_id"),
+      supabase.from("matches").select("game_id, duration_minutes"),
+      supabase.from("blood_scripts").select("*").order("name"),
+      supabase.from("blood_characters").select("*").order("team, role_type, name"),
+      supabase.from("season_blood_scripts").select("season_id, script_id"),
+      supabase.from("game_tags").select("*").order("name"),
+      supabase.from("game_tag_links").select("game_id, tag_id"),
+    ]);
 
-      // Build tag map
-      const tMap: Record<string, string[]> = {};
-      const tagNameMap: Record<string, string> = {};
-      for (const t of (tagsRes.data || []) as GameTag[]) tagNameMap[t.id] = t.name;
-      for (const tl of (tagLinksRes.data || []) as any[]) {
-        if (!tMap[tl.game_id]) tMap[tl.game_id] = [];
-        const name = tagNameMap[tl.tag_id];
-        if (name) tMap[tl.game_id].push(name);
+    const gamesData = (gamesRes.data || []) as Game[];
+    setGames(gamesData);
+    setBloodScripts((scriptsRes.data || []) as BloodScript[]);
+    setBloodCharacters((charsRes.data || []) as BloodCharacter[]);
+    setAllTags((tagsRes.data || []) as GameTag[]);
+
+    // Build tag maps
+    const tMap: Record<string, string[]> = {};
+    const tIdMap: Record<string, string[]> = {};
+    const tagNameMap: Record<string, string> = {};
+    for (const t of (tagsRes.data || []) as GameTag[]) tagNameMap[t.id] = t.name;
+    for (const tl of (tagLinksRes.data || []) as any[]) {
+      if (!tMap[tl.game_id]) tMap[tl.game_id] = [];
+      if (!tIdMap[tl.game_id]) tIdMap[tl.game_id] = [];
+      const name = tagNameMap[tl.tag_id];
+      if (name) tMap[tl.game_id].push(name);
+      tIdMap[tl.game_id].push(tl.tag_id);
+    }
+    setGameTagMap(tMap);
+    setGameTagIdMap(tIdMap);
+
+    // Seasons
+    const sgData = sgRes.data || [];
+    if (sgData.length > 0) {
+      const seasonIds = [...new Set(sgData.map((sg) => sg.season_id))];
+      const { data: seasons } = await supabase.from("seasons").select("id, name, status").in("id", seasonIds);
+      const seasonMap: Record<string, { name: string; status: string }> = {};
+      for (const s of seasons || []) seasonMap[s.id] = { name: s.name, status: s.status };
+      const map: Record<string, SeasonLink[]> = {};
+      for (const sg of sgData) {
+        const s = seasonMap[sg.season_id];
+        if (!s) continue;
+        if (!map[sg.game_id]) map[sg.game_id] = [];
+        map[sg.game_id].push({ season_id: sg.season_id, season_name: s.name, status: s.status });
       }
-      setGameTagMap(tMap);
+      setGameSeasons(map);
+    }
 
-      // Seasons
-      const sgData = sgRes.data || [];
-      if (sgData.length > 0) {
-        const seasonIds = [...new Set(sgData.map((sg) => sg.season_id))];
-        const { data: seasons } = await supabase.from("seasons").select("id, name, status").in("id", seasonIds);
-        const seasonMap: Record<string, { name: string; status: string }> = {};
-        for (const s of seasons || []) seasonMap[s.id] = { name: s.name, status: s.status };
-        const map: Record<string, SeasonLink[]> = {};
-        for (const sg of sgData) {
-          const s = seasonMap[sg.season_id];
-          if (!s) continue;
-          if (!map[sg.game_id]) map[sg.game_id] = [];
-          map[sg.game_id].push({ season_id: sg.season_id, season_name: s.name, status: s.status });
-        }
-        setGameSeasons(map);
+    const sbsData = (sbsRes.data || []) as any[];
+    if (sbsData.length > 0) {
+      const bsSeasonIds = [...new Set(sbsData.map((s: any) => s.season_id))];
+      const { data: bsSeasons } = await supabase.from("seasons").select("id, name, status").in("id", bsSeasonIds);
+      const bsSeasonMap: Record<string, { name: string; status: string }> = {};
+      for (const s of bsSeasons || []) bsSeasonMap[s.id] = { name: s.name, status: s.status };
+      const bsMap: Record<string, SeasonLink[]> = {};
+      for (const sbs of sbsData) {
+        const s = bsSeasonMap[sbs.season_id];
+        if (!s) continue;
+        if (!bsMap[sbs.script_id]) bsMap[sbs.script_id] = [];
+        bsMap[sbs.script_id].push({ season_id: sbs.season_id, season_name: s.name, status: s.status });
       }
+      setScriptSeasons(bsMap);
+    }
 
-      const sbsData = (sbsRes.data || []) as any[];
-      if (sbsData.length > 0) {
-        const bsSeasonIds = [...new Set(sbsData.map((s: any) => s.season_id))];
-        const { data: bsSeasons } = await supabase.from("seasons").select("id, name, status").in("id", bsSeasonIds);
-        const bsSeasonMap: Record<string, { name: string; status: string }> = {};
-        for (const s of bsSeasons || []) bsSeasonMap[s.id] = { name: s.name, status: s.status };
-        const bsMap: Record<string, SeasonLink[]> = {};
-        for (const sbs of sbsData) {
-          const s = bsSeasonMap[sbs.season_id];
-          if (!s) continue;
-          if (!bsMap[sbs.script_id]) bsMap[sbs.script_id] = [];
-          bsMap[sbs.script_id].push({ season_id: sbs.season_id, season_name: s.name, status: s.status });
-        }
-        setScriptSeasons(bsMap);
+    const matchesData = matchesRes.data || [];
+    const durMap: Record<string, { total: number; count: number }> = {};
+    for (const m of matchesData) {
+      if (m.duration_minutes) {
+        if (!durMap[m.game_id]) durMap[m.game_id] = { total: 0, count: 0 };
+        durMap[m.game_id].total += m.duration_minutes;
+        durMap[m.game_id].count += 1;
       }
+    }
+    const avgMap: Record<string, number> = {};
+    for (const [gid, d] of Object.entries(durMap)) avgMap[gid] = Math.round(d.total / d.count);
+    setAvgDurations(avgMap);
+    setLoading(false);
+  };
 
-      const matchesData = matchesRes.data || [];
-      const durMap: Record<string, { total: number; count: number }> = {};
-      for (const m of matchesData) {
-        if (m.duration_minutes) {
-          if (!durMap[m.game_id]) durMap[m.game_id] = { total: 0, count: 0 };
-          durMap[m.game_id].total += m.duration_minutes;
-          durMap[m.game_id].count += 1;
-        }
-      }
-      const avgMap: Record<string, number> = {};
-      for (const [gid, d] of Object.entries(durMap)) avgMap[gid] = Math.round(d.total / d.count);
-      setAvgDurations(avgMap);
-      setLoading(false);
-    };
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
   const scriptImages: Record<string, string> = {
     "trouble brewing": troubleBrewingImg,
@@ -163,9 +189,101 @@ const Games = () => {
     if (error) return notify('error', error.message);
     notify('success', 'Jogo adicionado!');
     setAddOpen(false); setNewName(''); setNewMinP(''); setNewMaxP('');
-    // Reload
-    const { data } = await supabase.from("games").select("*").order("name");
-    setGames((data || []) as Game[]);
+    fetchData();
+  };
+
+  const handleDeleteGame = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir este jogo?')) return;
+    const { error } = await supabase.from('games').delete().eq('id', id);
+    if (error) return notify('error', error.message);
+    notify('success', 'Jogo excluído!');
+    fetchData();
+  };
+
+  const openEditGame = async (g: Game) => {
+    setEditGame(g);
+    setEditName(g.name);
+    setEditImageUrl(g.image_url || '');
+    setEditRulesUrl(g.rules_url || '');
+    setEditVideoUrl(g.video_url || '');
+    setEditMinP(g.min_players?.toString() || '');
+    setEditMaxP(g.max_players?.toString() || '');
+    setEditSlug(g.slug || '');
+    setEditFactions(g.factions ? JSON.stringify(g.factions, null, 2) : '');
+    setEditTagIds(gameTagIdMap[g.id] || []);
+
+    // Load scoring schema
+    const { data: schemaData } = await supabase.from('game_scoring_schemas').select('schema').eq('game_id', g.id).maybeSingle();
+    setEditCategories((schemaData?.schema as any)?.categories || []);
+    setEditOpen(true);
+  };
+
+  const handleEditSave = async () => {
+    if (!editGame) return;
+    let factions = null;
+    if (editFactions.trim()) {
+      try { factions = JSON.parse(editFactions); } catch { return notify('error', 'JSON de facções inválido'); }
+    }
+    const { error } = await supabase.from('games').update({
+      name: editName, image_url: editImageUrl || null, rules_url: editRulesUrl || null,
+      video_url: editVideoUrl || null, min_players: parseInt(editMinP) || null,
+      max_players: parseInt(editMaxP) || null, slug: editSlug || null, factions,
+    }).eq('id', editGame.id);
+    if (error) return notify('error', error.message);
+
+    // Save scoring schema
+    const schemaPayload = { categories: editCategories };
+    const { data: existing } = await supabase.from('game_scoring_schemas').select('id').eq('game_id', editGame.id).maybeSingle();
+    if (existing) {
+      await supabase.from('game_scoring_schemas').update({ schema: schemaPayload as any }).eq('id', existing.id);
+    } else if (editCategories.length > 0) {
+      await supabase.from('game_scoring_schemas').insert({ game_id: editGame.id, schema: schemaPayload as any });
+    }
+
+    // Save tags
+    await supabase.from('game_tag_links').delete().eq('game_id', editGame.id);
+    if (editTagIds.length > 0) {
+      await supabase.from('game_tag_links').insert(editTagIds.map(tid => ({ game_id: editGame.id, tag_id: tid })));
+    }
+
+    notify('success', 'Jogo atualizado!');
+    setEditOpen(false);
+    fetchData();
+  };
+
+  const handleAddTag = async () => {
+    if (!newTagName.trim()) return;
+    const { data, error } = await supabase.from('game_tags').insert({ name: newTagName.trim() }).select().single();
+    if (error) return notify('error', error.message);
+    setAllTags(prev => [...prev, data as GameTag].sort((a, b) => a.name.localeCompare(b.name)));
+    setEditTagIds(prev => [...prev, data.id]);
+    setNewTagName('');
+  };
+
+  const addCategory = () => setEditCategories([...editCategories, { key: '', label: '', type: 'number' }]);
+  const removeCategory = (i: number) => setEditCategories(editCategories.filter((_, idx) => idx !== i));
+  const updateCategory = (i: number, label: string) => {
+    const cats = [...editCategories];
+    cats[i] = { ...cats[i], label, key: generateKey(label) };
+    setEditCategories(cats);
+  };
+  const addSubcategory = (catIdx: number) => {
+    const cats = [...editCategories];
+    const sub = cats[catIdx].subcategories || [];
+    cats[catIdx] = { ...cats[catIdx], type: 'group', subcategories: [...sub, { key: '', label: '', type: 'number' }] };
+    setEditCategories(cats);
+  };
+  const removeSubcategory = (catIdx: number, subIdx: number) => {
+    const cats = [...editCategories];
+    cats[catIdx].subcategories = cats[catIdx].subcategories?.filter((_, i) => i !== subIdx);
+    setEditCategories(cats);
+  };
+  const updateSubcategory = (catIdx: number, subIdx: number, label: string) => {
+    const cats = [...editCategories];
+    if (cats[catIdx].subcategories) {
+      cats[catIdx].subcategories![subIdx] = { ...cats[catIdx].subcategories![subIdx], label, key: generateKey(label) };
+    }
+    setEditCategories(cats);
   };
 
   const renderBoardgames = () => (
@@ -198,9 +316,9 @@ const Games = () => {
             const gameTags = gameTagMap[g.id] || [];
             return (
               <motion.div key={g.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                <Card className="bg-card border-border hover:border-gold/20 transition-colors h-full flex flex-col cursor-pointer"
-                  onClick={() => g.slug ? navigate(`/jogos/${g.slug}`) : setSelectedGame(g)}>
-                  <CardContent className="py-5 space-y-4 flex-1 flex flex-col">
+                <Card className="bg-card border-border hover:border-gold/20 transition-colors h-full flex flex-col relative group">
+                  <CardContent className="py-5 space-y-4 flex-1 flex flex-col cursor-pointer"
+                    onClick={() => g.slug ? navigate(`/jogos/${g.slug}`) : setSelectedGame(g)}>
                     <div className="flex items-start gap-4">
                       {g.image_url ? (
                         <img src={g.image_url} alt={g.name} className="h-16 w-16 rounded-lg object-cover flex-shrink-0" />
@@ -234,6 +352,16 @@ const Games = () => {
                       </div>
                     )}
                   </CardContent>
+                  {isAdmin && (
+                    <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-10">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); openEditGame(g); }}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); handleDeleteGame(g.id); }}>
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                    </div>
+                  )}
                 </Card>
               </motion.div>
             );
@@ -370,6 +498,82 @@ const Games = () => {
               <div className="space-y-2"><Label>Máx. Jogadores</Label><Input type="number" value={newMaxP} onChange={e => setNewMaxP(e.target.value)} /></div>
             </div>
             <Button variant="gold" onClick={handleAddGame}>Adicionar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Game Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Editar Jogo</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2"><Label>Nome</Label><Input value={editName} onChange={e => setEditName(e.target.value)} /></div>
+              <div className="space-y-2"><Label>Slug</Label><Input value={editSlug} onChange={e => setEditSlug(e.target.value)} /></div>
+            </div>
+            <div className="space-y-2"><Label>URL da Imagem</Label><Input value={editImageUrl} onChange={e => setEditImageUrl(e.target.value)} /></div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2"><Label>URL das Regras</Label><Input value={editRulesUrl} onChange={e => setEditRulesUrl(e.target.value)} /></div>
+              <div className="space-y-2"><Label>URL do Vídeo</Label><Input value={editVideoUrl} onChange={e => setEditVideoUrl(e.target.value)} /></div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2"><Label>Mín. Jogadores</Label><Input type="number" value={editMinP} onChange={e => setEditMinP(e.target.value)} /></div>
+              <div className="space-y-2"><Label>Máx. Jogadores</Label><Input type="number" value={editMaxP} onChange={e => setEditMaxP(e.target.value)} /></div>
+            </div>
+
+            {/* Factions JSON */}
+            <div className="space-y-2">
+              <Label>Facções (JSON)</Label>
+              <Textarea value={editFactions} onChange={e => setEditFactions(e.target.value)} placeholder='["Facção A", "Facção B"]' rows={3} className="font-mono text-xs" />
+            </div>
+
+            {/* Tags */}
+            <div className="space-y-2">
+              <Label>Tags</Label>
+              <div className="flex flex-wrap gap-2">
+                {allTags.map(t => (
+                  <label key={t.id} className="flex items-center gap-1.5 cursor-pointer">
+                    <Checkbox checked={editTagIds.includes(t.id)} onCheckedChange={(checked) => {
+                      setEditTagIds(prev => checked ? [...prev, t.id] : prev.filter(id => id !== t.id));
+                    }} />
+                    <span className="text-sm">{t.name}</span>
+                  </label>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Input value={newTagName} onChange={e => setNewTagName(e.target.value)} placeholder="Nova tag..." className="flex-1 h-8" />
+                <Button variant="outline" size="sm" onClick={handleAddTag} disabled={!newTagName.trim()}>
+                  <Plus className="h-3 w-3 mr-1" /> Criar
+                </Button>
+              </div>
+            </div>
+
+            {/* Scoring Schema */}
+            <div className="space-y-2">
+              <Label>Schema de Pontuação</Label>
+              {editCategories.map((cat, ci) => (
+                <div key={ci} className="border border-border rounded-lg p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Input value={cat.label} onChange={e => updateCategory(ci, e.target.value)} placeholder="Nome da categoria" className="flex-1 h-8" />
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeCategory(ci)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                  </div>
+                  {(cat.subcategories || []).map((sub, si) => (
+                    <div key={si} className="flex items-center gap-2 ml-4">
+                      <Input value={sub.label} onChange={e => updateSubcategory(ci, si, e.target.value)} placeholder="Subcategoria" className="flex-1 h-7 text-xs" />
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeSubcategory(ci, si)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                    </div>
+                  ))}
+                  <Button variant="ghost" size="sm" className="ml-4 text-xs" onClick={() => addSubcategory(ci)}>
+                    <Plus className="h-3 w-3 mr-1" /> Subcategoria
+                  </Button>
+                </div>
+              ))}
+              <Button variant="outline" size="sm" onClick={addCategory}>
+                <Plus className="h-3 w-3 mr-1" /> Categoria
+              </Button>
+            </div>
+
+            <Button variant="gold" onClick={handleEditSave}>Salvar</Button>
           </div>
         </DialogContent>
       </Dialog>

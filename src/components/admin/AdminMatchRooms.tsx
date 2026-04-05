@@ -61,7 +61,7 @@ const AdminMatchRooms = () => {
 
   useEffect(() => { fetchRooms(); }, []);
 
-  const updateStatus = async (roomId: string, status: string) => {
+  const updateStatus = async (roomId: string, status: "open" | "full" | "in_progress" | "finished" | "cancelled") => {
     await supabase.from("match_rooms").update({ status }).eq("id", roomId);
     fetchRooms();
   };

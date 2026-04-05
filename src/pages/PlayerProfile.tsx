@@ -156,6 +156,20 @@ const PlayerProfile = () => {
         }
       }
 
+      // Achievements
+      const { data: playerAchs } = await supabase
+        .from('player_achievements')
+        .select('achievement_id')
+        .eq('player_id', prof.id);
+      if (playerAchs && playerAchs.length > 0) {
+        const achIds = playerAchs.map((a: any) => a.achievement_id);
+        const { data: achDefs } = await supabase
+          .from('achievement_definitions')
+          .select('name, description, icon')
+          .in('id', achIds);
+        setAchievements((achDefs || []) as any[]);
+      }
+
       setLoading(false);
     };
     fetchProfile();

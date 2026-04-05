@@ -77,19 +77,31 @@ const AdminGames = () => {
       video_url: g.video_url || '',
       min_players: g.min_players ? String(g.min_players) : '',
       max_players: g.max_players ? String(g.max_players) : '',
+      slug: g.slug || '',
+      factions: g.factions ? JSON.stringify(g.factions, null, 2) : '',
     });
     setEditDialogOpen(true);
   };
 
   const handleEditSave = async () => {
     if (!editingGame) return;
+    let factions = null;
+    if (editForm.factions.trim()) {
+      try {
+        factions = JSON.parse(editForm.factions);
+      } catch {
+        return notify('error', 'JSON de facções inválido');
+      }
+    }
     const { error } = await supabase.from('games').update({
       name: editForm.name,
+      slug: editForm.slug || null,
       image_url: editForm.image_url || null,
       rules_url: editForm.rules_url || null,
       video_url: editForm.video_url || null,
       min_players: editForm.min_players ? parseInt(editForm.min_players) : null,
       max_players: editForm.max_players ? parseInt(editForm.max_players) : null,
+      factions,
     }).eq('id', editingGame.id);
     if (error) return notify('error', error.message);
     notify('success', 'Jogo atualizado!');

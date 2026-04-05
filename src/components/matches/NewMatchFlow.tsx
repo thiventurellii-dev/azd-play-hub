@@ -116,8 +116,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
     );
   }, [allPlayers, playerSearch]);
 
-  const scoringPlayers = entries.filter(e => e.player_id || e.ghost_name).map(e => {
-    if (e.ghost_name && !e.player_id) return { id: `ghost_${e.ghost_name}`, name: `👻 ${e.ghost_name}` };
+  const scoringPlayers = entries.filter(e => e.player_id).map(e => {
     const p = allPlayers.find(p => p.id === e.player_id);
     return { id: e.player_id, name: p?.nickname || p?.name || '?' };
   });

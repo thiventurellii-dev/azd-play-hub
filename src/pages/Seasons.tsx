@@ -96,6 +96,10 @@ const Seasons = () => {
 
   useEffect(() => { fetchData(); }, []);
 
+  useEffect(() => {
+    supabase.from('games').select('id, name').order('name').then(({ data }) => setAllGames(data || []));
+  }, []);
+
   const openCreate = () => { setEditId(null); setFormName(''); setFormDesc(''); setFormStart(''); setFormEnd(''); setFormType('boardgame'); setDialogOpen(true); };
   const openEdit = (s: Season) => { setEditId(s.id); setFormName(s.name); setFormDesc(s.description || ''); setFormStart(s.start_date); setFormEnd(s.end_date); setFormType(s.type); setDialogOpen(true); };
 

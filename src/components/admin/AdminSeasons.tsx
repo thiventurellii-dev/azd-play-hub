@@ -163,7 +163,22 @@ const AdminSeasons = () => {
   };
 
   const handleDelete = async (id: string) => {
+    if (!confirm('Tem certeza que deseja excluir esta season?')) return;
+    // Check for linked matches
+    const { count: bgCount } = await supabase
+      .from("matches")
+      .select("id", { count: "exact", head: true })
+      .eq("season_id", id);
+    const { count: bloodCount } = await supabase
+      .from("blood_matches")
+      .select("id", { count: "exact", head: true })
+      .eq("season_id", id);
+    const total = (bgCount || 0) + (bloodCount || 0);
+    if (total > 0) {
+      return notify("error", `Não é possível excluir: existem ${total} partida(s) registrada(s) nesta season.`);
+    }
     await supabase.from("season_games").delete().eq("season_id", id);
+    await supabase.from("season_blood_scripts").delete().eq("season_id", id);
     const { error } = await supabase.from("seasons").delete().eq("id", id);
     if (error) return notify("error", error.message);
     notify("success", "Season removida");

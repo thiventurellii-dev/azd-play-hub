@@ -194,6 +194,16 @@ const Games = () => {
 
   const handleDeleteGame = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir este jogo?')) return;
+    // Check for linked matches
+    const { count } = await supabase
+      .from("matches")
+      .select("id", { count: "exact", head: true })
+      .eq("game_id", id);
+    if (count && count > 0) {
+      return notify('error', `Não é possível excluir: existem ${count} partida(s) registrada(s) para este jogo.`);
+    }
+    await supabase.from('game_tag_links').delete().eq('game_id', id);
+    await supabase.from('game_scoring_schemas').delete().eq('game_id', id);
     const { error } = await supabase.from('games').delete().eq('id', id);
     if (error) return notify('error', error.message);
     notify('success', 'Jogo excluído!');

@@ -111,14 +111,21 @@ const Seasons = () => {
 
   const handleSave = async () => {
     if (!formName || !formStart || !formEnd) return notify('error', 'Preencha nome e datas');
+    let seasonId = editId;
     if (editId) {
       const { error } = await supabase.from('seasons').update({ name: formName, description: formDesc || null, start_date: formStart, end_date: formEnd, type: formType as any }).eq('id', editId);
       if (error) return notify('error', error.message);
       notify('success', 'Season atualizada!');
     } else {
-      const { error } = await supabase.from('seasons').insert({ name: formName, description: formDesc || null, start_date: formStart, end_date: formEnd, type: formType as any });
+      const { data, error } = await supabase.from('seasons').insert({ name: formName, description: formDesc || null, start_date: formStart, end_date: formEnd, type: formType as any }).select().single();
       if (error) return notify('error', error.message);
+      seasonId = data.id;
       notify('success', 'Season criada!');
+    }
+    // Link game for boardgame seasons
+    if (seasonId && formType === 'boardgame' && formGameId) {
+      await supabase.from('season_games').delete().eq('season_id', seasonId);
+      await supabase.from('season_games').insert({ season_id: seasonId, game_id: formGameId });
     }
     setDialogOpen(false);
     fetchData();

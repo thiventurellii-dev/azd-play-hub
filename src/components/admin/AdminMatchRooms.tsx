@@ -111,7 +111,7 @@ const AdminMatchRooms = () => {
                   </div>
                 )}
                 <div className="flex gap-2 pt-2">
-                  <Select value={room.status} onValueChange={(val) => updateStatus(room.id, val)}>
+                  <Select value={room.status} onValueChange={(val: "open" | "full" | "in_progress" | "finished" | "cancelled") => updateStatus(room.id, val)}>
                     <SelectTrigger className="w-[180px]">
                       <SelectValue />
                     </SelectTrigger>

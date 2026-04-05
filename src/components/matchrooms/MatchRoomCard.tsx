@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Calendar, Users, LogIn, Clock, Share2 } from "lucide-react";
+import { Calendar, Users, LogIn, Clock, Share2, ClipboardList } from "lucide-react";
 import { generateWhatsAppInvite, sendMatchNotification } from "@/lib/matchNotification";
 import { toast } from "sonner";
 import RoomComments from "./RoomComments";

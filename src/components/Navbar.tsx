@@ -73,11 +73,14 @@ const Navbar = () => {
       });
     supabase
       .from("profiles")
-      .select("nickname")
+      .select("nickname, avatar_url")
       .eq("id", user.id)
       .maybeSingle()
       .then(({ data }) => {
-        if (data) setUserNickname((data as any).nickname || null);
+        if (data) {
+          setUserNickname((data as any).nickname || null);
+          setUserAvatar((data as any).avatar_url || null);
+        }
       });
   }, [user]);
 

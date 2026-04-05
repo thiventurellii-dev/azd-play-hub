@@ -29,6 +29,7 @@ const AdminGames = () => {
   const [videoUrl, setVideoUrl] = useState('');
   const [minPlayers, setMinPlayers] = useState('');
   const [maxPlayers, setMaxPlayers] = useState('');
+  const [slug, setSlug] = useState('');
 
   // Edit state
   const [editDialogOpen, setEditDialogOpen] = useState(false);

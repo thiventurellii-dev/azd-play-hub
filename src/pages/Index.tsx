@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import logo from "@/assets/azd-logo.png";
 import { useAuth } from "@/contexts/AuthContext";
-import { MessageCircle, Calendar } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 

@@ -42,10 +42,12 @@ const AdminAchievements = () => {
       description: description || null,
       icon: icon || '🏆',
       criteria: criteria || null,
-    });
+      trigger_type: triggerType,
+      trigger_config: triggerConfig ? JSON.parse(triggerConfig) : null,
+    } as any);
     if (error) return notify('error', error.message);
     notify('success', 'Achievement criado!');
-    setName(''); setDescription(''); setIcon('🏆'); setCriteria('');
+    setName(''); setDescription(''); setIcon('🏆'); setCriteria(''); setTriggerType('manual'); setTriggerConfig('');
     fetch();
   };
 

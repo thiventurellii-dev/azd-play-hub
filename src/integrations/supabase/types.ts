@@ -35,6 +35,33 @@ export type Database = {
         }
         Relationships: []
       }
+      achievement_definitions: {
+        Row: {
+          created_at: string
+          criteria: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          criteria?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          criteria?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       blood_characters: {
         Row: {
           created_at: string
@@ -231,6 +258,30 @@ export type Database = {
         }
         Relationships: []
       }
+      community_documents: {
+        Row: {
+          created_at: string
+          file_url: string
+          id: string
+          title: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_url: string
+          id?: string
+          title: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_url?: string
+          id?: string
+          title?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       community_rules: {
         Row: {
           content: string
@@ -329,6 +380,7 @@ export type Database = {
       games: {
         Row: {
           created_at: string
+          factions: Json | null
           id: string
           image_url: string | null
           max_players: number | null
@@ -340,6 +392,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          factions?: Json | null
           id?: string
           image_url?: string | null
           max_players?: number | null
@@ -351,6 +404,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          factions?: Json | null
           id?: string
           image_url?: string | null
           max_players?: number | null
@@ -643,6 +697,38 @@ export type Database = {
             columns: ["season_id"]
             isOneToOne: false
             referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      player_achievements: {
+        Row: {
+          achievement_id: string
+          granted_at: string
+          granted_by: string | null
+          id: string
+          player_id: string
+        }
+        Insert: {
+          achievement_id: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          player_id: string
+        }
+        Update: {
+          achievement_id?: string
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "player_achievements_achievement_id_fkey"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "achievement_definitions"
             referencedColumns: ["id"]
           },
         ]

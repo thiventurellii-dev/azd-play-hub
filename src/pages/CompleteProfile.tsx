@@ -72,8 +72,7 @@ const CompleteProfile = () => {
       ? 'Cadastro completo! Seu perfil foi completado com sucesso. Você já pode acessar a plataforma!'
       : 'Cadastro enviado! Seu perfil foi completado. Um administrador irá analisar e aprovar seu cadastro em breve.';
     
-    notify('success', message, { autoClose: true, onClose: () => navigate('/') });
-    setTimeout(() => navigate('/'), 2500);
+    notify('success', message, undefined, { autoClose: 2500, onClose: () => navigate('/') });
   };
 
   return (

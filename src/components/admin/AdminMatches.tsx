@@ -207,7 +207,7 @@ const AdminMatches = () => {
       for (const pid of playerIds) {
         if (!(pid in mmrMap)) {
           mmrMap[pid] = 1000; gpMap[pid] = 0; winsMap[pid] = 0;
-          await supabase.from('mmr_ratings').insert({ player_id: pid, season_id: seasonId, game_id: gameId, current_mmr: 1000, games_played: 0, wins: 0 } as any);
+          await supabase.rpc('upsert_mmr_for_match', { p_player_id: pid, p_season_id: seasonId, p_game_id: gameId, p_current_mmr: 1000, p_games_played: 0, p_wins: 0 });
         }
       }
 

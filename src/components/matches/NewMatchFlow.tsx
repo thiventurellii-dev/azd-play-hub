@@ -196,7 +196,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
         entries.forEach((e, i) => { positionMap[e.player_id] = i + 1; });
       }
 
-      const playerIds = entries.map(e => e.player_id);
+      const playerIds = entries.filter(e => e.player_id).map(e => e.player_id);
 
       // Only do MMR if season is selected
       let mmrMap: Record<string, number> = {};

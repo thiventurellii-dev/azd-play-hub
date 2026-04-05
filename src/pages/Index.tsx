@@ -20,7 +20,12 @@ const LoggedOutIndex = () => (
   <div className="min-h-screen">
     <section className="relative flex flex-col items-center justify-center px-4 py-32 text-center overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-gold/5 via-transparent to-transparent" />
-      <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }} className="relative">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.6 }}
+        className="relative"
+      >
         <img src={logo} alt="AzD" className="h-32 w-32 mx-auto mb-8 drop-shadow-[0_0_30px_hsl(43,100%,50%,0.3)]" />
       </motion.div>
       <motion.h1 {...fadeUp(0.2)} className="relative text-5xl md:text-7xl font-black tracking-tight">
@@ -32,12 +37,9 @@ const LoggedOutIndex = () => (
       <motion.div {...fadeUp(0.4)} className="relative mt-8 flex flex-wrap justify-center gap-4">
         <Link to="/register">
           <motion.div {...hoverSpring}>
-            <Button variant="gold" size="lg">Faça parte da comunidade</Button>
-          </motion.div>
-        </Link>
-        <Link to="/login">
-          <motion.div {...hoverSpring}>
-            <Button variant="outline" size="lg">Agendar Partida</Button>
+            <Button variant="gold" size="lg">
+              Faça parte da comunidade
+            </Button>
           </motion.div>
         </Link>
       </motion.div>
@@ -49,7 +51,12 @@ const LoggedInIndex = () => (
   <div className="min-h-screen">
     <section className="relative flex flex-col items-center justify-center px-4 py-32 text-center overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-gold/5 via-transparent to-transparent" />
-      <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }} className="relative">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.6 }}
+        className="relative"
+      >
         <img src={logo} alt="AzD" className="h-32 w-32 mx-auto mb-8 drop-shadow-[0_0_30px_hsl(43,100%,50%,0.3)]" />
       </motion.div>
       <motion.h1 {...fadeUp(0.2)} className="relative text-5xl md:text-7xl font-black tracking-tight">
@@ -61,12 +68,16 @@ const LoggedInIndex = () => (
       <motion.div {...fadeUp(0.4)} className="relative mt-8 flex flex-wrap justify-center gap-4">
         <Link to="/partidas">
           <motion.div {...hoverSpring}>
-            <Button variant="gold" size="lg">Agendar Partida</Button>
+            <Button variant="gold" size="lg">
+              Agendar Partida
+            </Button>
           </motion.div>
         </Link>
         <Link to="/seasons">
           <motion.div {...hoverSpring}>
-            <Button variant="outline" size="lg">Cenário Competitivo</Button>
+            <Button variant="outline" size="lg">
+              Cenário Competitivo
+            </Button>
           </motion.div>
         </Link>
       </motion.div>

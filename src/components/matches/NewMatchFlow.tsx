@@ -97,7 +97,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
   }, [gameId]);
 
   const addEntry = () => setEntries([...entries, {
-    player_id: '', ghost_name: '', seat_position: entries.length + 1, faction: '', is_new_player: false,
+    player_id: '', seat_position: entries.length + 1, faction: '', is_new_player: false,
   }]);
 
   const updateEntry = (i: number, field: keyof PlayerEntry, value: any) => {

@@ -244,12 +244,14 @@ const AdminMatches = () => {
 
       for (const r of results) {
         const isWin = r.position === 1;
-        await supabase.from('mmr_ratings').update({
-          current_mmr: mmrMap[r.player_id] + eloChanges[r.player_id],
-          games_played: gpMap[r.player_id] + 1,
-          wins: winsMap[r.player_id] + (isWin ? 1 : 0),
-          updated_at: new Date().toISOString(),
-        }).eq('player_id', r.player_id).eq('season_id', seasonId).eq('game_id', gameId);
+        await supabase.rpc('upsert_mmr_for_match', {
+          p_player_id: r.player_id,
+          p_season_id: seasonId,
+          p_game_id: gameId,
+          p_current_mmr: mmrMap[r.player_id] + eloChanges[r.player_id],
+          p_games_played: gpMap[r.player_id] + 1,
+          p_wins: winsMap[r.player_id] + (isWin ? 1 : 0),
+        });
       }
 
       notify('success', 'Partida registrada com sucesso!');

@@ -297,12 +297,14 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
         for (const e of entries) {
           const pos = positionMap[e.player_id] || 1;
           const isWin = pos === 1;
-          await supabase.from('mmr_ratings').update({
-            current_mmr: mmrMap[e.player_id] + eloChanges[e.player_id],
-            games_played: gpMap[e.player_id] + 1,
-            wins: winsMap[e.player_id] + (isWin ? 1 : 0),
-            updated_at: new Date().toISOString(),
-          }).eq('player_id', e.player_id).eq('season_id', seasonId).eq('game_id', gameId);
+          await supabase.rpc('upsert_mmr_for_match', {
+            p_player_id: e.player_id,
+            p_season_id: seasonId,
+            p_game_id: gameId,
+            p_current_mmr: mmrMap[e.player_id] + eloChanges[e.player_id],
+            p_games_played: gpMap[e.player_id] + 1,
+            p_wins: winsMap[e.player_id] + (isWin ? 1 : 0),
+          });
         }
       }
 

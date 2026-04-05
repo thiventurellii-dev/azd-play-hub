@@ -44,6 +44,7 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 
 const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [players, setPlayers] = useState<RoomPlayer[]>([]);
   const [loading, setLoading] = useState(false);
 

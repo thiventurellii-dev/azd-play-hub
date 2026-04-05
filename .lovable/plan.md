@@ -1,99 +1,84 @@
 
-# Plano de Polimento e Evolução — AzD Play Hub
 
-## FASE A — Correções Rápidas e Navegação (Prioridade Alta)
+# Plano: Ajustes de UI, Games, Seasons, Achievements e Jogadores Fantasmas
 
-### A1. Navbar e Links
-- Corrigir link de perfil na Navbar → redirecionar para `/perfil/:nickname` do usuário logado
-- Badge de notificação de amizade pendente no menu de perfil
-- Renomear `whatsappUrl` → `whatsappUrlBG` + criar `whatsappUrlBotc` na tabela `contact_links`
-- Ajustar Navbar "Nossas Redes" com os dois WhatsApp separados (BG e BotC)
+## 1 — Registro: Tela de Sucesso
+**Register.tsx**: Após signup bem-sucedido, em vez de `navigate('/login')`, setar estado `submitted = true` e renderizar uma tela de felicitação com mensagem de "Cadastro concluído!" e botão "Ir para a Home" (`navigate('/')`).
 
-### A2. Hero Page (Index)
-- Adicionar ícones de Discord e WhatsApp (BG + BotC) com diferenciação visual
+## 2 — Seasons: Seletor de Jogo + Botão de Editar
+**Seasons.tsx**:
+- No dialog de criar/editar, quando `formType === 'boardgame'`, exibir dropdown de jogos (fetch `games` table) para vincular o jogo à season. Ao salvar, inserir/atualizar em `season_games`.
+- Mover o botão "Editar" (ícone lápis) do canto superior direito para o **canto inferior direito** do card, fora da área de sobreposição.
 
-### A3. Criação de Sala
-- Separar campo Data e Hora no `CreateRoomDialog`, hora não obrigatória
+## 3 — GameDetail: Filtro Dinâmico + Remover Sequência Atual
+**GameDetail.tsx**:
+- **Estatísticas Detalhadas**: O filtro de "Nº de jogadores" já usa `playerCounts` (calculado dinamicamente). Verificar que o `playerCounts` useMemo está gerando corretamente a partir dos dados reais (já funciona — usa `allResults`). Nenhuma alteração necessária se já dinâmico.
+- **Estatísticas Pessoais**: Remover o card "Sequência Atual" do array de cards (manter apenas Partidas, % Vitória, Pontuação Média, Maior Sequência → 4 cards em `lg:grid-cols-4`).
 
-### A4. Bug da Pontuação
-- Corrigir input que perde valor no `ScoringSheet` (controlled input bug com `|| ''`)
+## 4 — Games: Editar/Excluir + JSON + Schema + Tags
+**Games.tsx**:
+- Adicionar botões **Editar** e **Excluir** em cada card de jogo (visível para admins).
+- O modal de edição incluirá:
+  - Campos básicos (nome, imagem, regras, vídeo, min/max jogadores, slug)
+  - **Factions JSON** (textarea com parse/stringify)
+  - **Schema de Pontuação** (editor inline de categorias/subcategorias, carrega de `game_scoring_schemas`)
+  - **Tags** (checkboxes das tags existentes + possibilidade de criar nova tag inline)
 
-## FASE B — Registro de Partida (Prioridade Alta)
+## 5 — Achievements: Dropdown de Triggers Pré-definidos
+**AdminAchievements.tsx**:
+- Substituir o campo de texto livre `triggerConfig` por um **dropdown** com os tipos de trigger pré-definidos:
+  - `first_win` — Primeira Vitória
+  - `total_games` — Total de Partidas (input numérico)
+  - `win_streak` — Sequência de Vitórias (input numérico)
+  - `games_in_day` — Partidas no Dia (input numérico)
+- Exibir o JSON resultante de forma legível no card do achievement existente.
+- Admin pode selecionar "Personalizado" para digitar JSON manualmente.
 
-### B1. Permissões
-- Permitir qualquer usuário autenticado registrar partidas (não só admin)
-- Migration: atualizar RLS de `matches` e `match_results` para INSERT por authenticated
+## 6 — Jogadores Fantasmas (Combinar Opções 1 + 3)
 
-### B2. UI/UX do NewMatchFlow
-- Renomear "Season" → "Competitivo" e tornar não obrigatório
-- Campo de busca autocomplete para jogadores (substituir lista)
-- Validação min/max jogadores do jogo selecionado
-- Renomear "Mesa" → "Posição", remover checkbox "1º Jogador"
+### 6.1 Migration
+- Nova tabela `ghost_players`:
+  - `id UUID PK`, `display_name TEXT NOT NULL`, `claim_code TEXT UNIQUE` (gerado automaticamente), `linked_profile_id UUID NULL REFERENCES profiles(id)`, `created_at TIMESTAMPTZ`
+- RLS: todos leem, admin gerencia (insert/update/delete)
 
-### B3. Schema de Pontuação com Categorias/Subcategorias
-- Alterar estrutura JSON: `categories` contém `subcategories` (só subcategorias têm input)
-- Atualizar `ScoringSheet` e `AdminScoringSchemas` para essa hierarquia
+### 6.2 Lógica de Registro de Partida
+- No `NewMatchFlow`, além de selecionar jogadores existentes, permitir digitar um nome de "jogador não registrado" → cria entrada em `ghost_players` e usa o `ghost_player_id` no resultado.
+- Adicionar coluna `ghost_player_id UUID NULL` em `match_results` (referência a `ghost_players`).
 
-## FASE C — Páginas de Jogos e Perfil (Prioridade Média)
+### 6.3 Sugestão Automática (no login/cadastro)
+- Após novo usuário completar perfil, query em `ghost_players` buscando `display_name` similar (ILIKE com variações do nome/nickname).
+- Se encontrar matches, exibir banner no perfil: "Encontramos X partidas que parecem ser suas. Deseja reivindicar?"
+- Ao clicar "Sim", cria um pedido pendente (ou admin aprova diretamente via painel).
 
-### C1. Página Individual de Jogos
-- Garantir que `/jogos/:slug` funcione — popular slugs nos jogos existentes
-- Permitir que usuários registrem novos jogos (com aprovação admin ou direto)
+### 6.4 Vínculo Manual (Admin)
+- Na página de perfil do jogador (ferramentas de moderador), botão "Vincular Jogador Fantasma".
+- Modal lista `ghost_players` não vinculados, admin seleciona e confirma.
+- Sistema atualiza `ghost_players.linked_profile_id` e faz `UPDATE match_results SET player_id = ? WHERE ghost_player_id = ?`.
 
-### C2. Perfil do Jogador
-- Corrigir FriendsList no perfil público (`/perfil/:nickname`)
-- Remover Win Rate geral e Sequência de Vitórias dos stats
-- Cores variadas no gráfico de adversários (não monocromático)
-
-### C3. Facções no Admin de Jogos
-- Adicionar campo JSON de facções/personagens na tabela `games` (migration)
-- Mostrar dropdown de facção no registro de partida quando disponível
-
-## FASE D — Documentos e Contatos (Prioridade Média)
-
-### D1. Página de Documentos
-- Substituir `/rules` por `/documentos` — página de "Documentos da Comunidade"
-- Migration: criar tabela `community_documents` (title, file_url, uploaded_by, created_at)
-- Admin pode fazer upload de PDFs via storage; usuários podem baixar
-- Usar bucket `community-docs` existente
-
-## FASE E — Agendamento e Resultados (Prioridade Média)
-
-### E1. Encerramento Automático
-- Marcar salas como "finished" quando `scheduled_at` passa (via query no fetch ou cron)
-
-### E2. Botão "Inserir Resultado"
-- Em salas encerradas, botão que abre NewMatchFlow pré-preenchido com jogo/data/jogadores
-
-## FASE F — Gamificação (Prioridade Baixa)
-
-### F1. Sistema de Tags/Achievements
-- Migration: criar tabelas `achievement_definitions` (admin-managed) e `player_achievements`
-- Admin define critérios (manual por enquanto)
-- Tags exibidas no perfil público do jogador
-
-## FASE G — Reorganização Admin (Prioridade Baixa)
-
-### G1. Admin Inline/Contextual
-- Na Coleção de Jogos: botão "Gerenciar Jogos" (admin only) com modal
-- No Perfil do Jogador: seção "Ferramentas de Moderador" (editar/banir)
-- No Histórico: botões Editar/Excluir partidas inline
-- Nos Agendamentos: controles de moderação nos cards
-- Na página de Seasons: CRUD inline
-
-### G2. Refatorar Painel Admin Central
-- Manter apenas: Pontuação, Sobre Nós, Contatos, Scripts Blood, Sugestões, Documentos
-- Remover abas de Jogos, Jogadores, Partidas (agora contextuais)
+## 7 — PWA (Resposta Informativa)
+O sistema PWA **não está ativo** no projeto. O projeto usa Vite padrão sem `vite-plugin-pwa`. Para notificações push em celulares seria necessário:
+- Configurar PWA com service worker
+- Usar Web Push API + backend para enviar notificações
+- Isso é um esforço separado significativo. Será abordado como fase futura se desejado.
 
 ---
 
-## Ordem de Implementação
-1. Fase A (correções rápidas)
-2. Fase B (registro de partida)
-3. Fase C (jogos e perfil)
-4. Fase D (documentos)
-5. Fase E (agendamento)
-6. Fase F (gamificação)
-7. Fase G (reorganização admin)
+## Arquivos Modificados
+- `src/pages/Register.tsx` — Tela de sucesso pós-cadastro
+- `src/pages/Seasons.tsx` — Dropdown de jogo + reposicionar botão editar
+- `src/pages/GameDetail.tsx` — Remover "Sequência Atual"
+- `src/pages/Games.tsx` — Editar/excluir jogos com JSON, schema e tags
+- `src/components/admin/AdminAchievements.tsx` — Dropdown de triggers
+- `src/components/matches/NewMatchFlow.tsx` — Suporte a ghost players
+- `src/pages/PlayerProfile.tsx` — Banner de reivindicação de fantasma
+- Migration: `ghost_players` table + `match_results.ghost_player_id` column
 
-Cada fase será implementada e testada antes de avançar para a próxima.
+## Ordem de Execução
+1. Migration (ghost_players + match_results column)
+2. Register.tsx (tela de sucesso)
+3. Seasons.tsx (jogo + botão editar)
+4. GameDetail.tsx (remover sequência atual)
+5. Games.tsx (editar/excluir completo)
+6. AdminAchievements.tsx (dropdown triggers)
+7. Ghost players UI (NewMatchFlow + PlayerProfile)
+

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
+import FriendButton from '@/components/friendlist/FriendButton';
 
 interface Player {
   id: string;

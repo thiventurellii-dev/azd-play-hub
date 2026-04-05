@@ -365,7 +365,7 @@ const Navbar = () => {
                 {contactLinks.whatsapp_botc && (
                   <a href={contactLinks.whatsapp_botc} target="_blank" rel="noopener noreferrer" onClick={closeMobile}>
                     <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-[#25D366]">
-                      <MessageCircle className="h-4 w-4" /> Blood
+                      <WhatsAppIcon size={16} /> Blood
                     </Button>
                   </a>
                 )}

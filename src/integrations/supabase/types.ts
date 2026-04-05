@@ -43,6 +43,8 @@ export type Database = {
           icon: string | null
           id: string
           name: string
+          trigger_config: Json | null
+          trigger_type: string
         }
         Insert: {
           created_at?: string
@@ -51,6 +53,8 @@ export type Database = {
           icon?: string | null
           id?: string
           name: string
+          trigger_config?: Json | null
+          trigger_type?: string
         }
         Update: {
           created_at?: string
@@ -59,6 +63,8 @@ export type Database = {
           icon?: string | null
           id?: string
           name?: string
+          trigger_config?: Json | null
+          trigger_type?: string
         }
         Relationships: []
       }
@@ -376,6 +382,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      game_tag_links: {
+        Row: {
+          game_id: string
+          id: string
+          tag_id: string
+        }
+        Insert: {
+          game_id: string
+          id?: string
+          tag_id: string
+        }
+        Update: {
+          game_id?: string
+          id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_tag_links_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_tag_links_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "game_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_tags: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
       }
       games: {
         Row: {

@@ -1066,6 +1066,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      upsert_mmr_for_match: {
+        Args: {
+          p_current_mmr?: number
+          p_game_id: string
+          p_games_played?: number
+          p_player_id: string
+          p_season_id: string
+          p_wins?: number
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "player" | "super_admin"

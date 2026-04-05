@@ -9,9 +9,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useNotification } from '@/components/NotificationDialog';
-import { Plus, Trash2, UserPlus, Upload, Image, Pencil, Search, ChevronDown, ChevronUp } from 'lucide-react';
+import { Trash2, UserPlus, Upload, Image, Pencil, Search, ChevronDown, ChevronUp } from 'lucide-react';
+import NewMatchFlow from '@/components/matches/NewMatchFlow';
 
 interface Season { id: string; name: string; }
 interface Game { id: string; name: string; }

@@ -41,14 +41,8 @@ const PlayerProfile = () => {
   const [upcomingRooms, setUpcomingRooms] = useState<any[]>([]);
   const [achievements, setAchievements] = useState<{ icon: string; name: string; description: string | null }[]>([]);
 
-  // Ghost player claim
-  const [ghostMatches, setGhostMatches] = useState<{ ghost_id: string; display_name: string; match_count: number }[]>([]);
-  const [claimLoading, setClaimLoading] = useState(false);
 
-  // Admin ghost link
-  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
-  const [unlinkedGhosts, setUnlinkedGhosts] = useState<{ id: string; display_name: string }[]>([]);
-  const [selectedGhostId, setSelectedGhostId] = useState('');
+  const isOwnProfile = user && profile && user.id === profile.id;
 
   const isOwnProfile = user && profile && user.id === profile.id;
 

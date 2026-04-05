@@ -247,12 +247,10 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
               size="sm"
               className="flex-1 min-h-[44px]"
               onClick={() => {
-                // Navigate to partidas with pre-fill data via state
                 navigate("/partidas", {
                   state: {
                     prefill: {
                       gameId: room.game.id,
-                      gameName: room.game.name,
                       date: room.scheduled_at,
                       playerIds: confirmed.map(p => p.player_id),
                     }

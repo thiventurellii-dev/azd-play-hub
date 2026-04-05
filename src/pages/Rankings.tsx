@@ -176,7 +176,9 @@ const Rankings = () => {
                     <CardContent className="flex items-center gap-4 py-4">
                       <div className="flex items-center justify-center w-10">{getRankIcon(i)}</div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold truncate">{r.player_name}</p>
+                        <p className="font-semibold truncate">
+                          <Link to={`/perfil/${r.player_name}`} className="hover:text-gold transition-colors">{r.player_name}</Link>
+                        </p>
                         <p className="text-xs text-muted-foreground">{r.games_played} jogos • {r.wins} vitórias</p>
                       </div>
                       <div className="text-right">

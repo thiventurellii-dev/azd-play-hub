@@ -217,6 +217,19 @@ const AdminGames = () => {
                 <Label>Máx. Jogadores</Label>
                 <Input type="number" value={editForm.max_players} onChange={e => setEditForm({ ...editForm, max_players: e.target.value })} />
               </div>
+              <div className="space-y-2">
+                <Label>Slug (URL)</Label>
+                <Input value={editForm.slug} onChange={e => setEditForm({ ...editForm, slug: e.target.value })} placeholder="brass-birmingham" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Facções/Personagens (JSON, opcional)</Label>
+              <Textarea
+                value={editForm.factions}
+                onChange={e => setEditForm({ ...editForm, factions: e.target.value })}
+                placeholder='["Facção A", "Facção B"] ou [{"name":"...", "color":"..."}]'
+                className="min-h-[80px] font-mono text-xs"
+              />
             </div>
             <Button variant="gold" onClick={handleEditSave} className="w-full">Salvar Alterações</Button>
           </div>

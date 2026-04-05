@@ -273,6 +273,30 @@ export type Database = {
         }
         Relationships: []
       }
+      friendships: {
+        Row: {
+          created_at: string
+          friend_id: string
+          id: string
+          status: Database["public"]["Enums"]["friendship_status"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          friend_id: string
+          id?: string
+          status?: Database["public"]["Enums"]["friendship_status"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          friend_id?: string
+          id?: string
+          status?: Database["public"]["Enums"]["friendship_status"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       games: {
         Row: {
           created_at: string
@@ -343,6 +367,120 @@ export type Database = {
             columns: ["match_id"]
             isOneToOne: false
             referencedRelation: "matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_room_comments: {
+        Row: {
+          created_at: string
+          id: string
+          room_id: string
+          text: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          room_id: string
+          text: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          room_id?: string
+          text?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_room_comments_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "match_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_room_players: {
+        Row: {
+          id: string
+          joined_at: string
+          player_id: string
+          position: number
+          room_id: string
+          type: Database["public"]["Enums"]["match_room_player_type"]
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          player_id: string
+          position?: number
+          room_id: string
+          type?: Database["public"]["Enums"]["match_room_player_type"]
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          player_id?: string
+          position?: number
+          room_id?: string
+          type?: Database["public"]["Enums"]["match_room_player_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_room_players_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "match_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      match_rooms: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          game_id: string
+          id: string
+          max_players: number
+          scheduled_at: string
+          status: Database["public"]["Enums"]["match_room_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          game_id: string
+          id?: string
+          max_players?: number
+          scheduled_at: string
+          status?: Database["public"]["Enums"]["match_room_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          game_id?: string
+          id?: string
+          max_players?: number
+          scheduled_at?: string
+          status?: Database["public"]["Enums"]["match_room_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_rooms_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
             referencedColumns: ["id"]
           },
         ]
@@ -675,6 +813,14 @@ export type Database = {
       app_role: "admin" | "player" | "super_admin"
       blood_role_type: "townsfolk" | "outsider" | "minion" | "demon"
       blood_team: "good" | "evil"
+      friendship_status: "pending" | "accepted"
+      match_room_player_type: "confirmed" | "waitlist"
+      match_room_status:
+        | "open"
+        | "full"
+        | "in_progress"
+        | "finished"
+        | "cancelled"
       season_type: "boardgame" | "blood"
     }
     CompositeTypes: {
@@ -806,6 +952,15 @@ export const Constants = {
       app_role: ["admin", "player", "super_admin"],
       blood_role_type: ["townsfolk", "outsider", "minion", "demon"],
       blood_team: ["good", "evil"],
+      friendship_status: ["pending", "accepted"],
+      match_room_player_type: ["confirmed", "waitlist"],
+      match_room_status: [
+        "open",
+        "full",
+        "in_progress",
+        "finished",
+        "cancelled",
+      ],
       season_type: ["boardgame", "blood"],
     },
   },

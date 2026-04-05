@@ -25,6 +25,8 @@ const AdminAchievements = () => {
   const [description, setDescription] = useState('');
   const [icon, setIcon] = useState('🏆');
   const [criteria, setCriteria] = useState('');
+  const [triggerType, setTriggerType] = useState('manual');
+  const [triggerConfig, setTriggerConfig] = useState('');
 
   const fetch = async () => {
     const { data } = await supabase.from('achievement_definitions').select('*').order('created_at');

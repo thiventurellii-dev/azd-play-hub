@@ -10,6 +10,7 @@ import AdminAboutUs from "@/components/admin/AdminAboutUs";
 import AdminContato from "@/components/admin/AdminContato";
 import AdminSuggestions from "@/components/admin/AdminSuggestions";
 import AdminMatchRooms from "@/components/admin/AdminMatchRooms";
+import AdminScoringSchemas from "@/components/admin/AdminScoringSchemas";
 
 const Admin = () => {
   return (

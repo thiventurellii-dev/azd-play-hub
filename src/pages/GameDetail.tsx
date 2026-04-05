@@ -1,52 +1,104 @@
-import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useEffect, useState, useMemo } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { Trophy, TrendingUp, Users, Target, ExternalLink, Video, ArrowLeft } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Trophy, TrendingUp, Target, ExternalLink, Video, ArrowLeft, Users, Hash, ChevronLeft, ChevronRight, Pencil } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNotification } from '@/components/NotificationDialog';
 
 interface GameData {
   id: string; name: string; slug: string | null; image_url: string | null;
   rules_url: string | null; video_url: string | null;
   min_players: number | null; max_players: number | null;
+  factions: any;
 }
+
+const positionColors: Record<number, string> = {
+  1: 'bg-yellow-500/15 text-yellow-300 border-yellow-500/30',
+  2: 'bg-gray-400/15 text-gray-300 border-gray-400/30',
+  3: 'bg-amber-700/15 text-amber-500 border-amber-700/30',
+};
 
 const GameDetail = () => {
   const { slug } = useParams();
+  const navigate = useNavigate();
+  const { user, isAdmin } = useAuth();
+  const { notify } = useNotification();
+
   const [game, setGame] = useState<GameData | null>(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ totalMatches: 0, avgScore: 0, highScore: 0, highScorePlayer: '', worstWinScore: 0 });
   const [monthlyData, setMonthlyData] = useState<{ month: string; count: number }[]>([]);
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
-  const [history, setHistory] = useState<any[]>([]);
+  const [allHistory, setAllHistory] = useState<any[]>([]);
+  const [allResults, setAllResults] = useState<any[]>([]);
+  const [allMatches, setAllMatches] = useState<any[]>([]);
+  const [pMap, setPMap] = useState<Record<string, string>>({});
+  const [tags, setTags] = useState<string[]>([]);
+
+  // Carousel slide: 0=personal, 1=general, 2=detailed
+  const [slide, setSlide] = useState(1);
+
+  // Filters
+  const [timeFilter, setTimeFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [playerFilter, setPlayerFilter] = useState('');
+  const [pageSize, setPageSize] = useState(10);
+  const [page, setPage] = useState(0);
+
+  // Detailed stats filter
+  const [detailPlayerCount, setDetailPlayerCount] = useState('all');
+
+  // Edit dialog
+  const [editOpen, setEditOpen] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editImageUrl, setEditImageUrl] = useState('');
+  const [editRulesUrl, setEditRulesUrl] = useState('');
+  const [editVideoUrl, setEditVideoUrl] = useState('');
 
   useEffect(() => {
     const fetchGame = async () => {
       const { data } = await supabase.from('games').select('*').eq('slug', slug as string).maybeSingle();
       if (!data) { setLoading(false); return; }
-      setGame(data as GameData);
+      const gameData = data as any;
+      setGame(gameData as GameData);
 
-      // Fetch matches for this game
-      const { data: matches } = await supabase.from('matches').select('id, played_at, duration_minutes').eq('game_id', data.id).order('played_at', { ascending: false });
+      // Fetch tags
+      const { data: tagLinks } = await supabase.from('game_tag_links').select('tag_id').eq('game_id', gameData.id);
+      if (tagLinks && tagLinks.length > 0) {
+        const tagIds = tagLinks.map((t: any) => t.tag_id);
+        const { data: tagData } = await supabase.from('game_tags').select('name').in('id', tagIds);
+        setTags((tagData || []).map((t: any) => t.name));
+      }
+
+      const { data: matches } = await supabase.from('matches').select('id, played_at, duration_minutes, season_id').eq('game_id', gameData.id).order('played_at', { ascending: false });
       const matchIds = (matches || []).map(m => m.id);
+      setAllMatches(matches || []);
 
       if (matchIds.length === 0) { setLoading(false); return; }
 
       const { data: results } = await supabase.from('match_results').select('*').in('match_id', matchIds);
+      setAllResults(results || []);
       const playerIds = [...new Set((results || []).map(r => r.player_id))];
       const { data: profiles } = await supabase.from('profiles').select('id, name, nickname').in('id', playerIds);
-      const pMap: Record<string, string> = {};
-      for (const p of (profiles || [])) pMap[p.id] = (p as any).nickname || p.name;
+      const playerMap: Record<string, string> = {};
+      for (const p of (profiles || [])) playerMap[p.id] = (p as any).nickname || p.name;
+      setPMap(playerMap);
 
       // Stats
       const scores = (results || []).map(r => r.score || 0);
       const winnerScores = (results || []).filter(r => r.position === 1).map(r => r.score || 0);
-      const highScore = Math.max(...scores, 0);
+      const highScore = scores.length > 0 ? Math.max(...scores) : 0;
       const highScoreResult = (results || []).find(r => (r.score || 0) === highScore);
       const worstWin = winnerScores.length > 0 ? Math.min(...winnerScores) : 0;
       const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
@@ -55,11 +107,11 @@ const GameDetail = () => {
         totalMatches: matchIds.length,
         avgScore,
         highScore,
-        highScorePlayer: highScoreResult ? pMap[highScoreResult.player_id] || '?' : '—',
+        highScorePlayer: highScoreResult ? playerMap[highScoreResult.player_id] || '?' : '—',
         worstWinScore: worstWin,
       });
 
-      // Monthly activity (last 6 months)
+      // Monthly activity
       const months: Record<string, number> = {};
       const now = new Date();
       for (let i = 5; i >= 0; i--) {
@@ -87,10 +139,8 @@ const GameDetail = () => {
       }
       const lb = Object.entries(playerStats)
         .map(([pid, s]) => ({
-          player_id: pid,
-          player_name: pMap[pid] || '?',
-          wins: s.wins,
-          games: s.games,
+          player_id: pid, player_name: playerMap[pid] || '?',
+          wins: s.wins, games: s.games,
           winPct: s.games > 0 ? Math.round((s.wins / s.games) * 100) : 0,
           avgScore: s.games > 0 ? Math.round(s.totalScore / s.games) : 0,
           best: s.best,
@@ -99,21 +149,131 @@ const GameDetail = () => {
       setLeaderboard(lb);
 
       // History
-      const matchMap: Record<string, any> = {};
-      for (const m of (matches || [])) matchMap[m.id] = m;
-      const hist = (matches || []).slice(0, 20).map(m => ({
+      const hist = (matches || []).map(m => ({
         ...m,
         results: (results || [])
           .filter(r => r.match_id === m.id)
           .sort((a, b) => a.position - b.position)
-          .map(r => ({ ...r, player_name: pMap[r.player_id] || '?' })),
+          .map(r => ({ ...r, player_name: playerMap[r.player_id] || '?' })),
       }));
-      setHistory(hist);
-
+      setAllHistory(hist);
       setLoading(false);
     };
     fetchGame();
   }, [slug]);
+
+  // Filtered history
+  const filteredHistory = useMemo(() => {
+    let h = [...allHistory];
+    const now = new Date();
+    if (timeFilter === '3m') h = h.filter(m => new Date(m.played_at) >= new Date(now.getFullYear(), now.getMonth() - 3, now.getDate()));
+    else if (timeFilter === '6m') h = h.filter(m => new Date(m.played_at) >= new Date(now.getFullYear(), now.getMonth() - 6, now.getDate()));
+    else if (timeFilter === '1y') h = h.filter(m => new Date(m.played_at) >= new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()));
+    if (typeFilter === 'competitive') h = h.filter(m => m.season_id);
+    else if (typeFilter === 'casual') h = h.filter(m => !m.season_id);
+    if (playerFilter) h = h.filter(m => m.results.some((r: any) => r.player_id === playerFilter));
+    return h;
+  }, [allHistory, timeFilter, typeFilter, playerFilter]);
+
+  const totalPages = Math.ceil(filteredHistory.length / pageSize);
+  const pagedHistory = filteredHistory.slice(page * pageSize, (page + 1) * pageSize);
+
+  // Personal stats for logged-in user
+  const personalStats = useMemo(() => {
+    if (!user || allResults.length === 0) return null;
+    const myResults = allResults.filter(r => r.player_id === user.id);
+    if (myResults.length === 0) return null;
+    const wins = myResults.filter(r => r.position === 1).length;
+    const scores = myResults.map(r => r.score || 0);
+    const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+
+    // Win streaks
+    const matchDates = allMatches.map(m => m.id);
+    const sortedResults = matchDates.map(mid => myResults.find(r => r.match_id === mid)).filter(Boolean);
+    let currentStreak = 0, bestStreak = 0, tempStreak = 0;
+    for (const r of sortedResults) {
+      if (r!.position === 1) { tempStreak++; bestStreak = Math.max(bestStreak, tempStreak); }
+      else { tempStreak = 0; }
+    }
+    currentStreak = tempStreak;
+
+    return { games: myResults.length, wins, winPct: myResults.length > 0 ? Math.round((wins / myResults.length) * 100) : 0, avgScore, currentStreak, bestStreak };
+  }, [user, allResults, allMatches]);
+
+  // Detailed stats
+  const detailedStats = useMemo(() => {
+    if (allResults.length === 0 || allMatches.length === 0) return null;
+
+    // Filter by player count
+    let matchIds = allMatches.map(m => m.id);
+    const matchPlayerCounts: Record<string, number> = {};
+    for (const r of allResults) {
+      matchPlayerCounts[r.match_id] = (matchPlayerCounts[r.match_id] || 0) + 1;
+    }
+    if (detailPlayerCount !== 'all') {
+      const n = parseInt(detailPlayerCount);
+      matchIds = matchIds.filter(mid => matchPlayerCounts[mid] === n);
+    }
+    const filteredResults = allResults.filter(r => matchIds.includes(r.match_id));
+    if (filteredResults.length === 0) return null;
+
+    // Faction stats
+    const factionStats: Record<string, { games: number; wins: number }> = {};
+    for (const r of filteredResults) {
+      if (!r.faction) continue;
+      if (!factionStats[r.faction]) factionStats[r.faction] = { games: 0, wins: 0 };
+      factionStats[r.faction].games++;
+      if (r.position === 1) factionStats[r.faction].wins++;
+    }
+
+    // Seat position stats
+    const seatStats: Record<number, { games: number; wins: number }> = {};
+    for (const r of filteredResults) {
+      const seat = r.seat_position || 0;
+      if (seat === 0) continue;
+      if (!seatStats[seat]) seatStats[seat] = { games: 0, wins: 0 };
+      seatStats[seat].games++;
+      if (r.position === 1) seatStats[seat].wins++;
+    }
+
+    return {
+      totalMatches: matchIds.length,
+      factions: Object.entries(factionStats).map(([name, s]) => ({
+        name, games: s.games, winPct: s.games > 0 ? Math.round((s.wins / s.games) * 100) : 0,
+      })).sort((a, b) => b.games - a.games),
+      seats: Object.entries(seatStats).map(([seat, s]) => ({
+        seat: parseInt(seat), games: s.games, winPct: s.games > 0 ? Math.round((s.wins / s.games) * 100) : 0,
+      })).sort((a, b) => a.seat - b.seat),
+    };
+  }, [allResults, allMatches, detailPlayerCount]);
+
+  // Unique player counts for filter
+  const playerCounts = useMemo(() => {
+    const counts = new Set<number>();
+    const matchPlayerCounts: Record<string, number> = {};
+    for (const r of allResults) {
+      matchPlayerCounts[r.match_id] = (matchPlayerCounts[r.match_id] || 0) + 1;
+    }
+    Object.values(matchPlayerCounts).forEach(c => counts.add(c));
+    return [...counts].sort((a, b) => a - b);
+  }, [allResults]);
+
+  // Unique players for filter
+  const uniquePlayers = useMemo(() => {
+    return Object.entries(pMap).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [pMap]);
+
+  const handleEditSave = async () => {
+    if (!game) return;
+    const { error } = await supabase.from('games').update({
+      name: editName, image_url: editImageUrl || null,
+      rules_url: editRulesUrl || null, video_url: editVideoUrl || null,
+    }).eq('id', game.id);
+    if (error) return notify('error', error.message);
+    notify('success', 'Jogo atualizado!');
+    setEditOpen(false);
+    setGame({ ...game, name: editName, image_url: editImageUrl || null, rules_url: editRulesUrl || null, video_url: editVideoUrl || null });
+  };
 
   if (loading) {
     return (
@@ -134,165 +294,370 @@ const GameDetail = () => {
 
   const chartConfig = { count: { label: 'Partidas', color: 'hsl(var(--gold))' } };
 
+  const slideVariants = {
+    enter: (dir: number) => ({ x: dir > 0 ? 300 : -300, opacity: 0 }),
+    center: { x: 0, opacity: 1 },
+    exit: (dir: number) => ({ x: dir > 0 ? -300 : 300, opacity: 0 }),
+  };
+
   return (
-    <div className="container py-10 space-y-8">
-      {/* Hero */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative">
-        <div className="flex flex-col md:flex-row gap-6 items-start">
-          {game.image_url ? (
-            <img src={game.image_url} alt={game.name} className="w-full md:w-64 h-48 object-cover rounded-xl" />
-          ) : (
-            <div className="w-full md:w-64 h-48 rounded-xl bg-secondary flex items-center justify-center text-6xl text-gold font-bold">
-              {game.name.charAt(0)}
-            </div>
-          )}
-          <div className="flex-1">
+    <div className="space-y-6">
+      {/* Hero Banner */}
+      <div className="relative w-full h-48 md:h-64 overflow-hidden">
+        {game.image_url ? (
+          <img src={game.image_url} alt={game.name} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-r from-secondary to-card flex items-center justify-center">
+            <span className="text-8xl font-bold text-gold/20">{game.name.charAt(0)}</span>
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 px-6 pb-6">
+          <div className="container">
             <Link to="/games" className="text-sm text-muted-foreground hover:text-foreground mb-2 inline-flex items-center gap-1">
               <ArrowLeft className="h-3 w-3" /> Jogos
             </Link>
-            <h1 className="text-3xl font-bold mt-1">{game.name}</h1>
-            <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-              {(game.min_players || game.max_players) && (
-                <span className="flex items-center gap-1"><Users className="h-4 w-4" /> {game.min_players || '?'}–{game.max_players || '?'} jogadores</span>
-              )}
-            </div>
-            <div className="flex gap-2 mt-4">
-              {game.rules_url && (
-                <a href={game.rules_url} target="_blank" rel="noopener noreferrer">
-                  <Button variant="outline" size="sm"><ExternalLink className="h-4 w-4 mr-1" /> Regras</Button>
-                </a>
-              )}
-              {game.video_url && (
-                <a href={game.video_url} target="_blank" rel="noopener noreferrer">
-                  <Button variant="outline" size="sm"><Video className="h-4 w-4 mr-1" /> Vídeo</Button>
-                </a>
+            <div className="flex items-end justify-between">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-bold">{game.name}</h1>
+                <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground flex-wrap">
+                  {(game.min_players || game.max_players) && (
+                    <span className="flex items-center gap-1"><Users className="h-4 w-4" /> {game.min_players || '?'}–{game.max_players || '?'} jogadores</span>
+                  )}
+                  {tags.length > 0 && tags.map(t => (
+                    <Badge key={t} variant="outline" className="text-xs">{t}</Badge>
+                  ))}
+                </div>
+                <div className="flex gap-2 mt-2">
+                  {game.rules_url && (
+                    <a href={game.rules_url} target="_blank" rel="noopener noreferrer">
+                      <Button variant="outline" size="sm"><ExternalLink className="h-4 w-4 mr-1" /> Regras</Button>
+                    </a>
+                  )}
+                  {game.video_url && (
+                    <a href={game.video_url} target="_blank" rel="noopener noreferrer">
+                      <Button variant="outline" size="sm"><Video className="h-4 w-4 mr-1" /> Vídeo</Button>
+                    </a>
+                  )}
+                </div>
+              </div>
+              {isAdmin && (
+                <Button variant="outline" size="sm" onClick={() => {
+                  setEditName(game.name); setEditImageUrl(game.image_url || '');
+                  setEditRulesUrl(game.rules_url || ''); setEditVideoUrl(game.video_url || '');
+                  setEditOpen(true);
+                }}>
+                  <Pencil className="h-4 w-4 mr-1" /> Editar
+                </Button>
               )}
             </div>
           </div>
         </div>
-      </motion.div>
-
-      {/* Record cards */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="bg-card border-border">
-          <CardContent className="pt-6 text-center">
-            <Trophy className="h-8 w-8 mx-auto text-gold mb-2" />
-            <p className="text-2xl font-bold text-gold">{stats.highScore}</p>
-            <p className="text-xs text-muted-foreground">Maior Pontuação</p>
-            <p className="text-xs font-medium mt-1">{stats.highScorePlayer}</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="pt-6 text-center">
-            <TrendingUp className="h-8 w-8 mx-auto text-gold mb-2" />
-            <p className="text-2xl font-bold">{stats.avgScore}</p>
-            <p className="text-xs text-muted-foreground">Pontuação Média</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="pt-6 text-center">
-            <Users className="h-8 w-8 mx-auto text-gold mb-2" />
-            <p className="text-2xl font-bold">{stats.totalMatches}</p>
-            <p className="text-xs text-muted-foreground">Total de Partidas</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="pt-6 text-center">
-            <Target className="h-8 w-8 mx-auto text-gold mb-2" />
-            <p className="text-2xl font-bold">{stats.worstWinScore}</p>
-            <p className="text-xs text-muted-foreground">Pior Pontuação Ganhadora</p>
-          </CardContent>
-        </Card>
       </div>
 
-      {/* Activity chart */}
-      {monthlyData.some(d => d.count > 0) && (
-        <Card className="bg-card border-border">
-          <CardContent className="pt-6">
-            <h2 className="text-lg font-semibold mb-4">Atividade (últimos 6 meses)</h2>
-            <ChartContainer config={chartConfig} className="h-[200px]">
-              <BarChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                <YAxis allowDecimals={false} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="count" fill="hsl(var(--gold))" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-      )}
+      <div className="container space-y-6">
+        {/* Stats Carousel */}
+        <div className="relative">
+          <div className="flex items-center justify-between mb-3">
+            <Button variant="ghost" size="icon" onClick={() => setSlide(s => Math.max(0, s - 1))} disabled={slide === 0}>
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <h2 className="text-lg font-semibold text-center">
+              {slide === 0 ? 'Estatísticas Pessoais' : slide === 1 ? 'Estatísticas Gerais' : 'Estatísticas Detalhadas'}
+            </h2>
+            <Button variant="ghost" size="icon" onClick={() => setSlide(s => Math.min(2, s + 1))} disabled={slide === 2}>
+              <ChevronRight className="h-5 w-5" />
+            </Button>
+          </div>
+          <div className="flex gap-1 justify-center mb-4">
+            {[0, 1, 2].map(i => (
+              <div key={i} className={`h-1.5 w-6 rounded-full transition-colors cursor-pointer ${i === slide ? 'bg-gold' : 'bg-secondary'}`} onClick={() => setSlide(i)} />
+            ))}
+          </div>
 
-      {/* Leaderboard */}
-      {leaderboard.length > 0 && (
-        <Card className="bg-card border-border">
-          <CardContent className="pt-6">
-            <h2 className="text-lg font-semibold mb-4">Leaderboard da Comunidade</h2>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>#</TableHead>
-                    <TableHead>Jogador</TableHead>
-                    <TableHead className="text-center">Vitórias</TableHead>
-                    <TableHead className="text-center">% Vitórias</TableHead>
-                    <TableHead className="text-center">Média</TableHead>
-                    <TableHead className="text-center">Recorde</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {leaderboard.map((r, i) => (
-                    <TableRow key={r.player_id}>
-                      <TableCell>
-                        <Badge variant={i < 3 ? 'default' : 'secondary'} className={i === 0 ? 'bg-gold text-black' : ''}>
-                          {i + 1}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        <Link to={`/perfil/${r.player_name}`} className="hover:text-gold transition-colors">
-                          {r.player_name}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="text-center">{r.wins}/{r.games}</TableCell>
-                      <TableCell className="text-center">{r.winPct}%</TableCell>
-                      <TableCell className="text-center">{r.avgScore}</TableCell>
-                      <TableCell className="text-center font-bold text-gold">{r.best}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+          <AnimatePresence mode="wait" custom={slide}>
+            {slide === 1 && (
+              <motion.div key="general" custom={1} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.2 }}
+                className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <Card className="bg-card border-border">
+                  <CardContent className="pt-6 text-center">
+                    <Trophy className="h-8 w-8 mx-auto text-gold mb-2" />
+                    <p className="text-2xl font-bold text-gold">{stats.highScore}</p>
+                    <p className="text-xs text-muted-foreground">Maior Pontuação</p>
+                    <p className="text-xs font-medium mt-1">{stats.highScorePlayer}</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-card border-border">
+                  <CardContent className="pt-6 text-center">
+                    <TrendingUp className="h-8 w-8 mx-auto text-gold mb-2" />
+                    <p className="text-2xl font-bold">{stats.avgScore}</p>
+                    <p className="text-xs text-muted-foreground">Pontuação Média</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-card border-border">
+                  <CardContent className="pt-6 text-center">
+                    <Target className="h-8 w-8 mx-auto text-gold mb-2" />
+                    <p className="text-2xl font-bold">{stats.worstWinScore}</p>
+                    <p className="text-xs text-muted-foreground">Pior Pontuação Ganhadora</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-card border-border">
+                  <CardContent className="pt-6 text-center">
+                    <Hash className="h-8 w-8 mx-auto text-gold mb-2" />
+                    <p className="text-2xl font-bold">{stats.totalMatches}</p>
+                    <p className="text-xs text-muted-foreground">Total de Partidas</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
 
-      {/* History */}
-      {history.length > 0 && (
-        <Card className="bg-card border-border">
-          <CardContent className="pt-6">
-            <h2 className="text-lg font-semibold mb-4">Histórico de Partidas</h2>
-            <div className="space-y-3">
-              {history.map(m => (
-                <div key={m.id} className="border border-border rounded-lg p-3">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm text-muted-foreground">
-                      {new Date(m.played_at).toLocaleDateString('pt-BR')}
-                    </span>
-                    {m.duration_minutes && <span className="text-xs text-muted-foreground">{m.duration_minutes} min</span>}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {m.results.map((r: any) => (
-                      <Badge key={r.id} variant={r.position === 1 ? 'default' : 'secondary'} className={r.position === 1 ? 'bg-gold text-black' : ''}>
-                        {r.position}º {r.player_name} ({r.score || 0}pts)
-                      </Badge>
+            {slide === 0 && (
+              <motion.div key="personal" custom={-1} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.2 }}>
+                {personalStats ? (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                    {[
+                      { label: 'Partidas', value: personalStats.games },
+                      { label: '% Vitória', value: `${personalStats.winPct}%` },
+                      { label: 'Pontuação Média', value: personalStats.avgScore },
+                      { label: 'Maior Sequência', value: personalStats.bestStreak },
+                      { label: 'Sequência Atual', value: personalStats.currentStreak },
+                    ].map((s, i) => (
+                      <Card key={i} className="bg-card border-border">
+                        <CardContent className="pt-6 text-center">
+                          <p className="text-2xl font-bold">{s.value}</p>
+                          <p className="text-xs text-muted-foreground">{s.label}</p>
+                        </CardContent>
+                      </Card>
                     ))}
                   </div>
+                ) : (
+                  <Card className="bg-card border-border">
+                    <CardContent className="py-8 text-center text-muted-foreground">
+                      {user ? 'Você ainda não jogou este jogo.' : 'Faça login para ver suas estatísticas.'}
+                    </CardContent>
+                  </Card>
+                )}
+              </motion.div>
+            )}
+
+            {slide === 2 && (
+              <motion.div key="detailed" custom={1} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.2 }}
+                className="space-y-4">
+                <div className="flex gap-2 items-center flex-wrap">
+                  <Label className="text-sm">Nº de jogadores:</Label>
+                  <Select value={detailPlayerCount} onValueChange={setDetailPlayerCount}>
+                    <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos</SelectItem>
+                      {playerCounts.map(c => <SelectItem key={c} value={String(c)}>{c}j</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                {detailedStats ? (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {detailedStats.factions.length > 0 && (
+                      <Card className="bg-card border-border">
+                        <CardContent className="pt-6">
+                          <h3 className="text-sm font-semibold mb-3">% Vitória por Facção</h3>
+                          <div className="space-y-2">
+                            {detailedStats.factions.map(f => (
+                              <div key={f.name} className="flex items-center justify-between text-sm">
+                                <span>{f.name}</span>
+                                <span className="text-muted-foreground">{f.games} partidas • <span className="text-gold font-medium">{f.winPct}%</span></span>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                    {detailedStats.seats.length > 0 && (
+                      <Card className="bg-card border-border">
+                        <CardContent className="pt-6">
+                          <h3 className="text-sm font-semibold mb-3">% Vitória por Posição na Mesa</h3>
+                          <div className="space-y-2">
+                            {detailedStats.seats.map(s => (
+                              <div key={s.seat} className="flex items-center justify-between text-sm">
+                                <span>Posição {s.seat}</span>
+                                <span className="text-muted-foreground">{s.games} partidas • <span className="text-gold font-medium">{s.winPct}%</span></span>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                    {detailedStats.factions.length === 0 && detailedStats.seats.length === 0 && (
+                      <Card className="bg-card border-border md:col-span-2">
+                        <CardContent className="py-8 text-center text-muted-foreground">
+                          Sem dados de facções ou posições para este filtro.
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                ) : (
+                  <Card className="bg-card border-border">
+                    <CardContent className="py-8 text-center text-muted-foreground">Sem dados detalhados.</CardContent>
+                  </Card>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Activity chart + Leaderboard side by side */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          {monthlyData.some(d => d.count > 0) && (
+            <Card className="bg-card border-border">
+              <CardContent className="pt-6">
+                <h2 className="text-lg font-semibold mb-4">Atividade (6 meses)</h2>
+                <ChartContainer config={chartConfig} className="h-[200px]">
+                  <BarChart data={monthlyData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="month" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                    <YAxis allowDecimals={false} tick={{ fill: 'hsl(var(--muted-foreground))' }} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="count" fill="hsl(var(--gold))" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+          )}
+
+          {leaderboard.length > 0 && (
+            <Card className="bg-card border-border">
+              <CardContent className="pt-6">
+                <h2 className="text-lg font-semibold mb-4">Leaderboard</h2>
+                <div className="overflow-x-auto max-h-[280px] overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>#</TableHead>
+                        <TableHead>Jogador</TableHead>
+                        <TableHead className="text-center">V</TableHead>
+                        <TableHead className="text-center">%</TableHead>
+                        <TableHead className="text-center">Rec.</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {leaderboard.map((r, i) => (
+                        <TableRow key={r.player_id}>
+                          <TableCell>
+                            <Badge variant={i < 3 ? 'default' : 'secondary'} className={i === 0 ? 'bg-gold text-black' : ''}>
+                              {i + 1}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            <Link to={`/perfil/${r.player_name}`} className="hover:text-gold transition-colors">{r.player_name}</Link>
+                          </TableCell>
+                          <TableCell className="text-center">{r.wins}/{r.games}</TableCell>
+                          <TableCell className="text-center">{r.winPct}%</TableCell>
+                          <TableCell className="text-center font-bold text-gold">{r.best}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* History with filters */}
+        {allHistory.length > 0 && (
+          <Card className="bg-card border-border">
+            <CardContent className="pt-6">
+              <h2 className="text-lg font-semibold mb-4">Histórico de Partidas</h2>
+              {/* Filters */}
+              <div className="flex flex-wrap gap-3 mb-4">
+                <Select value={timeFilter} onValueChange={v => { setTimeFilter(v); setPage(0); }}>
+                  <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todo o tempo</SelectItem>
+                    <SelectItem value="1y">1 ano</SelectItem>
+                    <SelectItem value="6m">6 meses</SelectItem>
+                    <SelectItem value="3m">3 meses</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={typeFilter} onValueChange={v => { setTypeFilter(v); setPage(0); }}>
+                  <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas</SelectItem>
+                    <SelectItem value="competitive">Competitivas</SelectItem>
+                    <SelectItem value="casual">Não-Competitivas</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={playerFilter} onValueChange={v => { setPlayerFilter(v); setPage(0); }}>
+                  <SelectTrigger className="w-[160px]"><SelectValue placeholder="Jogador..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    {uniquePlayers.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={String(pageSize)} onValueChange={v => { setPageSize(parseInt(v)); setPage(0); }}>
+                  <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5/pág</SelectItem>
+                    <SelectItem value="10">10/pág</SelectItem>
+                    <SelectItem value="20">20/pág</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-3">
+                {pagedHistory.map(m => (
+                  <div key={m.id} className="border border-border rounded-lg p-3">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm text-muted-foreground">
+                        {new Date(m.played_at).toLocaleDateString('pt-BR')}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {m.season_id && <Badge variant="outline" className="text-xs">Competitiva</Badge>}
+                        {m.duration_minutes && <span className="text-xs text-muted-foreground">{m.duration_minutes} min</span>}
+                        {isAdmin && (
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => {/* TODO: edit match */}}>
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {m.results.map((r: any) => (
+                        <Badge key={r.id}
+                          variant="outline"
+                          className={positionColors[r.position] || ''}
+                        >
+                          {r.position}º {r.player_name} ({r.score || 0}pts)
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4">
+                  <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(0, p - 1))} disabled={page === 0}>Anterior</Button>
+                  <span className="text-sm text-muted-foreground">{page + 1} / {totalPages}</span>
+                  <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}>Próxima</Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Editar Jogo</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2"><Label>Nome</Label><Input value={editName} onChange={e => setEditName(e.target.value)} /></div>
+            <div className="space-y-2"><Label>URL da Imagem</Label><Input value={editImageUrl} onChange={e => setEditImageUrl(e.target.value)} /></div>
+            <div className="space-y-2"><Label>URL das Regras</Label><Input value={editRulesUrl} onChange={e => setEditRulesUrl(e.target.value)} /></div>
+            <div className="space-y-2"><Label>URL do Vídeo</Label><Input value={editVideoUrl} onChange={e => setEditVideoUrl(e.target.value)} /></div>
+            <Button variant="gold" onClick={handleEditSave}>Salvar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

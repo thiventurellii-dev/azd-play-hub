@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useNotification } from '@/components/NotificationDialog';
 import { Plus, Trash2, Award } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 interface Achievement {
   id: string;
@@ -14,6 +15,8 @@ interface Achievement {
   description: string | null;
   icon: string;
   criteria: string | null;
+  trigger_type: string;
+  trigger_config: any;
 }
 
 const AdminAchievements = () => {
@@ -23,6 +26,8 @@ const AdminAchievements = () => {
   const [description, setDescription] = useState('');
   const [icon, setIcon] = useState('🏆');
   const [criteria, setCriteria] = useState('');
+  const [triggerType, setTriggerType] = useState('manual');
+  const [triggerConfig, setTriggerConfig] = useState('');
 
   const fetch = async () => {
     const { data } = await supabase.from('achievement_definitions').select('*').order('created_at');
@@ -38,10 +43,12 @@ const AdminAchievements = () => {
       description: description || null,
       icon: icon || '🏆',
       criteria: criteria || null,
-    });
+      trigger_type: triggerType,
+      trigger_config: triggerConfig ? JSON.parse(triggerConfig) : null,
+    } as any);
     if (error) return notify('error', error.message);
     notify('success', 'Achievement criado!');
-    setName(''); setDescription(''); setIcon('🏆'); setCriteria('');
+    setName(''); setDescription(''); setIcon('🏆'); setCriteria(''); setTriggerType('manual'); setTriggerConfig('');
     fetch();
   };
 
@@ -100,6 +107,26 @@ const AdminAchievements = () => {
             <Label>Critério (visível para jogadores)</Label>
             <Input value={criteria} onChange={e => setCriteria(e.target.value)} placeholder="Ex: Vencer 10 partidas de Brass" />
           </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Tipo de Gatilho</Label>
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={triggerType}
+                onChange={e => setTriggerType(e.target.value)}
+              >
+                <option value="manual">Manual</option>
+                <option value="automatic">Automático</option>
+              </select>
+            </div>
+            {triggerType === 'automatic' && (
+              <div className="space-y-2">
+                <Label>Config JSON</Label>
+                <Input value={triggerConfig} onChange={e => setTriggerConfig(e.target.value)} placeholder='{"type":"first_win"}' />
+                <p className="text-xs text-muted-foreground">Tipos: first_win, total_games(n), win_streak(n), games_in_day(n)</p>
+              </div>
+            )}
+          </div>
           <Button variant="gold" onClick={handleCreate}><Plus className="h-4 w-4 mr-1" /> Criar</Button>
         </CardContent>
       </Card>
@@ -149,6 +176,7 @@ const AdminAchievements = () => {
                 <p className="font-semibold">{a.icon} {a.name}</p>
                 {a.description && <p className="text-sm text-muted-foreground">{a.description}</p>}
                 {a.criteria && <p className="text-xs text-gold mt-1">📋 {a.criteria}</p>}
+                {a.trigger_type === 'automatic' && <Badge variant="outline" className="text-xs mt-1">⚡ Automático</Badge>}
               </div>
               <Button variant="ghost" size="icon" onClick={() => handleDelete(a.id)}>
                 <Trash2 className="h-4 w-4 text-destructive" />

@@ -199,7 +199,7 @@ const PlayerProfile = () => {
   const chartConfig = opponents.reduce((acc, opp, i) => {
     acc[opp.name] = { label: opp.name, color: CHART_COLORS[i % CHART_COLORS.length] };
     return acc;
-  }, { games: { label: "Partidas juntos", color: CHART_COLORS[0] } } as Record<string, any>);
+  }, { games: { label: "Partidas Juntos", color: CHART_COLORS[0] } } as Record<string, any>);
 
   return (
     <div className="container py-10 space-y-8 max-w-4xl">

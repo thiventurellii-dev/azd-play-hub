@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Calendar, Users, Trophy, FileText, AtSign, Lightbulb, Award, ClipboardList } from "lucide-react";
+import { Shield, Calendar, Users, Trophy, FileText, AtSign, Lightbulb, Award, ClipboardList, Swords } from "lucide-react";
 import AdminSeasons from "@/components/admin/AdminSeasons";
 import AdminBloodMatches from "@/components/admin/AdminBloodMatches";
 import AdminBloodScripts from "@/components/admin/AdminBloodScripts";
@@ -9,6 +9,7 @@ import AdminContato from "@/components/admin/AdminContato";
 import AdminSuggestions from "@/components/admin/AdminSuggestions";
 import AdminScoringSchemas from "@/components/admin/AdminScoringSchemas";
 import AdminAchievements from "@/components/admin/AdminAchievements";
+import AdminMatches from "@/components/admin/AdminMatches";
 
 const Admin = () => {
   return (
@@ -32,6 +33,9 @@ const Admin = () => {
             <span className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 font-semibold hidden sm:inline ml-2">Competitivo</span>
             <TabsTrigger value="seasons" className="gap-1.5 text-xs">
               <Calendar className="h-3.5 w-3.5" /> Seasons
+            </TabsTrigger>
+            <TabsTrigger value="matches" className="gap-1.5 text-xs">
+              <Swords className="h-3.5 w-3.5" /> Partidas
             </TabsTrigger>
             <TabsTrigger value="scoring" className="gap-1.5 text-xs">
               <ClipboardList className="h-3.5 w-3.5" /> Pontuação
@@ -63,6 +67,7 @@ const Admin = () => {
 
         <TabsContent value="players"><AdminPlayers /></TabsContent>
         <TabsContent value="seasons"><AdminSeasons /></TabsContent>
+        <TabsContent value="matches"><AdminMatches /></TabsContent>
         <TabsContent value="blood-scripts"><AdminBloodScripts /></TabsContent>
         <TabsContent value="blood-matches"><AdminBloodMatches /></TabsContent>
         <TabsContent value="scoring"><AdminScoringSchemas /></TabsContent>

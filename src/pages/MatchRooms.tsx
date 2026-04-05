@@ -21,6 +21,14 @@ const MatchRooms = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchRooms = async () => {
+    // Auto-close past rooms first
+    const now = new Date().toISOString();
+    await supabase
+      .from("match_rooms")
+      .update({ status: "finished" as any })
+      .in("status", ["open", "full", "in_progress"] as any)
+      .lt("scheduled_at", now);
+
     const { data } = await supabase
       .from("match_rooms")
       .select("id, title, description, scheduled_at, max_players, status, created_by, game:games(id, name, image_url)")

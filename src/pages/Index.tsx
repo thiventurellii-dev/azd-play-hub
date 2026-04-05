@@ -131,7 +131,8 @@ const LoggedInIndex = () => {
         if (rooms) setUpcomingRooms(rooms.map((r: any) => ({ ...r, game: Array.isArray(r.game) ? r.game[0] : r.game })));
       }
 
-      // Recent matches
+      // Recent boardgame matches
+      const allRecent: any[] = [];
       const { data: results } = await supabase
         .from("match_results")
         .select("match_id, position, score")
@@ -146,12 +147,52 @@ const LoggedInIndex = () => {
           .in("id", matchIds)
           .order("played_at", { ascending: false });
         if (matches) {
-          setRecentMatches(matches.map((m: any) => {
+          for (const m of matches as any[]) {
             const r = results.find(r => r.match_id === m.id);
-            return { ...m, game: Array.isArray(m.game) ? m.game[0] : m.game, position: r?.position, score: r?.score };
-          }));
+            allRecent.push({
+              id: m.id,
+              played_at: m.played_at,
+              game: Array.isArray(m.game) ? m.game[0] : m.game,
+              position: r?.position,
+              score: r?.score,
+              type: 'boardgame',
+            });
+          }
         }
       }
+
+      // Recent blood matches
+      const { data: bloodPlays } = await supabase
+        .from("blood_match_players")
+        .select("match_id, team")
+        .eq("player_id", user.id)
+        .limit(5);
+      if (bloodPlays && bloodPlays.length > 0) {
+        const bMatchIds = bloodPlays.map(r => r.match_id);
+        const { data: bMatches } = await supabase
+          .from("blood_matches")
+          .select("id, played_at, winning_team, script:blood_scripts(name)")
+          .in("id", bMatchIds)
+          .order("played_at", { ascending: false });
+        if (bMatches) {
+          for (const m of bMatches as any[]) {
+            const bp = bloodPlays.find(p => p.match_id === m.id);
+            const won = bp?.team === m.winning_team;
+            allRecent.push({
+              id: `blood-${m.id}`,
+              played_at: m.played_at,
+              game: { name: `Blood — ${(Array.isArray(m.script) ? m.script[0] : m.script)?.name || '?'}` },
+              position: won ? 1 : 2,
+              score: null,
+              type: 'blood',
+            });
+          }
+        }
+      }
+
+      // Sort all by played_at desc, take 5
+      allRecent.sort((a, b) => new Date(b.played_at).getTime() - new Date(a.played_at).getTime());
+      setRecentMatches(allRecent.slice(0, 5));
 
       // Active season
       const now = new Date().toISOString().slice(0, 10);
@@ -277,9 +318,7 @@ const LoggedInIndex = () => {
                 </h3>
                 {recentMatches.length > 0 ? (
                   <div className="space-y-2">
-                    {recentMatches
-                      .sort((a, b) => new Date(b.played_at).getTime() - new Date(a.played_at).getTime())
-                      .map(m => (
+                    {recentMatches.map(m => (
                       <div key={m.id} className="flex justify-between items-center text-sm">
                         <span className="truncate">{m.game?.name}</span>
                         <div className="flex items-center gap-2 ml-2 shrink-0">
@@ -287,7 +326,7 @@ const LoggedInIndex = () => {
                             {new Date(m.played_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
                           </span>
                           <span className={`text-xs font-medium ${m.position === 1 ? 'text-gold' : 'text-muted-foreground'}`}>
-                            {m.position === 1 ? '🏆' : `${m.position}º`} {m.score}pts
+                            {m.position === 1 ? '🏆' : `${m.position}º`}{m.score != null ? ` ${m.score}pts` : ''}
                           </span>
                         </div>
                       </div>

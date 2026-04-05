@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Calendar, Users, LogIn, Clock, Share2 } from "lucide-react";
 import { generateWhatsAppInvite, sendMatchNotification } from "@/lib/matchNotification";
 import { toast } from "sonner";
+import RoomComments from "./RoomComments";
 
 interface RoomPlayer {
   id: string;
@@ -239,6 +240,8 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
             </Button>
           )}
         </div>
+
+        <RoomComments roomId={room.id} />
       </CardContent>
     </Card>
   );

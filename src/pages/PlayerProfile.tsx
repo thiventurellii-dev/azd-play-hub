@@ -44,8 +44,6 @@ const PlayerProfile = () => {
 
   const isOwnProfile = user && profile && user.id === profile.id;
 
-  const isOwnProfile = user && profile && user.id === profile.id;
-
   useEffect(() => {
     const fetchProfile = async () => {
       const { data: prof } = await supabase

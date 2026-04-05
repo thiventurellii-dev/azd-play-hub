@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
-import { Trophy, Gamepad2, ArrowLeft, Calendar, Clock, Users, Award, Ghost, LinkIcon } from "lucide-react";
+import { Trophy, Gamepad2, ArrowLeft, Calendar, Clock, Users, Award } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -41,14 +41,6 @@ const PlayerProfile = () => {
   const [upcomingRooms, setUpcomingRooms] = useState<any[]>([]);
   const [achievements, setAchievements] = useState<{ icon: string; name: string; description: string | null }[]>([]);
 
-  // Ghost player claim
-  const [ghostMatches, setGhostMatches] = useState<{ ghost_id: string; display_name: string; match_count: number }[]>([]);
-  const [claimLoading, setClaimLoading] = useState(false);
-
-  // Admin ghost link
-  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
-  const [unlinkedGhosts, setUnlinkedGhosts] = useState<{ id: string; display_name: string }[]>([]);
-  const [selectedGhostId, setSelectedGhostId] = useState('');
 
   const isOwnProfile = user && profile && user.id === profile.id;
 
@@ -184,29 +176,6 @@ const PlayerProfile = () => {
         setAchievements((achDefs || []) as any[]);
       }
 
-      // Ghost player suggestion (auto-match by name)
-      if (user && user.id === prof.id) {
-        const nameQuery = `%${prof.name.split(' ')[0]}%`;
-        const { data: ghosts } = await supabase
-          .from('ghost_players')
-          .select('id, display_name')
-          .is('linked_profile_id', null)
-          .ilike('display_name', nameQuery);
-        if (ghosts && ghosts.length > 0) {
-          const ghostIds = ghosts.map(g => g.id);
-          const { data: ghostResults } = await supabase
-            .from('match_results')
-            .select('ghost_player_id')
-            .in('ghost_player_id', ghostIds);
-          const countMap: Record<string, number> = {};
-          for (const r of ghostResults || []) {
-            if (r.ghost_player_id) countMap[r.ghost_player_id] = (countMap[r.ghost_player_id] || 0) + 1;
-          }
-          setGhostMatches(ghosts.filter(g => (countMap[g.id] || 0) > 0).map(g => ({
-            ghost_id: g.id, display_name: g.display_name, match_count: countMap[g.id] || 0,
-          })));
-        }
-      }
 
       setLoading(false);
     };
@@ -261,71 +230,12 @@ const PlayerProfile = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {isAdmin && !isOwnProfile && (
-                <Button variant="outline" size="sm" onClick={async () => {
-                  const { data } = await supabase.from('ghost_players').select('id, display_name').is('linked_profile_id', null).order('display_name');
-                  setUnlinkedGhosts((data || []) as any[]);
-                  setLinkDialogOpen(true);
-                }}>
-                  <LinkIcon className="h-4 w-4 mr-1" /> Vincular Fantasma
-                </Button>
-              )}
               <FriendButton targetUserId={profile.id} />
             </div>
           </CardContent>
         </Card>
       </motion.div>
 
-      {/* Ghost player claim banner */}
-      {isOwnProfile && ghostMatches.length > 0 && (
-        <Card className="bg-gold/10 border-gold/30">
-          <CardContent className="py-4">
-            <div className="flex items-start gap-3">
-              <Ghost className="h-6 w-6 text-gold flex-shrink-0 mt-0.5" />
-              <div className="flex-1">
-                <p className="font-semibold">Encontramos partidas que parecem ser suas!</p>
-                {ghostMatches.map(gm => (
-                  <div key={gm.ghost_id} className="flex items-center justify-between mt-2 p-2 border border-gold/20 rounded">
-                    <span className="text-sm">👻 "{gm.display_name}" — {gm.match_count} partida(s)</span>
-                    <Button variant="gold" size="sm" disabled={claimLoading} onClick={async () => {
-                      setClaimLoading(true);
-                      await supabase.from('ghost_players').update({ linked_profile_id: user!.id }).eq('id', gm.ghost_id);
-                      await supabase.from('match_results').update({ player_id: user!.id }).eq('ghost_player_id', gm.ghost_id);
-                      setGhostMatches(prev => prev.filter(g => g.ghost_id !== gm.ghost_id));
-                      setClaimLoading(false);
-                      notify('success', `Histórico de "${gm.display_name}" vinculado ao seu perfil!`);
-                    }}>Reivindicar</Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Admin ghost link dialog */}
-      <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Vincular Jogador Fantasma</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Jogador Fantasma</Label>
-              <Select value={selectedGhostId} onValueChange={setSelectedGhostId}>
-                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                <SelectContent>
-                  {unlinkedGhosts.map(g => <SelectItem key={g.id} value={g.id}>👻 {g.display_name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <Button variant="gold" disabled={!selectedGhostId} onClick={async () => {
-              await supabase.from('ghost_players').update({ linked_profile_id: profile.id }).eq('id', selectedGhostId);
-              await supabase.from('match_results').update({ player_id: profile.id }).eq('ghost_player_id', selectedGhostId);
-              notify('success', 'Jogador fantasma vinculado!');
-              setLinkDialogOpen(false); setSelectedGhostId('');
-            }}>Vincular</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <div className="grid gap-4 grid-cols-2">
         {[

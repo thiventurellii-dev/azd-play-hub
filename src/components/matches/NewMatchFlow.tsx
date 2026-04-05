@@ -16,7 +16,6 @@ interface Game { id: string; name: string; slug: string | null; min_players: num
 interface Player { id: string; name: string; nickname?: string; }
 interface PlayerEntry {
   player_id: string;
-  ghost_name: string;
   seat_position: number;
   faction: string;
   is_new_player: boolean;
@@ -47,8 +46,8 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [entries, setEntries] = useState<PlayerEntry[]>(
     prefilledPlayers?.map((pid, i) => ({
-      player_id: pid, ghost_name: '', seat_position: i + 1, faction: '', is_new_player: false,
-    })) || [{ player_id: '', ghost_name: '', seat_position: 1, faction: '', is_new_player: false }]
+      player_id: pid, seat_position: i + 1, faction: '', is_new_player: false,
+    })) || [{ player_id: '', seat_position: 1, faction: '', is_new_player: false }]
   );
   const [playerSearch, setPlayerSearch] = useState('');
 
@@ -98,7 +97,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
   }, [gameId]);
 
   const addEntry = () => setEntries([...entries, {
-    player_id: '', ghost_name: '', seat_position: entries.length + 1, faction: '', is_new_player: false,
+    player_id: '', seat_position: entries.length + 1, faction: '', is_new_player: false,
   }]);
 
   const updateEntry = (i: number, field: keyof PlayerEntry, value: any) => {
@@ -117,15 +116,14 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
     );
   }, [allPlayers, playerSearch]);
 
-  const scoringPlayers = entries.filter(e => e.player_id || e.ghost_name).map(e => {
-    if (e.ghost_name && !e.player_id) return { id: `ghost_${e.ghost_name}`, name: `👻 ${e.ghost_name}` };
+  const scoringPlayers = entries.filter(e => e.player_id).map(e => {
     const p = allPlayers.find(p => p.id === e.player_id);
     return { id: e.player_id, name: p?.nickname || p?.name || '?' };
   });
 
   // Validate player count
   const playerCountValid = () => {
-    const count = entries.filter(e => e.player_id || e.ghost_name).length;
+    const count = entries.filter(e => e.player_id).length;
     if (!selectedGame) return count >= 1;
     const min = selectedGame.min_players || 1;
     const max = selectedGame.max_players || 99;
@@ -134,7 +132,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
 
   const playerCountMessage = () => {
     if (!selectedGame) return '';
-    const count = entries.filter(e => e.player_id || e.ghost_name).length;
+    const count = entries.filter(e => e.player_id).length;
     const min = selectedGame.min_players || 1;
     const max = selectedGame.max_players || 99;
     if (count < min) return `Mínimo de ${min} jogadores necessários`;
@@ -168,24 +166,11 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
   };
 
   const handleSubmit = async () => {
-    if (!gameId || !playedDate || entries.some(e => !e.player_id && !e.ghost_name)) {
+    if (!gameId || !playedDate || entries.some(e => !e.player_id)) {
       return notify('error', 'Preencha Jogo, Data e todos os jogadores');
     }
     setSaving(true);
     try {
-      // Create ghost players first
-      const ghostMap: Record<string, string> = {}; // ghost_name -> ghost_player_id
-      for (const e of entries) {
-        if (e.ghost_name && !e.player_id) {
-          const { data: ghost, error: gErr } = await supabase
-            .from('ghost_players')
-            .insert({ display_name: e.ghost_name })
-            .select()
-            .single();
-          if (gErr) throw gErr;
-          ghostMap[e.ghost_name] = ghost.id;
-        }
-      }
       // Build results with positions based on scores
       const sorted = [...playerScores].sort((a, b) => b.total - a.total);
       const positionMap: Record<string, number> = {};
@@ -268,13 +253,12 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
       if (matchErr) throw matchErr;
 
       const matchResults = entries.map(e => {
-        const entryId = e.player_id || `ghost_${e.ghost_name}`;
-        const pos = positionMap[entryId] || positionMap[e.player_id] || 1;
-        const ps = playerScores.find(p => p.player_id === entryId || p.player_id === e.player_id);
+        const pos = positionMap[e.player_id] || 1;
+        const ps = playerScores.find(p => p.player_id === e.player_id);
         return {
           match_id: match.id,
-          player_id: e.player_id || null,
-          ghost_player_id: e.ghost_name ? ghostMap[e.ghost_name] || null : null,
+          player_id: e.player_id,
+          ghost_player_id: null,
           position: pos, score: ps?.total || 0,
           mmr_before: mmrMap[e.player_id] || 1000,
           mmr_change: eloChanges[e.player_id] || 0,
@@ -326,7 +310,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
       onComplete?.();
       // Reset
       setStep(1);
-      setEntries([{ player_id: '', ghost_name: '', seat_position: 1, faction: '', is_new_player: false }]);
+      setEntries([{ player_id: '', seat_position: 1, faction: '', is_new_player: false }]);
       setPlayerScores([]);
       setDuration(''); setPlayedDate(''); setPlayedTime(''); setImageFile(null);
       setSeasonId('');
@@ -419,8 +403,8 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
             {entries.map((e, i) => (
               <div key={i} className="flex items-center gap-2 flex-wrap border border-border rounded-lg p-3">
                 <div className="flex-1 min-w-[180px] space-y-1">
-                  <Label className="text-xs">Jogador {!e.ghost_name && '*'}</Label>
-                  <Select value={e.player_id} onValueChange={v => { updateEntry(i, 'player_id', v); updateEntry(i, 'ghost_name', ''); }}>
+                  <Label className="text-xs">Jogador *</Label>
+                  <Select value={e.player_id} onValueChange={v => updateEntry(i, 'player_id', v)}>
                     <SelectTrigger><SelectValue placeholder="Buscar jogador..." /></SelectTrigger>
                     <SelectContent>
                       <div className="px-2 pb-2">
@@ -440,12 +424,6 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
                     </SelectContent>
                   </Select>
                 </div>
-                {!e.player_id && (
-                  <div className="min-w-[140px] space-y-1">
-                    <Label className="text-xs">👻 Fantasma</Label>
-                    <Input value={e.ghost_name} onChange={ev => updateEntry(i, 'ghost_name', ev.target.value)} placeholder="Nome do jogador" className="h-10" />
-                  </div>
-                )}
                 <div className="w-[80px] space-y-1">
                   <Label className="text-xs">Posição</Label>
                   <Input type="number" min={1} value={e.seat_position} onChange={ev => updateEntry(i, 'seat_position', parseInt(ev.target.value) || 1)} />
@@ -486,7 +464,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
             )}
             <div className="flex justify-between">
               <Button variant="outline" onClick={() => setStep(1)}><ChevronLeft className="h-4 w-4 mr-1" /> Voltar</Button>
-              <Button variant="gold" onClick={() => setStep(3)} disabled={entries.some(e => !e.player_id && !e.ghost_name) || !playerCountValid()}>
+              <Button variant="gold" onClick={() => setStep(3)} disabled={entries.some(e => !e.player_id) || !playerCountValid()}>
                 Próximo <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>

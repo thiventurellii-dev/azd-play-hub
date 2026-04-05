@@ -253,6 +253,10 @@ const Profile = () => {
           </div>
         </CardContent>
       </Card>
+
+      <div className="mt-6">
+        <FriendsList />
+      </div>
     </div>
   );
 };

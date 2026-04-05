@@ -142,8 +142,18 @@ const Profile = () => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-secondary text-gold font-bold text-2xl">
-                {(profile?.nickname || profile?.name || '?').charAt(0).toUpperCase()}
+              <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                {profile?.avatar_url ? (
+                  <img src={profile.avatar_url} alt="Avatar" className="h-16 w-16 rounded-full object-cover" />
+                ) : (
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-secondary text-gold font-bold text-2xl">
+                    {(profile?.nickname || profile?.name || '?').charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Camera className="h-5 w-5 text-white" />
+                </div>
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploadingAvatar} />
               </div>
               <div>
                 <CardTitle>{profile?.name || 'Sem nome'}</CardTitle>

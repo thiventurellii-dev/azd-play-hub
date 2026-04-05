@@ -284,7 +284,7 @@ const Navbar = () => {
               </Link>
               <Link to="/games" onClick={closeMobile}>
                 <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
-                  Biblioteca de Jogos
+                  Coleção de Jogos
                 </Button>
               </Link>
               <Button variant="ghost" size="sm" className="w-full justify-start gap-2 opacity-50" disabled>

@@ -268,10 +268,13 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
       if (matchErr) throw matchErr;
 
       const matchResults = entries.map(e => {
-        const pos = positionMap[e.player_id] || 1;
-        const ps = playerScores.find(p => p.player_id === e.player_id);
+        const entryId = e.player_id || `ghost_${e.ghost_name}`;
+        const pos = positionMap[entryId] || positionMap[e.player_id] || 1;
+        const ps = playerScores.find(p => p.player_id === entryId || p.player_id === e.player_id);
         return {
-          match_id: match.id, player_id: e.player_id,
+          match_id: match.id,
+          player_id: e.player_id || null,
+          ghost_player_id: e.ghost_name ? ghostMap[e.ghost_name] || null : null,
           position: pos, score: ps?.total || 0,
           mmr_before: mmrMap[e.player_id] || 1000,
           mmr_change: eloChanges[e.player_id] || 0,

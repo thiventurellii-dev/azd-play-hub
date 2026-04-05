@@ -8,16 +8,17 @@ import {
   LogOut,
   Menu,
   X,
-  Gamepad2,
   BookOpen,
   User,
   Lock,
   Pencil,
   Info,
   MessageCircle,
-  Phone,
   Lightbulb,
   AtSign,
+  Trophy,
+  Gamepad2,
+  ChevronDown,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -60,21 +61,7 @@ const Navbar = () => {
     navigate("/");
   };
 
-  const navLinks = user
-    ? [
-        { to: "/about", label: "Sobre Nós", icon: Info },
-        { to: "/seasons", label: "Seasons", icon: Calendar },
-        { to: "/games", label: "Jogos", icon: Gamepad2 },
-        { to: "/players", label: "Jogadores", icon: Users },
-        { to: "/rules", label: "Regras", icon: BookOpen },
-        { to: "/suggestions", label: "Sugestões", icon: Lightbulb },
-      ]
-    : [
-        { to: "/about", label: "Sobre Nós", icon: Info },
-        { to: "/games", label: "Jogos", icon: Gamepad2 },
-        { to: "/rules", label: "Regras", icon: BookOpen },
-        { to: "/suggestions", label: "Sugestões", icon: Lightbulb },
-      ];
+  const closeMobile = () => setMobileOpen(false);
 
   return (
     <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
@@ -88,43 +75,88 @@ const Navbar = () => {
 
         {/* Desktop */}
         <div className="hidden md:flex items-center gap-1">
-          {navLinks.map(({ to, label, icon: Icon }) => (
-            <Link key={to} to={to}>
-              <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
-                <Icon className="h-4 w-4" />
-                {label}
+          <Link to="/about">
+            <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
+              <Info className="h-4 w-4" /> Sobre Nós
+            </Button>
+          </Link>
+
+          {/* Competitivo dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="gap-1 text-muted-foreground hover:text-foreground">
+                <Trophy className="h-4 w-4" /> Competitivo <ChevronDown className="h-3 w-3" />
               </Button>
-            </Link>
-          ))}
-          {user && (
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={() => navigate("/seasons")}>
+                <Calendar className="h-4 w-4 mr-2" /> Seasons
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled className="opacity-50">
+                <Trophy className="h-4 w-4 mr-2" /> Torneios
+                <span className="ml-auto text-[10px] bg-muted px-1.5 py-0.5 rounded-full">Em breve</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Link to="/partidas">
+            <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
+              <Calendar className="h-4 w-4" /> Partidas
+            </Button>
+          </Link>
+
+          <Link to="/players">
+            <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
+              <Users className="h-4 w-4" /> Jogadores
+            </Button>
+          </Link>
+
+          {/* Recursos dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="gap-1 text-muted-foreground hover:text-foreground">
+                <BookOpen className="h-4 w-4" /> Recursos <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem onClick={() => navigate("/rules")}>
+                <BookOpen className="h-4 w-4 mr-2" /> Regras
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/games")}>
+                <Gamepad2 className="h-4 w-4 mr-2" /> Biblioteca de Jogos
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled className="opacity-50">
+                <BookOpen className="h-4 w-4 mr-2" /> Materiais
+                <span className="ml-auto text-[10px] bg-muted px-1.5 py-0.5 rounded-full">Em breve</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Link to="/suggestions">
+            <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
+              <Lightbulb className="h-4 w-4" /> Sugestões
+            </Button>
+          </Link>
+
+          {/* Nossas Redes */}
+          {(contactLinks.discord || contactLinks.whatsapp) && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
-                  <AtSign className="h-4 w-4" />
-                  Nossas Redes
+                <Button variant="ghost" className="gap-1 text-muted-foreground hover:text-foreground">
+                  <AtSign className="h-4 w-4" /> Nossas Redes <ChevronDown className="h-3 w-3" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 {contactLinks.discord && (
                   <DropdownMenuItem asChild>
-                    <a
-                      href={contactLinks.discord}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2"
-                    >
+                    <a href={contactLinks.discord} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
                       <DiscordIcon size={16} /> Discord
                     </a>
                   </DropdownMenuItem>
                 )}
                 {contactLinks.whatsapp && (
                   <DropdownMenuItem asChild>
-                    <a
-                      href={contactLinks.whatsapp}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2"
-                    >
+                    <a href={contactLinks.whatsapp} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
                       <MessageCircle className="h-4 w-4" /> WhatsApp
                     </a>
                   </DropdownMenuItem>
@@ -132,16 +164,17 @@ const Navbar = () => {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
+
           {isAdmin && (
             <Link to="/admin">
               <Button variant="ghost" className="gap-2 text-gold hover:text-gold">
-                <Shield className="h-4 w-4" />
-                Admin
+                <Shield className="h-4 w-4" /> Admin
               </Button>
             </Link>
           )}
         </div>
 
+        {/* Desktop auth */}
         <div className="hidden md:flex items-center gap-2">
           {user ? (
             <DropdownMenu>
@@ -153,31 +186,24 @@ const Navbar = () => {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onClick={() => navigate("/profile")}>
-                  <Pencil className="h-4 w-4 mr-2" />
-                  Editar Perfil
+                  <Pencil className="h-4 w-4 mr-2" /> Editar Perfil
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate("/profile?tab=password")}>
-                  <Lock className="h-4 w-4 mr-2" />
-                  Alterar Senha
+                  <Lock className="h-4 w-4 mr-2" /> Alterar Senha
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sair
+                  <LogOut className="h-4 w-4 mr-2" /> Sair
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
             <>
               <Link to="/login">
-                <Button variant="ghost" size="sm">
-                  Entrar
-                </Button>
+                <Button variant="ghost" size="sm">Entrar</Button>
               </Link>
               <Link to="/register">
-                <Button variant="gold" size="sm">
-                  Faça parte da comunidade
-                </Button>
+                <Button variant="gold" size="sm">Faça parte da comunidade</Button>
               </Link>
             </>
           )}
@@ -191,68 +217,105 @@ const Navbar = () => {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-border bg-background p-4 space-y-2">
-          {navLinks.map(({ to, label, icon: Icon }) => (
-            <Link key={to} to={to} onClick={() => setMobileOpen(false)}>
-              <Button variant="ghost" className="w-full justify-start gap-2">
-                <Icon className="h-4 w-4" /> {label}
+        <div className="md:hidden border-t border-border bg-background p-4 space-y-1 max-h-[calc(100vh-4rem)] overflow-y-auto">
+          <Link to="/about" onClick={closeMobile}>
+            <Button variant="ghost" className="w-full justify-start gap-2"><Info className="h-4 w-4" /> Sobre Nós</Button>
+          </Link>
+
+          {/* Competitivo accordion */}
+          <details className="group">
+            <summary className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground">
+              <Trophy className="h-4 w-4" /> Competitivo
+              <ChevronDown className="h-3 w-3 ml-auto transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="pl-6 space-y-1">
+              <Link to="/seasons" onClick={closeMobile}>
+                <Button variant="ghost" size="sm" className="w-full justify-start gap-2">Seasons</Button>
+              </Link>
+              <Button variant="ghost" size="sm" className="w-full justify-start gap-2 opacity-50" disabled>
+                Torneios <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full ml-auto">Em breve</span>
               </Button>
-            </Link>
-          ))}
-          {user && contactLinks.discord && (
-            <a
-              href={contactLinks.discord}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setMobileOpen(false)}
-            >
-              <Button variant="ghost" className="w-full justify-start gap-2">
-                <DiscordIcon size={16} /> Discord
+            </div>
+          </details>
+
+          <Link to="/partidas" onClick={closeMobile}>
+            <Button variant="ghost" className="w-full justify-start gap-2"><Calendar className="h-4 w-4" /> Partidas</Button>
+          </Link>
+
+          <Link to="/players" onClick={closeMobile}>
+            <Button variant="ghost" className="w-full justify-start gap-2"><Users className="h-4 w-4" /> Jogadores</Button>
+          </Link>
+
+          {/* Recursos accordion */}
+          <details className="group">
+            <summary className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground">
+              <BookOpen className="h-4 w-4" /> Recursos
+              <ChevronDown className="h-3 w-3 ml-auto transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="pl-6 space-y-1">
+              <Link to="/rules" onClick={closeMobile}>
+                <Button variant="ghost" size="sm" className="w-full justify-start gap-2">Regras</Button>
+              </Link>
+              <Link to="/games" onClick={closeMobile}>
+                <Button variant="ghost" size="sm" className="w-full justify-start gap-2">Biblioteca de Jogos</Button>
+              </Link>
+              <Button variant="ghost" size="sm" className="w-full justify-start gap-2 opacity-50" disabled>
+                Materiais <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full ml-auto">Em breve</span>
               </Button>
-            </a>
+            </div>
+          </details>
+
+          <Link to="/suggestions" onClick={closeMobile}>
+            <Button variant="ghost" className="w-full justify-start gap-2"><Lightbulb className="h-4 w-4" /> Sugestões</Button>
+          </Link>
+
+          {/* Nossas Redes accordion */}
+          {(contactLinks.discord || contactLinks.whatsapp) && (
+            <details className="group">
+              <summary className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground">
+                <AtSign className="h-4 w-4" /> Nossas Redes
+                <ChevronDown className="h-3 w-3 ml-auto transition-transform group-open:rotate-180" />
+              </summary>
+              <div className="pl-6 space-y-1">
+                {contactLinks.discord && (
+                  <a href={contactLinks.discord} target="_blank" rel="noopener noreferrer" onClick={closeMobile}>
+                    <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
+                      <DiscordIcon size={16} /> Discord
+                    </Button>
+                  </a>
+                )}
+                {contactLinks.whatsapp && (
+                  <a href={contactLinks.whatsapp} target="_blank" rel="noopener noreferrer" onClick={closeMobile}>
+                    <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
+                      <MessageCircle className="h-4 w-4" /> WhatsApp
+                    </Button>
+                  </a>
+                )}
+              </div>
+            </details>
           )}
-          {user && contactLinks.whatsapp && (
-            <a
-              href={contactLinks.whatsapp}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => setMobileOpen(false)}
-            >
-              <Button variant="ghost" className="w-full justify-start gap-2">
-                <MessageCircle className="h-4 w-4" /> WhatsApp
-              </Button>
-            </a>
-          )}
+
           {isAdmin && (
-            <Link to="/admin" onClick={() => setMobileOpen(false)}>
-              <Button variant="ghost" className="w-full justify-start gap-2 text-gold">
-                <Shield className="h-4 w-4" /> Admin
-              </Button>
+            <Link to="/admin" onClick={closeMobile}>
+              <Button variant="ghost" className="w-full justify-start gap-2 text-gold"><Shield className="h-4 w-4" /> Admin</Button>
             </Link>
           )}
+
           <div className="pt-2 border-t border-border space-y-2">
             {user ? (
               <>
-                <Link to="/profile" onClick={() => setMobileOpen(false)}>
-                  <Button variant="ghost" className="w-full justify-start gap-2">
-                    <Pencil className="h-4 w-4" /> Editar Perfil
-                  </Button>
+                <Link to="/profile" onClick={closeMobile}>
+                  <Button variant="ghost" className="w-full justify-start gap-2"><Pencil className="h-4 w-4" /> Editar Perfil</Button>
                 </Link>
-                <Button variant="outline" className="w-full" onClick={handleSignOut}>
-                  Sair
-                </Button>
+                <Button variant="outline" className="w-full" onClick={handleSignOut}>Sair</Button>
               </>
             ) : (
               <>
-                <Link to="/login" onClick={() => setMobileOpen(false)}>
-                  <Button variant="ghost" className="w-full">
-                    Entrar
-                  </Button>
+                <Link to="/login" onClick={closeMobile}>
+                  <Button variant="ghost" className="w-full">Entrar</Button>
                 </Link>
-                <Link to="/register" onClick={() => setMobileOpen(false)}>
-                  <Button variant="gold" className="w-full">
-                    Faça parte da comunidade
-                  </Button>
+                <Link to="/register" onClick={closeMobile}>
+                  <Button variant="gold" className="w-full">Faça parte da comunidade</Button>
                 </Link>
               </>
             )}

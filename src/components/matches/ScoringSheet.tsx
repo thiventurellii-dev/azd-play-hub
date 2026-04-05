@@ -3,10 +3,17 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Trophy } from 'lucide-react';
 
+interface ScoringSubcategory {
+  key: string;
+  label: string;
+  type: string;
+}
+
 interface ScoringCategory {
   key: string;
   label: string;
   type: string;
+  subcategories?: ScoringSubcategory[];
 }
 
 interface ScoringSchema {
@@ -40,25 +47,46 @@ const ScoringSheet = ({ schema, players, onScoresChange }: Props) => {
     );
   }, [players]);
 
-  const updateScore = (playerIdx: number, categoryKey: string, value: number) => {
+  // Get all scorable fields (subcategories if they exist, otherwise direct categories)
+  const getScorableFields = (): ScoringSubcategory[] => {
+    if (!schema) return [];
+    const fields: ScoringSubcategory[] = [];
+    for (const cat of schema.categories) {
+      if (cat.subcategories && cat.subcategories.length > 0) {
+        for (const sub of cat.subcategories) {
+          fields.push(sub);
+        }
+      } else if (cat.type === 'number') {
+        fields.push({ key: cat.key, label: cat.label, type: cat.type });
+      }
+    }
+    return fields;
+  };
+
+  const scorableFields = getScorableFields();
+
+  const recalcTotal = (scores: Record<string, number>) => {
+    if (scorableFields.length > 0) {
+      return scorableFields.reduce((sum, f) => sum + (scores[f.key] || 0), 0);
+    }
+    return 0;
+  };
+
+  const updateScore = (playerIdx: number, fieldKey: string, rawValue: string) => {
+    const value = rawValue === '' ? 0 : parseInt(rawValue) || 0;
     const updated = [...playerScores];
+    const newScores = { ...updated[playerIdx].scores, [fieldKey]: value };
     updated[playerIdx] = {
       ...updated[playerIdx],
-      scores: { ...updated[playerIdx].scores, [categoryKey]: value },
+      scores: newScores,
+      total: recalcTotal(newScores),
     };
-    // Recalculate total
-    if (schema) {
-      updated[playerIdx].total = schema.categories.reduce(
-        (sum, cat) => sum + (updated[playerIdx].scores[cat.key] || 0), 0
-      );
-    } else {
-      updated[playerIdx].total = value;
-    }
     setPlayerScores(updated);
     onScoresChange(updated);
   };
 
-  const updateSimpleScore = (playerIdx: number, value: number) => {
+  const updateSimpleScore = (playerIdx: number, rawValue: string) => {
+    const value = rawValue === '' ? 0 : parseInt(rawValue) || 0;
     const updated = [...playerScores];
     updated[playerIdx] = { ...updated[playerIdx], total: value };
     setPlayerScores(updated);
@@ -73,7 +101,7 @@ const ScoringSheet = ({ schema, players, onScoresChange }: Props) => {
   const hasWinner = maxTotal > 0;
 
   // Simple scoring (no schema)
-  if (!schema || schema.categories.length === 0) {
+  if (!schema || scorableFields.length === 0) {
     return (
       <div className="space-y-3">
         <p className="text-sm text-muted-foreground">Pontuação Total (sem categorias configuradas)</p>
@@ -96,8 +124,8 @@ const ScoringSheet = ({ schema, players, onScoresChange }: Props) => {
                 <TableCell>
                   <Input
                     type="number"
-                    value={ps.total || ''}
-                    onChange={e => updateSimpleScore(i, parseInt(e.target.value) || 0)}
+                    value={ps.total === 0 ? '' : ps.total}
+                    onChange={e => updateSimpleScore(i, e.target.value)}
                     className="w-[100px]"
                   />
                 </TableCell>
@@ -108,6 +136,9 @@ const ScoringSheet = ({ schema, players, onScoresChange }: Props) => {
       </div>
     );
   }
+
+  // Check if we have categories with subcategories (visual grouping)
+  const hasGroupedCategories = schema.categories.some(c => c.subcategories && c.subcategories.length > 0);
 
   // Dynamic scoring with categories
   return (
@@ -128,21 +159,50 @@ const ScoringSheet = ({ schema, players, onScoresChange }: Props) => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {schema.categories.map(cat => (
-            <TableRow key={cat.key}>
-              <TableCell className="font-medium sticky left-0 bg-card z-10">{cat.label}</TableCell>
-              {playerScores.map((ps, i) => (
-                <TableCell key={ps.player_id}>
-                  <Input
-                    type="number"
-                    value={ps.scores[cat.key] || ''}
-                    onChange={e => updateScore(i, cat.key, parseInt(e.target.value) || 0)}
-                    className="w-[80px] mx-auto"
-                  />
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
+          {hasGroupedCategories ? (
+            schema.categories.map(cat => (
+              <>
+                {/* Category header row */}
+                <TableRow key={`header-${cat.key}`} className="bg-secondary/30">
+                  <TableCell colSpan={playerScores.length + 1} className="font-semibold text-gold text-sm sticky left-0 bg-secondary/30 z-10">
+                    {cat.label}
+                  </TableCell>
+                </TableRow>
+                {/* Subcategory rows */}
+                {(cat.subcategories || []).map(sub => (
+                  <TableRow key={sub.key}>
+                    <TableCell className="font-medium sticky left-0 bg-card z-10 pl-6">{sub.label}</TableCell>
+                    {playerScores.map((ps, i) => (
+                      <TableCell key={ps.player_id}>
+                        <Input
+                          type="number"
+                          value={ps.scores[sub.key] === undefined || ps.scores[sub.key] === 0 ? '' : ps.scores[sub.key]}
+                          onChange={e => updateScore(i, sub.key, e.target.value)}
+                          className="w-[80px] mx-auto"
+                        />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+              </>
+            ))
+          ) : (
+            scorableFields.map(field => (
+              <TableRow key={field.key}>
+                <TableCell className="font-medium sticky left-0 bg-card z-10">{field.label}</TableCell>
+                {playerScores.map((ps, i) => (
+                  <TableCell key={ps.player_id}>
+                    <Input
+                      type="number"
+                      value={ps.scores[field.key] === undefined || ps.scores[field.key] === 0 ? '' : ps.scores[field.key]}
+                      onChange={e => updateScore(i, field.key, e.target.value)}
+                      className="w-[80px] mx-auto"
+                    />
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          )}
           {/* Total row */}
           <TableRow className="font-bold border-t-2 border-gold/30">
             <TableCell className="sticky left-0 bg-card z-10 text-gold">TOTAL</TableCell>

@@ -7,19 +7,35 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
-import { Trophy, Gamepad2, Percent, Flame, ArrowLeft, Calendar, Clock, Users } from "lucide-react";
+import { Trophy, Gamepad2, ArrowLeft, Calendar, Clock, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import FriendButton from "@/components/friendlist/FriendButton";
+import FriendsList from "@/components/friendlist/FriendsList";
+import { useAuth } from "@/contexts/AuthContext";
+
+const CHART_COLORS = [
+  "hsl(43, 100%, 50%)",    // gold
+  "hsl(200, 80%, 55%)",    // blue
+  "hsl(150, 60%, 45%)",    // green
+  "hsl(340, 70%, 55%)",    // pink
+  "hsl(270, 60%, 55%)",    // purple
+  "hsl(25, 85%, 55%)",     // orange
+  "hsl(180, 60%, 45%)",    // teal
+  "hsl(0, 70%, 55%)",      // red
+];
 
 const PlayerProfile = () => {
   const { nickname } = useParams();
+  const { user } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [role, setRole] = useState<string>("player");
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ totalGames: 0, uniqueGames: 0, winRate: 0, winStreak: 0 });
+  const [stats, setStats] = useState({ totalGames: 0, uniqueGames: 0 });
   const [gamePerformance, setGamePerformance] = useState<any[]>([]);
   const [opponents, setOpponents] = useState<{ name: string; games: number; wins: number }[]>([]);
   const [upcomingRooms, setUpcomingRooms] = useState<any[]>([]);
+
+  const isOwnProfile = user && profile && user.id === profile.id;
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -44,6 +60,7 @@ const PlayerProfile = () => {
         .select("match_id, position, score")
         .eq("player_id", prof.id);
       if (!results || results.length === 0) {
+        setStats({ totalGames: 0, uniqueGames: 0 });
         setLoading(false);
         return;
       }
@@ -60,26 +77,9 @@ const PlayerProfile = () => {
       const gameMap: Record<string, any> = {};
       for (const g of games || []) gameMap[g.id] = g;
 
-      // Stats
-      const wins = results.filter((r) => r.position === 1).length;
-      const winRate = results.length > 0 ? Math.round((wins / results.length) * 100) : 0;
-
-      // Win streak (from most recent)
-      const sortedMatches = (matches || []).sort(
-        (a, b) => new Date(b.played_at).getTime() - new Date(a.played_at).getTime(),
-      );
-      let streak = 0;
-      for (const m of sortedMatches) {
-        const r = results.find((r) => r.match_id === m.id);
-        if (r?.position === 1) streak++;
-        else break;
-      }
-
       setStats({
         totalGames: results.length,
         uniqueGames: gameIds.length,
-        winRate,
-        winStreak: streak,
       });
 
       // Performance by game
@@ -117,7 +117,6 @@ const PlayerProfile = () => {
         if (r.player_id === prof.id) continue;
         if (!oppMap[r.player_id]) oppMap[r.player_id] = { games: 0, wins: 0 };
         oppMap[r.player_id].games++;
-        // Did our player win this match?
         const myResult = results.find((mr) => mr.match_id === r.match_id);
         if (myResult?.position === 1) oppMap[r.player_id].wins++;
       }
@@ -182,7 +181,10 @@ const PlayerProfile = () => {
     );
   }
 
-  const chartConfig = { games: { label: "Partidas juntos", color: "hsl(var(--gold))" } };
+  const chartConfig = opponents.reduce((acc, opp, i) => {
+    acc[opp.name] = { label: opp.name, color: CHART_COLORS[i % CHART_COLORS.length] };
+    return acc;
+  }, { games: { label: "Partidas juntos", color: CHART_COLORS[0] } } as Record<string, any>);
 
   return (
     <div className="container py-10 space-y-8 max-w-4xl">
@@ -210,13 +212,11 @@ const PlayerProfile = () => {
         </Card>
       </motion.div>
 
-      {/* Elite Stats */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+      {/* Elite Stats - only Total and Unique Games */}
+      <div className="grid gap-4 grid-cols-2">
         {[
           { icon: Trophy, label: "Total de Partidas", value: stats.totalGames },
           { icon: Gamepad2, label: "Jogos Diferentes", value: stats.uniqueGames },
-          { icon: Percent, label: "Win Rate", value: `${stats.winRate}%` },
-          { icon: Flame, label: "Sequência de Vitórias", value: stats.winStreak },
         ].map((s, i) => (
           <motion.div
             key={i}
@@ -235,7 +235,7 @@ const PlayerProfile = () => {
         ))}
       </div>
 
-      {/* Opponents chart */}
+      {/* Opponents chart with varied colors */}
       {opponents.length > 0 && (
         <Card className="bg-card border-border">
           <CardContent className="pt-6">
@@ -246,7 +246,16 @@ const PlayerProfile = () => {
                 <XAxis type="number" allowDecimals={false} tick={{ fill: "hsl(var(--muted-foreground))" }} />
                 <YAxis dataKey="name" type="category" width={100} tick={{ fill: "hsl(var(--muted-foreground))" }} />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="games" fill="hsl(var(--gold))" radius={[0, 4, 4, 0]} />
+                <Bar
+                  dataKey="games"
+                  radius={[0, 4, 4, 0]}
+                  fill="hsl(var(--gold))"
+                  // Use different colors per bar via Cell
+                >
+                  {opponents.map((_, idx) => (
+                    <rect key={idx} fill={CHART_COLORS[idx % CHART_COLORS.length]} />
+                  ))}
+                </Bar>
               </BarChart>
             </ChartContainer>
           </CardContent>
@@ -294,6 +303,13 @@ const PlayerProfile = () => {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Friends List - show on own profile */}
+      {isOwnProfile && (
+        <div>
+          <FriendsList />
+        </div>
       )}
 
       {/* Upcoming rooms */}

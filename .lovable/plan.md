@@ -1,167 +1,99 @@
 
+# Plano de Polimento e Evolução — AzD Play Hub
 
-# Plano: Ecossistema Competitivo AzD — Registro, Estatísticas e Rankings
+## FASE A — Correções Rápidas e Navegação (Prioridade Alta)
 
-## Visão Geral
+### A1. Navbar e Links
+- Corrigir link de perfil na Navbar → redirecionar para `/perfil/:nickname` do usuário logado
+- Badge de notificação de amizade pendente no menu de perfil
+- Renomear `whatsappUrl` → `whatsappUrlBG` + criar `whatsappUrlBotc` na tabela `contact_links`
+- Ajustar Navbar "Nossas Redes" com os dois WhatsApp separados (BG e BotC)
 
-Transformar o sistema atual (registro simples de partidas no admin + pop-up de jogos + perfil básico) em um ecossistema completo inspirado no BG Stats, com pontuação dinâmica por jogo, páginas ricas de jogos e dashboard do jogador.
+### A2. Hero Page (Index)
+- Adicionar ícones de Discord e WhatsApp (BG + BotC) com diferenciação visual
 
----
+### A3. Criação de Sala
+- Separar campo Data e Hora no `CreateRoomDialog`, hora não obrigatória
 
-## PRIORIDADE 1 — Sistema Dinâmico de Registro de Partidas
+### A4. Bug da Pontuação
+- Corrigir input que perde valor no `ScoringSheet` (controlled input bug com `|| ''`)
 
-### 1.1 Banco de Dados
+## FASE B — Registro de Partida (Prioridade Alta)
 
-**Nova tabela `game_scoring_schemas`** — Define as categorias de pontuação por jogo via JSON:
-- `id`, `game_id` (ref games), `schema` (jsonb), `created_at`
-- Exemplo de schema para Brass Birmingham:
-```json
-{
-  "categories": [
-    {"key": "canais", "label": "Canais", "type": "number"},
-    {"key": "industrias", "label": "Indústrias", "type": "number"},
-    {"key": "links", "label": "Links de Rede", "type": "number"},
-    {"key": "dinheiro", "label": "Dinheiro", "type": "number"}
-  ]
-}
-```
+### B1. Permissões
+- Permitir qualquer usuário autenticado registrar partidas (não só admin)
+- Migration: atualizar RLS de `matches` e `match_results` para INSERT por authenticated
 
-**Nova tabela `match_result_scores`** — Pontuação detalhada por categoria:
-- `id`, `match_result_id` (ref match_results), `category_key` (text), `value` (numeric)
-- Permite armazenar a pontuação granular (ex: Canais=15, Links=20)
+### B2. UI/UX do NewMatchFlow
+- Renomear "Season" → "Competitivo" e tornar não obrigatório
+- Campo de busca autocomplete para jogadores (substituir lista)
+- Validação min/max jogadores do jogo selecionado
+- Renomear "Mesa" → "Posição", remover checkbox "1º Jogador"
 
-**Novas colunas em `match_results`**:
-- `seat_position` (int, posição na mesa)
-- `faction` (text, facção/papel)
-- `is_new_player` (boolean)
+### B3. Schema de Pontuação com Categorias/Subcategorias
+- Alterar estrutura JSON: `categories` contém `subcategories` (só subcategorias têm input)
+- Atualizar `ScoringSheet` e `AdminScoringSchemas` para essa hierarquia
 
-**Nova coluna em `games`**:
-- `slug` (text unique) — Para URLs amigáveis como `/jogos/brass-birmingham`
+## FASE C — Páginas de Jogos e Perfil (Prioridade Média)
 
-### 1.2 Frontend — Novo Fluxo de Registro
+### C1. Página Individual de Jogos
+- Garantir que `/jogos/:slug` funcione — popular slugs nos jogos existentes
+- Permitir que usuários registrem novos jogos (com aprovação admin ou direto)
 
-**Refatorar `AdminMatches.tsx`** em um fluxo multi-step inteligente:
+### C2. Perfil do Jogador
+- Corrigir FriendsList no perfil público (`/perfil/:nickname`)
+- Remover Win Rate geral e Sequência de Vitórias dos stats
+- Cores variadas no gráfico de adversários (não monocromático)
 
-1. **Step 1 — Cabeçalho**: Season, Jogo (com busca), Data, Hora, Duração, Foto, vínculo com Ladder/Torneio
-2. **Step 2 — Seleção de Jogadores**: Busca dinâmica na base, para cada um: posição na mesa, facção/papel, checkbox "Jogador Inicial", checkbox "Novo Jogador"
-3. **Step 3 — Planilha de Pontuação Dinâmica**: 
-   - Carrega o `game_scoring_schema` do jogo selecionado
-   - Se não existir schema, mostra campo "Pontuação Total" simples (compatibilidade retroativa)
-   - Se existir schema: tabela com linhas = categorias, colunas = jogadores
-   - Total calculado em tempo real (soma das categorias)
-   - Vencedor destacado automaticamente (borda dourada + ícone troféu)
-   - Posições definidas automaticamente pelo total (maior = 1º)
-4. **Step 4 — Confirmação**: Resumo visual antes de salvar
+### C3. Facções no Admin de Jogos
+- Adicionar campo JSON de facções/personagens na tabela `games` (migration)
+- Mostrar dropdown de facção no registro de partida quando disponível
 
-### 1.3 Integração com Agendamento
+## FASE D — Documentos e Contatos (Prioridade Média)
 
-- No `MatchRoomCard`, quando a sala tem status "finished", mostrar botão "Registrar Resultado" que abre o fluxo de Nova Partida pré-preenchido com jogo e jogadores da sala
-- Na criação de sala, o agendamento preenche apenas jogo e data futura
+### D1. Página de Documentos
+- Substituir `/rules` por `/documentos` — página de "Documentos da Comunidade"
+- Migration: criar tabela `community_documents` (title, file_url, uploaded_by, created_at)
+- Admin pode fazer upload de PDFs via storage; usuários podem baixar
+- Usar bucket `community-docs` existente
 
-### 1.4 Admin
+## FASE E — Agendamento e Resultados (Prioridade Média)
 
-- Tela de gerenciamento de `game_scoring_schemas` no painel admin (CRUD do JSON de categorias por jogo)
+### E1. Encerramento Automático
+- Marcar salas como "finished" quando `scheduled_at` passa (via query no fetch ou cron)
 
----
+### E2. Botão "Inserir Resultado"
+- Em salas encerradas, botão que abre NewMatchFlow pré-preenchido com jogo/data/jogadores
 
-## PRIORIDADE 2 — Páginas Individuais de Jogos
+## FASE F — Gamificação (Prioridade Baixa)
 
-### 2.1 Nova rota `/jogos/:slug`
+### F1. Sistema de Tags/Achievements
+- Migration: criar tabelas `achievement_definitions` (admin-managed) e `player_achievements`
+- Admin define critérios (manual por enquanto)
+- Tags exibidas no perfil público do jogador
 
-**Componente `GameDetail.tsx`** com seções:
+## FASE G — Reorganização Admin (Prioridade Baixa)
 
-1. **Hero Header**: Banner com imagem do jogo, nome, faixa de jogadores, tempo médio, botões "Ler Regras", "Ver Vídeo", "Registrar Partida" (admin), "Agendar Partida"
+### G1. Admin Inline/Contextual
+- Na Coleção de Jogos: botão "Gerenciar Jogos" (admin only) com modal
+- No Perfil do Jogador: seção "Ferramentas de Moderador" (editar/banir)
+- No Histórico: botões Editar/Excluir partidas inline
+- Nos Agendamentos: controles de moderação nos cards
+- Na página de Seasons: CRUD inline
 
-2. **Cards de Recordes** (4 cards em grid):
-   - Maior pontuação histórica (nome do jogador + valor)
-   - Pontuação média da comunidade
-   - Total de partidas jogadas
-   - Pior pontuação ganhadora (menor score com position=1)
-
-3. **Gráfico de Atividade** (Recharts BarChart):
-   - Volume de partidas nos últimos 6 meses (agrupado por mês)
-
-4. **Leaderboard da Comunidade** (tabela):
-   - Jogador, Vitórias, % Vitórias, Média de Pontos, Melhor Pontuação (Personal Best)
-   - Calculado a partir de `match_results` filtrado pelo `game_id`
-
-5. **Histórico de Partidas**:
-   - Lista cronológica com filtro de período
-   - Cada item mostra data, jogadores, pontuações, vencedor
-
-### 2.2 Ajustes na página `/games`
-
-- Cards de jogos agora linkam para `/jogos/:slug` ao invés de abrir dialog
-- Manter dialog como fallback para jogos sem slug
+### G2. Refatorar Painel Admin Central
+- Manter apenas: Pontuação, Sobre Nós, Contatos, Scripts Blood, Sugestões, Documentos
+- Remover abas de Jogos, Jogadores, Partidas (agora contextuais)
 
 ---
 
-## PRIORIDADE 3 — Dashboard do Jogador
+## Ordem de Implementação
+1. Fase A (correções rápidas)
+2. Fase B (registro de partida)
+3. Fase C (jogos e perfil)
+4. Fase D (documentos)
+5. Fase E (agendamento)
+6. Fase F (gamificação)
+7. Fase G (reorganização admin)
 
-### 3.1 Nova rota `/perfil/:nickname`
-
-**Componente `PlayerProfile.tsx`** (página pública, diferente do `/profile` de edição):
-
-1. **Header**: Avatar, nome, nickname, membro desde, badges (admin/player)
-
-2. **Stats de Elite** (3-4 cards):
-   - Total de Partidas (count de match_results)
-   - Jogos Diferentes (distinct game_id via matches)
-   - Win Rate Total (position=1 / total * 100)
-   - Sequência de Vitórias atual (streak)
-
-3. **Insights Visuais**:
-   - Gráfico de barras horizontais "Principais Adversários" (jogadores com mais partidas em comum, com W/L ratio)
-
-4. **Tabela de Performance por Jogo**:
-   - Jogo | Partidas | Vitórias | % Vitória | Média Pontos | Recorde Pessoal
-   - Dados calculados via query em match_results + matches
-
-5. **Social**: Lista de amigos (reutilizar `FriendsList`)
-
-6. **Próximas Partidas**: Cards de salas agendadas onde o jogador está confirmado (query match_room_players + match_rooms com status=open e scheduled_at > now)
-
-### 3.2 Ajustes
-
-- Na página `/players`, cada card linka para `/perfil/:nickname`
-- No ranking, nome do jogador linka para o perfil
-- `/profile` (privado) continua como página de edição, mas ganha link "Ver meu perfil público"
-
----
-
-## Detalhes Técnicos
-
-### Migration SQL (única)
-```
--- game_scoring_schemas
--- match_result_scores  
--- ALTER games ADD slug
--- ALTER match_results ADD seat_position, faction, is_new_player
--- RLS: schemas viewable by all, managed by admins
--- RLS: match_result_scores viewable by all, managed by admins
-```
-
-### Arquivos Novos
-- `src/pages/GameDetail.tsx` — Página individual do jogo
-- `src/pages/PlayerProfile.tsx` — Dashboard público do jogador
-- `src/components/matches/NewMatchFlow.tsx` — Fluxo multi-step de registro
-- `src/components/matches/ScoringSheet.tsx` — Planilha dinâmica de pontuação
-- `src/components/admin/AdminScoringSchemas.tsx` — CRUD de schemas
-
-### Arquivos Modificados
-- `src/App.tsx` — Novas rotas `/jogos/:slug` e `/perfil/:nickname`
-- `src/pages/Games.tsx` — Links para página individual
-- `src/pages/Players.tsx` — Links para perfil público
-- `src/pages/Rankings.tsx` — Links nos nomes dos jogadores
-- `src/pages/Profile.tsx` — Link para perfil público + seção "Próximas Partidas"
-- `src/components/admin/AdminMatches.tsx` — Integrar novo fluxo de registro
-- `src/components/matchrooms/MatchRoomCard.tsx` — Botão "Registrar Resultado"
-
-### Ordem de Implementação
-1. Migration (tabelas + colunas)
-2. Fluxo de registro de partidas (Prioridade 1)
-3. Admin de scoring schemas
-4. Página individual de jogos (Prioridade 2)
-5. Dashboard do jogador (Prioridade 3)
-6. Links e integrações entre todas as páginas
-
+Cada fase será implementada e testada antes de avançar para a próxima.

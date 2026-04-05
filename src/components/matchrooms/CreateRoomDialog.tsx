@@ -27,7 +27,8 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
   const [gameId, setGameId] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [scheduledAt, setScheduledAt] = useState("");
+  const [scheduledDate, setScheduledDate] = useState("");
+  const [scheduledTime, setScheduledTime] = useState("");
   const [maxPlayers, setMaxPlayers] = useState("10");
   const [saving, setSaving] = useState(false);
 
@@ -38,10 +39,14 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
   }, []);
 
   const handleSubmit = async () => {
-    if (!user || !gameId || !title || !scheduledAt) {
-      toast.error("Preencha os campos obrigatórios");
+    if (!user || !gameId || !title || !scheduledDate) {
+      toast.error("Preencha os campos obrigatórios (Jogo, Título, Data)");
       return;
     }
+
+    const scheduledAt = scheduledTime
+      ? new Date(`${scheduledDate}T${scheduledTime}`).toISOString()
+      : new Date(`${scheduledDate}T00:00:00`).toISOString();
 
     setSaving(true);
     const { data, error } = await supabase
@@ -51,7 +56,7 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
         created_by: user.id,
         title,
         description: description || null,
-        scheduled_at: new Date(scheduledAt).toISOString(),
+        scheduled_at: scheduledAt,
         max_players: parseInt(maxPlayers) || 10,
         status: "open",
       })
@@ -67,7 +72,7 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
         room_id: data.id,
         game: game?.name || "",
         title,
-        scheduled_at: new Date(scheduledAt).toISOString(),
+        scheduled_at: scheduledAt,
         max_players: parseInt(maxPlayers) || 10,
         players: [],
         created_by: user.id,
@@ -77,7 +82,8 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
       setOpen(false);
       setTitle("");
       setDescription("");
-      setScheduledAt("");
+      setScheduledDate("");
+      setScheduledTime("");
       setGameId("");
       setMaxPlayers("10");
       onCreated();
@@ -112,9 +118,15 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
             <Label>Título *</Label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Partida de sábado" />
           </div>
-          <div>
-            <Label>Data e Hora *</Label>
-            <Input type="datetime-local" value={scheduledAt} onChange={(e) => setScheduledAt(e.target.value)} />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Data *</Label>
+              <Input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} />
+            </div>
+            <div>
+              <Label>Hora (opcional)</Label>
+              <Input type="time" value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)} />
+            </div>
           </div>
           <div>
             <Label>Vagas Máximas</Label>

@@ -189,7 +189,7 @@ const Navbar = () => {
                 {contactLinks.whatsapp && (
                   <DropdownMenuItem asChild>
                     <a href={contactLinks.whatsapp} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[#25D366]">
-                      <MessageCircle className="h-4 w-4" /> Boardgame
+                      <WhatsAppIcon size={16} /> Boardgame
                     </a>
                   </DropdownMenuItem>
                 )}

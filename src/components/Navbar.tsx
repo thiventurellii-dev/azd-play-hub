@@ -344,22 +344,22 @@ const Navbar = () => {
               <div className="pl-6 space-y-1">
                 {contactLinks.discord && (
                   <a href={contactLinks.discord} target="_blank" rel="noopener noreferrer" onClick={closeMobile}>
-                    <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
+                    <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-[#5865F2]">
                       <DiscordIcon size={16} /> Discord
                     </Button>
                   </a>
                 )}
                 {contactLinks.whatsapp && (
                   <a href={contactLinks.whatsapp} target="_blank" rel="noopener noreferrer" onClick={closeMobile}>
-                    <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
-                      <MessageCircle className="h-4 w-4" /> WhatsApp BG
+                    <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-[#25D366]">
+                      <MessageCircle className="h-4 w-4" /> Boardgame
                     </Button>
                   </a>
                 )}
                 {contactLinks.whatsapp_botc && (
                   <a href={contactLinks.whatsapp_botc} target="_blank" rel="noopener noreferrer" onClick={closeMobile}>
-                    <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
-                      <MessageCircle className="h-4 w-4" /> WhatsApp BotC
+                    <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-[#25D366]">
+                      <MessageCircle className="h-4 w-4" /> Blood
                     </Button>
                   </a>
                 )}

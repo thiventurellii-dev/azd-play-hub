@@ -320,12 +320,26 @@ const PlayerProfile = () => {
         </Card>
       )}
 
-      {/* Friends List - show on own profile */}
-      {isOwnProfile && (
-        <div>
-          <FriendsList />
-        </div>
+      {/* Achievements */}
+      {achievements.length > 0 && (
+        <Card className="bg-card border-border">
+          <CardContent className="pt-6">
+            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <Award className="h-5 w-5 text-gold" /> Conquistas
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {achievements.map((a, i) => (
+                <Badge key={i} variant="outline" className="text-sm py-1.5 px-3 border-gold/30">
+                  {a.icon} {a.name}
+                </Badge>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
+
+      {/* Friends List - always visible */}
+      <FriendsList />
 
       {/* Upcoming rooms */}
       {upcomingRooms.length > 0 && (

@@ -33,9 +33,13 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    supabase.from("games").select("id, name").order("name").then(({ data }) => {
-      if (data) setGames(data);
-    });
+    supabase
+      .from("games")
+      .select("id, name")
+      .order("name")
+      .then(({ data }) => {
+        if (data) setGames(data);
+      });
   }, []);
 
   const handleSubmit = async () => {
@@ -95,7 +99,7 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="gold" className="min-h-[44px]">
-          <Plus className="h-4 w-4 mr-2" /> Criar Sala
+          <Plus className="h-4 w-4 mr-2" /> Agendar Partida
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -106,10 +110,14 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
           <div>
             <Label>Jogo *</Label>
             <Select value={gameId} onValueChange={setGameId}>
-              <SelectTrigger><SelectValue placeholder="Selecione o jogo" /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o jogo" />
+              </SelectTrigger>
               <SelectContent>
                 {games.map((g) => (
-                  <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                  <SelectItem key={g.id} value={g.id}>
+                    {g.name}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -134,10 +142,15 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
           </div>
           <div>
             <Label>Descrição (opcional)</Label>
-            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Observações sobre a partida..." rows={3} />
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Observações sobre a partida..."
+              rows={3}
+            />
           </div>
           <Button variant="gold" className="w-full min-h-[44px]" onClick={handleSubmit} disabled={saving}>
-            {saving ? "Criando..." : "Criar Sala"}
+            {saving ? "Criando..." : "Agendar Partida"}
           </Button>
         </div>
       </DialogContent>

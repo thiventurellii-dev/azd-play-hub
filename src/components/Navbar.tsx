@@ -45,6 +45,7 @@ const Navbar = () => {
   const [contactLinks, setContactLinks] = useState<Record<string, string>>({});
   const [pendingFriends, setPendingFriends] = useState(0);
   const [userNickname, setUserNickname] = useState<string | null>(null);
+  const [userAvatar, setUserAvatar] = useState<string | null>(null);
 
   useEffect(() => {
     supabase

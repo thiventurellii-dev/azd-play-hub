@@ -1,16 +1,15 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Calendar, Gamepad2, Users, Trophy, MessageSquare, FileText, AtSign, Lightbulb, DoorOpen, Award, ClipboardList } from "lucide-react";
+import { Shield, Calendar, Users, Trophy, FileText, AtSign, Lightbulb, Award, ClipboardList, Swords } from "lucide-react";
 import AdminSeasons from "@/components/admin/AdminSeasons";
-import AdminGames from "@/components/admin/AdminGames";
 import AdminBloodMatches from "@/components/admin/AdminBloodMatches";
 import AdminBloodScripts from "@/components/admin/AdminBloodScripts";
 import AdminPlayers from "@/components/admin/AdminPlayers";
 import AdminAboutUs from "@/components/admin/AdminAboutUs";
 import AdminContato from "@/components/admin/AdminContato";
 import AdminSuggestions from "@/components/admin/AdminSuggestions";
-import AdminMatchRooms from "@/components/admin/AdminMatchRooms";
 import AdminScoringSchemas from "@/components/admin/AdminScoringSchemas";
 import AdminAchievements from "@/components/admin/AdminAchievements";
+import AdminMatches from "@/components/admin/AdminMatches";
 
 const Admin = () => {
   return (
@@ -19,19 +18,24 @@ const Admin = () => {
         <Shield className="h-8 w-8 text-gold" />
         <div>
           <h1 className="text-3xl font-bold">Painel Admin</h1>
-          <p className="text-muted-foreground">Gerencie seasons, jogos, partidas e jogadores</p>
+          <p className="text-muted-foreground">Configurações estruturais e gerenciamento de alto nível</p>
         </div>
       </div>
 
-      <Tabs defaultValue="seasons" className="space-y-6">
+      <Tabs defaultValue="players" className="space-y-6">
         <div className="overflow-x-auto -mx-4 px-4">
           <TabsList className="bg-secondary/50 border border-border p-1 gap-1 flex-wrap min-w-max">
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 font-semibold hidden sm:inline">Competitivo</span>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 font-semibold hidden sm:inline">Usuários</span>
+            <TabsTrigger value="players" className="gap-1.5 text-xs">
+              <Users className="h-3.5 w-3.5" /> Jogadores
+            </TabsTrigger>
+
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 font-semibold hidden sm:inline ml-2">Competitivo</span>
             <TabsTrigger value="seasons" className="gap-1.5 text-xs">
               <Calendar className="h-3.5 w-3.5" /> Seasons
             </TabsTrigger>
-            <TabsTrigger value="games" className="gap-1.5 text-xs">
-              <Gamepad2 className="h-3.5 w-3.5" /> Jogos
+            <TabsTrigger value="matches" className="gap-1.5 text-xs">
+              <Swords className="h-3.5 w-3.5" /> Partidas
             </TabsTrigger>
             <TabsTrigger value="scoring" className="gap-1.5 text-xs">
               <ClipboardList className="h-3.5 w-3.5" /> Pontuação
@@ -48,13 +52,7 @@ const Admin = () => {
               <Trophy className="h-3.5 w-3.5" /> Partidas Blood
             </TabsTrigger>
 
-            <span className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 font-semibold hidden sm:inline ml-2">Comunidade</span>
-            <TabsTrigger value="rooms" className="gap-1.5 text-xs">
-              <DoorOpen className="h-3.5 w-3.5" /> Salas
-            </TabsTrigger>
-            <TabsTrigger value="players" className="gap-1.5 text-xs">
-              <Users className="h-3.5 w-3.5" /> Jogadores
-            </TabsTrigger>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground px-2 font-semibold hidden sm:inline ml-2">Conteúdo</span>
             <TabsTrigger value="about" className="gap-1.5 text-xs">
               <FileText className="h-3.5 w-3.5" /> Sobre Nós
             </TabsTrigger>
@@ -67,12 +65,11 @@ const Admin = () => {
           </TabsList>
         </div>
 
+        <TabsContent value="players"><AdminPlayers /></TabsContent>
         <TabsContent value="seasons"><AdminSeasons /></TabsContent>
-        <TabsContent value="games"><AdminGames /></TabsContent>
+        <TabsContent value="matches"><AdminMatches /></TabsContent>
         <TabsContent value="blood-scripts"><AdminBloodScripts /></TabsContent>
         <TabsContent value="blood-matches"><AdminBloodMatches /></TabsContent>
-        <TabsContent value="rooms"><AdminMatchRooms /></TabsContent>
-        <TabsContent value="players"><AdminPlayers /></TabsContent>
         <TabsContent value="scoring"><AdminScoringSchemas /></TabsContent>
         <TabsContent value="achievements"><AdminAchievements /></TabsContent>
         <TabsContent value="about"><AdminAboutUs /></TabsContent>

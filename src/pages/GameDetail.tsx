@@ -566,7 +566,7 @@ const GameDetail = () => {
             <CardContent className="pt-6">
               <h2 className="text-lg font-semibold mb-4">Histórico de Partidas</h2>
               {/* Filters */}
-              <div className="flex flex-wrap gap-3 mb-4">
+              <div className="flex flex-wrap gap-3 mb-4 items-center">
                 <Select value={timeFilter} onValueChange={v => { setTimeFilter(v); setPage(0); }}>
                   <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -599,6 +599,11 @@ const GameDetail = () => {
                     <SelectItem value="20">20/pág</SelectItem>
                   </SelectContent>
                 </Select>
+                {(timeFilter !== 'all' || typeFilter !== 'all' || playerFilter !== '' && playerFilter !== 'all') && (
+                  <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground" onClick={() => { setTimeFilter('all'); setTypeFilter('all'); setPlayerFilter('all'); setPage(0); }}>
+                    <span className="text-xs">✕</span> Limpar Filtros
+                  </Button>
+                )}
               </div>
 
               <div className="space-y-3">

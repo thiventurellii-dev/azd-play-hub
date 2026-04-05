@@ -710,6 +710,7 @@ export type Database = {
       }
       matches: {
         Row: {
+          approval_status: string
           created_at: string
           duration_minutes: number | null
           first_player_id: string | null
@@ -720,6 +721,7 @@ export type Database = {
           season_id: string
         }
         Insert: {
+          approval_status?: string
           created_at?: string
           duration_minutes?: number | null
           first_player_id?: string | null
@@ -730,6 +732,7 @@ export type Database = {
           season_id: string
         }
         Update: {
+          approval_status?: string
           created_at?: string
           duration_minutes?: number | null
           first_player_id?: string | null

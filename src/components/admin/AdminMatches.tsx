@@ -373,6 +373,18 @@ const AdminMatches = () => {
                         <Button variant="ghost" size="icon" onClick={() => openEditMatch(m)}>
                           <Pencil className="h-4 w-4" />
                         </Button>
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={async () => {
+                          if (!confirm('Tem certeza que deseja excluir esta partida? Esta ação não pode ser desfeita.')) return;
+                          await supabase.from('match_result_scores').delete().in('match_result_id', 
+                            (await supabase.from('match_results').select('id').eq('match_id', m.id)).data?.map(r => r.id) || []
+                          );
+                          await supabase.from('match_results').delete().eq('match_id', m.id);
+                          await supabase.from('matches').delete().eq('id', m.id);
+                          notify('success', 'Partida excluída');
+                          fetchMatches();
+                        }}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                         {m.image_url && (
                           <a href={m.image_url} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground">
                             <Image className="h-4 w-4" />

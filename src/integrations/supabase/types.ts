@@ -473,6 +473,38 @@ export type Database = {
         }
         Relationships: []
       }
+      ghost_players: {
+        Row: {
+          claim_code: string | null
+          created_at: string
+          display_name: string
+          id: string
+          linked_profile_id: string | null
+        }
+        Insert: {
+          claim_code?: string | null
+          created_at?: string
+          display_name: string
+          id?: string
+          linked_profile_id?: string | null
+        }
+        Update: {
+          claim_code?: string | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          linked_profile_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ghost_players_linked_profile_id_fkey"
+            columns: ["linked_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_result_scores: {
         Row: {
           category_key: string
@@ -505,44 +537,54 @@ export type Database = {
       match_results: {
         Row: {
           faction: string | null
+          ghost_player_id: string | null
           id: string
           is_new_player: boolean | null
           match_id: string
           mmr_after: number | null
           mmr_before: number | null
           mmr_change: number | null
-          player_id: string
+          player_id: string | null
           position: number
           score: number | null
           seat_position: number | null
         }
         Insert: {
           faction?: string | null
+          ghost_player_id?: string | null
           id?: string
           is_new_player?: boolean | null
           match_id: string
           mmr_after?: number | null
           mmr_before?: number | null
           mmr_change?: number | null
-          player_id: string
+          player_id?: string | null
           position: number
           score?: number | null
           seat_position?: number | null
         }
         Update: {
           faction?: string | null
+          ghost_player_id?: string | null
           id?: string
           is_new_player?: boolean | null
           match_id?: string
           mmr_after?: number | null
           mmr_before?: number | null
           mmr_change?: number | null
-          player_id?: string
+          player_id?: string | null
           position?: number
           score?: number | null
           seat_position?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "match_results_ghost_player_id_fkey"
+            columns: ["ghost_player_id"]
+            isOneToOne: false
+            referencedRelation: "ghost_players"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "match_results_match_id_fkey"
             columns: ["match_id"]

@@ -34,7 +34,7 @@ const AdminGames = () => {
   // Edit state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingGame, setEditingGame] = useState<Game | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', image_url: '', rules_url: '', video_url: '', min_players: '', max_players: '' });
+  const [editForm, setEditForm] = useState({ name: '', image_url: '', rules_url: '', video_url: '', min_players: '', max_players: '', slug: '', factions: '' });
 
   const fetchGames = async () => {
     const { data } = await supabase.from('games').select('*').order('name');

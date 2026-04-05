@@ -240,6 +240,8 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
             </Button>
           )}
         </div>
+
+        <RoomComments roomId={room.id} />
       </CardContent>
     </Card>
   );

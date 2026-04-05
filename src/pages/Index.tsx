@@ -318,9 +318,7 @@ const LoggedInIndex = () => {
                 </h3>
                 {recentMatches.length > 0 ? (
                   <div className="space-y-2">
-                    {recentMatches
-                      .sort((a, b) => new Date(b.played_at).getTime() - new Date(a.played_at).getTime())
-                      .map(m => (
+                    {recentMatches.map(m => (
                       <div key={m.id} className="flex justify-between items-center text-sm">
                         <span className="truncate">{m.game?.name}</span>
                         <div className="flex items-center gap-2 ml-2 shrink-0">
@@ -328,7 +326,7 @@ const LoggedInIndex = () => {
                             {new Date(m.played_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
                           </span>
                           <span className={`text-xs font-medium ${m.position === 1 ? 'text-gold' : 'text-muted-foreground'}`}>
-                            {m.position === 1 ? '🏆' : `${m.position}º`} {m.score}pts
+                            {m.position === 1 ? '🏆' : `${m.position}º`}{m.score != null ? ` ${m.score}pts` : ''}
                           </span>
                         </div>
                       </div>

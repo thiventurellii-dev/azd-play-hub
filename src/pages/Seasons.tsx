@@ -100,8 +100,14 @@ const Seasons = () => {
     supabase.from('games').select('id, name').order('name').then(({ data }) => setAllGames(data || []));
   }, []);
 
-  const openCreate = () => { setEditId(null); setFormName(''); setFormDesc(''); setFormStart(''); setFormEnd(''); setFormType('boardgame'); setDialogOpen(true); };
-  const openEdit = (s: Season) => { setEditId(s.id); setFormName(s.name); setFormDesc(s.description || ''); setFormStart(s.start_date); setFormEnd(s.end_date); setFormType(s.type); setDialogOpen(true); };
+  const openCreate = () => { setEditId(null); setFormName(''); setFormDesc(''); setFormStart(''); setFormEnd(''); setFormType('boardgame'); setFormGameId(''); setDialogOpen(true); };
+  const openEdit = async (s: Season) => {
+    setEditId(s.id); setFormName(s.name); setFormDesc(s.description || ''); setFormStart(s.start_date); setFormEnd(s.end_date); setFormType(s.type);
+    // Load linked game
+    const { data: sg } = await supabase.from('season_games').select('game_id').eq('season_id', s.id).limit(1);
+    setFormGameId(sg?.[0]?.game_id || '');
+    setDialogOpen(true);
+  };
 
   const handleSave = async () => {
     if (!formName || !formStart || !formEnd) return notify('error', 'Preencha nome e datas');

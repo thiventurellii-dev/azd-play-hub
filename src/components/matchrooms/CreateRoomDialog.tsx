@@ -139,6 +139,7 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
       setGameId("");
       setMaxPlayers("10");
       setSelectedScriptId("");
+      setCategory('');
       onCreated();
     }
     setSaving(false);

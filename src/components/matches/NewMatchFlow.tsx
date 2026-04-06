@@ -331,21 +331,82 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
 
   const gameName = games.find(g => g.id === gameId)?.name || '';
 
-  return (
-    <Card className="bg-card border-border">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span>Nova Partida</span>
-          <div className="flex gap-1">
-            {[1, 2, 3, 4].map(s => (
-              <div key={s} className={`h-2 w-8 rounded-full ${s <= step ? 'bg-gold' : 'bg-secondary'}`} />
-            ))}
+  // Category selector
+  if (!category) {
+    return (
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle>Registrar Partida</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">Escolha a categoria da partida:</p>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <button type="button" onClick={() => setCategory('boardgame')} className="p-6 rounded-lg border-2 border-border hover:border-gold/50 text-center transition-all group">
+              <Gamepad2 className="h-10 w-10 mx-auto mb-3 text-gold group-hover:scale-110 transition-transform" />
+              <p className="font-semibold">Boardgame</p>
+              <p className="text-xs text-muted-foreground mt-1">Jogos de tabuleiro</p>
+            </button>
+            <button type="button" onClick={() => setCategory('botc')} className="p-6 rounded-lg border-2 border-border hover:border-red-500/50 text-center transition-all group">
+              <Skull className="h-10 w-10 mx-auto mb-3 text-red-400 group-hover:scale-110 transition-transform" />
+              <p className="font-semibold">Blood on the Clocktower</p>
+              <p className="text-xs text-muted-foreground mt-1">BotC</p>
+            </button>
+            <button type="button" onClick={() => setCategory('rpg')} className="p-6 rounded-lg border-2 border-border hover:border-purple-500/50 text-center transition-all group">
+              <Wand2 className="h-10 w-10 mx-auto mb-3 text-purple-400 group-hover:scale-110 transition-transform" />
+              <p className="font-semibold">RPG</p>
+              <p className="text-xs text-muted-foreground mt-1">Em breve</p>
+            </button>
           </div>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* STEP 1: Header */}
-        {step === 1 && (
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (category === 'botc') {
+    return (
+      <div className="space-y-4">
+        <Button variant="outline" size="sm" onClick={() => setCategory('')}>
+          <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
+        </Button>
+        <NewMatchBotcFlow onComplete={onComplete} />
+      </div>
+    );
+  }
+
+  if (category === 'rpg') {
+    return (
+      <Card className="bg-card border-border">
+        <CardHeader><CardTitle>RPG</CardTitle></CardHeader>
+        <CardContent className="text-center py-12">
+          <Wand2 className="h-12 w-12 mx-auto mb-4 text-purple-400" />
+          <p className="text-muted-foreground">Registro de sessões de RPG em breve!</p>
+          <Button variant="outline" className="mt-4" onClick={() => setCategory('')}>
+            <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <Button variant="outline" size="sm" onClick={() => setCategory('')}>
+        <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
+      </Button>
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span>Nova Partida — Boardgame</span>
+            <div className="flex gap-1">
+              {[1, 2, 3, 4].map(s => (
+                <div key={s} className={`h-2 w-8 rounded-full ${s <= step ? 'bg-gold' : 'bg-secondary'}`} />
+              ))}
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* STEP 1: Header */}
+          {step === 1 && (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">1. Cabeçalho da Partida</h3>
             <div className="grid gap-4 sm:grid-cols-2">

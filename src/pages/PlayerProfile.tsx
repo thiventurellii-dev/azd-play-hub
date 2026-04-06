@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,15 +7,20 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
-import { Trophy, Gamepad2, ArrowLeft, Calendar, Clock, Users, Award } from "lucide-react";
+import { Trophy, Gamepad2, ArrowLeft, Calendar, Clock, Users, Award, Pencil, Lock } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import { motion } from "framer-motion";
 import FriendButton from "@/components/friendlist/FriendButton";
 import FriendsList from "@/components/friendlist/FriendsList";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotification } from "@/components/NotificationDialog";
+import { brazilianStates, citiesByState, pronounsOptions, countryCodes, formatPhone, unformatPhone } from "@/lib/brazil-data";
+import { Camera } from "lucide-react";
+import { useRef } from "react";
 
 const CHART_COLORS = [
   "hsl(43, 100%, 50%)",    // gold

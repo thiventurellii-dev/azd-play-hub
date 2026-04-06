@@ -373,7 +373,7 @@ const Navbar = () => {
                 <Button
                   variant="ghost"
                   className="flex-1 justify-start gap-2 relative"
-                  onClick={() => { closeMobile(); navigate("/profile"); }}
+                  onClick={() => { closeMobile(); navigate(userNickname ? `/perfil/${userNickname}` : "/profile"); }}
                 >
                   {userAvatar ? (
                     <img src={userAvatar} alt="" className="h-6 w-6 rounded-full object-cover" />

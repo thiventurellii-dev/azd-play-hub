@@ -373,6 +373,32 @@ const AdminBloodScripts = () => {
               <Label>Descrição</Label>
               <Textarea value={editScriptForm.description} onChange={e => setEditScriptForm({ ...editScriptForm, description: e.target.value })} />
             </div>
+            <div className="space-y-2">
+              <Label>Condições de Vitória Especiais</Label>
+              <div className="space-y-2">
+                {editScriptForm.victory_conditions.map((vc, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Input value={vc} onChange={e => {
+                      const updated = [...editScriptForm.victory_conditions];
+                      updated[i] = e.target.value;
+                      setEditScriptForm({ ...editScriptForm, victory_conditions: updated });
+                    }} />
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
+                      setEditScriptForm({ ...editScriptForm, victory_conditions: editScriptForm.victory_conditions.filter((_, idx) => idx !== i) });
+                    }}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                  </div>
+                ))}
+                <div className="flex items-center gap-2">
+                  <Input value={newEditCondition} onChange={e => setNewEditCondition(e.target.value)} placeholder="Ex: Vitória pelo Prefeito" />
+                  <Button variant="outline" size="sm" onClick={() => {
+                    if (newEditCondition.trim()) {
+                      setEditScriptForm({ ...editScriptForm, victory_conditions: [...editScriptForm.victory_conditions, newEditCondition.trim()] });
+                      setNewEditCondition('');
+                    }
+                  }}><Plus className="h-3 w-3 mr-1" /> Adicionar</Button>
+                </div>
+              </div>
+            </div>
             <Button variant="gold" onClick={handleEditScriptSave} className="w-full">Salvar</Button>
           </div>
         </DialogContent>

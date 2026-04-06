@@ -83,18 +83,28 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
     }));
     setPlayers(mappedPlayers);
 
-    // Calculate avg MMR for competitive rooms
+    // Calculate avg MMR for competitive boardgame rooms with a season
     if (room.season_id) {
       const confirmedIds = data.filter(p => p.type === 'confirmed').map(p => p.player_id);
       if (confirmedIds.length > 0) {
-        const { data: mmrData } = await supabase
-          .from("mmr_ratings")
-          .select("current_mmr")
-          .eq("season_id", room.season_id)
-          .in("player_id", confirmedIds);
-        if (mmrData && mmrData.length > 0) {
-          const avg = mmrData.reduce((sum, r) => sum + Number(r.current_mmr), 0) / mmrData.length;
-          setAvgMmr(Math.round(avg));
+        // Check if the season is boardgame type
+        const { data: seasonData } = await supabase
+          .from("seasons")
+          .select("type")
+          .eq("id", room.season_id)
+          .maybeSingle();
+        if (seasonData?.type === 'boardgame') {
+          const { data: mmrData } = await supabase
+            .from("mmr_ratings")
+            .select("current_mmr")
+            .eq("season_id", room.season_id)
+            .in("player_id", confirmedIds);
+          if (mmrData && mmrData.length > 0) {
+            const avg = mmrData.reduce((sum, r) => sum + Number(r.current_mmr), 0) / mmrData.length;
+            setAvgMmr(Math.round(avg));
+          } else {
+            setAvgMmr(null);
+          }
         } else {
           setAvgMmr(null);
         }

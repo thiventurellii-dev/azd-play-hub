@@ -219,7 +219,12 @@ const Games = () => {
     setEditMinP(g.min_players?.toString() || '');
     setEditMaxP(g.max_players?.toString() || '');
     setEditSlug(g.slug || '');
-    setEditFactions(g.factions ? JSON.stringify(g.factions, null, 2) : '');
+    // Convert factions to comma-separated string
+    if (Array.isArray(g.factions)) {
+      setEditFactions(g.factions.map((f: any) => typeof f === 'string' ? f : f.name || '').filter(Boolean).join(', '));
+    } else {
+      setEditFactions('');
+    }
     setEditTagIds(gameTagIdMap[g.id] || []);
 
     // Load scoring schema

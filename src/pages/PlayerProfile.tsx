@@ -553,17 +553,11 @@ const PlayerProfile = () => {
                   size="sm"
                   onClick={async () => {
                     const returnTo = `${window.location.origin}/auth/steam/callback`;
-                    const { data } = await (await fetch(
+                    const resp = await fetch(
                       `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/steam-auth?action=login&return_to=${encodeURIComponent(returnTo)}`
-                    )).json();
-                    if (data?.url || (data as any)) {
-                      // The response has { url: "..." }
-                      const resp = await fetch(
-                        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/steam-auth?action=login&return_to=${encodeURIComponent(returnTo)}`
-                      );
-                      const json = await resp.json();
-                      if (json.url) window.location.href = json.url;
-                    }
+                    );
+                    const json = await resp.json();
+                    if (json.url) window.location.href = json.url;
                   }}
                   className="gap-1"
                 >

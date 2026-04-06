@@ -378,7 +378,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
       <Card className="bg-card border-border">
         <CardHeader><CardTitle>RPG</CardTitle></CardHeader>
         <CardContent className="text-center py-12">
-          <Wand2 className="h-12 w-12 mx-auto mb-4 text-purple-400" />
+          <Sword className="h-12 w-12 mx-auto mb-4 text-purple-400" />
           <p className="text-muted-foreground">Registro de sessões de RPG em breve!</p>
           <Button variant="outline" className="mt-4" onClick={() => setCategory('')}>
             <ChevronLeft className="h-4 w-4 mr-1" /> Voltar

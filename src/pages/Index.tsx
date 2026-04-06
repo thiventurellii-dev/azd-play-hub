@@ -7,6 +7,17 @@ import { Calendar } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+const fadeUp = (delay: number) => ({
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+  transition: { delay },
+});
+
+const hoverSpring = {
+  whileHover: { scale: 1.08, y: -2 },
+  whileTap: { scale: 0.97 },
+  transition: { type: "spring", stiffness: 400, damping: 15 },
+};
 
 const LoggedOutIndex = () => (
   <div className="min-h-screen">

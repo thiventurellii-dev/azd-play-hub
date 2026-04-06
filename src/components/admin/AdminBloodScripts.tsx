@@ -26,6 +26,7 @@ interface BloodCharacter {
   team: 'good' | 'evil';
   role_type: 'townsfolk' | 'outsider' | 'minion' | 'demon';
   description: string | null;
+  icon_url: string | null;
 }
 
 const teamLabels: Record<string, string> = { good: 'Bem', evil: 'Mal' };

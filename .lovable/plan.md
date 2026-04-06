@@ -1,102 +1,107 @@
-## Plan: UI Improvements, Scrollbar Styling, Cards, Notifications, and Game Page Fixes
 
-### 1. Ghost Scrollbars (Desktop)
 
-**File: `src/index.css**`
+## Plan: Unified Match Editing, Activity Logs, Room UX Fixes & Deep Link Refactor
 
-- Add custom scrollbar CSS using `::-webkit-scrollbar` and `scrollbar-color` properties
-- Default state: transparent track, invisible thumb
-- On hover (`:hover`): reveal thumb with subtle color matching mobile scrollbar (gray/muted)
-- Apply globally to all scrollable containers
+### 1. Unified Match Editing Flow
 
-### 2. Fixed-size Cards for Rooms and BotC Scripts
+**Current state**: Match editing exists in 3 places — `AdminMatches.tsx`, `GameDetail.tsx` (edit match dialog), and `NewMatchFlow.tsx` (creation only). Each has its own UI/logic.
 
-**File: `src/components/matchrooms/MatchRoomCard.tsx**`
+**Approach**:
+- Create a reusable `EditMatchDialog` component (`src/components/matches/EditMatchDialog.tsx`) that wraps `NewMatchFlow`-like step UI but pre-populated with existing match data
+- Admins: direct save to `matches` + `match_results` tables
+- Regular users: save to a new `match_edit_proposals` table with status `pending`, admin reviews and approves
 
-- Set fixed card height (`h-[380px]` or similar) with `overflow-hidden`
-- Hide partially comments section by default behind a "Ver mais comentários" toggle button
-- When toggled, expand the card or show comments inline with scroll
-- Truncate description with `line-clamp-2`
+**Database migration**: Create `match_edit_proposals` table:
+```sql
+CREATE TABLE match_edit_proposals (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  match_id uuid NOT NULL,
+  proposed_by uuid NOT NULL,
+  proposed_data jsonb NOT NULL,
+  status text NOT NULL DEFAULT 'pending',
+  reviewed_by uuid,
+  reviewed_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE match_edit_proposals ENABLE ROW LEVEL SECURITY;
+-- RLS: users see own proposals, admins see all
+```
 
-**File: `src/pages/Games.tsx**` (Blood scripts section)
+**Files**:
+- Create `src/components/matches/EditMatchDialog.tsx` — unified edit component
+- Modify `src/pages/GameDetail.tsx` — replace inline edit dialog with `EditMatchDialog`
+- Modify `src/components/admin/AdminMatches.tsx` — use same `EditMatchDialog`
+- Modify `src/pages/Admin.tsx` — add "Propostas de Edição" section for admin review
 
-- Apply fixed card dimensions to BotC script cards
-- Truncate character lists with a "Ver Personagens" expand toggle. Dont expand all cards, only the one clicked by the user.
+### 2. Activity Logs (Admin)
 
-### 3. Notification Bell (Central de Notificações)
+**Database migration**: Create `activity_logs` table:
+```sql
+CREATE TABLE activity_logs (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  action text NOT NULL, -- 'create', 'update', 'delete'
+  entity_type text NOT NULL, -- 'room', 'match', 'game', 'player', etc.
+  entity_id uuid,
+  old_data jsonb,
+  new_data jsonb,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY;
+-- Only admins can read
+```
 
-**File: `src/components/Navbar.tsx**`
+**Files**:
+- Create `src/components/admin/AdminLogs.tsx` — log viewer with filters (entity type, user, date range)
+- Modify `src/pages/Admin.tsx` — add "Logs" menu item under a new "Sistema" group
+- Create `src/lib/activityLog.ts` — helper `logActivity(userId, action, entityType, entityId, oldData?, newData?)` that inserts into `activity_logs`
+- Instrument key operations: room CRUD in `MatchRoomCard.tsx`, match creation in `NewMatchFlow.tsx`, game editing in `GameDetail.tsx`, player status changes in `AdminPlayers.tsx`
 
-- Add a `Bell` icon (from lucide-react) to the right of the user avatar in the navbar
-- Create a dropdown/popover showing past notifications
-- Initially: show a placeholder "Sem notificações" state (no backend table needed yet — future-ready)
-- Badge counter for unread notifications (static 0 for now)
+### 3. MatchRoom Comments UX Fix
 
-### 4. Steam Icon Fix
+**Problem**: Comments are hidden behind toggle but when opened, buttons get blocked.
 
-**File: `src/pages/PlayerProfile.tsx**`
+**Changes in `src/components/matchrooms/MatchRoomCard.tsx`**:
+- Remove fixed `h-[340px]` from Card — use `min-h-[340px]` instead so the card can grow when comments open
+- Show comments open by default (set `showComments` initial state to `true`)
+- Keep `max-h-60 overflow-y-auto` on comment list to cap height
+- Ensure action buttons (Sair, Compartilhar, Fechar) remain above the comments section and never get overlapped — move comments BELOW the action buttons in DOM order
 
-- Replace the current custom SVG path (which doesn't look like Steam) with the proper Steam logo SVG icon — the well-known Steam Valve logo
+### 4. Room Deep Link — Modal with Direct Fetch
 
-### 5. Fix Room Deep Link (Black Screen)
+**Problem**: Current scroll+highlight approach doesn't feel premium; previous modal approach had black screen due to race condition.
 
-**Root cause**: The `deepLinkRoom` modal renders a `MatchRoomCard` inside a `DialogContent`, but if the room data is stale or the modal renders before `rooms` are loaded, it shows nothing. Also, the dialog might close immediately if `deepLinkRoom` is set before rooms finish loading.
+**Changes in `src/pages/MatchRooms.tsx`**:
+- Remove scroll/highlight logic entirely
+- When `?room=ID` detected, immediately open a Dialog
+- Inside Dialog: show a Skeleton loader, then fire an isolated Supabase query `.select('*').eq('id', roomId).maybeSingle()`
+- On success: render a full `MatchRoomCard` inside the Dialog with all interactions (join, leave, comment)
+- On failure (null): show toast "Sala não encontrada", close dialog, clean URL params
+- On dialog close: clean `?room` from URL via `setSearchParams`
+- Apply optional chaining throughout `MatchRoomCard` to handle partial data gracefully
 
-**Implementation Steps to Solve:**
+### 5. WhatsApp Emoji Fix
 
-1. **Direct Single-Record Fetching:**
-  - In src/pages/MatchRooms.tsx, implement a secondary, isolated Supabase query that triggers when ?room=ID is detected in the URL.
-  - Use .select('*').eq('id', roomId).single() to fetch the specific room data independently of the main rooms list.
-2. **Robust Loading States (Skeleton UI):**
-  - Modify the RoomDetailModal to immediately open when a roomId param exists.
-  - Implement a **Skeleton Loader** or **Loading Spinner** inside the DialogContent. Do not attempt to render the MatchRoomCard until the specific fetch is successful.
-3. **Defensive Rendering (Optional Chaining):**
-  - Apply **Optional Chaining (?.)** across the MatchRoomCard and its sub-components (Comments, Players, Game Info) to handle null or undefined data during the transition phase.
-  - Ensure that any mathematical calculations (scoring averages) provide a fallback value (e.g., ?? 0) to prevent NaN errors.
-4. **Error Handling & Graceful Fallback:**
-  - If the direct fetch returns no data (404), trigger a "Room not found" Toast and programmatically close the Dialog.
-  - Upon closing the Modal, use useSearchParams to clean the URL (remove the room param) without triggering a full page reload.
-5. **Interactive Card Integration:**
-  - Ensure the Modal-centric view supports all core interactions (Joining, Leaving, Commenting) by passing the freshly fetched data to the existing card logic.
-  - Fix the layout issue where Room Cards in the main grid have inconsistent heights; force a uniform card size with an expandable section for long comment threads.
+**Root cause**: The emojis in `matchNotification.ts` are standard Unicode and `encodeURIComponent` handles them correctly. The `�` replacement character suggests the file might have been saved with incorrect encoding, or there's a build-time transformation stripping non-ASCII.
 
-### 6. WhatsApp Emoji Fix
+**Fix in `src/lib/matchNotification.ts`**:
+- Replace emoji literals with their Unicode escape sequences to avoid encoding issues:
+  - `\u{1F3B2}` for 🎲, `\u{1F3AE}` for 🎮, `\u{1F4C5}` for 📅, `\u2705` for ✅, `\u{1F449}` for 👉
+- This ensures consistent encoding regardless of file save format
 
-**File: `src/lib/matchNotification.ts**`
+### Technical Summary
 
-- The emojis in the message are Unicode characters that should work fine with `encodeURIComponent`
-- The issue is likely that the `encodeURIComponent` is double-encoding or the `wa.me` URL is malforming
-- Verify the emoji characters are standard Unicode (🎲, 🎮, 📅, ✅, 👉) — these are already correct in the code
-- Test: the current code looks correct. The issue might be browser/OS specific. No code change needed unless testing reveals a specific encoding issue.
+**New files** (4):
+- `src/components/matches/EditMatchDialog.tsx`
+- `src/components/admin/AdminLogs.tsx`
+- `src/lib/activityLog.ts`
+- Migration: `match_edit_proposals` + `activity_logs` tables
 
-### 7. Fix Edit Match Button (Game Detail History)
+**Modified files** (6):
+- `src/components/matchrooms/MatchRoomCard.tsx` — comments open by default, flexible card height
+- `src/pages/MatchRooms.tsx` — modal-based deep link with direct fetch + skeleton
+- `src/pages/GameDetail.tsx` — use unified `EditMatchDialog`
+- `src/pages/Admin.tsx` — add Logs + Edit Proposals menu items
+- `src/components/admin/AdminMatches.tsx` — use unified `EditMatchDialog`
+- `src/lib/matchNotification.ts` — Unicode escape sequences for emojis
 
-**File: `src/pages/GameDetail.tsx**` (line ~908)
-
-- The Pencil button currently has `/* TODO: edit match */` — it does nothing
-- Implement: add state for `editingMatch` and a Dialog with fields to edit the match (date, duration, player results)
-- Reuse similar logic from `AdminMatches.tsx` for the edit form
-- On save: update `matches` and `match_results` tables, then refresh the history
-
-### 8. Average Game Duration in Header
-
-**File: `src/pages/GameDetail.tsx**` (line ~489, inside the hero banner stats)
-
-- Calculate average duration from `allMatches` using `duration_minutes`
-- Add a `Clock` icon + "~Xmin" next to the player count in the header
-- Calculation: `Math.round(sum(duration_minutes) / count_with_duration)`
-
-### Technical Details
-
-**Files to modify:**
-
-- `src/index.css` — ghost scrollbar styles
-- `src/components/Navbar.tsx` — notification bell
-- `src/components/matchrooms/MatchRoomCard.tsx` — fixed card + collapsible comments
-- `src/pages/MatchRooms.tsx` — remove deep link modal, use scroll+highlight only
-- `src/pages/GameDetail.tsx` — edit match button, avg duration in header
-- `src/pages/PlayerProfile.tsx` — Steam icon SVG
-- `src/pages/Games.tsx` — fixed BotC script card sizes
-- `src/lib/matchNotification.ts` — verify emoji encoding (likely no change needed)
-
-**No database changes required.**

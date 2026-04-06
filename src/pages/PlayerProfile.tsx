@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,15 +7,20 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
-import { Trophy, Gamepad2, ArrowLeft, Calendar, Clock, Users, Award } from "lucide-react";
+import { Trophy, Gamepad2, ArrowLeft, Calendar, Clock, Users, Award, Pencil, Lock } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
 import { motion } from "framer-motion";
 import FriendButton from "@/components/friendlist/FriendButton";
 import FriendsList from "@/components/friendlist/FriendsList";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotification } from "@/components/NotificationDialog";
+import { brazilianStates, citiesByState, pronounsOptions, countryCodes, formatPhone, unformatPhone } from "@/lib/brazil-data";
+import { Camera } from "lucide-react";
+import { useRef } from "react";
 
 const CHART_COLORS = [
   "hsl(43, 100%, 50%)",    // gold
@@ -32,6 +37,7 @@ const PlayerProfile = () => {
   const { nickname } = useParams();
   const { user, isAdmin } = useAuth();
   const { notify } = useNotification();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [role, setRole] = useState<string>("player");
   const [loading, setLoading] = useState(true);
@@ -41,8 +47,19 @@ const PlayerProfile = () => {
   const [upcomingRooms, setUpcomingRooms] = useState<any[]>([]);
   const [achievements, setAchievements] = useState<{ icon: string; name: string; description: string | null }[]>([]);
 
+  // Edit profile state
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({ name: '', nickname: '', phone: '', country_code: '+55', state: '', city: '', birth_date: '', gender: '', pronouns: '', email: '' });
+  const [saving, setSaving] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isOwnProfile = user && profile && user.id === profile.id;
+  const cities = citiesByState[form.state] || [];
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -56,7 +73,19 @@ const PlayerProfile = () => {
         return;
       }
       setProfile(prof);
-
+      // Populate edit form
+      setForm({
+        name: prof.name || '',
+        nickname: (prof as any).nickname || '',
+        phone: formatPhone((prof as any).phone || ''),
+        country_code: (prof as any).country_code || '+55',
+        state: (prof as any).state || '',
+        city: (prof as any).city || '',
+        birth_date: (prof as any).birth_date || '',
+        gender: (prof as any).gender || '',
+        pronouns: (prof as any).pronouns || '',
+        email: (prof as any).email || '',
+      });
       // Role
       const { data: roleData } = await supabase.from("user_roles").select("role").eq("user_id", prof.id).maybeSingle();
       if (roleData) setRole(roleData.role);
@@ -182,6 +211,63 @@ const PlayerProfile = () => {
     fetchProfile();
   }, [nickname, user]);
 
+  const handleSaveProfile = async () => {
+    if (!user || !isOwnProfile) return;
+    if (!form.name || !form.nickname || !form.phone || !form.state || !form.city || !form.birth_date || !form.gender || !form.pronouns) {
+      return notify('error', 'Preencha todos os campos obrigatórios');
+    }
+    setSaving(true);
+    const { error } = await supabase.from('profiles').update({
+      name: form.name, nickname: form.nickname, phone: unformatPhone(form.phone),
+      country_code: form.country_code, state: form.state, city: form.city,
+      birth_date: form.birth_date, gender: form.gender, pronouns: form.pronouns, email: form.email,
+    } as any).eq('id', user.id);
+    setSaving(false);
+    if (error) return notify('error', error.message);
+    notify('success', 'Perfil atualizado!');
+    setEditing(false);
+    setProfile({ ...profile, ...form, phone: unformatPhone(form.phone) });
+    if (form.nickname !== nickname) navigate(`/perfil/${form.nickname}`, { replace: true });
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPassword || !confirmPassword) return notify('error', 'Preencha ambos os campos');
+    if (newPassword !== confirmPassword) return notify('error', 'As senhas não coincidem');
+    if (newPassword.length < 8) return notify('error', 'Mínimo 8 caracteres');
+    if (!/[A-Z]/.test(newPassword)) return notify('error', 'Inclua ao menos uma letra maiúscula');
+    if (!/[a-z]/.test(newPassword)) return notify('error', 'Inclua ao menos uma letra minúscula');
+    if (!/[^A-Za-z0-9]/.test(newPassword)) return notify('error', 'Inclua ao menos um caractere especial');
+    setSavingPassword(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setSavingPassword(false);
+    if (error) return notify('error', error.message);
+    notify('success', 'Senha alterada com sucesso!');
+    setChangingPassword(false);
+    setNewPassword('');
+    setConfirmPassword('');
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (file.size > 2 * 1024 * 1024) return notify('error', 'Imagem deve ter no máximo 2MB');
+    setUploadingAvatar(true);
+    const ext = file.name.split('.').pop();
+    const path = `${user.id}/avatar.${ext}`;
+    const { data: existing } = await supabase.storage.from('avatars').list(user.id);
+    if (existing && existing.length > 0) {
+      await supabase.storage.from('avatars').remove(existing.map(f => `${user.id}/${f.name}`));
+    }
+    const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
+    if (uploadError) { setUploadingAvatar(false); return notify('error', uploadError.message); }
+    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
+    const avatarUrl = urlData.publicUrl + '?t=' + Date.now();
+    await supabase.from('profiles').update({ avatar_url: avatarUrl } as any).eq('id', user.id);
+    setProfile({ ...profile, avatar_url: avatarUrl });
+    setUploadingAvatar(false);
+    notify('success', 'Foto atualizada!');
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-20">
@@ -214,8 +300,20 @@ const PlayerProfile = () => {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         <Card className="bg-card border-border">
           <CardContent className="pt-6 flex flex-col sm:flex-row items-center gap-6">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-secondary text-gold font-bold text-3xl flex-shrink-0">
-              {(profile.nickname || profile.name || "?").charAt(0).toUpperCase()}
+            <div className="relative group cursor-pointer flex-shrink-0" onClick={() => isOwnProfile && fileInputRef.current?.click()}>
+              {profile.avatar_url ? (
+                <img src={profile.avatar_url} alt="Avatar" className="h-20 w-20 rounded-full object-cover" />
+              ) : (
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-secondary text-gold font-bold text-3xl">
+                  {(profile.nickname || profile.name || "?").charAt(0).toUpperCase()}
+                </div>
+              )}
+              {isOwnProfile && (
+                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Camera className="h-5 w-5 text-white" />
+                </div>
+              )}
+              {isOwnProfile && <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploadingAvatar} />}
             </div>
             <div className="flex-1 text-center sm:text-left">
               <h1 className="text-2xl font-bold">{profile.name}</h1>
@@ -229,12 +327,107 @@ const PlayerProfile = () => {
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <FriendButton targetUserId={profile.id} />
+            <div className="flex items-center gap-2 flex-wrap justify-center">
+              {isOwnProfile ? (
+                <>
+                  {!editing && (
+                    <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+                      <Pencil className="h-4 w-4 mr-1" /> Editar Perfil
+                    </Button>
+                  )}
+                  {!changingPassword && !editing && (
+                    <Button variant="outline" size="sm" onClick={() => setChangingPassword(true)}>
+                      <Lock className="h-4 w-4 mr-1" /> Resetar Senha
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <FriendButton targetUserId={profile.id} />
+              )}
             </div>
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Edit Profile Form */}
+      {isOwnProfile && editing && (
+        <Card className="bg-card border-border">
+          <CardContent className="pt-6 space-y-4">
+            <h2 className="text-lg font-semibold">Editar Perfil</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2"><Label>Nickname *</Label><Input value={form.nickname} onChange={e => setForm({ ...form, nickname: e.target.value })} /></div>
+              <div className="space-y-2"><Label>Nome Completo *</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
+            </div>
+            <div className="space-y-2"><Label>E-mail</Label><Input value={form.email} disabled className="opacity-60" /></div>
+            <div className="space-y-2">
+              <Label>Telefone *</Label>
+              <div className="flex gap-2">
+                <Select value={form.country_code} onValueChange={v => setForm({ ...form, country_code: v })}>
+                  <SelectTrigger className="w-[110px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>{countryCodes.map(c => <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>)}</SelectContent>
+                </Select>
+                <Input value={form.phone} onChange={e => setForm({ ...form, phone: formatPhone(e.target.value) })} placeholder="(11) 99999-9999" className="flex-1" />
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Estado *</Label>
+                <Select value={form.state} onValueChange={v => setForm({ ...form, state: v, city: '' })}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>{brazilianStates.map(s => <SelectItem key={s.uf} value={s.uf}>{s.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Cidade *</Label>
+                <Select value={form.city} onValueChange={v => setForm({ ...form, city: v })} disabled={!form.state}>
+                  <SelectTrigger><SelectValue placeholder={form.state ? 'Selecione' : 'Selecione o estado'} /></SelectTrigger>
+                  <SelectContent>{cities.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2"><Label>Data de Nascimento *</Label><Input type="date" value={form.birth_date} onChange={e => setForm({ ...form, birth_date: e.target.value })} /></div>
+              <div className="space-y-2">
+                <Label>Gênero *</Label>
+                <Select value={form.gender} onValueChange={v => setForm({ ...form, gender: v })}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="masculino">Masculino</SelectItem><SelectItem value="feminino">Feminino</SelectItem>
+                    <SelectItem value="nao_binario">Não-binário</SelectItem><SelectItem value="outro">Outro</SelectItem>
+                    <SelectItem value="prefiro_nao_dizer">Prefiro não dizer</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Pronomes *</Label>
+              <Select value={form.pronouns} onValueChange={v => setForm({ ...form, pronouns: v })}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>{pronounsOptions.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="gold" onClick={handleSaveProfile} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
+              <Button variant="outline" onClick={() => setEditing(false)}>Cancelar</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Change Password Form */}
+      {isOwnProfile && changingPassword && (
+        <Card className="bg-card border-border">
+          <CardContent className="pt-6 space-y-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2"><Lock className="h-4 w-4" /> Alterar Senha</h2>
+            <div className="space-y-2"><Label>Nova Senha</Label><Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Mínimo 8 caracteres, 1 maiúscula, 1 minúscula, 1 especial" /></div>
+            <div className="space-y-2"><Label>Confirmar Nova Senha</Label><Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Digite a senha novamente" /></div>
+            <div className="flex gap-2">
+              <Button variant="gold" onClick={handleChangePassword} disabled={savingPassword}>{savingPassword ? 'Salvando...' : 'Alterar Senha'}</Button>
+              <Button variant="outline" onClick={() => { setChangingPassword(false); setNewPassword(''); setConfirmPassword(''); }}>Cancelar</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
 
       <div className="grid gap-4 grid-cols-2">

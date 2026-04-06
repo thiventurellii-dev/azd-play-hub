@@ -34,6 +34,7 @@ interface Props {
 
 const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComplete }: Props) => {
   const { notify } = useNotification();
+  const [category, setCategory] = useState<'boardgame' | 'botc' | 'rpg' | ''>('');
   const [step, setStep] = useState(1);
 
   // Step 1

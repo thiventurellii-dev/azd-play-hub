@@ -414,9 +414,12 @@ const Games = () => {
           const seasons = scriptSeasons[s.id] || [];
           return (
             <motion.div key={s.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-              <Card className={`bg-card border-border hover:border-gold/20 transition-all ${isExpanded ? '' : 'h-[240px] overflow-hidden'} flex flex-col`}>
+              <Card className={`bg-card border-border hover:border-gold/20 transition-all ${isExpanded ? '' : 'h-[280px] overflow-hidden'} flex flex-col relative group`}>
                 <CardContent className="py-5 space-y-3 flex-1 flex flex-col">
-                  <div className="flex items-start gap-4">
+                  <div
+                    className="flex items-start gap-4 cursor-pointer"
+                    onClick={() => setExpandedScript(isExpanded ? null : s.id)}
+                  >
                     {getScriptImage(s.name) ? (
                       <img src={getScriptImage(s.name)!} alt={s.name} className="h-20 w-20 rounded-lg object-cover flex-shrink-0" loading="lazy" />
                     ) : (
@@ -433,12 +436,16 @@ const Games = () => {
                     </div>
                   </div>
                   <div className="flex-1" />
-                  {seasons.length > 0 && (
+                  {seasons.length > 0 ? (
                     <div className="border-t border-border pt-3">
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1"><Calendar className="h-3 w-3" /> Seasons</p>
                       <div className="flex gap-2 flex-wrap">
                         {seasons.map(ss => <Badge key={ss.season_id} className={`${statusColors[ss.status] || ""} text-xs`}>{ss.season_name}</Badge>)}
                       </div>
+                    </div>
+                  ) : (
+                    <div className="border-t border-border pt-3">
+                      <p className="text-xs text-muted-foreground italic">Nenhuma season vinculada</p>
                     </div>
                   )}
                   <Button
@@ -470,6 +477,13 @@ const Games = () => {
                     </div>
                   )}
                 </CardContent>
+                {isAdmin && (
+                  <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); /* TODO: edit script dialog */ toast.info("Edição de scripts em breve"); }}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                )}
               </Card>
             </motion.div>
           );

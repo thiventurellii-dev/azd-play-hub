@@ -258,11 +258,6 @@ const Navbar = () => {
                   </div>
                 )}
                 {userNickname || user.user_metadata?.name || "Perfil"}
-                {pendingFriends > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-[10px] font-bold text-black">
-                    {pendingFriends}
-                  </span>
-                )}
               </Button>
               <Popover>
                 <PopoverTrigger asChild>

@@ -1,0 +1,1 @@
+ALTER TABLE public.blood_scripts ADD COLUMN IF NOT EXISTS image_url text;

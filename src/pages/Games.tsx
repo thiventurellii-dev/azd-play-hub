@@ -76,6 +76,23 @@ const Games = () => {
   const [newAdvTag, setNewAdvTag] = useState<'official' | 'homebrew'>('official');
   const [newAdvImageUrl, setNewAdvImageUrl] = useState('');
 
+  // Edit RPG dialogs
+  const [editSystemOpen, setEditSystemOpen] = useState(false);
+  const [editSystem, setEditSystem] = useState<any>(null);
+  const [editSysName, setEditSysName] = useState('');
+  const [editSysDesc, setEditSysDesc] = useState('');
+  const [editSysImageUrl, setEditSysImageUrl] = useState('');
+  const [editSysRulesUrl, setEditSysRulesUrl] = useState('');
+  const [editSysVideoUrl, setEditSysVideoUrl] = useState('');
+
+  const [editAdvOpen, setEditAdvOpen] = useState(false);
+  const [editAdv, setEditAdv] = useState<any>(null);
+  const [editAdvName, setEditAdvName] = useState('');
+  const [editAdvDesc, setEditAdvDesc] = useState('');
+  const [editAdvTag, setEditAdvTag] = useState<'official' | 'homebrew'>('official');
+  const [editAdvImageUrl, setEditAdvImageUrl] = useState('');
+  const [editAdvSystemId, setEditAdvSystemId] = useState('');
+
   // Tags
   const [allTags, setAllTags] = useState<GameTag[]>([]);
   const [gameTagMap, setGameTagMap] = useState<Record<string, string[]>>({});
@@ -551,6 +568,52 @@ const Games = () => {
     fetchData();
   };
 
+  const openEditSystem = (sys: any) => {
+    setEditSystem(sys);
+    setEditSysName(sys.name);
+    setEditSysDesc(sys.description || '');
+    setEditSysImageUrl(sys.image_url || '');
+    setEditSysRulesUrl(sys.rules_url || '');
+    setEditSysVideoUrl(sys.video_url || '');
+    setEditSystemOpen(true);
+  };
+
+  const handleEditSystemSave = async () => {
+    if (!editSystem) return;
+    const { error } = await supabase.from('rpg_systems').update({
+      name: editSysName, description: editSysDesc || null,
+      image_url: editSysImageUrl || null, rules_url: editSysRulesUrl || null,
+      video_url: editSysVideoUrl || null,
+    } as any).eq('id', editSystem.id);
+    if (error) return notify('error', error.message);
+    notify('success', 'Sistema atualizado!');
+    setEditSystemOpen(false);
+    fetchData();
+  };
+
+  const openEditAdventure = (adv: any) => {
+    setEditAdv(adv);
+    setEditAdvName(adv.name);
+    setEditAdvDesc(adv.description || '');
+    setEditAdvTag(adv.tag || 'official');
+    setEditAdvImageUrl(adv.image_url || '');
+    setEditAdvSystemId(adv.system_id);
+    setEditAdvOpen(true);
+  };
+
+  const handleEditAdventureSave = async () => {
+    if (!editAdv) return;
+    const { error } = await supabase.from('rpg_adventures').update({
+      name: editAdvName, description: editAdvDesc || null,
+      tag: editAdvTag, image_url: editAdvImageUrl || null,
+      system_id: editAdvSystemId,
+    } as any).eq('id', editAdv.id);
+    if (error) return notify('error', error.message);
+    notify('success', 'Aventura atualizada!');
+    setEditAdvOpen(false);
+    fetchData();
+  };
+
   const renderRpg = () => (
     <>
       {isAdmin && (
@@ -611,6 +674,13 @@ const Games = () => {
                           </div>
                         )}
                       </CardContent>
+                      {isAdmin && (
+                        <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditSystem(sys)}>
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      )}
                     </Card>
                   </motion.div>
                 );
@@ -628,7 +698,7 @@ const Games = () => {
                   const system = rpgSystems.find((s: any) => s.id === adv.system_id);
                   return (
                     <motion.div key={adv.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
-                      <Card className="bg-card border-border hover:border-purple-500/20 transition-colors">
+                      <Card className="bg-card border-border hover:border-purple-500/20 transition-colors relative group">
                         <CardContent className="py-4">
                           <div className="flex items-start gap-3">
                             {adv.image_url ? (
@@ -650,6 +720,13 @@ const Games = () => {
                             </div>
                           </div>
                         </CardContent>
+                        {isAdmin && (
+                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditAdventure(adv)}>
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        )}
                       </Card>
                     </motion.div>
                   );
@@ -705,6 +782,55 @@ const Games = () => {
             </div>
             <div className="space-y-2"><Label>URL da Imagem</Label><Input value={newAdvImageUrl} onChange={e => setNewAdvImageUrl(e.target.value)} /></div>
             <Button variant="gold" onClick={handleAddAdventure}>Adicionar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit System Dialog */}
+      <Dialog open={editSystemOpen} onOpenChange={setEditSystemOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Editar Sistema de RPG</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2"><Label>Nome</Label><Input value={editSysName} onChange={e => setEditSysName(e.target.value)} /></div>
+            <div className="space-y-2"><Label>Descrição</Label><Input value={editSysDesc} onChange={e => setEditSysDesc(e.target.value)} /></div>
+            <div className="space-y-2"><Label>URL da Imagem</Label><Input value={editSysImageUrl} onChange={e => setEditSysImageUrl(e.target.value)} /></div>
+            <div className="grid gap-4 grid-cols-2">
+              <div className="space-y-2"><Label>URL Regras</Label><Input value={editSysRulesUrl} onChange={e => setEditSysRulesUrl(e.target.value)} /></div>
+              <div className="space-y-2"><Label>URL Vídeo</Label><Input value={editSysVideoUrl} onChange={e => setEditSysVideoUrl(e.target.value)} /></div>
+            </div>
+            <Button variant="gold" onClick={handleEditSystemSave}>Salvar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Adventure Dialog */}
+      <Dialog open={editAdvOpen} onOpenChange={setEditAdvOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Editar Aventura</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Sistema</Label>
+              <Select value={editAdvSystemId} onValueChange={setEditAdvSystemId}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {rpgSystems.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2"><Label>Nome</Label><Input value={editAdvName} onChange={e => setEditAdvName(e.target.value)} /></div>
+            <div className="space-y-2"><Label>Descrição</Label><Input value={editAdvDesc} onChange={e => setEditAdvDesc(e.target.value)} /></div>
+            <div className="space-y-2">
+              <Label>Tipo</Label>
+              <Select value={editAdvTag} onValueChange={v => setEditAdvTag(v as 'official' | 'homebrew')}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="official">📖 Oficial</SelectItem>
+                  <SelectItem value="homebrew">🏠 Homebrew</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2"><Label>URL da Imagem</Label><Input value={editAdvImageUrl} onChange={e => setEditAdvImageUrl(e.target.value)} /></div>
+            <Button variant="gold" onClick={handleEditAdventureSave}>Salvar</Button>
           </div>
         </DialogContent>
       </Dialog>

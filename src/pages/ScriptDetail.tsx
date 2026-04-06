@@ -9,14 +9,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, Clock, Skull, Shield, Users, Pencil, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Clock, Skull, Shield, Pencil, Plus, Trash2, Timer } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotification } from "@/components/NotificationDialog";
-
-import troubleBrewingImg from "@/assets/trouble-brewing.jpg";
-import badMoonRisingImg from "@/assets/bad-moon-rising.jpg";
-import overTheRiverImg from "@/assets/over-the-river.png";
 
 interface BloodScript {
   id: string;
@@ -53,12 +49,6 @@ interface MatchPlayer {
   team: "good" | "evil";
 }
 
-const scriptImages: Record<string, string> = {
-  "trouble brewing": troubleBrewingImg,
-  "bad moon rising": badMoonRisingImg,
-  "over the river": overTheRiverImg,
-};
-
 const roleTypeLabels: Record<string, string> = {
   townsfolk: "Aldeões",
   outsider: "Forasteiros",
@@ -68,12 +58,22 @@ const roleTypeLabels: Record<string, string> = {
 
 const roleOrder = ["townsfolk", "outsider", "minion", "demon"] as const;
 
+const getCharIconUrl = (char: BloodCharacter) => {
+  if (char.icon_url) return char.icon_url;
+  const normalized = char.name_en.toLowerCase().replace(/ /g, "_");
+  return `https://raw.githubusercontent.com/Covre912/botc_imagens/main/${normalized}.png`;
+};
+
+const getInitials = (name: string) =>
+  name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
+
 const ScriptDetail = () => {
   const { slug } = useParams<{ slug: string }>();
   const { isAdmin } = useAuth();
   const { notify } = useNotification();
 
   const [script, setScript] = useState<BloodScript | null>(null);
+  const [scriptImageUrl, setScriptImageUrl] = useState<string | null>(null);
   const [characters, setCharacters] = useState<BloodCharacter[]>([]);
   const [matches, setMatches] = useState<BloodMatch[]>([]);
   const [matchPlayers, setMatchPlayers] = useState<MatchPlayer[]>([]);
@@ -101,10 +101,7 @@ const ScriptDetail = () => {
         (s: any) => s.slug === slug || s.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") === slug
       );
 
-      if (!found) {
-        setLoading(false);
-        return;
-      }
+      if (!found) { setLoading(false); return; }
 
       const scriptData: BloodScript = {
         id: found.id,
@@ -114,24 +111,21 @@ const ScriptDetail = () => {
         victory_conditions: Array.isArray(found.victory_conditions) ? found.victory_conditions : [],
       };
       setScript(scriptData);
+      // Use a dedicated image_url field if it exists in DB, otherwise null
+      setScriptImageUrl(found.image_url || null);
 
       const [charsRes, matchesRes] = await Promise.all([
         supabase.from("blood_characters").select("*").eq("script_id", found.id).order("team, role_type, name"),
         supabase.from("blood_matches").select("*").eq("script_id", found.id).order("played_at", { ascending: false }),
       ]);
 
-      const charsData = (charsRes.data || []) as BloodCharacter[];
-      setCharacters(charsData);
-
+      setCharacters((charsRes.data || []) as BloodCharacter[]);
       const matchesData = (matchesRes.data || []) as BloodMatch[];
       setMatches(matchesData);
 
       if (matchesData.length > 0) {
         const matchIds = matchesData.map((m) => m.id);
-        const { data: mpData } = await supabase
-          .from("blood_match_players")
-          .select("*")
-          .in("match_id", matchIds);
+        const { data: mpData } = await supabase.from("blood_match_players").select("*").in("match_id", matchIds);
         setMatchPlayers((mpData || []) as MatchPlayer[]);
 
         const playerIds = new Set<string>();
@@ -139,22 +133,17 @@ const ScriptDetail = () => {
         for (const m of matchesData) playerIds.add(m.storyteller_player_id);
 
         if (playerIds.size > 0) {
-          const { data: profilesData } = await supabase
-            .from("profiles")
-            .select("id, nickname, name")
-            .in("id", [...playerIds]);
+          const { data: profilesData } = await supabase.from("profiles").select("id, nickname, name").in("id", [...playerIds]);
           const pMap: Record<string, string> = {};
           for (const p of profilesData || []) pMap[p.id] = p.nickname || p.name;
           setProfiles(pMap);
         }
       }
-
       setLoading(false);
     };
     load();
   }, [slug]);
 
-  // Stats
   const stats = useMemo(() => {
     if (matches.length === 0) return null;
     const totalTime = matches.reduce((sum, m) => sum + (m.duration_minutes || 0), 0);
@@ -167,7 +156,6 @@ const ScriptDetail = () => {
     return { totalTime, avgTime, goodWins, evilWins, goodPct, evilPct, total: matches.length };
   }, [matches]);
 
-  // Character stats
   const characterStats = useMemo(() => {
     const charMap: Record<string, { played: number; wins: number; topPlayers: Record<string, number> }> = {};
     for (const mp of matchPlayers) {
@@ -175,34 +163,19 @@ const ScriptDetail = () => {
       charMap[mp.character_id].played++;
       charMap[mp.character_id].topPlayers[mp.player_id] = (charMap[mp.character_id].topPlayers[mp.player_id] || 0) + 1;
       const match = matches.find((m) => m.id === mp.match_id);
-      if (match && match.winning_team === mp.team) {
-        charMap[mp.character_id].wins++;
-      }
+      if (match && match.winning_team === mp.team) charMap[mp.character_id].wins++;
     }
     return charMap;
   }, [matchPlayers, matches]);
 
-  // Aggregators
   const demonPlayers = useMemo(() => {
     const demonCharIds = new Set(characters.filter((c) => c.role_type === "demon").map((c) => c.id));
     const playerCounts: Record<string, number> = {};
     for (const mp of matchPlayers) {
-      if (demonCharIds.has(mp.character_id)) {
-        playerCounts[mp.player_id] = (playerCounts[mp.player_id] || 0) + 1;
-      }
+      if (demonCharIds.has(mp.character_id)) playerCounts[mp.player_id] = (playerCounts[mp.player_id] || 0) + 1;
     }
-    return Object.entries(playerCounts)
-      .sort(([, a], [, b]) => b - a)
-      .slice(0, 5)
-      .map(([id, count]) => ({ id, name: profiles[id] || "?", count }));
+    return Object.entries(playerCounts).sort(([, a], [, b]) => b - a).slice(0, 5).map(([id, count]) => ({ id, name: profiles[id] || "?", count }));
   }, [characters, matchPlayers, profiles]);
-
-  // Victory condition stats (how many times each condition appeared — placeholder for future tracking)
-  const victoryConditionStats = useMemo(() => {
-    if (!script || script.victory_conditions.length === 0) return [];
-    // For now show the conditions listed on the script
-    return script.victory_conditions.map(vc => ({ name: vc }));
-  }, [script]);
 
   // Edit handlers
   const openEdit = () => {
@@ -210,7 +183,7 @@ const ScriptDetail = () => {
     setEditName(script.name);
     setEditDesc(script.description || "");
     setEditVictoryConditions([...script.victory_conditions]);
-    setEditImageUrl("");
+    setEditImageUrl(scriptImageUrl || "");
     setNewCondition("");
     setEditOpen(true);
   };
@@ -222,24 +195,16 @@ const ScriptDetail = () => {
       description: editDesc || null,
       victory_conditions: editVictoryConditions,
     };
-    const { error } = await supabase
-      .from("blood_scripts")
-      .update(updateData)
-      .eq("id", script.id);
+    // image_url field – we'll attempt to save it even if column doesn't exist yet
+    if (editImageUrl !== (scriptImageUrl || "")) {
+      updateData.image_url = editImageUrl || null;
+    }
+    const { error } = await supabase.from("blood_scripts").update(updateData).eq("id", script.id);
     if (error) return notify("error", error.message);
     notify("success", "Script atualizado!");
     setScript({ ...script, name: editName, description: editDesc || null, victory_conditions: editVictoryConditions });
+    setScriptImageUrl(editImageUrl || null);
     setEditOpen(false);
-  };
-
-  const getCharIcon = (char: BloodCharacter) => {
-    if (char.icon_url) return char.icon_url;
-    const nameEncoded = char.name_en.replace(/ /g, "_");
-    return `https://wiki.bloodontheclocktower.com/images/${nameEncoded}_Icon.png`;
-  };
-
-  const getInitials = (name: string) => {
-    return name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
   };
 
   if (loading) {
@@ -254,98 +219,95 @@ const ScriptDetail = () => {
     return (
       <div className="container py-20 text-center">
         <h1 className="text-2xl font-bold mb-4">Script não encontrado</h1>
-        <Link to="/games">
-          <Button variant="outline"><ArrowLeft className="h-4 w-4 mr-2" /> Voltar</Button>
-        </Link>
+        <Link to="/games"><Button variant="outline"><ArrowLeft className="h-4 w-4 mr-2" /> Voltar</Button></Link>
       </div>
     );
   }
 
-  const heroImg = scriptImages[script.name.toLowerCase()] || null;
-
   return (
     <div className="container py-8 space-y-8">
-      {/* Back + Header */}
-      <div>
-        <Link to="/games" className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1 mb-4">
-          <ArrowLeft className="h-4 w-4" /> Voltar aos Jogos
-        </Link>
+      {/* Back */}
+      <Link to="/games" className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1">
+        <ArrowLeft className="h-4 w-4" /> Voltar aos Jogos
+      </Link>
 
-        <div className="relative rounded-xl overflow-hidden">
-          {heroImg && (
-            <div className="absolute inset-0">
-              <img src={heroImg} alt={script.name} className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/80 to-background/40" />
-            </div>
+      {/* Header: centered image + title + stats */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-4">
+        {/* Cover Image */}
+        {scriptImageUrl && (
+          <div className="flex justify-center">
+            <img
+              src={scriptImageUrl}
+              alt={script.name}
+              className="h-48 w-auto max-w-full rounded-xl object-contain"
+            />
+          </div>
+        )}
+
+        {/* Title + Description */}
+        <div>
+          <div className="flex items-center justify-center gap-2">
+            <h1 className="text-2xl font-bold">{script.name}</h1>
+            {isAdmin && (
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={openEdit}>
+                <Pencil className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+          {script.description && (
+            <p className="text-sm text-muted-foreground mt-1 max-w-xl mx-auto">{script.description}</p>
           )}
-          <div className="relative p-8 md:p-12">
-            <div className="flex items-start justify-between">
-              <div>
-                <h1 className="text-3xl md:text-4xl font-bold mb-2">{script.name}</h1>
-                {script.description && <p className="text-muted-foreground max-w-2xl">{script.description}</p>}
-              </div>
-              {isAdmin && (
-                <Button variant="outline" size="sm" onClick={openEdit}>
-                  <Pencil className="h-4 w-4 mr-1" /> Editar
-                </Button>
-              )}
+        </div>
+
+        {/* Inline Stats */}
+        {stats && (
+          <div className="space-y-2">
+            {/* Time stats */}
+            <div className="flex items-center justify-center gap-6 text-sm">
+              <span className="flex items-center gap-1.5 text-muted-foreground">
+                <Clock className="h-4 w-4 text-foreground" />
+                <span className="text-foreground font-medium">{Math.floor(stats.totalTime / 60)}h{String(stats.totalTime % 60).padStart(2, '0')}m</span>
+                Tempo Total
+              </span>
+              <Separator orientation="vertical" className="h-5" />
+              <span className="flex items-center gap-1.5 text-muted-foreground">
+                <Timer className="h-4 w-4 text-foreground" />
+                <span className="text-foreground font-medium">~{stats.avgTime}min</span>
+                Média por Partida
+              </span>
+            </div>
+
+            {/* Win percentages */}
+            <div className="flex items-center justify-center gap-6 text-sm">
+              <span className="flex items-center gap-1.5">
+                <Shield className="h-4 w-4 text-foreground" />
+                <span className="text-blue-400 font-bold">{stats.goodPct}%</span>
+                <span className="text-muted-foreground">Bem ({stats.goodWins})</span>
+              </span>
+              <Separator orientation="vertical" className="h-5" />
+              <span className="flex items-center gap-1.5">
+                <Skull className="h-4 w-4 text-foreground" />
+                <span className="text-red-400 font-bold">{stats.evilPct}%</span>
+                <span className="text-muted-foreground">Mal ({stats.evilWins})</span>
+              </span>
             </div>
           </div>
-        </div>
-      </div>
+        )}
 
-      {/* Quick Stats */}
-      {stats && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="bg-card border-border">
-            <CardContent className="py-4 text-center">
-              <Clock className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
-              <p className="text-2xl font-bold">{Math.floor(stats.totalTime / 60)}h{stats.totalTime % 60}m</p>
-              <p className="text-xs text-muted-foreground">Tempo Total</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-card border-border">
-            <CardContent className="py-4 text-center">
-              <Users className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
-              <p className="text-2xl font-bold">~{stats.avgTime}min</p>
-              <p className="text-xs text-muted-foreground">Média por Partida</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-card border-border border-blue-500/20">
-            <CardContent className="py-4 text-center">
-              <Shield className="h-5 w-5 mx-auto mb-1 text-blue-400" />
-              <p className="text-2xl font-bold text-blue-400">{stats.goodPct}%</p>
-              <p className="text-xs text-muted-foreground">Vitórias do Bem ({stats.goodWins})</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-card border-border border-red-500/20">
-            <CardContent className="py-4 text-center">
-              <Skull className="h-5 w-5 mx-auto mb-1 text-red-400" />
-              <p className="text-2xl font-bold text-red-400">{stats.evilPct}%</p>
-              <p className="text-xs text-muted-foreground">Vitórias do Mal ({stats.evilWins})</p>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
-
-      {/* Victory Conditions Section */}
-      {victoryConditionStats.length > 0 && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <h2 className="text-xl font-bold mb-4">⚔️ Condições de Vitória Especiais</h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {victoryConditionStats.map((vc, i) => (
-              <Card key={i} className="bg-card border-gold/10">
-                <CardContent className="py-3 flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-gold/10 flex items-center justify-center text-gold text-sm font-bold flex-shrink-0">
-                    {i + 1}
-                  </div>
-                  <span className="font-medium text-sm">{vc.name}</span>
-                </CardContent>
-              </Card>
+        {/* Victory Conditions - 3 columns, no card borders */}
+        {script.victory_conditions.length > 0 && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3 max-w-2xl mx-auto pt-2">
+            {script.victory_conditions.map((vc, i) => (
+              <div key={i} className="text-center">
+                <p className="text-sm font-medium">{vc}</p>
+                <p className="text-xs text-muted-foreground">0 vezes</p>
+              </div>
             ))}
           </div>
-        </motion.div>
-      )}
+        )}
+      </motion.div>
+
+      <Separator className="bg-gradient-to-r from-transparent via-border to-transparent" />
 
       {/* Character Grid */}
       <div className="space-y-8">
@@ -369,32 +331,34 @@ const ScriptDetail = () => {
                 {roleChars.map((char) => {
                   const cStats = characterStats[char.id];
                   const topPlayers = cStats
-                    ? Object.entries(cStats.topPlayers)
-                        .sort(([, a], [, b]) => b - a)
-                        .slice(0, 3)
+                    ? Object.entries(cStats.topPlayers).sort(([, a], [, b]) => b - a).slice(0, 3)
                     : [];
                   const winPct = cStats && cStats.played > 0 ? Math.round((cStats.wins / cStats.played) * 100) : 0;
+                  const iconUrl = getCharIconUrl(char);
 
                   return (
                     <Card key={char.id} className={`bg-card ${cardBorder} transition-colors`}>
                       <CardContent className="py-4 space-y-3">
                         <div className="flex items-start gap-3">
-                          <img
-                            src={getCharIcon(char)}
-                            alt={char.name}
-                            className="h-12 w-12 rounded-lg object-contain flex-shrink-0 bg-secondary/50"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.style.display = "none";
-                              const parent = target.parentElement;
-                              if (parent) {
-                                const fallback = document.createElement("div");
-                                fallback.className = `h-12 w-12 rounded-lg flex items-center justify-center text-sm font-bold flex-shrink-0 ${isGood ? "bg-blue-500/20 text-blue-400" : "bg-red-500/20 text-red-400"}`;
-                                fallback.textContent = getInitials(char.name_en);
-                                parent.insertBefore(fallback, target);
-                              }
-                            }}
-                          />
+                          <div className={`h-12 w-12 rounded-full flex-shrink-0 flex items-center justify-center overflow-hidden ${isGood ? "bg-blue-950/60" : "bg-red-950/60"}`}>
+                            <img
+                              src={iconUrl}
+                              alt={char.name}
+                              className="h-10 w-10 object-contain"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = "none";
+                                const fallback = target.nextElementSibling as HTMLElement;
+                                if (fallback) fallback.style.display = "flex";
+                              }}
+                            />
+                            <span
+                              className={`text-sm font-bold hidden items-center justify-center ${isGood ? "text-blue-400" : "text-red-400"}`}
+                              style={{ display: "none" }}
+                            >
+                              {getInitials(char.name_en)}
+                            </span>
+                          </div>
                           <div className="flex-1 min-w-0">
                             <p className={`font-semibold ${isGood ? "text-blue-300" : "text-red-300"}`}>{char.name}</p>
                             <p className="text-xs text-muted-foreground">{char.name_en}</p>
@@ -473,13 +437,9 @@ const ScriptDetail = () => {
                         <Badge className={m.winning_team === "good" ? "bg-blue-500/20 text-blue-400 border-blue-500/30" : "bg-red-500/20 text-red-400 border-red-500/30"}>
                           {m.winning_team === "good" ? "👼 Bem" : "😈 Mal"}
                         </Badge>
-                        <span className="text-sm text-muted-foreground">
-                          {new Date(m.played_at).toLocaleDateString("pt-BR")}
-                        </span>
+                        <span className="text-sm text-muted-foreground">{new Date(m.played_at).toLocaleDateString("pt-BR")}</span>
                         {m.duration_minutes && (
-                          <span className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Clock className="h-3 w-3" /> {m.duration_minutes}min
-                          </span>
+                          <span className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> {m.duration_minutes}min</span>
                         )}
                       </div>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -510,8 +470,8 @@ const ScriptDetail = () => {
             </div>
             <div className="space-y-2">
               <Label>URL da Imagem do Header</Label>
-              <Input value={editImageUrl} onChange={(e) => setEditImageUrl(e.target.value)} placeholder="https://exemplo.com/imagem.jpg" />
-              <p className="text-xs text-muted-foreground">Imagem de fundo exibida no topo da página do script</p>
+              <Input value={editImageUrl} onChange={(e) => setEditImageUrl(e.target.value)} placeholder="https://exemplo.com/imagem.png" />
+              <p className="text-xs text-muted-foreground">Imagem centralizada no topo da página do script</p>
             </div>
             <div className="space-y-2">
               <Label>Condições de Vitória Especiais</Label>

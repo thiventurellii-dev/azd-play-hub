@@ -19,10 +19,12 @@ interface MatchRoom {
 
 const MatchRooms = () => {
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [rooms, setRooms] = useState<MatchRoom[]>([]);
   const [loading, setLoading] = useState(true);
   const [matchFlowOpen, setMatchFlowOpen] = useState(false);
   const [prefill, setPrefill] = useState<any>(null);
+  const [highlightRoomId, setHighlightRoomId] = useState<string | null>(null);
 
   // Filters
   const [gameFilter, setGameFilter] = useState('all');

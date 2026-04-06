@@ -1,74 +1,101 @@
 
+# Plan: Multi-Category Architecture (Boardgames, BotC, RPG)
 
-## Plan: Fix Deep Link Crash, Scoring Bug, Player Search UX, Notifications & Social
+This is a large restructuring that touches match registration, room creation, the games page, and player profiles. The work is split into 6 logical steps.
 
-### 1. Deep Link Crash Fix (`src/pages/MatchRooms.tsx`)
+---
 
-**Root cause**: The `onUpdate` callback in the deep link modal calls `fetchRooms()` which triggers a realtime channel refetch, and the `useEffect` watching `searchParams` re-fires because `searchParams` object reference changes after `fetchRooms` updates state. This creates an infinite loop of fetches where `deepLinkRoom` gets reset.
+## Summary
 
-**Fix**:
-- Extract `roomParam` once on mount using `useRef` so the deep link fetch only runs once
-- In the `onUpdate` callback, wrap `setDeepLinkRoom` with a guard: only update if data is non-null (never overwrite with null)
-- Add optional chaining on all `deepLinkRoom` accesses in JSX
-- Add `catch` to the `.then()` chain to prevent unhandled promise errors
+- Add a **category selector** (Boardgame / BotC / RPG) as the entry point for creating rooms and registering matches
+- Create a dedicated **NewMatchBotcFlow** component reusing existing `AdminBloodMatches` logic (scripts, teams, characters, winning team)
+- Filter out `upcoming` and `finished` seasons from all registration selectors
+- Add an **RPG section** to the Games page with Systems and Adventures/Worlds
+- Segment the **Player Profile** stats into Boardgames / BotC / RPG tabs/carousel
+- Keep all data writing DRY — BotC flow writes to existing `blood_matches` + `blood_match_players` tables
 
-### 2. ScoringSheet Input Bug (`src/components/matches/ScoringSheet.tsx`)
+---
 
-**Root cause**: The `useEffect` on line 39-48 runs with `[players]` dependency. When `NewMatchFlow` re-derives `scoringPlayers` (line 127-130) on every render (it's not memoized), a new array reference is created, triggering the useEffect which resets `playerScores` to empty — erasing typed values.
+## Technical Details
 
-**Fix**:
-- In `NewMatchFlow.tsx`: memoize `scoringPlayers` with `useMemo` so the reference is stable
-- In `ScoringSheet.tsx`: change the `useEffect` to only initialize scores when the player list actually changes (compare player IDs, not array reference). Use a ref to track previous player IDs and skip reinitialization if unchanged
+### Database Changes (1 migration)
 
-### 3. Remove Separate Search Filter in NewMatchFlow Step 2
+New tables for RPG:
+- **`rpg_systems`** — `id`, `name`, `description`, `image_url`, `rules_url`, `video_url`, `created_at` (admin-managed, public-read)
+- **`rpg_adventures`** — `id`, `system_id` (FK to rpg_systems), `name`, `description`, `tag` (enum: 'official' | 'homebrew'), `image_url`, `created_at` (admin-managed, public-read)
 
-**Current**: A standalone "Filtrar jogadores" `Input` above the entries list filters the Select dropdown options.
+No changes to existing blood/boardgame tables.
 
-**Fix** (`src/components/matches/NewMatchFlow.tsx`):
-- Remove the standalone search input (lines 413-424)
-- Replace the `Select` for player selection with a `Popover` + `Command` (cmdk) combobox pattern — the search is built into the dropdown itself
-- This eliminates the external filter and gives a native searchable-select UX
+### Step 0: Season Filter Fix
+**Files**: `NewMatchFlow.tsx`, `EditMatchDialog.tsx`, `AdminBloodMatches.tsx`, `CreateRoomDialog.tsx`
 
-### 4. BotC Script Selection
+- Add `.neq('status', 'upcoming')` alongside existing `.neq('status', 'finished')` in all season fetch queries
+- AdminBloodMatches currently has no status filter — add both `.neq('status', 'finished').neq('status', 'upcoming')`
 
-**Files**: `src/components/matches/NewMatchFlow.tsx`, `src/components/matchrooms/CreateRoomDialog.tsx`
+### Step 1: Category Selector
+**Files**: `NewMatchFlow.tsx`, `CreateRoomDialog.tsx`
 
-- After game selection, check if the game name contains "Blood" or slug matches `blood-on-the-clocktower`
-- If yes, fetch `blood_scripts` and show a "Selecionar Script" Select field
-- Store the selected `script_id` in state; on submit, save it alongside the match/room data (use `description` field or a new column — check if `match_rooms` already has a script field)
-- For NewMatchFlow: the script selection appears in Step 1 below the game selector
+- Add a `category` state (`'boardgame' | 'botc' | 'rpg'`) as **Step 0** before the current Step 1
+- Three styled cards/buttons for category selection
+- In `NewMatchFlow`: if `boardgame` → current flow; if `botc` → render `NewMatchBotcFlow`; if `rpg` → placeholder/future
+- In `CreateRoomDialog`: filter games list based on category (BotC games by slug, RPG games by new flag, or boardgames by default)
 
-### 5. FriendButton Click Propagation on /players Page
+### Step 2: NewMatchBotcFlow Component
+**File**: `src/components/matches/NewMatchBotcFlow.tsx` (new)
 
-**Root cause**: The `FriendButton` is inside a `<Link to={/perfil/...}>` wrapper (Players.tsx line 78). Clicking the button triggers the Link navigation.
+Reuses logic from `AdminBloodMatches`:
+- **Step 1 — Script & Header**: Season selector (blood type only), Script selector, Date/Time, Duration
+- **Step 2 — Players**: Storyteller selector, Good team players (player + character), Evil team players (player + character). No position/score fields. Visual layout similar to AdminBloodMatches player selectors.
+- **Step 3 — Result**: Winning team selector (Good: "Execução do Demônio" / Evil: "Vitória do Demônio"), confirmation summary
 
-**Fix** (`src/pages/Players.tsx`):
-- Add `onClick={(e) => e.preventDefault()}` wrapper around the `FriendButton` div, or move `FriendButton` outside the `<Link>` element
-- Best approach: restructure the card so only the player name/avatar area is the Link, and the FriendButton sits outside the clickable Link zone
+**Submit logic**: Extracted as a shared function from `AdminBloodMatches` — inserts into `blood_matches`, `blood_match_players`, calls `recalculateSeasonRatings`. The `recalculateSeasonRatings` function will be extracted to a shared util (`src/lib/bloodRatings.ts`).
 
-### 6. Remove Notification Badge from Username Button
+### Step 3: RPG Section in Games Page
+**File**: `src/pages/Games.tsx`
 
-**Fix** (`src/components/Navbar.tsx`):
-- Remove the badge span (lines 261-265) inside the username button
-- Keep only the Bell icon badge (lines 271-275)
+- Add a third tab: "🎭 RPG"
+- Render RPG Systems as cards (name, description, image, rules/video links)
+- Each system expands to show linked Adventures/Worlds with Official/Homebrew badges
+- Admin-only buttons to add/edit systems and adventures
+- Create/Edit dialogs for systems (name, description, image_url, rules_url, video_url) and adventures (name, description, system_id, tag, image_url)
 
-### 7. Instant Friend Status Update After Accept/Reject
+### Step 4: Player Profile Segmented Stats
+**File**: `src/pages/PlayerProfile.tsx`
 
-**Fix**:
-- In `Navbar.tsx`: after `handleAcceptFriend` / `handleRejectFriend`, the `fetchFriendRequests()` call already re-fetches. This is correct but needs to also broadcast a state change
-- In `FriendButton.tsx`: add a realtime subscription on `friendships` table filtered to the current user, so when a friendship status changes (from Navbar), the button re-fetches automatically
-- Alternative simpler approach: use a custom event (`window.dispatchEvent`) after accept/reject in Navbar, and listen for it in FriendButton to re-fetch
+- Fetch BotC stats from `blood_mmr_ratings` and `blood_match_players` for the player
+- Add a **Tabs** or **Carousel** component with 3 sections:
+  - **Boardgames**: existing stats (total games, unique games, performance table, chart)
+  - **BotC**: games played, wins as good, wins as evil, storyteller count, favorite characters
+  - **RPG**: placeholder for future (sessions attended, systems played)
+- Use `Carousel` component (already exists) for mobile-friendly navigation between categories
 
-### Technical Summary
+### Step 5: Conditional Rendering in Match Registration
+**File**: `src/components/matches/NewMatchFlow.tsx`
 
-**Files to modify (5)**:
-- `src/pages/MatchRooms.tsx` — deep link crash fix (ref-based fetch, null guard)
-- `src/components/matches/ScoringSheet.tsx` — prevent score reset on re-render
-- `src/components/matches/NewMatchFlow.tsx` — memoize scoringPlayers, replace search with combobox, add BotC script field
-- `src/pages/Players.tsx` — move FriendButton outside Link to prevent navigation
-- `src/components/Navbar.tsx` — remove badge from username button
-- `src/components/matchrooms/CreateRoomDialog.tsx` — add BotC script selector
-- `src/components/friendlist/FriendButton.tsx` — add realtime listener for instant status updates
+- After category selection, use a switch statement:
+  ```
+  switch(category) {
+    case 'boardgame': return <existing boardgame steps>
+    case 'botc': return <NewMatchBotcFlow />
+    case 'rpg': return <placeholder>
+  }
+  ```
 
-**No database changes required.**
+---
 
+## Files to Create
+- `src/components/matches/NewMatchBotcFlow.tsx`
+- `src/lib/bloodRatings.ts` (extracted shared rating logic)
+- Migration SQL for `rpg_systems` and `rpg_adventures` tables
+
+## Files to Modify
+- `src/components/matches/NewMatchFlow.tsx` — category selector + conditional render
+- `src/components/matches/EditMatchDialog.tsx` — season filter
+- `src/components/matchrooms/CreateRoomDialog.tsx` — category selector
+- `src/components/admin/AdminBloodMatches.tsx` — import shared rating logic, season filter
+- `src/pages/Games.tsx` — RPG tab
+- `src/pages/PlayerProfile.tsx` — segmented stats
+
+## No Changes Needed
+- Existing blood_matches/blood_match_players tables stay as-is
+- Existing rankings/season detail pages auto-reflect new data

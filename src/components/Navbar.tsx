@@ -224,38 +224,6 @@ const Navbar = () => {
             </Button>
           </Link>
 
-          {(contactLinks.discord || contactLinks.whatsapp || contactLinks.whatsapp_botc) && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="gap-1 text-muted-foreground hover:text-foreground">
-                  <AtSign className="h-4 w-4" /> Nossas Redes <ChevronDown className="h-3 w-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                {contactLinks.discord && (
-                  <DropdownMenuItem asChild>
-                    <a href={contactLinks.discord} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[#5865F2]">
-                      <DiscordIcon size={16} /> Discord
-                    </a>
-                  </DropdownMenuItem>
-                )}
-                {contactLinks.whatsapp && (
-                  <DropdownMenuItem asChild>
-                    <a href={contactLinks.whatsapp} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[#25D366]">
-                      <WhatsAppIcon size={16} /> Boardgame
-                    </a>
-                  </DropdownMenuItem>
-                )}
-                {contactLinks.whatsapp_botc && (
-                  <DropdownMenuItem asChild>
-                    <a href={contactLinks.whatsapp_botc} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-[#25D366]">
-                      <WhatsAppIcon size={16} /> Blood
-                    </a>
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
 
           {isAdmin && (
             <Link to="/admin">

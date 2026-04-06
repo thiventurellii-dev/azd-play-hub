@@ -1,101 +1,106 @@
 
-# Plan: Multi-Category Architecture (Boardgames, BotC, RPG)
 
-This is a large restructuring that touches match registration, room creation, the games page, and player profiles. The work is split into 6 logical steps.
-
----
+# Plan: RPG Fixes, BotC Script Detail Page, and Character Icons
 
 ## Summary
 
-- Add a **category selector** (Boardgame / BotC / RPG) as the entry point for creating rooms and registering matches
-- Create a dedicated **NewMatchBotcFlow** component reusing existing `AdminBloodMatches` logic (scripts, teams, characters, winning team)
-- Filter out `upcoming` and `finished` seasons from all registration selectors
-- Add an **RPG section** to the Games page with Systems and Adventures/Worlds
-- Segment the **Player Profile** stats into Boardgames / BotC / RPG tabs/carousel
-- Keep all data writing DRY — BotC flow writes to existing `blood_matches` + `blood_match_players` tables
+1. Fix the RPG "Adicionar Aventura" button click issue
+2. Add Separator between Systems and Adventures sections in RPG
+3. Create a new BotC Script detail page at `/scripts/:scriptId` with rich stats and character grid
+4. Add `victory_conditions` column to `blood_scripts` table
+5. Add `icon_url` column to `blood_characters` for character images
+6. Fetch character icons from the BotC wiki CDN based on `name_en`
 
 ---
 
 ## Technical Details
 
-### Database Changes (1 migration)
+### Database Migration
 
-New tables for RPG:
-- **`rpg_systems`** — `id`, `name`, `description`, `image_url`, `rules_url`, `video_url`, `created_at` (admin-managed, public-read)
-- **`rpg_adventures`** — `id`, `system_id` (FK to rpg_systems), `name`, `description`, `tag` (enum: 'official' | 'homebrew'), `image_url`, `created_at` (admin-managed, public-read)
+```sql
+-- Add victory conditions to scripts (JSONB array of strings)
+ALTER TABLE blood_scripts ADD COLUMN victory_conditions jsonb DEFAULT '[]'::jsonb;
 
-No changes to existing blood/boardgame tables.
+-- Add icon_url to characters for cached icon URLs
+ALTER TABLE blood_characters ADD COLUMN icon_url text;
 
-### Step 0: Season Filter Fix
-**Files**: `NewMatchFlow.tsx`, `EditMatchDialog.tsx`, `AdminBloodMatches.tsx`, `CreateRoomDialog.tsx`
+-- Add slug to blood_scripts for URL routing
+ALTER TABLE blood_scripts ADD COLUMN slug text;
+```
 
-- Add `.neq('status', 'upcoming')` alongside existing `.neq('status', 'finished')` in all season fetch queries
-- AdminBloodMatches currently has no status filter — add both `.neq('status', 'finished').neq('status', 'upcoming')`
+Update existing scripts with slugs: `trouble-brewing`, `bad-moon-rising`, `over-the-river`.
 
-### Step 1: Category Selector
-**Files**: `NewMatchFlow.tsx`, `CreateRoomDialog.tsx`
+### Step 1: RPG Bug Fix (`Games.tsx`)
 
-- Add a `category` state (`'boardgame' | 'botc' | 'rpg'`) as **Step 0** before the current Step 1
-- Three styled cards/buttons for category selection
-- In `NewMatchFlow`: if `boardgame` → current flow; if `botc` → render `NewMatchBotcFlow`; if `rpg` → placeholder/future
-- In `CreateRoomDialog`: filter games list based on category (BotC games by slug, RPG games by new flag, or boardgames by default)
+The "Adicionar Aventura" button at line 553 likely has a z-index or event propagation issue. Fix by ensuring the button is not inside a clickable card container, or by stopping propagation. Also verify `disabled` logic works when systems exist.
 
-### Step 2: NewMatchBotcFlow Component
-**File**: `src/components/matches/NewMatchBotcFlow.tsx` (new)
+Add a `<Separator />` between the Systems grid and Adventures section within each expanded system card.
 
-Reuses logic from `AdminBloodMatches`:
-- **Step 1 — Script & Header**: Season selector (blood type only), Script selector, Date/Time, Duration
-- **Step 2 — Players**: Storyteller selector, Good team players (player + character), Evil team players (player + character). No position/score fields. Visual layout similar to AdminBloodMatches player selectors.
-- **Step 3 — Result**: Winning team selector (Good: "Execução do Demônio" / Evil: "Vitória do Demônio"), confirmation summary
+### Step 2: New Script Detail Page
 
-**Submit logic**: Extracted as a shared function from `AdminBloodMatches` — inserts into `blood_matches`, `blood_match_players`, calls `recalculateSeasonRatings`. The `recalculateSeasonRatings` function will be extracted to a shared util (`src/lib/bloodRatings.ts`).
+**New file**: `src/pages/ScriptDetail.tsx`
 
-### Step 3: RPG Section in Games Page
-**File**: `src/pages/Games.tsx`
+Route: `/scripts/:slug` (add to `App.tsx`)
 
-- Add a third tab: "🎭 RPG"
-- Render RPG Systems as cards (name, description, image, rules/video links)
-- Each system expands to show linked Adventures/Worlds with Official/Homebrew badges
-- Admin-only buttons to add/edit systems and adventures
-- Create/Edit dialogs for systems (name, description, image_url, rules_url, video_url) and adventures (name, description, system_id, tag, image_url)
+**Sections**:
+1. **Header**: Script name, description, edit button (admin). Victory conditions editor in edit dialog.
 
-### Step 4: Player Profile Segmented Stats
-**File**: `src/pages/PlayerProfile.tsx`
+2. **Quick Stats Bar**: 4 cards showing:
+   - Total play time (sum of `duration_minutes` from `blood_matches` for this script)
+   - Average match duration
+   - Good win % (blue) — from `blood_matches.winning_team`
+   - Evil win % (red) — from `blood_matches.winning_team`
 
-- Fetch BotC stats from `blood_mmr_ratings` and `blood_match_players` for the player
-- Add a **Tabs** or **Carousel** component with 3 sections:
-  - **Boardgames**: existing stats (total games, unique games, performance table, chart)
-  - **BotC**: games played, wins as good, wins as evil, storyteller count, favorite characters
-  - **RPG**: placeholder for future (sessions attended, systems played)
-- Use `Carousel` component (already exists) for mobile-friendly navigation between categories
+3. **Character Grid** grouped by `role_type`:
+   - **Townsfolk** (blue section header)
+   - **Outsiders** (blue, lighter)
+   - **Minions** (red section header)
+   - **Demons** (red, darker)
+   
+   Each character card shows:
+   - Icon (from `icon_url` or fetched from CDN: `https://wiki.bloodontheclocktower.com/images/...`)
+   - Name (PT) + Name (EN) subtitle
+   - Description/ability text
+   - Stats: times played (from `blood_match_players`), top 3 players who played this character
 
-### Step 5: Conditional Rendering in Match Registration
-**File**: `src/components/matches/NewMatchFlow.tsx`
+4. **Aggregators Section**:
+   - "Demônios Cruéis": players who played demon characters the most in this script
+   - "Prefeitos Leais": count of mayor victory conditions marked (requires victory_conditions tracking per match)
 
-- After category selection, use a switch statement:
-  ```
-  switch(category) {
-    case 'boardgame': return <existing boardgame steps>
-    case 'botc': return <NewMatchBotcFlow />
-    case 'rpg': return <placeholder>
-  }
-  ```
+5. **Match History**: Recent matches for this script with results
+
+### Step 3: Character Icon Integration
+
+Use the BotC wiki as CDN source. The pattern is:
+`https://wiki.bloodontheclocktower.com/images/thumb/{Hash}/{Name}_Icon.png`
+
+Since wiki URLs are unpredictable, instead:
+- Add an `icon_url` field to `blood_characters`
+- Provide a utility in the admin panel to batch-set icon URLs
+- Use a known GitHub source: `https://raw.githubusercontent.com/Covre912/TradutorDeScriptsBotC/main/` or similar for images
+- Fallback: use `name_en` to generate a placeholder icon with initials
+
+### Step 4: Script Navigation from Games Page
+
+Update the BotC script cards in `Games.tsx` to link to `/scripts/:slug` when clicked, similar to how boardgame cards navigate to `/jogos/:slug`.
+
+### Step 5: Admin Edit for Victory Conditions
+
+In the script detail page edit dialog:
+- Add a dynamic list for victory conditions (add/remove text entries)
+- Save to `blood_scripts.victory_conditions` as JSONB array
 
 ---
 
 ## Files to Create
-- `src/components/matches/NewMatchBotcFlow.tsx`
-- `src/lib/bloodRatings.ts` (extracted shared rating logic)
-- Migration SQL for `rpg_systems` and `rpg_adventures` tables
+- `src/pages/ScriptDetail.tsx` — full detail page for BotC scripts
 
 ## Files to Modify
-- `src/components/matches/NewMatchFlow.tsx` — category selector + conditional render
-- `src/components/matches/EditMatchDialog.tsx` — season filter
-- `src/components/matchrooms/CreateRoomDialog.tsx` — category selector
-- `src/components/admin/AdminBloodMatches.tsx` — import shared rating logic, season filter
-- `src/pages/Games.tsx` — RPG tab
-- `src/pages/PlayerProfile.tsx` — segmented stats
+- `src/App.tsx` — add `/scripts/:slug` route
+- `src/pages/Games.tsx` — fix RPG button bug, add Separator, link scripts to detail page
+- `src/components/admin/AdminBloodScripts.tsx` — add victory_conditions and icon_url editing
 
-## No Changes Needed
-- Existing blood_matches/blood_match_players tables stay as-is
-- Existing rankings/season detail pages auto-reflect new data
+## Migration
+- Add `victory_conditions`, `slug` to `blood_scripts`; add `icon_url` to `blood_characters`
+- Update existing script slugs via insert tool
+

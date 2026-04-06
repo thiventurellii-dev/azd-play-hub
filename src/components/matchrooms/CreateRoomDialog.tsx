@@ -57,6 +57,13 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
   const selectedGame = games.find(g => g.id === gameId);
   const isBotC = selectedGame && (selectedGame.name.toLowerCase().includes('blood') || selectedGame.slug === 'blood-on-the-clocktower');
 
+  // Filter games by category
+  const filteredGames = games.filter(g => {
+    if (category === 'botc') return g.name.toLowerCase().includes('blood') || g.slug === 'blood-on-the-clocktower';
+    if (category === 'boardgame') return !(g.name.toLowerCase().includes('blood') || g.slug === 'blood-on-the-clocktower');
+    return true;
+  });
+
   useEffect(() => {
     const game = games.find(g => g.id === gameId);
     if (game?.max_players) {

@@ -36,12 +36,19 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
   useEffect(() => {
     supabase
       .from("games")
-      .select("id, name")
+      .select("id, name, max_players")
       .order("name")
       .then(({ data }) => {
-        if (data) setGames(data);
+        if (data) setGames(data as Game[]);
       });
   }, []);
+
+  useEffect(() => {
+    const game = games.find(g => g.id === gameId);
+    if (game?.max_players) {
+      setMaxPlayers(String(game.max_players));
+    }
+  }, [gameId, games]);
 
   const handleSubmit = async () => {
     if (!user || !gameId || !title || !scheduledDate) {

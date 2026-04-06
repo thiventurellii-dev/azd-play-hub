@@ -535,6 +535,45 @@ const PlayerProfile = () => {
                 </SelectContent>
               </Select>
             </div>
+            <Separator />
+            <div className="space-y-2">
+              <Label>Integração Steam</Label>
+              {profile.steam_id ? (
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.08 3.16 9.42 7.63 11.17l3.69-5.27a3.48 3.48 0 01-.32-1.46c0-1.93 1.57-3.5 3.5-3.5s3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5c-.5 0-.97-.11-1.4-.3L9.84 24c.7.1 1.42.15 2.16.15 6.63 0 12-5.37 12-12S18.63 0 12 0z"/>
+                    </svg>
+                    Vinculada: {profile.steam_id}
+                  </Badge>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    const returnTo = `${window.location.origin}/auth/steam/callback`;
+                    const { data } = await (await fetch(
+                      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/steam-auth?action=login&return_to=${encodeURIComponent(returnTo)}`
+                    )).json();
+                    if (data?.url || (data as any)) {
+                      // The response has { url: "..." }
+                      const resp = await fetch(
+                        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/steam-auth?action=login&return_to=${encodeURIComponent(returnTo)}`
+                      );
+                      const json = await resp.json();
+                      if (json.url) window.location.href = json.url;
+                    }
+                  }}
+                  className="gap-1"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.08 3.16 9.42 7.63 11.17l3.69-5.27a3.48 3.48 0 01-.32-1.46c0-1.93 1.57-3.5 3.5-3.5s3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5c-.5 0-.97-.11-1.4-.3L9.84 24c.7.1 1.42.15 2.16.15 6.63 0 12-5.37 12-12S18.63 0 12 0z"/>
+                  </svg>
+                  Vincular Steam
+                </Button>
+              )}
+            </div>
             <div className="flex gap-2">
               <Button variant="gold" onClick={handleSaveProfile} disabled={saving}>
                 {saving ? "Salvando..." : "Salvar"}

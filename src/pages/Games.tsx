@@ -571,76 +571,92 @@ const Games = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {rpgSystems.map((sys: any, i: number) => {
-            const adventures = rpgAdventures.filter((a: any) => a.system_id === sys.id);
-            const isExpanded = expandedSystem === sys.id;
-            return (
-              <motion.div key={sys.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                <Card className={`bg-card border-border hover:border-purple-500/20 transition-all ${isExpanded ? '' : 'max-h-[300px] overflow-hidden'} flex flex-col relative group`}>
-                  <CardContent className="py-5 space-y-3 flex-1 flex flex-col">
-                    <div className="flex items-start gap-4 cursor-pointer" onClick={() => setExpandedSystem(isExpanded ? null : sys.id)}>
-                      {sys.image_url ? (
-                        <img src={sys.image_url} alt={sys.name} className="h-16 w-16 rounded-lg object-cover flex-shrink-0" loading="lazy" />
-                      ) : (
-                        <div className="h-16 w-16 rounded-lg bg-secondary flex items-center justify-center text-2xl flex-shrink-0">🎭</div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-bold">{sys.name}</h3>
-                        {sys.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{sys.description}</p>}
-                        <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1"><Users className="h-4 w-4" /> {adventures.length} aventura(s)</span>
+        <div className="space-y-8">
+          {/* Systems Grid */}
+          <div>
+            <h2 className="text-lg font-bold mb-4">Sistemas</h2>
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {rpgSystems.map((sys: any, i: number) => {
+                const adventures = rpgAdventures.filter((a: any) => a.system_id === sys.id);
+                return (
+                  <motion.div key={sys.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
+                    <Card className="bg-card border-border hover:border-purple-500/20 transition-all flex flex-col relative group">
+                      <CardContent className="py-5 space-y-3 flex-1 flex flex-col">
+                        <div className="flex items-start gap-4">
+                          {sys.image_url ? (
+                            <img src={sys.image_url} alt={sys.name} className="h-16 w-16 rounded-lg object-cover flex-shrink-0" loading="lazy" />
+                          ) : (
+                            <div className="h-16 w-16 rounded-lg bg-secondary flex items-center justify-center text-2xl flex-shrink-0">🎭</div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-lg font-bold">{sys.name}</h3>
+                            {sys.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{sys.description}</p>}
+                            <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
+                              <span className="flex items-center gap-1"><Users className="h-4 w-4" /> {adventures.length} aventura(s)</span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                    {(sys.rules_url || sys.video_url) && (
-                      <div className="flex gap-2 flex-wrap">
-                        {sys.rules_url && (
-                          <a href={sys.rules_url} target="_blank" rel="noopener noreferrer">
-                            <Badge variant="outline" className="cursor-pointer hover:border-purple-500/50 gap-1 py-0.5 px-2 text-[10px]"><ExternalLink className="h-3 w-3" /> Regras</Badge>
-                          </a>
+                        {(sys.rules_url || sys.video_url) && (
+                          <div className="flex gap-2 flex-wrap">
+                            {sys.rules_url && (
+                              <a href={sys.rules_url} target="_blank" rel="noopener noreferrer">
+                                <Badge variant="outline" className="cursor-pointer hover:border-purple-500/50 gap-1 py-0.5 px-2 text-[10px]"><ExternalLink className="h-3 w-3" /> Regras</Badge>
+                              </a>
+                            )}
+                            {sys.video_url && (
+                              <a href={sys.video_url} target="_blank" rel="noopener noreferrer">
+                                <Badge variant="outline" className="cursor-pointer hover:border-purple-500/50 gap-1 py-0.5 px-2 text-[10px]"><Video className="h-3 w-3" /> Vídeo</Badge>
+                              </a>
+                            )}
+                          </div>
                         )}
-                        {sys.video_url && (
-                          <a href={sys.video_url} target="_blank" rel="noopener noreferrer">
-                            <Badge variant="outline" className="cursor-pointer hover:border-purple-500/50 gap-1 py-0.5 px-2 text-[10px]"><Video className="h-3 w-3" /> Vídeo</Badge>
-                          </a>
-                        )}
-                      </div>
-                    )}
-                    <div className="flex-1" />
-                    <Button variant="ghost" size="sm" className="text-xs text-muted-foreground self-start" onClick={() => setExpandedSystem(isExpanded ? null : sys.id)}>
-                      {isExpanded ? "▲ Ocultar aventuras" : "▼ Ver aventuras"}
-                    </Button>
-                    {isExpanded && adventures.length > 0 && (
-                      <div className="space-y-2">
-                        <Separator className="bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Aventuras</p>
-                        {adventures.map((adv: any) => (
-                          <div key={adv.id} className="flex items-center gap-3 p-2 rounded-lg bg-secondary/30">
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Adventures Section - Outside system cards */}
+          {rpgAdventures.length > 0 && (
+            <div>
+              <Separator className="bg-gradient-to-r from-transparent via-purple-500/30 to-transparent mb-6" />
+              <h2 className="text-lg font-bold mb-4">Aventuras</h2>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {rpgAdventures.map((adv: any, i: number) => {
+                  const system = rpgSystems.find((s: any) => s.id === adv.system_id);
+                  return (
+                    <motion.div key={adv.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
+                      <Card className="bg-card border-border hover:border-purple-500/20 transition-colors">
+                        <CardContent className="py-4">
+                          <div className="flex items-start gap-3">
                             {adv.image_url ? (
-                              <img src={adv.image_url} alt={adv.name} className="h-10 w-10 rounded object-cover" />
+                              <img src={adv.image_url} alt={adv.name} className="h-12 w-12 rounded-lg object-cover flex-shrink-0" />
                             ) : (
-                              <div className="h-10 w-10 rounded bg-secondary flex items-center justify-center text-sm">📜</div>
+                              <div className="h-12 w-12 rounded-lg bg-secondary flex items-center justify-center text-lg flex-shrink-0">📜</div>
                             )}
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm">{adv.name}</p>
-                              {adv.description && <p className="text-xs text-muted-foreground line-clamp-1">{adv.description}</p>}
+                              <p className="font-semibold">{adv.name}</p>
+                              {adv.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{adv.description}</p>}
+                              <div className="flex gap-2 mt-2 flex-wrap">
+                                {system && (
+                                  <Badge variant="outline" className="text-[10px] border-purple-500/30 text-purple-400">🎭 {system.name}</Badge>
+                                )}
+                                <Badge variant="outline" className={`text-[10px] ${adv.tag === 'homebrew' ? 'border-orange-500/30 text-orange-400' : 'border-green-500/30 text-green-400'}`}>
+                                  {adv.tag === 'homebrew' ? '🏠 Homebrew' : '📖 Oficial'}
+                                </Badge>
+                              </div>
                             </div>
-                            <Badge variant="outline" className={`text-[10px] ${adv.tag === 'homebrew' ? 'border-orange-500/30 text-orange-400' : 'border-green-500/30 text-green-400'}`}>
-                              {adv.tag === 'homebrew' ? '🏠 Homebrew' : '📖 Oficial'}
-                            </Badge>
                           </div>
-                        ))}
-                      </div>
-                    )}
-                    {isExpanded && adventures.length === 0 && (
-                      <p className="text-xs text-muted-foreground italic border-t border-border pt-3">Nenhuma aventura cadastrada.</p>
-                    )}
-                  </CardContent>
-                </Card>
-              </motion.div>
-            );
-          })}
+                        </CardContent>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

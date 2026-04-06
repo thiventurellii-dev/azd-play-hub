@@ -58,6 +58,23 @@ const Games = () => {
   const [expandedScript, setExpandedScript] = useState<string | null>(null);
   const [scriptSeasons, setScriptSeasons] = useState<Record<string, SeasonLink[]>>({});
 
+  // RPG
+  const [rpgSystems, setRpgSystems] = useState<any[]>([]);
+  const [rpgAdventures, setRpgAdventures] = useState<any[]>([]);
+  const [expandedSystem, setExpandedSystem] = useState<string | null>(null);
+  const [addSystemOpen, setAddSystemOpen] = useState(false);
+  const [newSystemName, setNewSystemName] = useState('');
+  const [newSystemDesc, setNewSystemDesc] = useState('');
+  const [newSystemImageUrl, setNewSystemImageUrl] = useState('');
+  const [newSystemRulesUrl, setNewSystemRulesUrl] = useState('');
+  const [newSystemVideoUrl, setNewSystemVideoUrl] = useState('');
+  const [addAdventureOpen, setAddAdventureOpen] = useState(false);
+  const [addAdventureSystemId, setAddAdventureSystemId] = useState('');
+  const [newAdvName, setNewAdvName] = useState('');
+  const [newAdvDesc, setNewAdvDesc] = useState('');
+  const [newAdvTag, setNewAdvTag] = useState<'official' | 'homebrew'>('official');
+  const [newAdvImageUrl, setNewAdvImageUrl] = useState('');
+
   // Tags
   const [allTags, setAllTags] = useState<GameTag[]>([]);
   const [gameTagMap, setGameTagMap] = useState<Record<string, string[]>>({});

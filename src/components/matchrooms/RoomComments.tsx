@@ -3,8 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, MessageCircle } from "lucide-react";
+import { Send, MessageCircle, Trash2 } from "lucide-react";
 
 interface Comment {
   id: string;

@@ -66,16 +66,34 @@ const Navbar = () => {
       });
   }, []);
 
+  const fetchFriendRequests = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("friendships")
+      .select("id, user_id")
+      .eq("friend_id", user.id)
+      .eq("status", "pending" as any);
+    if (!data || data.length === 0) {
+      setPendingFriends(0);
+      setFriendRequests([]);
+      return;
+    }
+    setPendingFriends(data.length);
+    const userIds = data.map(d => d.user_id);
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, name, nickname")
+      .in("id", userIds);
+    const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+    setFriendRequests(data.map(d => {
+      const p = profileMap.get(d.user_id);
+      return { id: d.id, user_id: d.user_id, name: p?.name || '?', nickname: p?.nickname || null };
+    }));
+  }, [user]);
+
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("friendships")
-      .select("id", { count: "exact", head: true })
-      .eq("friend_id", user.id)
-      .eq("status", "pending" as any)
-      .then(({ count }) => {
-        setPendingFriends(count || 0);
-      });
+    fetchFriendRequests();
     supabase
       .from("profiles")
       .select("nickname, avatar_url")
@@ -87,7 +105,17 @@ const Navbar = () => {
           setUserAvatar((data as any).avatar_url || null);
         }
       });
-  }, [user]);
+  }, [user, fetchFriendRequests]);
+
+  const handleAcceptFriend = async (id: string) => {
+    await supabase.from("friendships").update({ status: "accepted" as any }).eq("id", id);
+    fetchFriendRequests();
+  };
+
+  const handleRejectFriend = async (id: string) => {
+    await supabase.from("friendships").delete().eq("id", id);
+    fetchFriendRequests();
+  };
 
   const handleSignOut = async () => {
     await signOut();

@@ -109,6 +109,7 @@ const AdminBloodScripts = () => {
     const { error } = await supabase.from('blood_scripts').update({
       name: editScriptForm.name,
       description: editScriptForm.description || null,
+      victory_conditions: editScriptForm.victory_conditions as any,
     }).eq('id', editingScript.id);
     if (error) return notify('error', error.message);
     notify('success', 'Script atualizado!');

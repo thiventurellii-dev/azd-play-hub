@@ -41,18 +41,6 @@ const Navbar = () => {
   const [userNickname, setUserNickname] = useState<string | null>(null);
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
 
-  useEffect(() => {
-    supabase
-      .from("contact_links")
-      .select("name, url")
-      .then(({ data }) => {
-        if (data) {
-          const map: Record<string, string> = {};
-          for (const r of data) map[r.name] = r.url;
-          setContactLinks(map);
-        }
-      });
-  }, []);
 
   const fetchFriendRequests = useCallback(async () => {
     if (!user) return;

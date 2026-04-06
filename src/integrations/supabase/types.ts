@@ -68,6 +68,39 @@ export type Database = {
         }
         Relationships: []
       }
+      activity_logs: {
+        Row: {
+          action: string
+          created_at: string
+          entity_id: string | null
+          entity_type: string
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       blood_characters: {
         Row: {
           created_at: string
@@ -504,6 +537,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      match_edit_proposals: {
+        Row: {
+          created_at: string
+          id: string
+          match_id: string
+          proposed_by: string
+          proposed_data: Json
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          match_id: string
+          proposed_by: string
+          proposed_data: Json
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          match_id?: string
+          proposed_by?: string
+          proposed_data?: Json
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+        }
+        Relationships: []
       }
       match_result_scores: {
         Row: {

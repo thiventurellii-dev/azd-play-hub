@@ -586,7 +586,12 @@ const Games = () => {
               </Button>
             </div>
 
-            <Button variant="gold" onClick={handleEditSave}>Salvar</Button>
+            <div className="flex gap-2 justify-between">
+              <Button variant="destructive" size="sm" onClick={() => { if (editGame) handleDeleteGame(editGame.id); setEditOpen(false); }}>
+                <Trash2 className="h-4 w-4 mr-1" /> Excluir Jogo
+              </Button>
+              <Button variant="gold" onClick={handleEditSave}>Salvar</Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

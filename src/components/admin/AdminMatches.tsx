@@ -267,44 +267,7 @@ const AdminMatches = () => {
 
   const openEditMatch = (m: MatchRecord) => {
     setEditingMatch(m);
-    const d = new Date(m.played_at);
-    setEditForm({
-      played_date: d.toISOString().split('T')[0],
-      played_time: d.toTimeString().slice(0, 5),
-      duration: m.duration_minutes ? String(m.duration_minutes) : '',
-      season_id: m.season_id,
-      game_id: m.game_id,
-    });
-    setEditResults(m.results.map(r => ({
-      player_id: r.player_id, position: r.position, score: r.score, is_first_player: r.is_first,
-    })));
     setEditDialogOpen(true);
-  };
-
-  const handleEditMatchSave = async () => {
-    if (!editingMatch) return;
-    const { error } = await supabase.from('matches').update({
-      season_id: editForm.season_id,
-      game_id: editForm.game_id,
-      duration_minutes: parseInt(editForm.duration) || null,
-      played_at: new Date(`${editForm.played_date}T${editForm.played_time}`).toISOString(),
-    }).eq('id', editingMatch.id);
-    if (error) return notify('error', error.message);
-
-    for (const r of editResults) {
-      await supabase.from('match_results').update({
-        position: r.position, score: r.score,
-      }).eq('match_id', editingMatch.id).eq('player_id', r.player_id);
-    }
-
-    const firstPlayer = editResults.find(r => r.is_first_player);
-    if (firstPlayer) {
-      await supabase.from('matches').update({ first_player_id: firstPlayer.player_id }).eq('id', editingMatch.id);
-    }
-
-    notify('success', 'Partida atualizada!');
-    setEditDialogOpen(false);
-    fetchMatches();
   };
 
   const filteredMatches = matches.filter(m => {

@@ -37,6 +37,7 @@ const PlayerProfile = () => {
   const { nickname } = useParams();
   const { user, isAdmin } = useAuth();
   const { notify } = useNotification();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [role, setRole] = useState<string>("player");
   const [loading, setLoading] = useState(true);
@@ -46,8 +47,19 @@ const PlayerProfile = () => {
   const [upcomingRooms, setUpcomingRooms] = useState<any[]>([]);
   const [achievements, setAchievements] = useState<{ icon: string; name: string; description: string | null }[]>([]);
 
+  // Edit profile state
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({ name: '', nickname: '', phone: '', country_code: '+55', state: '', city: '', birth_date: '', gender: '', pronouns: '', email: '' });
+  const [saving, setSaving] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isOwnProfile = user && profile && user.id === profile.id;
+  const cities = citiesByState[form.state] || [];
 
   useEffect(() => {
     const fetchProfile = async () => {

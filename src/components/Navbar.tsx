@@ -404,37 +404,6 @@ const Navbar = () => {
             </Button>
           </Link>
 
-          {(contactLinks.discord || contactLinks.whatsapp || contactLinks.whatsapp_botc) && (
-            <details className="group">
-              <summary className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground">
-                <AtSign className="h-4 w-4" /> Nossas Redes
-                <ChevronDown className="h-3 w-3 ml-auto transition-transform group-open:rotate-180" />
-              </summary>
-              <div className="pl-6 space-y-1">
-                {contactLinks.discord && (
-                  <a href={contactLinks.discord} target="_blank" rel="noopener noreferrer" onClick={closeMobile}>
-                    <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-[#5865F2]">
-                      <DiscordIcon size={16} /> Discord
-                    </Button>
-                  </a>
-                )}
-                {contactLinks.whatsapp && (
-                  <a href={contactLinks.whatsapp} target="_blank" rel="noopener noreferrer" onClick={closeMobile}>
-                    <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-[#25D366]">
-                      <WhatsAppIcon size={16} /> Boardgame
-                    </Button>
-                  </a>
-                )}
-                {contactLinks.whatsapp_botc && (
-                  <a href={contactLinks.whatsapp_botc} target="_blank" rel="noopener noreferrer" onClick={closeMobile}>
-                    <Button variant="ghost" size="sm" className="w-full justify-start gap-2 text-[#25D366]">
-                      <WhatsAppIcon size={16} /> Blood
-                    </Button>
-                  </a>
-                )}
-              </div>
-            </details>
-          )}
 
           {isAdmin && (
             <Link to="/admin" onClick={closeMobile}>

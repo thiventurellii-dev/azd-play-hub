@@ -41,7 +41,7 @@ const CHART_COLORS = [
 
 const PlayerProfile = () => {
   const { nickname } = useParams();
-  const { user, isAdmin } = useAuth();
+  const { user } = useAuth();
   const { notify } = useNotification();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);

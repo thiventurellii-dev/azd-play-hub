@@ -14,6 +14,8 @@ interface BloodScript {
   id: string;
   name: string;
   description: string | null;
+  slug: string | null;
+  victory_conditions: string[];
 }
 
 interface BloodCharacter {
@@ -24,6 +26,7 @@ interface BloodCharacter {
   team: 'good' | 'evil';
   role_type: 'townsfolk' | 'outsider' | 'minion' | 'demon';
   description: string | null;
+  icon_url: string | null;
 }
 
 const teamLabels: Record<string, string> = { good: 'Bem', evil: 'Mal' };
@@ -50,7 +53,8 @@ const AdminBloodScripts = () => {
   // Edit script dialog
   const [editScriptOpen, setEditScriptOpen] = useState(false);
   const [editingScript, setEditingScript] = useState<BloodScript | null>(null);
-  const [editScriptForm, setEditScriptForm] = useState({ name: '', description: '' });
+  const [editScriptForm, setEditScriptForm] = useState({ name: '', description: '', victory_conditions: [] as string[] });
+  const [newEditCondition, setNewEditCondition] = useState('');
 
   // Edit character dialog
   const [editCharOpen, setEditCharOpen] = useState(false);
@@ -65,7 +69,10 @@ const AdminBloodScripts = () => {
       supabase.from('blood_scripts').select('*').order('name'),
       supabase.from('blood_characters').select('*').order('team, role_type, name'),
     ]);
-    setScripts((scriptsRes.data || []) as BloodScript[]);
+    setScripts((scriptsRes.data || []).map((s: any) => ({
+      ...s,
+      victory_conditions: Array.isArray(s.victory_conditions) ? s.victory_conditions : [],
+    })) as BloodScript[]);
     setCharacters((charsRes.data || []) as BloodCharacter[]);
   };
 
@@ -92,7 +99,8 @@ const AdminBloodScripts = () => {
 
   const openEditScript = (s: BloodScript) => {
     setEditingScript(s);
-    setEditScriptForm({ name: s.name, description: s.description || '' });
+    setEditScriptForm({ name: s.name, description: s.description || '', victory_conditions: [...s.victory_conditions] });
+    setNewEditCondition('');
     setEditScriptOpen(true);
   };
 
@@ -101,6 +109,7 @@ const AdminBloodScripts = () => {
     const { error } = await supabase.from('blood_scripts').update({
       name: editScriptForm.name,
       description: editScriptForm.description || null,
+      victory_conditions: editScriptForm.victory_conditions as any,
     }).eq('id', editingScript.id);
     if (error) return notify('error', error.message);
     notify('success', 'Script atualizado!');
@@ -363,6 +372,32 @@ const AdminBloodScripts = () => {
             <div className="space-y-2">
               <Label>Descrição</Label>
               <Textarea value={editScriptForm.description} onChange={e => setEditScriptForm({ ...editScriptForm, description: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Condições de Vitória Especiais</Label>
+              <div className="space-y-2">
+                {editScriptForm.victory_conditions.map((vc, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Input value={vc} onChange={e => {
+                      const updated = [...editScriptForm.victory_conditions];
+                      updated[i] = e.target.value;
+                      setEditScriptForm({ ...editScriptForm, victory_conditions: updated });
+                    }} />
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
+                      setEditScriptForm({ ...editScriptForm, victory_conditions: editScriptForm.victory_conditions.filter((_, idx) => idx !== i) });
+                    }}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                  </div>
+                ))}
+                <div className="flex items-center gap-2">
+                  <Input value={newEditCondition} onChange={e => setNewEditCondition(e.target.value)} placeholder="Ex: Vitória pelo Prefeito" />
+                  <Button variant="outline" size="sm" onClick={() => {
+                    if (newEditCondition.trim()) {
+                      setEditScriptForm({ ...editScriptForm, victory_conditions: [...editScriptForm.victory_conditions, newEditCondition.trim()] });
+                      setNewEditCondition('');
+                    }
+                  }}><Plus className="h-3 w-3 mr-1" /> Adicionar</Button>
+                </div>
+              </div>
             </div>
             <Button variant="gold" onClick={handleEditScriptSave} className="w-full">Salvar</Button>
           </div>

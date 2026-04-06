@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import { ExternalLink, Video, Users, Calendar, Clock, Plus, Pencil, Trash2, Sword, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
@@ -441,11 +442,14 @@ const Games = () => {
           const seasons = scriptSeasons[s.id] || [];
           return (
             <motion.div key={s.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-              <Card className={`bg-card border-border hover:border-gold/20 transition-all ${isExpanded ? '' : 'h-[280px] overflow-hidden'} flex flex-col relative group`}>
+              <Card className={`bg-card border-border hover:border-gold/20 transition-all ${isExpanded ? '' : 'h-[280px] overflow-hidden'} flex flex-col relative group cursor-pointer`}>
                 <CardContent className="py-5 space-y-3 flex-1 flex flex-col">
                   <div
-                    className="flex items-start gap-4 cursor-pointer"
-                    onClick={() => setExpandedScript(isExpanded ? null : s.id)}
+                    className="flex items-start gap-4"
+                    onClick={() => {
+                      const scriptSlug = (s as any).slug || s.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+                      navigate(`/scripts/${scriptSlug}`);
+                    }}
                   >
                     {getScriptImage(s.name) ? (
                       <img src={getScriptImage(s.name)!} alt={s.name} className="h-20 w-20 rounded-lg object-cover flex-shrink-0" loading="lazy" />
@@ -604,7 +608,9 @@ const Games = () => {
                       {isExpanded ? "▲ Ocultar aventuras" : "▼ Ver aventuras"}
                     </Button>
                     {isExpanded && adventures.length > 0 && (
-                      <div className="border-t border-border pt-3 space-y-2">
+                      <div className="space-y-2">
+                        <Separator className="bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Aventuras</p>
                         {adventures.map((adv: any) => (
                           <div key={adv.id} className="flex items-center gap-3 p-2 rounded-lg bg-secondary/30">
                             {adv.image_url ? (

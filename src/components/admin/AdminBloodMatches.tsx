@@ -236,6 +236,7 @@ const AdminBloodMatches = () => {
     setEditGoodPlayers(
       m.players.filter((p: any) => p.team === 'good').map((p: any) => ({ player_id: p.player_id, character_id: p.character_id, team: 'good' as const }))
     );
+    setEditVictoryConditions(Array.isArray(m.victory_conditions) ? [...m.victory_conditions] : []);
     setEditDialogOpen(true);
   };
 

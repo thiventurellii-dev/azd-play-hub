@@ -84,13 +84,13 @@ const ScriptDetail = () => {
   const [editOpen, setEditOpen] = useState(false);
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
+  const [editImageUrl, setEditImageUrl] = useState("");
   const [editVictoryConditions, setEditVictoryConditions] = useState<string[]>([]);
   const [newCondition, setNewCondition] = useState("");
 
   useEffect(() => {
     if (!slug) return;
     const load = async () => {
-      // Find script by slug (or by id-based slug)
       const { data: scriptsData } = await supabase
         .from("blood_scripts")
         .select("*")
@@ -115,7 +115,6 @@ const ScriptDetail = () => {
       };
       setScript(scriptData);
 
-      // Fetch characters, matches, match_players, profiles in parallel
       const [charsRes, matchesRes] = await Promise.all([
         supabase.from("blood_characters").select("*").eq("script_id", found.id).order("team, role_type, name"),
         supabase.from("blood_matches").select("*").eq("script_id", found.id).order("played_at", { ascending: false }),
@@ -135,7 +134,6 @@ const ScriptDetail = () => {
           .in("match_id", matchIds);
         setMatchPlayers((mpData || []) as MatchPlayer[]);
 
-        // Collect all player IDs
         const playerIds = new Set<string>();
         for (const mp of mpData || []) playerIds.add(mp.player_id);
         for (const m of matchesData) playerIds.add(m.storyteller_player_id);
@@ -176,7 +174,6 @@ const ScriptDetail = () => {
       if (!charMap[mp.character_id]) charMap[mp.character_id] = { played: 0, wins: 0, topPlayers: {} };
       charMap[mp.character_id].played++;
       charMap[mp.character_id].topPlayers[mp.player_id] = (charMap[mp.character_id].topPlayers[mp.player_id] || 0) + 1;
-      // Check if this player's team won
       const match = matches.find((m) => m.id === mp.match_id);
       if (match && match.winning_team === mp.team) {
         charMap[mp.character_id].wins++;
@@ -200,25 +197,34 @@ const ScriptDetail = () => {
       .map(([id, count]) => ({ id, name: profiles[id] || "?", count }));
   }, [characters, matchPlayers, profiles]);
 
+  // Victory condition stats (how many times each condition appeared — placeholder for future tracking)
+  const victoryConditionStats = useMemo(() => {
+    if (!script || script.victory_conditions.length === 0) return [];
+    // For now show the conditions listed on the script
+    return script.victory_conditions.map(vc => ({ name: vc }));
+  }, [script]);
+
   // Edit handlers
   const openEdit = () => {
     if (!script) return;
     setEditName(script.name);
     setEditDesc(script.description || "");
     setEditVictoryConditions([...script.victory_conditions]);
+    setEditImageUrl("");
     setNewCondition("");
     setEditOpen(true);
   };
 
   const handleSave = async () => {
     if (!script) return;
+    const updateData: any = {
+      name: editName,
+      description: editDesc || null,
+      victory_conditions: editVictoryConditions,
+    };
     const { error } = await supabase
       .from("blood_scripts")
-      .update({
-        name: editName,
-        description: editDesc || null,
-        victory_conditions: editVictoryConditions as any,
-      })
+      .update(updateData)
       .eq("id", script.id);
     if (error) return notify("error", error.message);
     notify("success", "Script atualizado!");
@@ -228,7 +234,6 @@ const ScriptDetail = () => {
 
   const getCharIcon = (char: BloodCharacter) => {
     if (char.icon_url) return char.icon_url;
-    // Fallback: try BotC wiki-style URL
     const nameEncoded = char.name_en.replace(/ /g, "_");
     return `https://wiki.bloodontheclocktower.com/images/${nameEncoded}_Icon.png`;
   };
@@ -285,18 +290,6 @@ const ScriptDetail = () => {
                 </Button>
               )}
             </div>
-
-            {/* Victory Conditions */}
-            {script.victory_conditions.length > 0 && (
-              <div className="mt-4">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Condições de Vitória Especiais</p>
-                <div className="flex flex-wrap gap-2">
-                  {script.victory_conditions.map((vc, i) => (
-                    <Badge key={i} variant="outline" className="text-xs border-gold/30 text-gold">{vc}</Badge>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -332,6 +325,25 @@ const ScriptDetail = () => {
               <p className="text-xs text-muted-foreground">Vitórias do Mal ({stats.evilWins})</p>
             </CardContent>
           </Card>
+        </motion.div>
+      )}
+
+      {/* Victory Conditions Section */}
+      {victoryConditionStats.length > 0 && (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+          <h2 className="text-xl font-bold mb-4">⚔️ Condições de Vitória Especiais</h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {victoryConditionStats.map((vc, i) => (
+              <Card key={i} className="bg-card border-gold/10">
+                <CardContent className="py-3 flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-full bg-gold/10 flex items-center justify-center text-gold text-sm font-bold flex-shrink-0">
+                    {i + 1}
+                  </div>
+                  <span className="font-medium text-sm">{vc.name}</span>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </motion.div>
       )}
 
@@ -495,6 +507,11 @@ const ScriptDetail = () => {
             <div className="space-y-2">
               <Label>Descrição</Label>
               <Textarea value={editDesc} onChange={(e) => setEditDesc(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>URL da Imagem do Header</Label>
+              <Input value={editImageUrl} onChange={(e) => setEditImageUrl(e.target.value)} placeholder="https://exemplo.com/imagem.jpg" />
+              <p className="text-xs text-muted-foreground">Imagem de fundo exibida no topo da página do script</p>
             </div>
             <div className="space-y-2">
               <Label>Condições de Vitória Especiais</Label>

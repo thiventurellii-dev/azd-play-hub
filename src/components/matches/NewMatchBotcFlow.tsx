@@ -8,13 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useNotification } from '@/components/NotificationDialog';
 import { ChevronLeft, ChevronRight, Check, Trash2, UserPlus, Skull, Shield, ChevronsUpDown } from 'lucide-react';
 import { submitBloodMatch } from '@/lib/bloodRatings';
 import { cn } from '@/lib/utils';
 
 interface Season { id: string; name: string; }
-interface BloodScript { id: string; name: string; }
+interface BloodScript { id: string; name: string; victory_conditions: string[]; }
 interface BloodCharacter { id: string; script_id: string; name: string; name_en: string; role_type: string; team: string; }
 interface Player { id: string; name: string; nickname?: string; }
 interface BloodPlayerEntry { player_id: string; character_id: string; team: 'good' | 'evil'; }
@@ -43,26 +44,29 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
   const [goodPlayers, setGoodPlayers] = useState<BloodPlayerEntry[]>([{ player_id: '', character_id: '', team: 'good' }]);
 
   const [winningTeam, setWinningTeam] = useState<'good' | 'evil'>('good');
+  const [selectedVictoryConditions, setSelectedVictoryConditions] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
-  // Popover open states
   const [playerPopovers, setPlayerPopovers] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const fetchBase = async () => {
       const [s, sc, ch, p] = await Promise.all([
         supabase.from('seasons').select('id, name').eq('type', 'blood' as any).neq('status', 'finished').neq('status', 'upcoming').order('start_date', { ascending: false }),
-        supabase.from('blood_scripts').select('id, name').order('name'),
+        supabase.from('blood_scripts').select('id, name, victory_conditions').order('name'),
         supabase.from('blood_characters').select('id, script_id, name, name_en, role_type, team'),
         supabase.from('profiles').select('id, name, nickname').order('name'),
       ]);
       setSeasons((s.data || []) as Season[]);
-      setScripts((sc.data || []) as BloodScript[]);
+      setScripts((sc.data || []).map((x: any) => ({ ...x, victory_conditions: Array.isArray(x.victory_conditions) ? x.victory_conditions : [] })) as BloodScript[]);
       setCharacters((ch.data || []) as BloodCharacter[]);
       setPlayers((p.data || []) as Player[]);
     };
     fetchBase();
   }, []);
+
+  const selectedScript = scripts.find(s => s.id === scriptId);
+  const scriptVictoryConditions = selectedScript?.victory_conditions || [];
 
   const scriptCharacters = characters.filter(c => c.script_id === scriptId);
   const evilChars = scriptCharacters.filter(c => c.team === 'evil');
@@ -116,7 +120,7 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
       setEvilPlayers([{ player_id: '', character_id: '', team: 'evil' }]);
       setGoodPlayers([{ player_id: '', character_id: '', team: 'good' }]);
       setDuration(''); setPlayedDate(''); setPlayedTime(''); setStorytellerId('');
-      setScriptId('');
+      setScriptId(''); setSelectedVictoryConditions([]);
     } catch (err: any) {
       notify('error', err.message || 'Erro ao registrar partida');
     } finally {
@@ -231,6 +235,7 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
                   setScriptId(v);
                   setEvilPlayers([{ player_id: '', character_id: '', team: 'evil' }]);
                   setGoodPlayers([{ player_id: '', character_id: '', team: 'good' }]);
+                  setSelectedVictoryConditions([]);
                 }}>
                   <SelectTrigger><SelectValue placeholder="Selecione o script" /></SelectTrigger>
                   <SelectContent>{scripts.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
@@ -294,6 +299,29 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
               </div>
             </div>
 
+            {/* Victory Conditions */}
+            {scriptVictoryConditions.length > 0 && (
+              <div className="space-y-2 p-4 rounded-lg border border-gold/20 bg-gold/5">
+                <Label className="text-gold">Condições de Vitória Especiais</Label>
+                <p className="text-xs text-muted-foreground mb-2">Marque se alguma condição especial ocorreu nesta partida</p>
+                <div className="space-y-2">
+                  {scriptVictoryConditions.map((vc, i) => (
+                    <label key={i} className="flex items-center gap-2 cursor-pointer">
+                      <Checkbox
+                        checked={selectedVictoryConditions.includes(vc)}
+                        onCheckedChange={(checked) => {
+                          setSelectedVictoryConditions(prev =>
+                            checked ? [...prev, vc] : prev.filter(v => v !== vc)
+                          );
+                        }}
+                      />
+                      <span className="text-sm">{vc}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="border border-border rounded-lg p-4 space-y-2 text-sm">
               <p><span className="text-muted-foreground">Season:</span> {seasons.find(s => s.id === seasonId)?.name}</p>
               <p><span className="text-muted-foreground">Script:</span> {scripts.find(s => s.id === scriptId)?.name}</p>
@@ -313,10 +341,13 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
                   );
                 })}
               </div>
-              <div className="mt-2">
+              <div className="mt-2 flex flex-wrap gap-2">
                 <Badge className={winningTeam === 'evil' ? 'bg-red-500/20 text-red-400 border-red-500/30' : 'bg-blue-500/20 text-blue-400 border-blue-500/30'}>
                   {winningTeam === 'evil' ? '💀 Mal venceu' : '🛡️ Bem venceu'}
                 </Badge>
+                {selectedVictoryConditions.map((vc, i) => (
+                  <Badge key={i} variant="outline" className="text-xs border-gold/30 text-gold">{vc}</Badge>
+                ))}
               </div>
             </div>
 

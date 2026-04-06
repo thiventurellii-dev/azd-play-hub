@@ -88,6 +88,11 @@ const GameDetail = () => {
   const [editImageUrl, setEditImageUrl] = useState("");
   const [editRulesUrl, setEditRulesUrl] = useState("");
   const [editVideoUrl, setEditVideoUrl] = useState("");
+  const [editMinPlayers, setEditMinPlayers] = useState("");
+  const [editMaxPlayers, setEditMaxPlayers] = useState("");
+  const [editSlug, setEditSlug] = useState("");
+  const [editFactions, setEditFactions] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const fetchGame = async () => {

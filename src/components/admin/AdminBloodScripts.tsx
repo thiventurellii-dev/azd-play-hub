@@ -69,7 +69,10 @@ const AdminBloodScripts = () => {
       supabase.from('blood_scripts').select('*').order('name'),
       supabase.from('blood_characters').select('*').order('team, role_type, name'),
     ]);
-    setScripts((scriptsRes.data || []) as BloodScript[]);
+    setScripts((scriptsRes.data || []).map((s: any) => ({
+      ...s,
+      victory_conditions: Array.isArray(s.victory_conditions) ? s.victory_conditions : [],
+    })) as BloodScript[]);
     setCharacters((charsRes.data || []) as BloodCharacter[]);
   };
 

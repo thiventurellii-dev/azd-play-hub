@@ -230,6 +230,7 @@ const ScriptDetail = () => {
     setEmStoryteller(m.storyteller_player_id);
     const mps = matchPlayers.filter(mp => mp.match_id === m.id);
     setEmPlayers(mps.map(mp => ({ player_id: mp.player_id, character_id: mp.character_id, team: mp.team })));
+    setEmVictoryConditions(Array.isArray(m.victory_conditions) ? [...m.victory_conditions] : []);
     setEditMatchOpen(true);
   };
 

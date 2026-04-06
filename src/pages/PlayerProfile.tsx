@@ -73,7 +73,19 @@ const PlayerProfile = () => {
         return;
       }
       setProfile(prof);
-
+      // Populate edit form
+      setForm({
+        name: prof.name || '',
+        nickname: (prof as any).nickname || '',
+        phone: formatPhone((prof as any).phone || ''),
+        country_code: (prof as any).country_code || '+55',
+        state: (prof as any).state || '',
+        city: (prof as any).city || '',
+        birth_date: (prof as any).birth_date || '',
+        gender: (prof as any).gender || '',
+        pronouns: (prof as any).pronouns || '',
+        email: (prof as any).email || '',
+      });
       // Role
       const { data: roleData } = await supabase.from("user_roles").select("role").eq("user_id", prof.id).maybeSingle();
       if (roleData) setRole(roleData.role);

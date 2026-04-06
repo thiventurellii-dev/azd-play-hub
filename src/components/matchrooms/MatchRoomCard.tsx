@@ -281,7 +281,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
 
       {/* Expandable comments */}
       {showComments && (
-        <div className="border-t border-border px-6 pb-4 max-h-[200px] overflow-y-auto">
+        <div className="border-t border-border px-6 pb-4">
           <RoomComments roomId={room.id} />
         </div>
       )}

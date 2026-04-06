@@ -110,6 +110,7 @@ const Navbar = () => {
   const handleAcceptFriend = async (id: string) => {
     await supabase.from("friendships").update({ status: "accepted" as any }).eq("id", id);
     fetchFriendRequests();
+    window.dispatchEvent(new Event('friendship-changed'));
   };
 
   const handleRejectFriend = async (id: string) => {

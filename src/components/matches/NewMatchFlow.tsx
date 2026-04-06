@@ -13,7 +13,7 @@ import { useNotification } from '@/components/NotificationDialog';
 import { Upload, UserPlus, Trash2, ChevronLeft, ChevronRight, Check, ChevronsUpDown } from 'lucide-react';
 import ScoringSheet from './ScoringSheet';
 import NewMatchBotcFlow from './NewMatchBotcFlow';
-import { Gamepad2, Skull, Wand2 } from 'lucide-react';
+import { Gamepad2, Skull, Sword } from 'lucide-react';
 
 interface Season { id: string; name: string; }
 interface Game { id: string; name: string; slug: string | null; min_players: number | null; max_players: number | null; }

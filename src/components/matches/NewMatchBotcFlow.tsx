@@ -46,7 +46,6 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
   const [saving, setSaving] = useState(false);
 
   // Popover open states
-  const [storytellerOpen, setStorytellerOpen] = useState(false);
   const [playerPopovers, setPlayerPopovers] = useState<Record<string, boolean>>({});
 
   useEffect(() => {

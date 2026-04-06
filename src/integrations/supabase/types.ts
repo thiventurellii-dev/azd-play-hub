@@ -105,6 +105,7 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          icon_url: string | null
           id: string
           name: string
           name_en: string
@@ -115,6 +116,7 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
+          icon_url?: string | null
           id?: string
           name: string
           name_en: string
@@ -125,6 +127,7 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
+          icon_url?: string | null
           id?: string
           name?: string
           name_en?: string
@@ -282,18 +285,24 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          slug: string | null
+          victory_conditions: Json | null
         }
         Insert: {
           created_at?: string
           description?: string | null
           id?: string
           name: string
+          slug?: string | null
+          victory_conditions?: Json | null
         }
         Update: {
           created_at?: string
           description?: string | null
           id?: string
           name?: string
+          slug?: string | null
+          victory_conditions?: Json | null
         }
         Relationships: []
       }

@@ -50,10 +50,7 @@ const AdminMatches = () => {
   const [filterDate, setFilterDate] = useState('');
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editingMatch, setEditingMatch] = useState<MatchRecord | null>(null);
-  const [editForm, setEditForm] = useState({ played_date: '', played_time: '', duration: '', season_id: '', game_id: '' });
-  const [editResults, setEditResults] = useState<MatchResult[]>([]);
-
+  const [editingMatch, setEditingMatch] = useState<any>(null);
   const [expandedSeasons, setExpandedSeasons] = useState<Record<string, boolean>>({});
 
   useEffect(() => {

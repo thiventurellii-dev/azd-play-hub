@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 interface MatchRoom {
   id: string; title: string; description: string | null; scheduled_at: string;
@@ -20,7 +20,7 @@ interface MatchRoom {
 
 const MatchRooms = () => {
   const location = useLocation();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [rooms, setRooms] = useState<MatchRoom[]>([]);
   const [loading, setLoading] = useState(true);
   const [matchFlowOpen, setMatchFlowOpen] = useState(false);
@@ -31,9 +31,6 @@ const MatchRooms = () => {
   const [gameFilter, setGameFilter] = useState('all');
   const [availabilityFilter, setAvailabilityFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
-
-  // Deep link room modal
-  const [deepLinkRoom, setDeepLinkRoom] = useState<MatchRoom | null>(null);
 
   useEffect(() => {
     const state = location.state as any;
@@ -53,15 +50,35 @@ const MatchRooms = () => {
     if (roomParam && rooms.length > 0) {
       const found = rooms.find(r => r.id === roomParam);
       if (found) {
-        setDeepLinkRoom(found);
         setHighlightRoomId(roomParam);
-        // Auto-switch to the correct tab
         const isPast = found.status === "finished" || found.status === "cancelled";
         setActiveTab(isPast ? "past" : "active");
         setTimeout(() => {
           const el = document.getElementById(`room-${roomParam}`);
           if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }, 300);
+      } else {
+        // Try fetching the specific room directly
+        supabase.from("match_rooms")
+          .select("id, title, description, scheduled_at, max_players, status, created_by, game:games(id, name, image_url)")
+          .eq("id", roomParam)
+          .maybeSingle()
+          .then(({ data }) => {
+            if (data) {
+              const room = { ...data, game: Array.isArray((data as any).game) ? (data as any).game[0] : (data as any).game } as MatchRoom;
+              setRooms(prev => [...prev, room]);
+              const isPast = room.status === "finished" || room.status === "cancelled";
+              setActiveTab(isPast ? "past" : "active");
+              setHighlightRoomId(roomParam);
+              setTimeout(() => {
+                const el = document.getElementById(`room-${roomParam}`);
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              }, 400);
+            } else {
+              toast.error("Sala não encontrada");
+              setSearchParams({}, { replace: true });
+            }
+          });
       }
     }
   }, [searchParams, rooms]);
@@ -194,7 +211,7 @@ const MatchRooms = () => {
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {activeRooms.map(room => (
-                  <div key={room.id} id={`room-${room.id}`} className={highlightRoomId === room.id ? 'ring-2 ring-gold rounded-xl transition-all' : ''}>
+                  <div key={room.id} id={`room-${room.id}`} className={highlightRoomId === room.id ? 'ring-2 ring-gold rounded-xl animate-pulse-gold transition-all' : ''}>
                     <MatchRoomCard room={room} onUpdate={fetchRooms} />
                   </div>
                 ))}
@@ -207,7 +224,7 @@ const MatchRooms = () => {
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {pastRooms.map(room => (
-                  <div key={room.id} id={`room-${room.id}`} className={highlightRoomId === room.id ? 'ring-2 ring-gold rounded-xl transition-all' : ''}>
+                  <div key={room.id} id={`room-${room.id}`} className={highlightRoomId === room.id ? 'ring-2 ring-gold rounded-xl animate-pulse-gold transition-all' : ''}>
                     <MatchRoomCard room={room} onUpdate={fetchRooms} />
                   </div>
                 ))}
@@ -229,16 +246,6 @@ const MatchRooms = () => {
             />
           </ErrorBoundary>
         </DialogContent>
-      </Dialog>
-
-      {/* Deep link room modal */}
-      <Dialog open={!!deepLinkRoom} onOpenChange={(open) => !open && setDeepLinkRoom(null)}>
-        {deepLinkRoom && (
-          <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>{deepLinkRoom.title}</DialogTitle></DialogHeader>
-            <MatchRoomCard room={deepLinkRoom} onUpdate={() => { fetchRooms(); }} />
-          </DialogContent>
-        )}
       </Dialog>
     </div>
   );

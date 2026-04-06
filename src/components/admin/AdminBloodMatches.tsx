@@ -195,30 +195,15 @@ const AdminBloodMatches = () => {
 
     setSaving(true);
     try {
-      const { data: match, error: matchErr } = await supabase
-        .from('blood_matches')
-        .insert({
-          season_id: seasonId,
-          script_id: scriptId,
-          played_at: new Date(`${playedDate}T${playedTime}`).toISOString(),
-          duration_minutes: parseInt(duration) || null,
-          storyteller_player_id: storytellerId,
-          winning_team: winningTeam,
-        } as any)
-        .select().single();
-      if (matchErr) throw matchErr;
-
-      const matchPlayers = allPlayers.map(p => ({
-        match_id: (match as any).id,
-        player_id: p.player_id,
-        character_id: p.character_id,
-        team: p.team,
-      }));
-      const { error: playersErr } = await supabase.from('blood_match_players').insert(matchPlayers as any);
-      if (playersErr) throw playersErr;
-
-      // Update blood_mmr_ratings
-      await updateRatings(seasonId, storytellerId, allPlayers, winningTeam);
+      await submitBloodMatch({
+        seasonId,
+        scriptId,
+        playedAt: new Date(`${playedDate}T${playedTime}`).toISOString(),
+        durationMinutes: parseInt(duration) || null,
+        storytellerId,
+        winningTeam,
+        players: allPlayers,
+      });
 
       notify('success', 'Partida de Blood registrada!');
       setEvilPlayers([{ player_id: '', character_id: '', team: 'evil' }]);

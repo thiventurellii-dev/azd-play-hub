@@ -8,10 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useNotification } from '@/components/NotificationDialog';
 import { Trash2, UserPlus, Upload, Image, Pencil, Search, ChevronDown, ChevronUp } from 'lucide-react';
 import NewMatchFlow from '@/components/matches/NewMatchFlow';
+import EditMatchDialog from '@/components/matches/EditMatchDialog';
 
 interface Season { id: string; name: string; }
 interface Game { id: string; name: string; }

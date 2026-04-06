@@ -449,11 +449,6 @@ const Navbar = () => {
                     </div>
                   )}
                   {userNickname || "Meu Perfil"}
-                  {pendingFriends > 0 && (
-                    <span className="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-[10px] font-bold text-black">
-                      {pendingFriends}
-                    </span>
-                  )}
                 </Button>
                 <Button
                   variant="outline"

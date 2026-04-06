@@ -1,77 +1,102 @@
+## Plan: UI Improvements, Scrollbar Styling, Cards, Notifications, and Game Page Fixes
 
+### 1. Ghost Scrollbars (Desktop)
 
-## Plan: Fix Critical Bugs & Add Steam Integration
+**File: `src/index.css**`
 
-### 1. Fix NewMatchFlow Step 2 Black Screen
+- Add custom scrollbar CSS using `::-webkit-scrollbar` and `scrollbar-color` properties
+- Default state: transparent track, invisible thumb
+- On hover (`:hover`): reveal thumb with subtle color matching mobile scrollbar (gray/muted)
+- Apply globally to all scrollable containers
 
-**Root cause analysis**: The Step 2 rendering code at lines 405-481 looks structurally sound. The likely culprit is the `<SelectItem value="">Nenhuma</SelectItem>` at line 448 — Radix UI Select crashes when `value=""` is used. Additionally, if `filteredPlayers` is empty or `allPlayers` hasn't loaded yet, the Select dropdown may cause issues.
+### 2. Fixed-size Cards for Rooms and BotC Scripts
 
-**Changes in `src/components/matches/NewMatchFlow.tsx`**:
-- Replace `<SelectItem value="">Nenhuma</SelectItem>` with `<SelectItem value="none">Nenhuma</SelectItem>` for factions
-- Add null/loading guards around Step 2 rendering — show a spinner if `allPlayers` is still loading
-- Wrap the entire step rendering in an ErrorBoundary component to catch and display errors gracefully instead of white-screening
-- Create `src/components/ErrorBoundary.tsx` — a simple class component that catches render errors and shows a fallback message with error details in dev mode
+**File: `src/components/matchrooms/MatchRoomCard.tsx**`
 
-### 2. Steam Integration
+- Set fixed card height (`h-[380px]` or similar) with `overflow-hidden`
+- Hide partially comments section by default behind a "Ver mais comentários" toggle button
+- When toggled, expand the card or show comments inline with scroll
+- Truncate description with `line-clamp-2`
 
-**Database**: Add `steam_id` column (text, nullable) to `profiles` table via migration.
+**File: `src/pages/Games.tsx**` (Blood scripts section)
 
-**Edge Function** `supabase/functions/steam-auth/index.ts`:
-- Handles two flows:
-  - `GET /steam-auth?action=login` → redirects to Steam OpenID login URL with `openid.return_to` pointing back to the app
-  - `GET /steam-auth?action=callback&openid.claimed_id=...` → validates the Steam response, extracts the 17-digit Steam ID, returns it to the client
-- The client will call this edge function and handle the redirect
+- Apply fixed card dimensions to BotC script cards
+- Truncate character lists with a "Ver Personagens" expand toggle. Dont expand all cards, only the one clicked by the user.
 
-**Frontend changes**:
-- In `src/pages/PlayerProfile.tsx`: Add a "Vincular Steam" button in the edit profile section when `isOwnProfile`
-  - On click, redirect to Steam OpenID via the edge function
-- Create route `/auth/steam/callback` in `App.tsx` pointing to a new `src/pages/SteamCallback.tsx`
-  - Extracts `openid.claimed_id` from URL params
-  - Saves the Steam ID to the user's profile via Supabase
-  - Redirects back to the user's profile
-- Display a Steam icon (inline SVG) next to the player name when `steam_id` is present on the profile
+### 3. Notification Bell (Central de Notificações)
 
-### 3. Fix Deep Linking for Match Rooms
+**File: `src/components/Navbar.tsx**`
 
-**Problem**: The deep link modal opens but may not find rooms in past/finished tabs, and the room data in the modal doesn't refresh.
+- Add a `Bell` icon (from lucide-react) to the right of the user avatar in the navbar
+- Create a dropdown/popover showing past notifications
+- Initially: show a placeholder "Sem notificações" state (no backend table needed yet — future-ready)
+- Badge counter for unread notifications (static 0 for now)
 
-**Changes in `src/pages/MatchRooms.tsx`**:
-- When `?room=ID` is detected, search ALL rooms (not just active ones) for the matching ID
-- Auto-switch to the correct tab (active vs past) based on the room's status
-- Ensure the `deepLinkRoom` modal uses a fully functional `MatchRoomCard` with live player data
-- Add a visual glow effect (`ring-2 ring-gold animate-pulse-gold`) to the highlighted card in the background
+### 4. Steam Icon Fix
 
-### 4. Refine WhatsApp Sharing
+**File: `src/pages/PlayerProfile.tsx**`
 
-**Changes in `src/lib/matchNotification.ts`**:
-- The `generateWhatsAppInvite` function already uses `encodeURIComponent` correctly (line 39)
-- Add a new parameter `confirmedPlayers: string[]` to include in the message text
-- Update message template: add `✅ Confirmados: Player1, Player2...` line
+- Replace the current custom SVG path (which doesn't look like Steam) with the proper Steam logo SVG icon — the well-known Steam Valve logo
 
-**Changes in `src/components/matchrooms/MatchRoomCard.tsx`**:
-- Pass the confirmed players' display names to `generateWhatsAppInvite`
-- Update `handleShare` to include the player list
+### 5. Fix Room Deep Link (Black Screen)
 
-### 5. Console Warning Fix (Bonus)
+**Root cause**: The `deepLinkRoom` modal renders a `MatchRoomCard` inside a `DialogContent`, but if the room data is stale or the modal renders before `rooms` are loaded, it shows nothing. Also, the dialog might close immediately if `deepLinkRoom` is set before rooms finish loading.
 
-**Changes in `src/components/Navbar.tsx`**:
-- Remove unused `DropdownMenu` imports (they're still used for nav menus, so keep those)
-- The "Function components cannot be given refs" warning comes from DiscordIcon/WhatsAppIcon — wrap them with `React.forwardRef` or use them differently where they're passed as children
+**Implementation Steps to Solve:**
+
+1. **Direct Single-Record Fetching:**
+  - In src/pages/MatchRooms.tsx, implement a secondary, isolated Supabase query that triggers when ?room=ID is detected in the URL.
+  - Use .select('*').eq('id', roomId).single() to fetch the specific room data independently of the main rooms list.
+2. **Robust Loading States (Skeleton UI):**
+  - Modify the RoomDetailModal to immediately open when a roomId param exists.
+  - Implement a **Skeleton Loader** or **Loading Spinner** inside the DialogContent. Do not attempt to render the MatchRoomCard until the specific fetch is successful.
+3. **Defensive Rendering (Optional Chaining):**
+  - Apply **Optional Chaining (?.)** across the MatchRoomCard and its sub-components (Comments, Players, Game Info) to handle null or undefined data during the transition phase.
+  - Ensure that any mathematical calculations (scoring averages) provide a fallback value (e.g., ?? 0) to prevent NaN errors.
+4. **Error Handling & Graceful Fallback:**
+  - If the direct fetch returns no data (404), trigger a "Room not found" Toast and programmatically close the Dialog.
+  - Upon closing the Modal, use useSearchParams to clean the URL (remove the room param) without triggering a full page reload.
+5. **Interactive Card Integration:**
+  - Ensure the Modal-centric view supports all core interactions (Joining, Leaving, Commenting) by passing the freshly fetched data to the existing card logic.
+  - Fix the layout issue where Room Cards in the main grid have inconsistent heights; force a uniform card size with an expandable section for long comment threads.
+
+### 6. WhatsApp Emoji Fix
+
+**File: `src/lib/matchNotification.ts**`
+
+- The emojis in the message are Unicode characters that should work fine with `encodeURIComponent`
+- The issue is likely that the `encodeURIComponent` is double-encoding or the `wa.me` URL is malforming
+- Verify the emoji characters are standard Unicode (🎲, 🎮, 📅, ✅, 👉) — these are already correct in the code
+- Test: the current code looks correct. The issue might be browser/OS specific. No code change needed unless testing reveals a specific encoding issue.
+
+### 7. Fix Edit Match Button (Game Detail History)
+
+**File: `src/pages/GameDetail.tsx**` (line ~908)
+
+- The Pencil button currently has `/* TODO: edit match */` — it does nothing
+- Implement: add state for `editingMatch` and a Dialog with fields to edit the match (date, duration, player results)
+- Reuse similar logic from `AdminMatches.tsx` for the edit form
+- On save: update `matches` and `match_results` tables, then refresh the history
+
+### 8. Average Game Duration in Header
+
+**File: `src/pages/GameDetail.tsx**` (line ~489, inside the hero banner stats)
+
+- Calculate average duration from `allMatches` using `duration_minutes`
+- Add a `Clock` icon + "~Xmin" next to the player count in the header
+- Calculation: `Math.round(sum(duration_minutes) / count_with_duration)`
 
 ### Technical Details
 
-**Files to create**:
-- `src/components/ErrorBoundary.tsx`
-- `src/pages/SteamCallback.tsx`
-- `supabase/functions/steam-auth/index.ts`
+**Files to modify:**
 
-**Files to modify**:
-- `src/components/matches/NewMatchFlow.tsx` — SelectItem fix, loading guards, ErrorBoundary wrapper
-- `src/pages/PlayerProfile.tsx` — Steam link button + icon display
-- `src/pages/MatchRooms.tsx` — Deep link tab switching + glow effect
-- `src/components/matchrooms/MatchRoomCard.tsx` — Pass player names to share
-- `src/lib/matchNotification.ts` — Add confirmed players to WhatsApp message
-- `src/App.tsx` — Add `/auth/steam/callback` route
+- `src/index.css` — ghost scrollbar styles
+- `src/components/Navbar.tsx` — notification bell
+- `src/components/matchrooms/MatchRoomCard.tsx` — fixed card + collapsible comments
+- `src/pages/MatchRooms.tsx` — remove deep link modal, use scroll+highlight only
+- `src/pages/GameDetail.tsx` — edit match button, avg duration in header
+- `src/pages/PlayerProfile.tsx` — Steam icon SVG
+- `src/pages/Games.tsx` — fixed BotC script card sizes
+- `src/lib/matchNotification.ts` — verify emoji encoding (likely no change needed)
 
-**Migration**: Add `steam_id` text column to `profiles`
-
+**No database changes required.**

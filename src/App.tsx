@@ -24,6 +24,7 @@ import MatchRooms from "./pages/MatchRooms.tsx";
 import GameDetail from "./pages/GameDetail.tsx";
 import PlayerProfile from "./pages/PlayerProfile.tsx";
 import SteamCallback from "./pages/SteamCallback.tsx";
+import ScriptDetail from "./pages/ScriptDetail.tsx";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App = () => (
                 <Route path="/seasons/:id" element={<ProtectedRoute><SeasonDetail /></ProtectedRoute>} />
                 <Route path="/games" element={<ProtectedRoute><Games /></ProtectedRoute>} />
                 <Route path="/jogos/:slug" element={<ProtectedRoute><GameDetail /></ProtectedRoute>} />
+                <Route path="/scripts/:slug" element={<ProtectedRoute><ScriptDetail /></ProtectedRoute>} />
                 <Route path="/players" element={<ProtectedRoute><Players /></ProtectedRoute>} />
                 <Route path="/perfil/:nickname" element={<ProtectedRoute><PlayerProfile /></ProtectedRoute>} />
                 <Route path="/rankings" element={<ProtectedRoute><Rankings /></ProtectedRoute>} />

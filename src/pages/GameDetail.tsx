@@ -93,6 +93,7 @@ const GameDetail = () => {
   const [editMaxPlayers, setEditMaxPlayers] = useState("");
   const [editSlug, setEditSlug] = useState("");
   const [editFactions, setEditFactions] = useState("");
+  const [editCategories, setEditCategories] = useState<any[]>([]);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {

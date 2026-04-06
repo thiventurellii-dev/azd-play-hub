@@ -42,6 +42,7 @@ interface BloodMatch {
   winning_team: "good" | "evil";
   storyteller_player_id: string;
   season_id: string;
+  victory_conditions?: string[];
 }
 
 interface MatchPlayer {

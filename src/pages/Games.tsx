@@ -530,9 +530,11 @@ const Games = () => {
           <TabsList>
             <TabsTrigger value="boardgame">🎲 Boardgames</TabsTrigger>
             <TabsTrigger value="blood">🩸 Blood on the Clocktower</TabsTrigger>
+            <TabsTrigger value="rpg">🎭 RPG</TabsTrigger>
           </TabsList>
           <TabsContent value="boardgame">{renderBoardgames()}</TabsContent>
           <TabsContent value="blood">{renderBloodScripts()}</TabsContent>
+          <TabsContent value="rpg">{renderRpg()}</TabsContent>
         </Tabs>
       )}
 

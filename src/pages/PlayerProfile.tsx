@@ -211,6 +211,63 @@ const PlayerProfile = () => {
     fetchProfile();
   }, [nickname, user]);
 
+  const handleSaveProfile = async () => {
+    if (!user || !isOwnProfile) return;
+    if (!form.name || !form.nickname || !form.phone || !form.state || !form.city || !form.birth_date || !form.gender || !form.pronouns) {
+      return notify('error', 'Preencha todos os campos obrigatórios');
+    }
+    setSaving(true);
+    const { error } = await supabase.from('profiles').update({
+      name: form.name, nickname: form.nickname, phone: unformatPhone(form.phone),
+      country_code: form.country_code, state: form.state, city: form.city,
+      birth_date: form.birth_date, gender: form.gender, pronouns: form.pronouns, email: form.email,
+    } as any).eq('id', user.id);
+    setSaving(false);
+    if (error) return notify('error', error.message);
+    notify('success', 'Perfil atualizado!');
+    setEditing(false);
+    setProfile({ ...profile, ...form, phone: unformatPhone(form.phone) });
+    if (form.nickname !== nickname) navigate(`/perfil/${form.nickname}`, { replace: true });
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPassword || !confirmPassword) return notify('error', 'Preencha ambos os campos');
+    if (newPassword !== confirmPassword) return notify('error', 'As senhas não coincidem');
+    if (newPassword.length < 8) return notify('error', 'Mínimo 8 caracteres');
+    if (!/[A-Z]/.test(newPassword)) return notify('error', 'Inclua ao menos uma letra maiúscula');
+    if (!/[a-z]/.test(newPassword)) return notify('error', 'Inclua ao menos uma letra minúscula');
+    if (!/[^A-Za-z0-9]/.test(newPassword)) return notify('error', 'Inclua ao menos um caractere especial');
+    setSavingPassword(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setSavingPassword(false);
+    if (error) return notify('error', error.message);
+    notify('success', 'Senha alterada com sucesso!');
+    setChangingPassword(false);
+    setNewPassword('');
+    setConfirmPassword('');
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    if (file.size > 2 * 1024 * 1024) return notify('error', 'Imagem deve ter no máximo 2MB');
+    setUploadingAvatar(true);
+    const ext = file.name.split('.').pop();
+    const path = `${user.id}/avatar.${ext}`;
+    const { data: existing } = await supabase.storage.from('avatars').list(user.id);
+    if (existing && existing.length > 0) {
+      await supabase.storage.from('avatars').remove(existing.map(f => `${user.id}/${f.name}`));
+    }
+    const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
+    if (uploadError) { setUploadingAvatar(false); return notify('error', uploadError.message); }
+    const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
+    const avatarUrl = urlData.publicUrl + '?t=' + Date.now();
+    await supabase.from('profiles').update({ avatar_url: avatarUrl } as any).eq('id', user.id);
+    setProfile({ ...profile, avatar_url: avatarUrl });
+    setUploadingAvatar(false);
+    notify('success', 'Foto atualizada!');
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center py-20">

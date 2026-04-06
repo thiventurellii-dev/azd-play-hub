@@ -113,6 +113,7 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
         playedAt: new Date(`${playedDate}T${playedTime}`).toISOString(),
         durationMinutes: parseInt(duration) || null,
         storytellerId, winningTeam, players: allP,
+        victoryConditions: selectedVictoryConditions,
       });
       notify('success', 'Partida de Blood registrada!');
       onComplete?.();

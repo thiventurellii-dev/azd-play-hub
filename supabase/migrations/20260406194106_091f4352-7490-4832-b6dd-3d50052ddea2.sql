@@ -1,0 +1,1 @@
+ALTER TABLE public.blood_matches ADD COLUMN victory_conditions jsonb DEFAULT '[]'::jsonb;

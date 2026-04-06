@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Clock, Skull, Shield, Pencil, Plus, Trash2, Timer, ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
@@ -42,6 +43,7 @@ interface BloodMatch {
   winning_team: "good" | "evil";
   storyteller_player_id: string;
   season_id: string;
+  victory_conditions?: string[];
 }
 
 interface MatchPlayer {
@@ -98,6 +100,7 @@ const ScriptDetail = () => {
   const [emDuration, setEmDuration] = useState('');
   const [emStoryteller, setEmStoryteller] = useState('');
   const [emPlayers, setEmPlayers] = useState<{ player_id: string; character_id: string; team: 'good' | 'evil' }[]>([]);
+  const [emVictoryConditions, setEmVictoryConditions] = useState<string[]>([]);
   const [emSaving, setEmSaving] = useState(false);
   const [allPlayers, setAllPlayers] = useState<{ id: string; name: string; nickname?: string }[]>([]);
 
@@ -191,6 +194,17 @@ const ScriptDetail = () => {
     return Object.entries(playerCounts).sort(([, a], [, b]) => b - a).slice(0, 5).map(([id, count]) => ({ id, name: profiles[id] || "?", count }));
   }, [characters, matchPlayers, profiles]);
 
+  const victoryConditionCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const m of matches) {
+      const vcs = Array.isArray(m.victory_conditions) ? m.victory_conditions : [];
+      for (const vc of vcs) {
+        counts[vc] = (counts[vc] || 0) + 1;
+      }
+    }
+    return counts;
+  }, [matches]);
+
   // Edit script handlers
   const openEdit = () => {
     if (!script) return;
@@ -228,6 +242,7 @@ const ScriptDetail = () => {
     setEmStoryteller(m.storyteller_player_id);
     const mps = matchPlayers.filter(mp => mp.match_id === m.id);
     setEmPlayers(mps.map(mp => ({ player_id: mp.player_id, character_id: mp.character_id, team: mp.team })));
+    setEmVictoryConditions(Array.isArray(m.victory_conditions) ? [...m.victory_conditions] : []);
     setEditMatchOpen(true);
   };
 
@@ -242,7 +257,8 @@ const ScriptDetail = () => {
         winning_team: emWinningTeam as any,
         duration_minutes: parseInt(emDuration) || null,
         storyteller_player_id: emStoryteller,
-      }).eq("id", editingMatchId);
+        victory_conditions: emVictoryConditions,
+      } as any).eq("id", editingMatchId);
       if (matchError) throw matchError;
 
       // Delete old players and re-insert
@@ -354,7 +370,7 @@ const ScriptDetail = () => {
             {script.victory_conditions.map((vc, i) => (
               <div key={i} className="text-center">
                 <p className="text-sm font-medium">{vc}</p>
-                <p className="text-xs text-muted-foreground">0 vezes</p>
+                <p className="text-xs text-muted-foreground">{victoryConditionCounts[vc] || 0} vezes</p>
               </div>
             ))}
           </div>
@@ -419,14 +435,12 @@ const ScriptDetail = () => {
                             <p className="text-xs text-muted-foreground">{char.name_en}</p>
                           </div>
                           {/* Stats in top-right */}
-                          <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
-                            <span className="text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <span className="text-xs text-foreground">
                               {cStats ? `${cStats.played}x` : "0x"}
                             </span>
                             {cStats && cStats.played > 0 && (
-                              <Badge variant="outline" className={`text-[10px] ${winPct >= 50 ? "border-green-500/30 text-green-400" : "border-red-500/30 text-red-400"}`}>
-                                {winPct}%
-                              </Badge>
+                              <span className="text-xs text-foreground">{winPct}%</span>
                             )}
                           </div>
                         </div>
@@ -441,7 +455,7 @@ const ScriptDetail = () => {
                               className="flex items-center gap-1 text-[10px] text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors w-full"
                             >
                               <ChevronDown className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                              Top Jogadores
+                              Mais Jogado Por
                             </button>
                             {isExpanded && (
                               <div className="space-y-1 mt-1.5">
@@ -677,6 +691,28 @@ const ScriptDetail = () => {
                 <Plus className="h-4 w-4 mr-1" /> Benigno
               </Button>
             </div>
+
+            {/* Victory Conditions */}
+            {script.victory_conditions.length > 0 && (
+              <div className="space-y-2 p-3 rounded-lg border border-gold/20 bg-gold/5">
+                <Label className="text-gold">Condições de Vitória Especiais</Label>
+                <div className="space-y-2">
+                  {script.victory_conditions.map((vc: string, i: number) => (
+                    <label key={i} className="flex items-center gap-2 cursor-pointer">
+                      <Checkbox
+                        checked={emVictoryConditions.includes(vc)}
+                        onCheckedChange={(checked) => {
+                          setEmVictoryConditions(prev =>
+                            checked ? [...prev, vc] : prev.filter(v => v !== vc)
+                          );
+                        }}
+                      />
+                      <span className="text-sm">{vc}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <Button variant="gold" onClick={handleMatchSave} disabled={emSaving} className="w-full">
               {emSaving ? 'Salvando...' : 'Salvar Partida'}

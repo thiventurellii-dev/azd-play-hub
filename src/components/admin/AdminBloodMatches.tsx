@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +14,7 @@ import { Plus, Trash2, UserPlus, ChevronDown, ChevronUp, Search, Skull, Shield, 
 import { recalculateSeasonRatings, submitBloodMatch } from '@/lib/bloodRatings';
 
 interface Season { id: string; name: string; }
-interface BloodScript { id: string; name: string; }
+interface BloodScript { id: string; name: string; victory_conditions: string[]; }
 interface BloodCharacter { id: string; script_id: string; name: string; name_en: string; role_type: string; team: string; }
 interface Player { id: string; name: string; nickname?: string; }
 interface BloodPlayerEntry { player_id: string; character_id: string; team: 'good' | 'evil'; }
@@ -52,18 +53,19 @@ const AdminBloodMatches = () => {
   const [editWinningTeam, setEditWinningTeam] = useState<'good' | 'evil'>('good');
   const [editEvilPlayers, setEditEvilPlayers] = useState<BloodPlayerEntry[]>([]);
   const [editGoodPlayers, setEditGoodPlayers] = useState<BloodPlayerEntry[]>([]);
+  const [editVictoryConditions, setEditVictoryConditions] = useState<string[]>([]);
   const [editSaving, setEditSaving] = useState(false);
 
   useEffect(() => {
     const fetchBase = async () => {
       const [s, sc, ch, p] = await Promise.all([
         supabase.from('seasons').select('id, name').eq('type', 'blood' as any).neq('status', 'finished').neq('status', 'upcoming').order('start_date', { ascending: false }),
-        supabase.from('blood_scripts').select('id, name'),
+        supabase.from('blood_scripts').select('id, name, victory_conditions'),
         supabase.from('blood_characters').select('id, script_id, name, name_en, role_type, team'),
         supabase.from('profiles').select('id, name, nickname').order('name'),
       ]);
       setSeasons((s.data || []) as Season[]);
-      setScripts((sc.data || []) as BloodScript[]);
+      setScripts((sc.data || []).map((x: any) => ({ ...x, victory_conditions: Array.isArray(x.victory_conditions) ? x.victory_conditions : [] })) as BloodScript[]);
       setCharacters((ch.data || []) as BloodCharacter[]);
       setPlayers((p.data || []) as Player[]);
     };
@@ -235,6 +237,7 @@ const AdminBloodMatches = () => {
     setEditGoodPlayers(
       m.players.filter((p: any) => p.team === 'good').map((p: any) => ({ player_id: p.player_id, character_id: p.character_id, team: 'good' as const }))
     );
+    setEditVictoryConditions(Array.isArray(m.victory_conditions) ? [...m.victory_conditions] : []);
     setEditDialogOpen(true);
   };
 
@@ -257,6 +260,7 @@ const AdminBloodMatches = () => {
         duration_minutes: parseInt(editDuration) || null,
         storyteller_player_id: editStorytellerId,
         winning_team: editWinningTeam,
+        victory_conditions: editVictoryConditions,
       } as any).eq('id', editingMatch.id);
       if (matchErr) throw matchErr;
 
@@ -547,6 +551,33 @@ const AdminBloodMatches = () => {
 
             {renderPlayerSelectors('evil', editEvilPlayers, editEvilChars, editAllSelectedPlayerIds, addEditPlayer, removeEditPlayer, updateEditPlayer)}
             {renderPlayerSelectors('good', editGoodPlayers, editGoodChars, editAllSelectedPlayerIds, addEditPlayer, removeEditPlayer, updateEditPlayer)}
+
+            {/* Victory Conditions */}
+            {(() => {
+              const selectedScript = scripts.find(s => s.id === editScriptId);
+              const vcs = selectedScript?.victory_conditions || [];
+              if (vcs.length === 0) return null;
+              return (
+                <div className="space-y-2 p-3 rounded-lg border border-gold/20 bg-gold/5">
+                  <Label className="text-gold">Condições de Vitória Especiais</Label>
+                  <div className="space-y-2">
+                    {vcs.map((vc: string, i: number) => (
+                      <label key={i} className="flex items-center gap-2 cursor-pointer">
+                        <Checkbox
+                          checked={editVictoryConditions.includes(vc)}
+                          onCheckedChange={(checked) => {
+                            setEditVictoryConditions(prev =>
+                              checked ? [...prev, vc] : prev.filter(v => v !== vc)
+                            );
+                          }}
+                        />
+                        <span className="text-sm">{vc}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
 
             <Button variant="gold" onClick={handleEditSave} disabled={editSaving} className="w-full">
               {editSaving ? 'Salvando...' : 'Salvar Alterações'}

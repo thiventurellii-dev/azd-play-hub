@@ -196,6 +196,7 @@ export type Database = {
           script_id: string
           season_id: string
           storyteller_player_id: string
+          victory_conditions: Json | null
           winning_team: Database["public"]["Enums"]["blood_team"]
         }
         Insert: {
@@ -206,6 +207,7 @@ export type Database = {
           script_id: string
           season_id: string
           storyteller_player_id: string
+          victory_conditions?: Json | null
           winning_team: Database["public"]["Enums"]["blood_team"]
         }
         Update: {
@@ -216,6 +218,7 @@ export type Database = {
           script_id?: string
           season_id?: string
           storyteller_player_id?: string
+          victory_conditions?: Json | null
           winning_team?: Database["public"]["Enums"]["blood_team"]
         }
         Relationships: [

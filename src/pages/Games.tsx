@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
+import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -28,7 +28,7 @@ interface Game {
 }
 
 interface SeasonLink { season_id: string; season_name: string; status: string; }
-interface BloodScript { id: string; name: string; description: string | null; slug: string | null; victory_conditions: any; }
+interface BloodScript { id: string; name: string; description: string | null; slug: string | null; victory_conditions: any; image_url: string | null; }
 interface BloodCharacter { id: string; script_id: string; name: string; name_en: string; team: "good" | "evil"; role_type: string; }
 interface GameTag { id: string; name: string; }
 
@@ -92,6 +92,15 @@ const Games = () => {
   const [editAdvTag, setEditAdvTag] = useState<'official' | 'homebrew'>('official');
   const [editAdvImageUrl, setEditAdvImageUrl] = useState('');
   const [editAdvSystemId, setEditAdvSystemId] = useState('');
+
+  // Edit blood script dialog
+  const [editScriptOpen, setEditScriptOpen] = useState(false);
+  const [editScript, setEditScript] = useState<BloodScript | null>(null);
+  const [editScriptName, setEditScriptName] = useState('');
+  const [editScriptDesc, setEditScriptDesc] = useState('');
+  const [editScriptImageUrl, setEditScriptImageUrl] = useState('');
+  const [editScriptVictoryConditions, setEditScriptVictoryConditions] = useState<string[]>([]);
+  const [newScriptCondition, setNewScriptCondition] = useState('');
 
   // Tags
   const [allTags, setAllTags] = useState<GameTag[]>([]);
@@ -468,8 +477,8 @@ const Games = () => {
                       navigate(`/scripts/${scriptSlug}`);
                     }}
                   >
-                    {getScriptImage(s.name) ? (
-                      <img src={getScriptImage(s.name)!} alt={s.name} className="h-20 w-20 rounded-lg object-cover flex-shrink-0" loading="lazy" />
+                    {(s.image_url || getScriptImage(s.name)) ? (
+                      <img src={s.image_url || getScriptImage(s.name)!} alt={s.name} className="h-20 w-20 rounded-lg object-cover flex-shrink-0" loading="lazy" />
                     ) : (
                       <div className="h-20 w-20 rounded-lg bg-secondary flex items-center justify-center text-2xl flex-shrink-0">🩸</div>
                     )}
@@ -529,8 +538,7 @@ const Games = () => {
                   <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => {
                       e.stopPropagation();
-                      const scriptSlug = (s as any).slug || s.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
-                      navigate(`/scripts/${scriptSlug}`);
+                      openEditScript(s);
                     }}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
@@ -542,6 +550,30 @@ const Games = () => {
         })}
       </div>
     );
+
+  const openEditScript = (s: BloodScript) => {
+    setEditScript(s);
+    setEditScriptName(s.name);
+    setEditScriptDesc(s.description || '');
+    setEditScriptImageUrl((s as any).image_url || '');
+    setEditScriptVictoryConditions(Array.isArray(s.victory_conditions) ? [...s.victory_conditions] : []);
+    setNewScriptCondition('');
+    setEditScriptOpen(true);
+  };
+
+  const handleEditScriptSave = async () => {
+    if (!editScript) return;
+    const { error } = await supabase.from('blood_scripts').update({
+      name: editScriptName,
+      description: editScriptDesc || null,
+      image_url: editScriptImageUrl || null,
+      victory_conditions: editScriptVictoryConditions,
+    } as any).eq('id', editScript.id);
+    if (error) return notify('error', error.message);
+    notify('success', 'Script atualizado!');
+    setEditScriptOpen(false);
+    fetchData();
+  };
 
   const handleAddSystem = async () => {
     if (!newSystemName.trim()) return notify('error', 'Nome obrigatório');
@@ -979,6 +1011,56 @@ const Games = () => {
               </Button>
               <Button variant="gold" onClick={handleEditSave}>Salvar</Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Blood Script Dialog */}
+      <Dialog open={editScriptOpen} onOpenChange={setEditScriptOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Editar Script</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Nome</Label>
+              <Input value={editScriptName} onChange={(e) => setEditScriptName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Descrição</Label>
+              <Textarea value={editScriptDesc} onChange={(e) => setEditScriptDesc(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>URL da Imagem</Label>
+              <Input value={editScriptImageUrl} onChange={(e) => setEditScriptImageUrl(e.target.value)} placeholder="https://exemplo.com/imagem.png" />
+            </div>
+            <div className="space-y-2">
+              <Label>Condições de Vitória Especiais</Label>
+              <div className="space-y-2">
+                {editScriptVictoryConditions.map((vc, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Input value={vc} onChange={(e) => {
+                      const updated = [...editScriptVictoryConditions];
+                      updated[i] = e.target.value;
+                      setEditScriptVictoryConditions(updated);
+                    }} />
+                    <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" onClick={() => setEditScriptVictoryConditions(editScriptVictoryConditions.filter((_, idx) => idx !== i))}>
+                      <Trash2 className="h-3 w-3 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+                <div className="flex items-center gap-2">
+                  <Input value={newScriptCondition} onChange={(e) => setNewScriptCondition(e.target.value)} placeholder="Ex: Vitória pelo Prefeito" />
+                  <Button variant="outline" size="sm" className="flex-shrink-0" onClick={() => {
+                    if (newScriptCondition.trim()) {
+                      setEditScriptVictoryConditions([...editScriptVictoryConditions, newScriptCondition.trim()]);
+                      setNewScriptCondition('');
+                    }
+                  }}>
+                    <Plus className="h-3 w-3 mr-1" /> Adicionar
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <Button variant="gold" onClick={handleEditScriptSave} className="w-full">Salvar</Button>
           </div>
         </DialogContent>
       </Dialog>

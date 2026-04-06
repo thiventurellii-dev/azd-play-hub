@@ -52,7 +52,7 @@ const RoomComments = ({ roomId }: Props) => {
     fetchComments();
 
     const channel = supabase
-      .channel(`room-comments-${roomId}`)
+      .channel(channelIdRef.current)
       .on("postgres_changes", {
         event: "*",
         schema: "public",

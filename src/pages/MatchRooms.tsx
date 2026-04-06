@@ -221,6 +221,16 @@ const MatchRooms = () => {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Deep link room modal */}
+      <Dialog open={!!deepLinkRoom} onOpenChange={(open) => !open && setDeepLinkRoom(null)}>
+        {deepLinkRoom && (
+          <DialogContent className="max-w-lg">
+            <DialogHeader><DialogTitle>{deepLinkRoom.title}</DialogTitle></DialogHeader>
+            <MatchRoomCard room={deepLinkRoom} onUpdate={() => { fetchRooms(); }} />
+          </DialogContent>
+        )}
+      </Dialog>
     </div>
   );
 };

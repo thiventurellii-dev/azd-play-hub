@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Shield, Calendar, Users, Trophy, FileText, AtSign, Lightbulb, Award, ClipboardList, Swords, ChevronDown, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { Shield, Calendar, Users, Trophy, FileText, AtSign, Lightbulb, Award, ClipboardList, Swords, ChevronDown, PanelLeftClose, PanelLeftOpen, ScrollText, GitPullRequest } from "lucide-react";
 import AdminSeasons from "@/components/admin/AdminSeasons";
 import AdminBloodMatches from "@/components/admin/AdminBloodMatches";
 import AdminBloodScripts from "@/components/admin/AdminBloodScripts";
@@ -10,6 +10,8 @@ import AdminSuggestions from "@/components/admin/AdminSuggestions";
 import AdminScoringSchemas from "@/components/admin/AdminScoringSchemas";
 import AdminAchievements from "@/components/admin/AdminAchievements";
 import AdminMatches from "@/components/admin/AdminMatches";
+import AdminLogs from "@/components/admin/AdminLogs";
+import AdminEditProposals from "@/components/admin/AdminEditProposals";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -52,6 +54,13 @@ const menuGroups: MenuGroup[] = [
       { value: "suggestions", label: "Sugestões", icon: Lightbulb },
     ],
   },
+  {
+    label: "Sistema",
+    items: [
+      { value: "logs", label: "Logs de Atividade", icon: ScrollText },
+      { value: "proposals", label: "Propostas de Edição", icon: GitPullRequest },
+    ],
+  },
 ];
 
 const contentMap: Record<string, React.ReactNode> = {
@@ -65,6 +74,8 @@ const contentMap: Record<string, React.ReactNode> = {
   about: <AdminAboutUs />,
   contato: <AdminContato />,
   suggestions: <AdminSuggestions />,
+  logs: <AdminLogs />,
+  proposals: <AdminEditProposals />,
 };
 
 const Admin = () => {

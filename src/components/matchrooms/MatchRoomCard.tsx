@@ -47,7 +47,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const navigate = useNavigate();
   const [players, setPlayers] = useState<RoomPlayer[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showComments, setShowComments] = useState(false);
+  const [showComments, setShowComments] = useState(true);
 
   const fetchPlayers = async () => {
     const { data } = await supabase
@@ -162,7 +162,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const displayName = (p: RoomPlayer) => p.profile?.nickname || p.profile?.name || "Jogador";
 
   return (
-    <Card className="flex flex-col h-[340px] overflow-hidden">
+    <Card className="flex flex-col min-h-[340px] overflow-hidden">
       <CardHeader className="pb-3 flex-shrink-0">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">

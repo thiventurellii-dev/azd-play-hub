@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 
 interface MatchRoom {
@@ -25,12 +26,17 @@ const MatchRooms = () => {
   const [loading, setLoading] = useState(true);
   const [matchFlowOpen, setMatchFlowOpen] = useState(false);
   const [prefill, setPrefill] = useState<any>(null);
-  const [highlightRoomId, setHighlightRoomId] = useState<string | null>(null);
+
+  // Deep link modal state
+  const [deepLinkOpen, setDeepLinkOpen] = useState(false);
+  const [deepLinkRoom, setDeepLinkRoom] = useState<MatchRoom | null>(null);
+  const [deepLinkLoading, setDeepLinkLoading] = useState(false);
 
   // Filters
   const [gameFilter, setGameFilter] = useState('all');
   const [availabilityFilter, setAvailabilityFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
+  const [activeTab, setActiveTab] = useState("active");
 
   useEffect(() => {
     const state = location.state as any;
@@ -41,47 +47,38 @@ const MatchRooms = () => {
     }
   }, [location.state]);
 
-  // Tab state for controlling active tab
-  const [activeTab, setActiveTab] = useState("active");
-
-  // Handle ?room=ID deep link after rooms load
+  // Handle ?room=ID deep link
   useEffect(() => {
     const roomParam = searchParams.get('room');
-    if (roomParam && rooms.length > 0) {
-      const found = rooms.find(r => r.id === roomParam);
-      if (found) {
-        setHighlightRoomId(roomParam);
-        const isPast = found.status === "finished" || found.status === "cancelled";
-        setActiveTab(isPast ? "past" : "active");
-        setTimeout(() => {
-          const el = document.getElementById(`room-${roomParam}`);
-          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }, 300);
-      } else {
-        // Try fetching the specific room directly
-        supabase.from("match_rooms")
-          .select("id, title, description, scheduled_at, max_players, status, created_by, game:games(id, name, image_url)")
-          .eq("id", roomParam)
-          .maybeSingle()
-          .then(({ data }) => {
-            if (data) {
-              const room = { ...data, game: Array.isArray((data as any).game) ? (data as any).game[0] : (data as any).game } as MatchRoom;
-              setRooms(prev => [...prev, room]);
-              const isPast = room.status === "finished" || room.status === "cancelled";
-              setActiveTab(isPast ? "past" : "active");
-              setHighlightRoomId(roomParam);
-              setTimeout(() => {
-                const el = document.getElementById(`room-${roomParam}`);
-                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              }, 400);
-            } else {
-              toast.error("Sala não encontrada");
-              setSearchParams({}, { replace: true });
-            }
-          });
-      }
+    if (!roomParam) return;
+
+    setDeepLinkOpen(true);
+    setDeepLinkLoading(true);
+
+    supabase.from("match_rooms")
+      .select("id, title, description, scheduled_at, max_players, status, created_by, game:games(id, name, image_url)")
+      .eq("id", roomParam)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          const room = { ...data, game: Array.isArray((data as any).game) ? (data as any).game[0] : (data as any).game } as MatchRoom;
+          setDeepLinkRoom(room);
+        } else {
+          toast.error("Sala não encontrada");
+          setDeepLinkOpen(false);
+          setSearchParams({}, { replace: true });
+        }
+        setDeepLinkLoading(false);
+      });
+  }, [searchParams]);
+
+  const handleDeepLinkClose = (open: boolean) => {
+    setDeepLinkOpen(open);
+    if (!open) {
+      setSearchParams({}, { replace: true });
+      setDeepLinkRoom(null);
     }
-  }, [searchParams, rooms]);
+  };
 
   const fetchRooms = async () => {
     const now = new Date().toISOString();
@@ -211,7 +208,7 @@ const MatchRooms = () => {
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {activeRooms.map(room => (
-                  <div key={room.id} id={`room-${room.id}`} className={highlightRoomId === room.id ? 'ring-2 ring-gold rounded-xl animate-pulse-gold transition-all' : ''}>
+                  <div key={room.id}>
                     <MatchRoomCard room={room} onUpdate={fetchRooms} />
                   </div>
                 ))}
@@ -224,7 +221,7 @@ const MatchRooms = () => {
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {pastRooms.map(room => (
-                  <div key={room.id} id={`room-${room.id}`} className={highlightRoomId === room.id ? 'ring-2 ring-gold rounded-xl animate-pulse-gold transition-all' : ''}>
+                  <div key={room.id}>
                     <MatchRoomCard room={room} onUpdate={fetchRooms} />
                   </div>
                 ))}
@@ -233,6 +230,34 @@ const MatchRooms = () => {
           </TabsContent>
         </Tabs>
       )}
+
+      {/* Deep link room modal */}
+      <Dialog open={deepLinkOpen} onOpenChange={handleDeepLinkClose}>
+        <DialogContent className="max-w-md p-0 overflow-hidden">
+          {deepLinkLoading ? (
+            <div className="p-6 space-y-4">
+              <Skeleton className="h-6 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ) : deepLinkRoom ? (
+            <MatchRoomCard room={deepLinkRoom} onUpdate={() => {
+              fetchRooms();
+              // Refresh the deep link room too
+              supabase.from("match_rooms")
+                .select("id, title, description, scheduled_at, max_players, status, created_by, game:games(id, name, image_url)")
+                .eq("id", deepLinkRoom.id)
+                .maybeSingle()
+                .then(({ data }) => {
+                  if (data) {
+                    setDeepLinkRoom({ ...data, game: Array.isArray((data as any).game) ? (data as any).game[0] : (data as any).game } as MatchRoom);
+                  }
+                });
+            }} />
+          ) : null}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={matchFlowOpen} onOpenChange={setMatchFlowOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">

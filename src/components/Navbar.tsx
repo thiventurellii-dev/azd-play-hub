@@ -92,9 +92,22 @@ const Navbar = () => {
     }));
   }, [user]);
 
+  const fetchRoomNotifs = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("notifications")
+      .select("id, title, message, type, room_id, created_at")
+      .eq("user_id", user.id)
+      .eq("is_read", false)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    setRoomNotifs(data || []);
+  }, [user]);
+
   useEffect(() => {
     if (!user) return;
     fetchFriendRequests();
+    fetchRoomNotifs();
     supabase
       .from("profiles")
       .select("nickname, avatar_url")
@@ -106,7 +119,17 @@ const Navbar = () => {
           setUserAvatar((data as any).avatar_url || null);
         }
       });
-  }, [user, fetchFriendRequests]);
+
+    // Realtime for notifications
+    const notifChannel = supabase
+      .channel(`navbar-notifs-${user.id}-${Date.now()}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, () => {
+        fetchRoomNotifs();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(notifChannel); };
+  }, [user, fetchFriendRequests, fetchRoomNotifs]);
 
   const handleAcceptFriend = async (id: string) => {
     await supabase.from("friendships").update({ status: "accepted" as any }).eq("id", id);

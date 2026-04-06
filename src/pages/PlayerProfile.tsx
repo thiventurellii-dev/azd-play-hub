@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import { Trophy, Gamepad2, ArrowLeft, Calendar, Clock, Users, Award, Pencil, Lock } from "lucide-react";
@@ -53,6 +54,7 @@ const PlayerProfile = () => {
   const [opponents, setOpponents] = useState<{ name: string; games: number; wins: number }[]>([]);
   const [upcomingRooms, setUpcomingRooms] = useState<any[]>([]);
   const [achievements, setAchievements] = useState<{ icon: string; name: string; description: string | null }[]>([]);
+  const [botcStats, setBotcStats] = useState<{ gamesPlayed: number; winsGood: number; winsEvil: number; storytellerGames: number } | null>(null);
 
   // Edit profile state
   const [editing, setEditing] = useState(false);
@@ -221,6 +223,21 @@ const PlayerProfile = () => {
           .select("name, description, icon")
           .in("id", achIds);
         setAchievements((achDefs || []) as any[]);
+      }
+
+      // BotC stats
+      const { data: botcRatings } = await supabase
+        .from('blood_mmr_ratings')
+        .select('games_played, wins_good, wins_evil, games_as_storyteller')
+        .eq('player_id', prof.id);
+      if (botcRatings && botcRatings.length > 0) {
+        const totals = botcRatings.reduce((acc, r) => ({
+          gamesPlayed: acc.gamesPlayed + r.games_played,
+          winsGood: acc.winsGood + r.wins_good,
+          winsEvil: acc.winsEvil + r.wins_evil,
+          storytellerGames: acc.storytellerGames + r.games_as_storyteller,
+        }), { gamesPlayed: 0, winsGood: 0, winsEvil: 0, storytellerGames: 0 });
+        setBotcStats(totals);
       }
 
       setLoading(false);
@@ -624,97 +641,135 @@ const PlayerProfile = () => {
         </Card>
       )}
 
-      <div className="grid gap-4 grid-cols-2">
-        {[
-          { icon: Trophy, label: "Total de Partidas", value: stats.totalGames },
-          { icon: Gamepad2, label: "Jogos Diferentes", value: stats.uniqueGames },
-        ].map((s, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-          >
+      <Tabs defaultValue="boardgame" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="boardgame">🎲 Boardgames</TabsTrigger>
+          <TabsTrigger value="botc">🩸 BotC</TabsTrigger>
+          <TabsTrigger value="rpg">🎭 RPG</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="boardgame" className="space-y-4">
+          <div className="grid gap-4 grid-cols-2">
+            {[
+              { icon: Trophy, label: "Total de Partidas", value: stats.totalGames },
+              { icon: Gamepad2, label: "Jogos Diferentes", value: stats.uniqueGames },
+            ].map((s, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
+                <Card className="bg-card border-border">
+                  <CardContent className="pt-6 text-center">
+                    <s.icon className="h-6 w-6 mx-auto text-gold mb-2" />
+                    <p className="text-2xl font-bold">{s.value}</p>
+                    <p className="text-xs text-muted-foreground">{s.label}</p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+
+          {opponents.length > 0 && (
             <Card className="bg-card border-border">
-              <CardContent className="pt-6 text-center">
-                <s.icon className="h-6 w-6 mx-auto text-gold mb-2" />
-                <p className="text-2xl font-bold">{s.value}</p>
-                <p className="text-xs text-muted-foreground">{s.label}</p>
+              <CardContent className="pt-6">
+                <h2 className="text-lg font-semibold mb-4">Principais Jogadores</h2>
+                <ChartContainer config={chartConfig} className="h-[250px]">
+                  <BarChart data={opponents} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis type="number" allowDecimals={false} tick={{ fill: "hsl(var(--muted-foreground))" }} />
+                    <YAxis dataKey="name" type="category" width={100} tick={{ fill: "hsl(var(--muted-foreground))" }} />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar dataKey="games" radius={[0, 4, 4, 0]} fill="hsl(var(--gold))">
+                      {opponents.map((_, idx) => (
+                        <rect key={idx} fill={CHART_COLORS[idx % CHART_COLORS.length]} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ChartContainer>
               </CardContent>
             </Card>
-          </motion.div>
-        ))}
-      </div>
+          )}
 
-      {/* Opponents chart with varied colors */}
-      {opponents.length > 0 && (
-        <Card className="bg-card border-border">
-          <CardContent className="pt-6">
-            <h2 className="text-lg font-semibold mb-4">Principais Jogadores</h2>
-            <ChartContainer config={chartConfig} className="h-[250px]">
-              <BarChart data={opponents} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis type="number" allowDecimals={false} tick={{ fill: "hsl(var(--muted-foreground))" }} />
-                <YAxis dataKey="name" type="category" width={100} tick={{ fill: "hsl(var(--muted-foreground))" }} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar
-                  dataKey="games"
-                  radius={[0, 4, 4, 0]}
-                  fill="hsl(var(--gold))"
-                  // Use different colors per bar via Cell
-                >
-                  {opponents.map((_, idx) => (
-                    <rect key={idx} fill={CHART_COLORS[idx % CHART_COLORS.length]} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-      )}
+          {gamePerformance.length > 0 && (
+            <Card className="bg-card border-border">
+              <CardContent className="pt-6">
+                <h2 className="text-lg font-semibold mb-4">Performance por Jogo</h2>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Jogo</TableHead>
+                        <TableHead className="text-center">Partidas</TableHead>
+                        <TableHead className="text-center">Vitórias</TableHead>
+                        <TableHead className="text-center">% Vitória</TableHead>
+                        <TableHead className="text-center">Média</TableHead>
+                        <TableHead className="text-center">Recorde</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {gamePerformance.map((gp) => (
+                        <TableRow key={gp.game_id}>
+                          <TableCell className="font-medium">
+                            {gp.game_slug ? (
+                              <Link to={`/jogos/${gp.game_slug}`} className="hover:text-gold transition-colors">
+                                {gp.game_name}
+                              </Link>
+                            ) : (
+                              gp.game_name
+                            )}
+                          </TableCell>
+                          <TableCell className="text-center">{gp.games}</TableCell>
+                          <TableCell className="text-center">{gp.wins}</TableCell>
+                          <TableCell className="text-center">{gp.winPct}%</TableCell>
+                          <TableCell className="text-center">{gp.avgScore}</TableCell>
+                          <TableCell className="text-center font-bold text-gold">{gp.best}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
 
-      {/* Game performance table */}
-      {gamePerformance.length > 0 && (
-        <Card className="bg-card border-border">
-          <CardContent className="pt-6">
-            <h2 className="text-lg font-semibold mb-4">Performance por Jogo</h2>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Jogo</TableHead>
-                    <TableHead className="text-center">Partidas</TableHead>
-                    <TableHead className="text-center">Vitórias</TableHead>
-                    <TableHead className="text-center">% Vitória</TableHead>
-                    <TableHead className="text-center">Média</TableHead>
-                    <TableHead className="text-center">Recorde</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {gamePerformance.map((gp) => (
-                    <TableRow key={gp.game_id}>
-                      <TableCell className="font-medium">
-                        {gp.game_slug ? (
-                          <Link to={`/jogos/${gp.game_slug}`} className="hover:text-gold transition-colors">
-                            {gp.game_name}
-                          </Link>
-                        ) : (
-                          gp.game_name
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center">{gp.games}</TableCell>
-                      <TableCell className="text-center">{gp.wins}</TableCell>
-                      <TableCell className="text-center">{gp.winPct}%</TableCell>
-                      <TableCell className="text-center">{gp.avgScore}</TableCell>
-                      <TableCell className="text-center font-bold text-gold">{gp.best}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+        <TabsContent value="botc" className="space-y-4">
+          {botcStats ? (
+            <>
+              <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
+                {[
+                  { label: "Partidas", value: botcStats.gamesPlayed, icon: "🩸" },
+                  { label: "Vitórias (Bem)", value: botcStats.winsGood, icon: "🛡️" },
+                  { label: "Vitórias (Mal)", value: botcStats.winsEvil, icon: "💀" },
+                  { label: "Narrador", value: botcStats.storytellerGames, icon: "📖" },
+                ].map((s, i) => (
+                  <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
+                    <Card className="bg-card border-border">
+                      <CardContent className="pt-6 text-center">
+                        <p className="text-2xl mb-1">{s.icon}</p>
+                        <p className="text-2xl font-bold">{s.value}</p>
+                        <p className="text-xs text-muted-foreground">{s.label}</p>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <Card className="bg-card border-border">
+              <CardContent className="py-12 text-center text-muted-foreground">
+                Nenhuma partida de Blood on the Clocktower registrada.
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="rpg">
+          <Card className="bg-card border-border">
+            <CardContent className="py-12 text-center text-muted-foreground">
+              <p className="text-2xl mb-2">🎭</p>
+              <p>Estatísticas de RPG em breve!</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Achievements */}
       {achievements.length > 0 && (

@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Plus } from "lucide-react";
+import { Plus, Gamepad2, Skull, Wand2, ChevronLeft } from "lucide-react";
 import { toast } from "sonner";
 import { sendMatchNotification } from "@/lib/matchNotification";
 
@@ -30,6 +30,7 @@ interface Props {
 const CreateRoomDialog = ({ onCreated }: Props) => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  const [category, setCategory] = useState<'boardgame' | 'botc' | 'rpg' | ''>('');
   const [games, setGames] = useState<Game[]>([]);
   const [gameId, setGameId] = useState("");
   const [title, setTitle] = useState("");
@@ -55,6 +56,13 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
 
   const selectedGame = games.find(g => g.id === gameId);
   const isBotC = selectedGame && (selectedGame.name.toLowerCase().includes('blood') || selectedGame.slug === 'blood-on-the-clocktower');
+
+  // Filter games by category
+  const filteredGames = games.filter(g => {
+    if (category === 'botc') return g.name.toLowerCase().includes('blood') || g.slug === 'blood-on-the-clocktower';
+    if (category === 'boardgame') return !(g.name.toLowerCase().includes('blood') || g.slug === 'blood-on-the-clocktower');
+    return true;
+  });
 
   useEffect(() => {
     const game = games.find(g => g.id === gameId);
@@ -131,6 +139,7 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
       setGameId("");
       setMaxPlayers("10");
       setSelectedScriptId("");
+      setCategory('');
       onCreated();
     }
     setSaving(false);
@@ -147,7 +156,29 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
         <DialogHeader>
           <DialogTitle>Nova Sala de Partida</DialogTitle>
         </DialogHeader>
+        {!category ? (
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">Escolha a categoria:</p>
+            <div className="grid gap-3 grid-cols-3">
+              <button type="button" onClick={() => setCategory('boardgame')} className="p-4 rounded-lg border-2 border-border hover:border-gold/50 text-center transition-all group">
+                <Gamepad2 className="h-8 w-8 mx-auto mb-2 text-gold group-hover:scale-110 transition-transform" />
+                <p className="text-sm font-semibold">Boardgame</p>
+              </button>
+              <button type="button" onClick={() => setCategory('botc')} className="p-4 rounded-lg border-2 border-border hover:border-red-500/50 text-center transition-all group">
+                <Skull className="h-8 w-8 mx-auto mb-2 text-red-400 group-hover:scale-110 transition-transform" />
+                <p className="text-sm font-semibold">BotC</p>
+              </button>
+              <button type="button" onClick={() => setCategory('rpg')} className="p-4 rounded-lg border-2 border-border hover:border-purple-500/50 text-center transition-all group">
+                <Wand2 className="h-8 w-8 mx-auto mb-2 text-purple-400 group-hover:scale-110 transition-transform" />
+                <p className="text-sm font-semibold">RPG</p>
+              </button>
+            </div>
+          </div>
+        ) : (
         <div className="space-y-4">
+          <Button variant="ghost" size="sm" onClick={() => setCategory('')} className="mb-2">
+            <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
+          </Button>
           <div>
             <Label>Jogo *</Label>
             <Select value={gameId} onValueChange={setGameId}>
@@ -155,7 +186,7 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
                 <SelectValue placeholder="Selecione o jogo" />
               </SelectTrigger>
               <SelectContent>
-                {games.map((g) => (
+                {filteredGames.map((g) => (
                   <SelectItem key={g.id} value={g.id}>
                     {g.name}
                   </SelectItem>
@@ -212,6 +243,7 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
             {saving ? "Criando..." : "Agendar Partida"}
           </Button>
         </div>
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -175,7 +175,11 @@ const MatchRooms = () => {
               </div>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {activeRooms.map(room => <MatchRoomCard key={room.id} room={room} onUpdate={fetchRooms} />)}
+                {activeRooms.map(room => (
+                  <div key={room.id} id={`room-${room.id}`} className={highlightRoomId === room.id ? 'ring-2 ring-gold rounded-xl transition-all' : ''}>
+                    <MatchRoomCard room={room} onUpdate={fetchRooms} />
+                  </div>
+                ))}
               </div>
             )}
           </TabsContent>

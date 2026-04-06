@@ -62,7 +62,7 @@ const Games = () => {
   // RPG
   const [rpgSystems, setRpgSystems] = useState<any[]>([]);
   const [rpgAdventures, setRpgAdventures] = useState<any[]>([]);
-  const [expandedSystem, setExpandedSystem] = useState<string | null>(null);
+  
   const [addSystemOpen, setAddSystemOpen] = useState(false);
   const [newSystemName, setNewSystemName] = useState('');
   const [newSystemDesc, setNewSystemDesc] = useState('');

@@ -370,7 +370,7 @@ const ScriptDetail = () => {
             {script.victory_conditions.map((vc, i) => (
               <div key={i} className="text-center">
                 <p className="text-sm font-medium">{vc}</p>
-                <p className="text-xs text-muted-foreground">0 vezes</p>
+                <p className="text-xs text-muted-foreground">{victoryConditionCounts[vc] || 0} vezes</p>
               </div>
             ))}
           </div>

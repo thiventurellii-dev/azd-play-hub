@@ -58,27 +58,28 @@ const MatchRooms = () => {
     setDeepLinkOpen(true);
     setDeepLinkLoading(true);
 
-    supabase.from("match_rooms")
-      .select("id, title, description, scheduled_at, max_players, status, created_by, game:games(id, name, image_url)")
-      .eq("id", roomParam)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) {
-          const room = { ...data, game: Array.isArray((data as any).game) ? (data as any).game[0] : (data as any).game } as MatchRoom;
-          setDeepLinkRoom(room);
-        } else {
-          toast.error("Sala não encontrada");
-          setDeepLinkOpen(false);
-          setSearchParams({}, { replace: true });
-        }
-        setDeepLinkLoading(false);
-      })
-      .catch(() => {
-        toast.error("Erro ao carregar sala");
-        setDeepLinkLoading(false);
+    Promise.resolve(
+      supabase.from("match_rooms")
+        .select("id, title, description, scheduled_at, max_players, status, created_by, game:games(id, name, image_url)")
+        .eq("id", roomParam)
+        .maybeSingle()
+    ).then(({ data }) => {
+      if (data) {
+        const room = { ...data, game: Array.isArray((data as any).game) ? (data as any).game[0] : (data as any).game } as MatchRoom;
+        setDeepLinkRoom(room);
+      } else {
+        toast.error("Sala não encontrada");
         setDeepLinkOpen(false);
-      });
-  }, []); // empty deps — run once on mount
+        setSearchParams({}, { replace: true });
+      }
+      setDeepLinkLoading(false);
+    }).catch(() => {
+      toast.error("Erro ao carregar sala");
+      setDeepLinkLoading(false);
+      setDeepLinkOpen(false);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleDeepLinkClose = (open: boolean) => {
     setDeepLinkOpen(open);

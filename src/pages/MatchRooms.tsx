@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import MatchRoomCard from "@/components/matchrooms/MatchRoomCard";
 import CreateRoomDialog from "@/components/matchrooms/CreateRoomDialog";

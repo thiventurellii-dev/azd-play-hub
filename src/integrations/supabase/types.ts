@@ -999,6 +999,74 @@ export type Database = {
         }
         Relationships: []
       }
+      rpg_adventures: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          name: string
+          system_id: string
+          tag: Database["public"]["Enums"]["rpg_adventure_tag"]
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          system_id: string
+          tag?: Database["public"]["Enums"]["rpg_adventure_tag"]
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          system_id?: string
+          tag?: Database["public"]["Enums"]["rpg_adventure_tag"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rpg_adventures_system_id_fkey"
+            columns: ["system_id"]
+            isOneToOne: false
+            referencedRelation: "rpg_systems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rpg_systems: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          name: string
+          rules_url: string | null
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name: string
+          rules_url?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          name?: string
+          rules_url?: string | null
+          video_url?: string | null
+        }
+        Relationships: []
+      }
       season_blood_scripts: {
         Row: {
           id: string
@@ -1200,6 +1268,7 @@ export type Database = {
         | "in_progress"
         | "finished"
         | "cancelled"
+      rpg_adventure_tag: "official" | "homebrew"
       season_type: "boardgame" | "blood"
     }
     CompositeTypes: {
@@ -1340,6 +1409,7 @@ export const Constants = {
         "finished",
         "cancelled",
       ],
+      rpg_adventure_tag: ["official", "homebrew"],
       season_type: ["boardgame", "blood"],
     },
   },

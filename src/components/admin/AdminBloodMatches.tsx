@@ -56,7 +56,7 @@ const AdminBloodMatches = () => {
   useEffect(() => {
     const fetchBase = async () => {
       const [s, sc, ch, p] = await Promise.all([
-        supabase.from('seasons').select('id, name').eq('type', 'blood' as any).order('start_date', { ascending: false }),
+        supabase.from('seasons').select('id, name').eq('type', 'blood' as any).neq('status', 'finished').neq('status', 'upcoming').order('start_date', { ascending: false }),
         supabase.from('blood_scripts').select('id, name'),
         supabase.from('blood_characters').select('id, script_id, name, name_en, role_type, team'),
         supabase.from('profiles').select('id, name, nickname').order('name'),

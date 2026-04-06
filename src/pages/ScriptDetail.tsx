@@ -419,14 +419,12 @@ const ScriptDetail = () => {
                             <p className="text-xs text-muted-foreground">{char.name_en}</p>
                           </div>
                           {/* Stats in top-right */}
-                          <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
-                            <span className="text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <span className="text-xs text-foreground">
                               {cStats ? `${cStats.played}x` : "0x"}
                             </span>
                             {cStats && cStats.played > 0 && (
-                              <Badge variant="outline" className={`text-[10px] ${winPct >= 50 ? "border-green-500/30 text-green-400" : "border-red-500/30 text-red-400"}`}>
-                                {winPct}%
-                              </Badge>
+                              <span className="text-xs text-foreground">{winPct}%</span>
                             )}
                           </div>
                         </div>

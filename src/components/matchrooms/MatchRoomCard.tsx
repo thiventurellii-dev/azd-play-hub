@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Calendar, Users, LogIn, Clock, Share2, ClipboardList, MessageCircle, ChevronDown, ChevronUp, XCircle, Pencil, Trash2 } from "lucide-react";
+import { Calendar, Users, LogIn, Clock, Share2, ClipboardList, MessageCircle, ChevronDown, ChevronUp, XCircle, Pencil, Trash2, Trophy, TrendingUp } from "lucide-react";
 import { generateWhatsAppInvite } from "@/lib/matchNotification";
 import { sendRoomNotifications } from "@/lib/roomNotifications";
 import { toast } from "sonner";
@@ -28,6 +28,7 @@ interface MatchRoom {
   max_players: number;
   status: string;
   created_by: string;
+  season_id?: string | null;
   game: { id: string; name: string; image_url: string | null };
 }
 
@@ -51,6 +52,8 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const [loading, setLoading] = useState(false);
   const [showComments, setShowComments] = useState(true);
   const [editOpen, setEditOpen] = useState(false);
+  const [tags, setTags] = useState<string[]>([]);
+  const [avgMmr, setAvgMmr] = useState<number | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const fetchPlayers = async () => {
@@ -74,19 +77,49 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
       .in("id", ids);
 
     const profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
-    setPlayers(
-      data.map((p) => ({
-        ...p,
-        profile: profileMap.get(p.player_id) as RoomPlayer["profile"],
-      }))
-    );
+    const mappedPlayers = data.map((p) => ({
+      ...p,
+      profile: profileMap.get(p.player_id) as RoomPlayer["profile"],
+    }));
+    setPlayers(mappedPlayers);
+
+    // Calculate avg MMR for competitive rooms
+    if (room.season_id) {
+      const confirmedIds = data.filter(p => p.type === 'confirmed').map(p => p.player_id);
+      if (confirmedIds.length > 0) {
+        const { data: mmrData } = await supabase
+          .from("mmr_ratings")
+          .select("current_mmr")
+          .eq("season_id", room.season_id)
+          .in("player_id", confirmedIds);
+        if (mmrData && mmrData.length > 0) {
+          const avg = mmrData.reduce((sum, r) => sum + Number(r.current_mmr), 0) / mmrData.length;
+          setAvgMmr(Math.round(avg));
+        } else {
+          setAvgMmr(null);
+        }
+      }
+    }
   };
+
+  // Fetch tags
+  useEffect(() => {
+    if (!room?.id) return;
+    supabase
+      .from("match_room_tag_links")
+      .select("tag_id, room_tags(name)")
+      .eq("room_id", room.id)
+      .then(({ data }) => {
+        if (data) {
+          setTags(data.map((d: any) => d.room_tags?.name).filter(Boolean));
+        }
+      });
+  }, [room?.id]);
 
   useEffect(() => {
     if (!room?.id) return;
     fetchPlayers();
 
-    // Clean up any previous channel
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current);
     }
@@ -133,7 +166,6 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
       toast.error("Erro ao entrar na sala");
     } else {
       const joinerName = displayName({ player_id: user.id, profile: undefined } as any) || "Alguém";
-      // Notify room creator
       if (room.created_by !== user.id) {
         sendRoomNotifications({
           userIds: [room.created_by],
@@ -146,7 +178,6 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
 
       if (type === "confirmed" && confirmed.length + 1 >= room.max_players) {
         await supabase.from("match_rooms").update({ status: "full" }).eq("id", room.id);
-        // Notify all confirmed players that room is full
         const allPlayerIds = [...confirmed.map(p => p.player_id), user.id].filter(id => id !== user.id);
         if (allPlayerIds.length > 0) {
           sendRoomNotifications({
@@ -173,7 +204,6 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
       const nextWaitlist = waitlist[0];
       if (nextWaitlist) {
         await supabase.from("match_room_players").update({ type: "confirmed" }).eq("id", nextWaitlist.id);
-        // Notify promoted player
         sendRoomNotifications({
           userIds: [nextWaitlist.player_id],
           type: "waitlist_promoted",
@@ -196,7 +226,6 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
     if (!confirm("Tem certeza que deseja cancelar esta sala?")) return;
     setLoading(true);
     await supabase.from("match_rooms").update({ status: "cancelled" }).eq("id", room.id);
-    // Notify all players
     const allPlayerIds = players.map(p => p.player_id).filter(id => id !== user?.id);
     if (allPlayerIds.length > 0) {
       sendRoomNotifications({
@@ -215,6 +244,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const handleDelete = async () => {
     if (!confirm("Tem certeza que deseja excluir esta sala?")) return;
     setLoading(true);
+    await supabase.from("match_room_tag_links").delete().eq("room_id", room.id);
     await supabase.from("match_room_players").delete().eq("room_id", room.id);
     await supabase.from("match_room_comments").delete().eq("room_id", room.id);
     await supabase.from("match_rooms").delete().eq("id", room.id);
@@ -269,6 +299,27 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
               </Badge>
             </div>
           </div>
+
+          {/* Tags + Competitive MMR */}
+          {(tags.length > 0 || room.season_id) && (
+            <div className="flex flex-wrap items-center gap-1.5 mt-2">
+              {tags.map(tag => (
+                <Badge key={tag} variant="outline" className="text-[10px] px-2 py-0 border-gold/30 text-gold/80">
+                  {tag}
+                </Badge>
+              ))}
+              {room.season_id && (
+                <Badge variant="outline" className="text-[10px] px-2 py-0 border-amber-500/40 text-amber-400 gap-1">
+                  <Trophy className="h-2.5 w-2.5" /> Competitivo
+                </Badge>
+              )}
+              {avgMmr !== null && (
+                <Badge variant="outline" className="text-[10px] px-2 py-0 border-blue-500/40 text-blue-400 gap-1">
+                  <TrendingUp className="h-2.5 w-2.5" /> MMR médio: {avgMmr}
+                </Badge>
+              )}
+            </div>
+          )}
         </CardHeader>
         <CardContent className="flex-1 flex flex-col gap-3 overflow-hidden">
           <div className="flex items-center gap-4 text-sm text-muted-foreground flex-shrink-0">
@@ -287,7 +338,6 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
             <p className="text-sm text-muted-foreground line-clamp-2 flex-shrink-0">{room.description}</p>
           )}
 
-          {/* Confirmed players */}
           {confirmed.length > 0 && (
             <div className="flex-shrink-0">
               <p className="text-xs font-medium text-muted-foreground mb-1">Confirmados:</p>
@@ -301,7 +351,6 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
             </div>
           )}
 
-          {/* Waitlist */}
           {waitlist.length > 0 && (
             <div className="flex-shrink-0">
               <p className="text-xs font-medium text-amber-400 mb-1">Reserva ({waitlist.length}):</p>
@@ -317,7 +366,6 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
 
           <div className="flex-1" />
 
-          {/* Actions */}
           <div className="flex gap-2 flex-shrink-0">
             {canInteract && user && (
               isInRoom ? (
@@ -374,7 +422,6 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
           </div>
         </CardContent>
 
-        {/* Expandable comments */}
         {showComments && (
           <div className="border-t border-border px-6 pb-4">
             <RoomComments roomId={room.id} />
@@ -382,7 +429,6 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
         )}
       </Card>
 
-      {/* Edit Room Dialog */}
       <EditRoomDialog
         open={editOpen}
         onOpenChange={setEditOpen}

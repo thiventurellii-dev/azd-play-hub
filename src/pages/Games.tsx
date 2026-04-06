@@ -608,7 +608,9 @@ const Games = () => {
                       {isExpanded ? "▲ Ocultar aventuras" : "▼ Ver aventuras"}
                     </Button>
                     {isExpanded && adventures.length > 0 && (
-                      <div className="border-t border-border pt-3 space-y-2">
+                      <div className="space-y-2">
+                        <Separator className="bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Aventuras</p>
                         {adventures.map((adv: any) => (
                           <div key={adv.id} className="flex items-center gap-3 p-2 rounded-lg bg-secondary/30">
                             {adv.image_url ? (

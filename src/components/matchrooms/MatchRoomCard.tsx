@@ -1,14 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Calendar, Users, LogIn, Clock, Share2, ClipboardList, MessageCircle, ChevronDown, ChevronUp } from "lucide-react";
-import { generateWhatsAppInvite, sendMatchNotification } from "@/lib/matchNotification";
+import { Calendar, Users, LogIn, Clock, Share2, ClipboardList, MessageCircle, ChevronDown, ChevronUp, XCircle, Pencil } from "lucide-react";
+import { generateWhatsAppInvite } from "@/lib/matchNotification";
 import { toast } from "sonner";
 import RoomComments from "./RoomComments";
+import EditRoomDialog from "./EditRoomDialog";
 
 interface RoomPlayer {
   id: string;
@@ -43,11 +44,13 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 };
 
 const MatchRoomCard = ({ room, onUpdate }: Props) => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [players, setPlayers] = useState<RoomPlayer[]>([]);
   const [loading, setLoading] = useState(false);
   const [showComments, setShowComments] = useState(true);
+  const [editOpen, setEditOpen] = useState(false);
+  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const fetchPlayers = async () => {
     if (!room?.id) return;
@@ -60,6 +63,10 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
     if (!data) return;
 
     const ids = data.map((p) => p.player_id);
+    if (ids.length === 0) {
+      setPlayers([]);
+      return;
+    }
     const { data: profiles } = await supabase
       .from("profiles")
       .select("id, name, nickname")
@@ -75,24 +82,38 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   };
 
   useEffect(() => {
+    if (!room?.id) return;
     fetchPlayers();
 
+    // Clean up any previous channel
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+    }
+
     const channel = supabase
-      .channel(`room-players-${room.id}`)
+      .channel(`room-players-${room.id}-${Date.now()}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "match_room_players", filter: `room_id=eq.${room.id}` }, () => {
         fetchPlayers();
         onUpdate();
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
-  }, [room.id]);
+    channelRef.current = channel;
+
+    return () => {
+      supabase.removeChannel(channel);
+      channelRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [room?.id]);
 
   const confirmed = players.filter((p) => p.type === "confirmed");
   const waitlist = players.filter((p) => p.type === "waitlist");
   const isInRoom = players.some((p) => p.player_id === user?.id);
-  const isFull = confirmed.length >= room.max_players;
-  const canInteract = room.status === "open" || room.status === "full";
+  const isFull = confirmed.length >= (room?.max_players ?? 0);
+  const canInteract = room?.status === "open" || room?.status === "full";
+  const isCreator = user?.id === room?.created_by;
+  const canManage = isCreator || isAdmin;
 
   const handleJoin = async () => {
     if (!user) return;
@@ -110,20 +131,10 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
     if (error) {
       toast.error("Erro ao entrar na sala");
     } else {
-      sendMatchNotification({
-        event: "player_joined",
-        room_id: room.id,
-        game: room.game.name,
-        title: room.title,
-        scheduled_at: room.scheduled_at,
-        max_players: room.max_players,
-        players: [...players.map((p) => p.player_id), user.id],
-        created_by: room.created_by,
-      });
-
       if (type === "confirmed" && confirmed.length + 1 >= room.max_players) {
         await supabase.from("match_rooms").update({ status: "full" }).eq("id", room.id);
       }
+      toast.success(type === "confirmed" ? "Você entrou na sala!" : "Você entrou na lista de espera!");
     }
     setLoading(false);
   };
@@ -148,12 +159,23 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
     setLoading(false);
   };
 
+  const handleCancel = async () => {
+    if (!confirm("Tem certeza que deseja cancelar esta sala?")) return;
+    setLoading(true);
+    await supabase.from("match_rooms").update({ status: "cancelled" }).eq("id", room.id);
+    toast.success("Sala cancelada");
+    onUpdate();
+    setLoading(false);
+  };
+
   const handleShare = () => {
     const roomUrl = `${window.location.origin}/partidas?room=${room.id}`;
     const playerNames = confirmed.map(p => displayName(p));
     const link = generateWhatsAppInvite(room?.title || '', room?.game?.name || '', room?.scheduled_at || '', roomUrl, playerNames);
     window.open(link, "_blank");
   };
+
+  if (!room) return null;
 
   const date = new Date(room.scheduled_at);
   const formattedDate = date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
@@ -163,129 +185,151 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const displayName = (p: RoomPlayer) => p.profile?.nickname || p.profile?.name || "Jogador";
 
   return (
-    <Card className="flex flex-col min-h-[340px] overflow-hidden">
-      <CardHeader className="pb-3 flex-shrink-0">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex-1 min-w-0">
-            <CardTitle className="text-lg truncate">{room?.title}</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">{"\u{1F3AE}"} {room?.game?.name}</p>
-          </div>
-          <Badge variant="outline" className={status.className}>
-            {status.label}
-          </Badge>
-        </div>
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col gap-3 overflow-hidden">
-        <div className="flex items-center gap-4 text-sm text-muted-foreground flex-shrink-0">
-          <span className="flex items-center gap-1">
-            <Calendar className="h-3.5 w-3.5 text-gold" /> {formattedDate}
-          </span>
-          <span className="flex items-center gap-1">
-            <Clock className="h-3.5 w-3.5 text-gold" /> {formattedTime}
-          </span>
-          <span className="flex items-center gap-1">
-            <Users className="h-3.5 w-3.5" /> {confirmed.length}/{room.max_players}
-          </span>
-        </div>
-
-        {room.description && (
-          <p className="text-sm text-muted-foreground line-clamp-2 flex-shrink-0">{room.description}</p>
-        )}
-
-        {/* Confirmed players */}
-        {confirmed.length > 0 && (
-          <div className="flex-shrink-0">
-            <p className="text-xs font-medium text-muted-foreground mb-1">Confirmados:</p>
-            <div className="flex flex-wrap gap-1">
-              {confirmed.map((p) => (
-                <Badge key={p.id} variant="secondary" className="text-xs">
-                  {displayName(p)}
-                </Badge>
-              ))}
+    <>
+      <Card className="flex flex-col overflow-hidden">
+        <CardHeader className="pb-3 flex-shrink-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex-1 min-w-0">
+              <CardTitle className="text-lg truncate">{room?.title}</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">{"\u{1F3AE}"} {room?.game?.name}</p>
+            </div>
+            <div className="flex items-center gap-2">
+              {canManage && canInteract && (
+                <>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditOpen(true)} title="Editar sala">
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={handleCancel} disabled={loading} title="Cancelar sala">
+                    <XCircle className="h-3.5 w-3.5" />
+                  </Button>
+                </>
+              )}
+              <Badge variant="outline" className={status.className}>
+                {status.label}
+              </Badge>
             </div>
           </div>
-        )}
-
-        {/* Waitlist */}
-        {waitlist.length > 0 && (
-          <div className="flex-shrink-0">
-            <p className="text-xs font-medium text-amber-400 mb-1">Reserva ({waitlist.length}):</p>
-            <div className="flex flex-wrap gap-1">
-              {waitlist.map((p) => (
-                <Badge key={p.id} variant="outline" className="text-xs border-amber-600/30 text-amber-400">
-                  {displayName(p)}
-                </Badge>
-              ))}
-            </div>
+        </CardHeader>
+        <CardContent className="flex-1 flex flex-col gap-3 overflow-hidden">
+          <div className="flex items-center gap-4 text-sm text-muted-foreground flex-shrink-0">
+            <span className="flex items-center gap-1">
+              <Calendar className="h-3.5 w-3.5 text-gold" /> {formattedDate}
+            </span>
+            <span className="flex items-center gap-1">
+              <Clock className="h-3.5 w-3.5 text-gold" /> {formattedTime}
+            </span>
+            <span className="flex items-center gap-1">
+              <Users className="h-3.5 w-3.5" /> {confirmed.length}/{room.max_players}
+            </span>
           </div>
-        )}
 
-        <div className="flex-1" />
+          {room.description && (
+            <p className="text-sm text-muted-foreground line-clamp-2 flex-shrink-0">{room.description}</p>
+          )}
 
-        {/* Actions */}
-        <div className="flex gap-2 flex-shrink-0">
-          {canInteract && user && (
-            isInRoom ? (
-              <Button variant="outline" size="sm" className="flex-1 min-h-[44px]" onClick={handleLeave} disabled={loading}>
-                Sair
+          {/* Confirmed players */}
+          {confirmed.length > 0 && (
+            <div className="flex-shrink-0">
+              <p className="text-xs font-medium text-muted-foreground mb-1">Confirmados:</p>
+              <div className="flex flex-wrap gap-1">
+                {confirmed.map((p) => (
+                  <Badge key={p.id} variant="secondary" className="text-xs">
+                    {displayName(p)}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Waitlist */}
+          {waitlist.length > 0 && (
+            <div className="flex-shrink-0">
+              <p className="text-xs font-medium text-amber-400 mb-1">Reserva ({waitlist.length}):</p>
+              <div className="flex flex-wrap gap-1">
+                {waitlist.map((p) => (
+                  <Badge key={p.id} variant="outline" className="text-xs border-amber-600/30 text-amber-400">
+                    {displayName(p)}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="flex-1" />
+
+          {/* Actions */}
+          <div className="flex gap-2 flex-shrink-0">
+            {canInteract && user && (
+              isInRoom ? (
+                <Button variant="outline" size="sm" className="flex-1 min-h-[44px]" onClick={handleLeave} disabled={loading}>
+                  Sair
+                </Button>
+              ) : (
+                <Button
+                  variant={isFull ? "outline" : "gold"}
+                  size="sm"
+                  className="flex-1 min-h-[44px]"
+                  onClick={handleJoin}
+                  disabled={loading}
+                >
+                  <LogIn className="h-4 w-4 mr-1" />
+                  {isFull ? "Entrar na Reserva" : "Entrar"}
+                </Button>
+              )
+            )}
+            {canInteract && (
+              <Button variant="ghost" size="sm" className="min-h-[44px]" onClick={handleShare}>
+                <Share2 className="h-4 w-4" />
               </Button>
-            ) : (
+            )}
+            {room.status === "finished" && user && (
               <Button
-                variant={isFull ? "outline" : "gold"}
+                variant="gold"
                 size="sm"
                 className="flex-1 min-h-[44px]"
-                onClick={handleJoin}
-                disabled={loading}
-              >
-                <LogIn className="h-4 w-4 mr-1" />
-                {isFull ? "Entrar na Reserva" : "Entrar"}
-              </Button>
-            )
-          )}
-          {canInteract && (
-            <Button variant="ghost" size="sm" className="min-h-[44px]" onClick={handleShare}>
-              <Share2 className="h-4 w-4" />
-            </Button>
-          )}
-          {room.status === "finished" && user && (
-            <Button
-              variant="gold"
-              size="sm"
-              className="flex-1 min-h-[44px]"
-              onClick={() => {
-                navigate("/partidas", {
-                  state: {
-                    prefill: {
-                      gameId: room.game.id,
-                      date: room.scheduled_at,
-                      playerIds: confirmed.map(p => p.player_id),
+                onClick={() => {
+                  navigate("/partidas", {
+                    state: {
+                      prefill: {
+                        gameId: room.game?.id,
+                        date: room.scheduled_at,
+                        playerIds: confirmed.map(p => p.player_id),
+                      }
                     }
-                  }
-                });
-              }}
+                  });
+                }}
+              >
+                <ClipboardList className="h-4 w-4 mr-1" /> Inserir Resultado
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="min-h-[44px] gap-1"
+              onClick={(e) => { e.stopPropagation(); setShowComments(!showComments); }}
             >
-              <ClipboardList className="h-4 w-4 mr-1" /> Inserir Resultado
+              <MessageCircle className="h-4 w-4" />
+              {showComments ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
             </Button>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="min-h-[44px] gap-1"
-            onClick={(e) => { e.stopPropagation(); setShowComments(!showComments); }}
-          >
-            <MessageCircle className="h-4 w-4" />
-            {showComments ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-          </Button>
-        </div>
-      </CardContent>
+          </div>
+        </CardContent>
 
-      {/* Expandable comments */}
-      {showComments && (
-        <div className="border-t border-border px-6 pb-4">
-          <RoomComments roomId={room.id} />
-        </div>
-      )}
-    </Card>
+        {/* Expandable comments */}
+        {showComments && (
+          <div className="border-t border-border px-6 pb-4">
+            <RoomComments roomId={room.id} />
+          </div>
+        )}
+      </Card>
+
+      {/* Edit Room Dialog */}
+      <EditRoomDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        room={room}
+        onSaved={() => { setEditOpen(false); onUpdate(); }}
+      />
+    </>
   );
 };
 

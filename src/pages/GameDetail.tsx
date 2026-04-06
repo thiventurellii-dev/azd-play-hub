@@ -20,6 +20,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Pencil,
+  Trash2,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -88,6 +89,11 @@ const GameDetail = () => {
   const [editImageUrl, setEditImageUrl] = useState("");
   const [editRulesUrl, setEditRulesUrl] = useState("");
   const [editVideoUrl, setEditVideoUrl] = useState("");
+  const [editMinPlayers, setEditMinPlayers] = useState("");
+  const [editMaxPlayers, setEditMaxPlayers] = useState("");
+  const [editSlug, setEditSlug] = useState("");
+  const [editFactions, setEditFactions] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const fetchGame = async () => {
@@ -332,6 +338,16 @@ const GameDetail = () => {
 
   const handleEditSave = async () => {
     if (!game) return;
+    let factions = game.factions;
+    if (editFactions.trim()) {
+      try {
+        factions = JSON.parse(editFactions);
+      } catch {
+        return notify("error", "JSON de facções inválido. Use formato: [\"A\", \"B\"] ou [{\"name\":\"...\"}]");
+      }
+    } else {
+      factions = null;
+    }
     const { error } = await supabase
       .from("games")
       .update({
@@ -339,6 +355,10 @@ const GameDetail = () => {
         image_url: editImageUrl || null,
         rules_url: editRulesUrl || null,
         video_url: editVideoUrl || null,
+        min_players: editMinPlayers ? parseInt(editMinPlayers) : null,
+        max_players: editMaxPlayers ? parseInt(editMaxPlayers) : null,
+        slug: editSlug || null,
+        factions,
       })
       .eq("id", game.id);
     if (error) return notify("error", error.message);
@@ -350,7 +370,25 @@ const GameDetail = () => {
       image_url: editImageUrl || null,
       rules_url: editRulesUrl || null,
       video_url: editVideoUrl || null,
+      min_players: editMinPlayers ? parseInt(editMinPlayers) : null,
+      max_players: editMaxPlayers ? parseInt(editMaxPlayers) : null,
+      slug: editSlug || null,
+      factions,
     });
+  };
+
+  const handleDeleteGame = async () => {
+    if (!game) return;
+    if (!confirm("Tem certeza que deseja excluir este jogo? Esta ação não pode ser desfeita.")) return;
+    setDeleting(true);
+    const { error } = await supabase.from("games").delete().eq("id", game.id);
+    if (error) {
+      notify("error", error.message);
+      setDeleting(false);
+      return;
+    }
+    notify("success", "Jogo excluído!");
+    navigate("/games");
   };
 
   if (loading) {
@@ -436,19 +474,33 @@ const GameDetail = () => {
                 </div>
               </div>
               {isAdmin && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setEditName(game.name);
-                    setEditImageUrl(game.image_url || "");
-                    setEditRulesUrl(game.rules_url || "");
-                    setEditVideoUrl(game.video_url || "");
-                    setEditOpen(true);
-                  }}
-                >
-                  <Pencil className="h-4 w-4 mr-1" /> Editar
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setEditName(game.name);
+                      setEditImageUrl(game.image_url || "");
+                      setEditRulesUrl(game.rules_url || "");
+                      setEditVideoUrl(game.video_url || "");
+                      setEditMinPlayers(game.min_players ? String(game.min_players) : "");
+                      setEditMaxPlayers(game.max_players ? String(game.max_players) : "");
+                      setEditSlug(game.slug || "");
+                      setEditFactions(game.factions ? JSON.stringify(game.factions, null, 2) : "");
+                      setEditOpen(true);
+                    }}
+                  >
+                    <Pencil className="h-4 w-4 mr-1" /> Editar
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDeleteGame}
+                    disabled={deleting}
+                  >
+                    <Trash2 className="h-4 w-4 mr-1" /> Excluir
+                  </Button>
+                </div>
               )}
             </div>
           </div>
@@ -658,8 +710,8 @@ const GameDetail = () => {
             <Card className="bg-card border-border">
               <CardContent className="pt-6">
                 <h2 className="text-lg font-semibold mb-4">Atividade (6 meses)</h2>
-                <ChartContainer config={chartConfig} className="h-[200px]">
-                  <BarChart data={monthlyData}>
+                <ChartContainer config={chartConfig} className="h-[200px] w-full mx-auto">
+                  <BarChart data={monthlyData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="month" tick={{ fill: "hsl(var(--muted-foreground))" }} />
                     <YAxis allowDecimals={false} tick={{ fill: "hsl(var(--muted-foreground))" }} />
@@ -880,28 +932,51 @@ const GameDetail = () => {
 
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Jogo</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Nome</Label>
-              <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Nome</Label>
+                <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Slug (URL)</Label>
+                <Input value={editSlug} onChange={(e) => setEditSlug(e.target.value)} placeholder="brass-birmingham" />
+              </div>
+              <div className="space-y-2">
+                <Label>URL da Imagem</Label>
+                <Input value={editImageUrl} onChange={(e) => setEditImageUrl(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>URL das Regras</Label>
+                <Input value={editRulesUrl} onChange={(e) => setEditRulesUrl(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>URL do Vídeo</Label>
+                <Input value={editVideoUrl} onChange={(e) => setEditVideoUrl(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Mín. Jogadores</Label>
+                <Input type="number" min={1} value={editMinPlayers} onChange={(e) => setEditMinPlayers(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Máx. Jogadores</Label>
+                <Input type="number" min={1} value={editMaxPlayers} onChange={(e) => setEditMaxPlayers(e.target.value)} />
+              </div>
             </div>
             <div className="space-y-2">
-              <Label>URL da Imagem</Label>
-              <Input value={editImageUrl} onChange={(e) => setEditImageUrl(e.target.value)} />
+              <Label>Facções/Personagens (JSON, opcional)</Label>
+              <textarea
+                value={editFactions}
+                onChange={(e) => setEditFactions(e.target.value)}
+                placeholder='["Facção A", "Facção B"] ou [{"name":"...", "color":"..."}]'
+                className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-xs font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
             </div>
-            <div className="space-y-2">
-              <Label>URL das Regras</Label>
-              <Input value={editRulesUrl} onChange={(e) => setEditRulesUrl(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>URL do Vídeo</Label>
-              <Input value={editVideoUrl} onChange={(e) => setEditVideoUrl(e.target.value)} />
-            </div>
-            <Button variant="gold" onClick={handleEditSave}>
+            <Button variant="gold" onClick={handleEditSave} className="w-full">
               Salvar
             </Button>
           </div>

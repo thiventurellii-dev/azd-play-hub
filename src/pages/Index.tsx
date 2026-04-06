@@ -131,62 +131,62 @@ const LoggedInIndex = () => {
         if (rooms) setUpcomingRooms(rooms.map((r: any) => ({ ...r, game: Array.isArray(r.game) ? r.game[0] : r.game })));
       }
 
-      // Recent boardgame matches
+      // Recent boardgame matches — fetch ALL recent matches, not just user's
       const allRecent: any[] = [];
-      const { data: results } = await supabase
-        .from("match_results")
-        .select("match_id, position, score")
-        .eq("player_id", user.id);
-      if (results && results.length > 0) {
-        const matchIds = [...new Set(results.map(r => r.match_id))];
-        const { data: matches } = await supabase
-          .from("matches")
-          .select("id, played_at, game:games(name)")
-          .in("id", matchIds);
-        if (matches) {
-          for (const m of matches as any[]) {
-            const r = results.find(r => r.match_id === m.id);
-            allRecent.push({
-              id: m.id,
-              played_at: m.played_at,
-              game: Array.isArray(m.game) ? m.game[0] : m.game,
-              position: r?.position,
-              score: r?.score,
-              type: 'boardgame',
-            });
-          }
+      const { data: recentBoardMatches } = await supabase
+        .from("matches")
+        .select("id, played_at, game:games(name)")
+        .order("played_at", { ascending: false })
+        .limit(10);
+      if (recentBoardMatches) {
+        const matchIds = recentBoardMatches.map((m: any) => m.id);
+        const { data: allResults } = await supabase
+          .from("match_results")
+          .select("match_id, position, score, player_id")
+          .in("match_id", matchIds);
+        for (const m of recentBoardMatches as any[]) {
+          const userResult = allResults?.find(r => r.match_id === m.id && r.player_id === user.id);
+          allRecent.push({
+            id: m.id,
+            played_at: m.played_at,
+            game: Array.isArray(m.game) ? m.game[0] : m.game,
+            position: userResult?.position ?? null,
+            score: userResult?.score ?? null,
+            type: 'boardgame',
+            isUserMatch: !!userResult,
+          });
         }
       }
 
       // Recent blood matches
-      const { data: bloodPlays } = await supabase
-        .from("blood_match_players")
-        .select("match_id, team")
-        .eq("player_id", user.id);
-      if (bloodPlays && bloodPlays.length > 0) {
-        const bMatchIds = [...new Set(bloodPlays.map(r => r.match_id))];
-        const { data: bMatches } = await supabase
-          .from("blood_matches")
-          .select("id, played_at, winning_team, script:blood_scripts(name)")
-          .in("id", bMatchIds);
-        if (bMatches) {
-          for (const m of bMatches as any[]) {
-            const bp = bloodPlays.find(p => p.match_id === m.id);
-            const won = bp?.team === m.winning_team;
-            allRecent.push({
-              id: `blood-${m.id}`,
-              played_at: m.played_at,
-              game: { name: `Blood — ${(Array.isArray(m.script) ? m.script[0] : m.script)?.name || '?'}` },
-              position: won ? 1 : 2,
-              score: null,
-              type: 'blood',
-            });
-          }
+      const { data: recentBloodMatches } = await supabase
+        .from("blood_matches")
+        .select("id, played_at, winning_team, script:blood_scripts(name)")
+        .order("played_at", { ascending: false })
+        .limit(10);
+      if (recentBloodMatches) {
+        const bMatchIds = recentBloodMatches.map((m: any) => m.id);
+        const { data: allBloodPlayers } = await supabase
+          .from("blood_match_players")
+          .select("match_id, team, player_id")
+          .in("match_id", bMatchIds);
+        for (const m of recentBloodMatches as any[]) {
+          const userPlay = allBloodPlayers?.find(p => p.match_id === m.id && p.player_id === user.id);
+          const won = userPlay ? userPlay.team === m.winning_team : null;
+          allRecent.push({
+            id: `blood-${m.id}`,
+            played_at: m.played_at,
+            game: { name: `Blood — ${(Array.isArray(m.script) ? m.script[0] : m.script)?.name || '?'}` },
+            position: won === null ? null : won ? 1 : 2,
+            score: null,
+            type: 'blood',
+            isUserMatch: !!userPlay,
+          });
         }
       }
 
       allRecent.sort((a, b) => new Date(b.played_at).getTime() - new Date(a.played_at).getTime());
-      setRecentMatches(allRecent.slice(0, 5));
+      setRecentMatches(allRecent.slice(0, 8));
 
       // Active boardgame season for home ranking card
       const now = new Date().toISOString().slice(0, 10);
@@ -322,14 +322,18 @@ const LoggedInIndex = () => {
                   <div className="space-y-2">
                     {recentMatches.map(m => (
                       <div key={m.id} className="flex justify-between items-center text-sm">
-                        <span className="truncate">{m.game?.name}</span>
+                        <span className={`truncate ${m.isUserMatch ? '' : 'text-muted-foreground'}`}>{m.game?.name}</span>
                         <div className="flex items-center gap-2 ml-2 shrink-0">
                           <span className="text-[10px] text-muted-foreground">
                             {new Date(m.played_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
                           </span>
-                          <span className={`text-xs font-medium ${m.position === 1 ? 'text-gold' : 'text-muted-foreground'}`}>
-                            {m.position === 1 ? '🏆' : `${m.position}º`}{m.score != null ? ` ${m.score}pts` : ''}
-                          </span>
+                          {m.position != null ? (
+                            <span className={`text-xs font-medium ${m.position === 1 ? 'text-gold' : 'text-muted-foreground'}`}>
+                              {m.position === 1 ? '🏆' : `${m.position}º`}{m.score != null ? ` ${m.score}pts` : ''}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground">—</span>
+                          )}
                         </div>
                       </div>
                     ))}

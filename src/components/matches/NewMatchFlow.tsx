@@ -85,11 +85,19 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
         supabase.from('games').select('factions').eq('id', gameId).maybeSingle(),
       ]);
       setScoringSchema(schemaRes.data?.schema || null);
-      // Parse factions from game data
-      const fData = (gameRes.data as any)?.factions;
-      if (Array.isArray(fData)) {
-        setGameFactions(fData.map((f: any) => typeof f === 'string' ? f : f.name || ''));
-      } else {
+      // Parse factions from game data — handle malformed JSON gracefully
+      try {
+        const fData = (gameRes.data as any)?.factions;
+        if (Array.isArray(fData)) {
+          setGameFactions(fData.map((f: any) => typeof f === 'string' ? f : f.name || '').filter(Boolean));
+        } else if (typeof fData === 'string') {
+          const parsed = JSON.parse(fData);
+          setGameFactions(Array.isArray(parsed) ? parsed.map((f: any) => typeof f === 'string' ? f : f.name || '').filter(Boolean) : []);
+        } else {
+          setGameFactions([]);
+        }
+      } catch {
+        console.warn('Facções com formato inválido, ignorando');
         setGameFactions([]);
       }
     };

@@ -142,11 +142,15 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
       }
     }
 
+    toast.success("Você saiu da sala");
+    // Immediately refresh players list
+    await fetchPlayers();
+    onUpdate();
     setLoading(false);
   };
 
   const handleShare = () => {
-    const roomUrl = `${window.location.origin}/partidas`;
+    const roomUrl = `${window.location.origin}/partidas?room=${room.id}`;
     const link = generateWhatsAppInvite(room.title, room.game.name, room.scheduled_at, roomUrl);
     window.open(link, "_blank");
   };

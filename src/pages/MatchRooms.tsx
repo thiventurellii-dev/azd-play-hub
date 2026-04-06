@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import MatchRoomCard from "@/components/matchrooms/MatchRoomCard";
 import CreateRoomDialog from "@/components/matchrooms/CreateRoomDialog";
@@ -19,10 +19,12 @@ interface MatchRoom {
 
 const MatchRooms = () => {
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const [rooms, setRooms] = useState<MatchRoom[]>([]);
   const [loading, setLoading] = useState(true);
   const [matchFlowOpen, setMatchFlowOpen] = useState(false);
   const [prefill, setPrefill] = useState<any>(null);
+  const [highlightRoomId, setHighlightRoomId] = useState<string | null>(null);
 
   // Filters
   const [gameFilter, setGameFilter] = useState('all');
@@ -36,7 +38,15 @@ const MatchRooms = () => {
       setMatchFlowOpen(true);
       window.history.replaceState({}, document.title);
     }
-  }, [location.state]);
+    const roomParam = searchParams.get('room');
+    if (roomParam) {
+      setHighlightRoomId(roomParam);
+      setTimeout(() => {
+        const el = document.getElementById(`room-${roomParam}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 500);
+    }
+  }, [location.state, searchParams]);
 
   const fetchRooms = async () => {
     const now = new Date().toISOString();
@@ -165,7 +175,11 @@ const MatchRooms = () => {
               </div>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {activeRooms.map(room => <MatchRoomCard key={room.id} room={room} onUpdate={fetchRooms} />)}
+                {activeRooms.map(room => (
+                  <div key={room.id} id={`room-${room.id}`} className={highlightRoomId === room.id ? 'ring-2 ring-gold rounded-xl transition-all' : ''}>
+                    <MatchRoomCard room={room} onUpdate={fetchRooms} />
+                  </div>
+                ))}
               </div>
             )}
           </TabsContent>
@@ -174,7 +188,11 @@ const MatchRooms = () => {
               <p className="text-center py-16 text-muted-foreground">Nenhuma sala encerrada</p>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {pastRooms.map(room => <MatchRoomCard key={room.id} room={room} onUpdate={fetchRooms} />)}
+                {pastRooms.map(room => (
+                  <div key={room.id} id={`room-${room.id}`} className={highlightRoomId === room.id ? 'ring-2 ring-gold rounded-xl transition-all' : ''}>
+                    <MatchRoomCard room={room} onUpdate={fetchRooms} />
+                  </div>
+                ))}
               </div>
             )}
           </TabsContent>

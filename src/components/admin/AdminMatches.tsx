@@ -403,92 +403,12 @@ const AdminMatches = () => {
       )}
 
       {/* Edit Match Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Editar Partida</DialogTitle></DialogHeader>
-          <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Season</Label>
-                <Select value={editForm.season_id} onValueChange={v => setEditForm({ ...editForm, season_id: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {seasons.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Jogo</Label>
-                <Select value={editForm.game_id} onValueChange={v => setEditForm({ ...editForm, game_id: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {games.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Data</Label>
-                <Input type="date" value={editForm.played_date} onChange={e => setEditForm({ ...editForm, played_date: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Hora</Label>
-                <Input type="time" value={editForm.played_time} onChange={e => setEditForm({ ...editForm, played_time: e.target.value })} />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Duração (min)</Label>
-              <Input type="number" value={editForm.duration} onChange={e => setEditForm({ ...editForm, duration: e.target.value })} />
-            </div>
-
-            <Label>Resultados</Label>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Jogador</TableHead>
-                  <TableHead className="w-[80px]">Posição</TableHead>
-                  <TableHead className="w-[80px]">Pontuação</TableHead>
-                  <TableHead className="w-[100px]">Primeiro</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {editResults.map((r, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="text-sm truncate">
-                      {players.find(p => p.id === r.player_id)?.nickname || players.find(p => p.id === r.player_id)?.name || '?'}
-                    </TableCell>
-                    <TableCell>
-                      <Input type="number" min={1} value={r.position} onChange={e => {
-                        const updated = [...editResults];
-                        updated[i].position = parseInt(e.target.value) || 1;
-                        setEditResults(updated);
-                      }} className="w-[70px]" />
-                    </TableCell>
-                    <TableCell>
-                      <Input type="number" value={r.score} onChange={e => {
-                        const updated = [...editResults];
-                        updated[i].score = parseInt(e.target.value) || 0;
-                        setEditResults(updated);
-                      }} className="w-[80px]" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Checkbox checked={r.is_first_player} onCheckedChange={(checked) => {
-                          const updated = [...editResults];
-                          updated.forEach((rr, idx) => { rr.is_first_player = idx === i && !!checked; });
-                          setEditResults(updated);
-                        }} />
-                        <span className="text-xs">1º</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-
-            <Button variant="gold" onClick={handleEditMatchSave} className="w-full">Salvar Alterações</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <EditMatchDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        match={editingMatch}
+        onSaved={fetchMatches}
+      />
     </div>
   );
 };

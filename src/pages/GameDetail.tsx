@@ -517,33 +517,13 @@ const GameDetail = () => {
                 </div>
               </div>
               {isAdmin && (
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setEditName(game.name);
-                      setEditImageUrl(game.image_url || "");
-                      setEditRulesUrl(game.rules_url || "");
-                      setEditVideoUrl(game.video_url || "");
-                      setEditMinPlayers(game.min_players ? String(game.min_players) : "");
-                      setEditMaxPlayers(game.max_players ? String(game.max_players) : "");
-                      setEditSlug(game.slug || "");
-                      setEditFactions(game.factions ? JSON.stringify(game.factions, null, 2) : "");
-                      setEditOpen(true);
-                    }}
-                  >
-                    <Pencil className="h-4 w-4 mr-1" /> Editar
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleDeleteGame}
-                    disabled={deleting}
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" /> Excluir
-                  </Button>
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={openEditDialog}
+                >
+                  <Pencil className="h-4 w-4 mr-1" /> Editar
+                </Button>
               )}
             </div>
           </div>

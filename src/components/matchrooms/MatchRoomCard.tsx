@@ -259,6 +259,11 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
                   </Button>
                 </>
               )}
+              {canManage && (room?.status === "finished" || room?.status === "cancelled") && (
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={handleDelete} disabled={loading} title="Excluir sala">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              )}
               <Badge variant="outline" className={status.className}>
                 {status.label}
               </Badge>

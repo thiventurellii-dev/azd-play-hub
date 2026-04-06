@@ -94,8 +94,12 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
     return true;
   });
 
-  // Season only for boardgame
-  const filteredSeasons = category === 'boardgame' ? seasons.filter(s => s.type === 'boardgame') : [];
+  // Season filtered by category type and only active
+  const filteredSeasons = category === 'boardgame'
+    ? seasons.filter(s => s.type === 'boardgame' && s.status === 'active')
+    : category === 'botc'
+      ? seasons.filter(s => s.type === 'blood' && s.status === 'active')
+      : [];
 
   useEffect(() => {
     const game = games.find(g => g.id === gameId);

@@ -256,16 +256,16 @@ const MatchRooms = () => {
               fetchRooms();
               const roomId = deepLinkRoom?.id;
               if (!roomId) return;
-              supabase.from("match_rooms")
-                .select("id, title, description, scheduled_at, max_players, status, created_by, game:games(id, name, image_url)")
-                .eq("id", roomId)
-                .maybeSingle()
-                .then(({ data }) => {
-                  if (data) {
-                    setDeepLinkRoom({ ...data, game: Array.isArray((data as any).game) ? (data as any).game[0] : (data as any).game } as MatchRoom);
-                  }
-                })
-                .catch(() => {});
+              Promise.resolve(
+                supabase.from("match_rooms")
+                  .select("id, title, description, scheduled_at, max_players, status, created_by, game:games(id, name, image_url)")
+                  .eq("id", roomId)
+                  .maybeSingle()
+              ).then(({ data }) => {
+                if (data) {
+                  setDeepLinkRoom({ ...data, game: Array.isArray((data as any).game) ? (data as any).game[0] : (data as any).game } as MatchRoom);
+                }
+              }).catch(() => {});
             }} />
           ) : null}
         </DialogContent>

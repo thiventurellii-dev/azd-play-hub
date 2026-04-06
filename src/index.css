@@ -62,6 +62,33 @@
   }
 }
 
+/* Ghost scrollbar — invisible by default, visible on hover */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+*:hover {
+  scrollbar-color: hsl(0 0% 30%) transparent;
+}
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+*:hover::-webkit-scrollbar-thumb {
+  background: hsl(0 0% 30%);
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: hsl(0 0% 45%);
+}
+
 @layer utilities {
   .text-gold {
     color: hsl(var(--gold));

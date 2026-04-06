@@ -21,6 +21,7 @@ import {
   ChevronRight,
   Pencil,
   Trash2,
+  Clock,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -95,6 +96,14 @@ const GameDetail = () => {
   const [editFactions, setEditFactions] = useState("");
   const [editCategories, setEditCategories] = useState<any[]>([]);
   const [deleting, setDeleting] = useState(false);
+
+  // Edit match state
+  const [editMatchOpen, setEditMatchOpen] = useState(false);
+  const [editMatch, setEditMatch] = useState<any>(null);
+  const [editMatchDate, setEditMatchDate] = useState("");
+  const [editMatchDuration, setEditMatchDuration] = useState("");
+  const [editMatchResults, setEditMatchResults] = useState<any[]>([]);
+  const [savingMatch, setSavingMatch] = useState(false);
 
   useEffect(() => {
     const fetchGame = async () => {
@@ -492,6 +501,18 @@ const GameDetail = () => {
                       <Users className="h-4 w-4" /> {game.min_players || "?"}–{game.max_players || "?"} jogadores
                     </span>
                   )}
+                  {(() => {
+                    const withDuration = allMatches.filter(m => m.duration_minutes);
+                    if (withDuration.length > 0) {
+                      const avg = Math.round(withDuration.reduce((s, m) => s + m.duration_minutes, 0) / withDuration.length);
+                      return (
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" /> ~{avg} min
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()}
                   {tags.length > 0 &&
                     tags.map((t) => (
                       <Badge key={t} variant="outline" className="text-xs">
@@ -906,7 +927,11 @@ const GameDetail = () => {
                             size="icon"
                             className="h-6 w-6"
                             onClick={() => {
-                              /* TODO: edit match */
+                              setEditMatch(m);
+                              setEditMatchDate(m.played_at?.slice(0, 10) || "");
+                              setEditMatchDuration(m.duration_minutes?.toString() || "");
+                              setEditMatchResults(m.results.map((r: any) => ({ ...r })));
+                              setEditMatchOpen(true);
                             }}
                           >
                             <Pencil className="h-3 w-3" />
@@ -1032,6 +1057,77 @@ const GameDetail = () => {
               <Button variant="gold" onClick={handleEditSave}>Salvar</Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Match Dialog */}
+      <Dialog open={editMatchOpen} onOpenChange={setEditMatchOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Partida</DialogTitle>
+          </DialogHeader>
+          {editMatch && (
+            <div className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Data</Label>
+                  <Input type="date" value={editMatchDate} onChange={e => setEditMatchDate(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Duração (min)</Label>
+                  <Input type="number" min={0} value={editMatchDuration} onChange={e => setEditMatchDuration(e.target.value)} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Resultados</Label>
+                {editMatchResults.map((r: any, i: number) => (
+                  <div key={r.id} className="flex items-center gap-2 text-sm">
+                    <span className="w-6 text-center font-bold text-gold">{r.position}º</span>
+                    <span className="flex-1 truncate">{r.player_name}</span>
+                    <Input
+                      type="number"
+                      className="w-20 h-8 text-xs"
+                      value={r.score ?? 0}
+                      onChange={e => {
+                        const updated = [...editMatchResults];
+                        updated[i] = { ...updated[i], score: parseInt(e.target.value) || 0 };
+                        setEditMatchResults(updated);
+                      }}
+                    />
+                    <span className="text-xs text-muted-foreground">pts</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  variant="gold"
+                  disabled={savingMatch}
+                  onClick={async () => {
+                    setSavingMatch(true);
+                    // Update match
+                    await supabase.from("matches").update({
+                      played_at: editMatchDate ? new Date(editMatchDate).toISOString() : editMatch.played_at,
+                      duration_minutes: editMatchDuration ? parseInt(editMatchDuration) : null,
+                    }).eq("id", editMatch.id);
+                    // Update results
+                    for (const r of editMatchResults) {
+                      await supabase.from("match_results").update({
+                        score: r.score ?? 0,
+                        position: r.position,
+                      }).eq("id", r.id);
+                    }
+                    setSavingMatch(false);
+                    setEditMatchOpen(false);
+                    notify("success", "Partida atualizada!");
+                    // Refresh
+                    window.location.reload();
+                  }}
+                >
+                  {savingMatch ? "Salvando..." : "Salvar"}
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

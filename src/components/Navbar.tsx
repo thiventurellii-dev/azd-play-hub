@@ -17,7 +17,9 @@ import {
   Gamepad2,
   ChevronDown,
   LayoutGrid,
+  Bell,
 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -208,7 +210,7 @@ const Navbar = () => {
           )}
         </div>
 
-        {/* Desktop auth — no dropdown, direct click to profile + logout button */}
+        {/* Desktop auth */}
         <div className="hidden md:flex items-center gap-2">
           {user ? (
             <div className="flex items-center gap-1">
@@ -232,6 +234,17 @@ const Navbar = () => {
                   </span>
                 )}
               </Button>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-9 w-9 relative text-muted-foreground hover:text-foreground">
+                    <Bell className="h-4 w-4" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="end" className="w-72 p-3">
+                  <p className="text-sm font-medium mb-2">Notificações</p>
+                  <p className="text-xs text-muted-foreground text-center py-6">Sem notificações</p>
+                </PopoverContent>
+              </Popover>
               <Button
                 variant="ghost"
                 size="icon"

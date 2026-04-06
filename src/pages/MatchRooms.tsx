@@ -96,7 +96,7 @@ const MatchRooms = () => {
       .in("status", ["open", "full", "in_progress"] as any).lt("scheduled_at", now);
 
     const { data } = await supabase.from("match_rooms")
-      .select("id, title, description, scheduled_at, max_players, status, created_by, game:games(id, name, image_url)")
+      .select("id, title, description, scheduled_at, max_players, status, created_by, season_id, game:games(id, name, image_url)")
       .order("scheduled_at", { ascending: true });
 
     if (data) {

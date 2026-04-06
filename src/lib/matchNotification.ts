@@ -41,5 +41,5 @@ export function generateWhatsAppInvite(
     message += `\n\n\u2705 Confirmados: ${confirmedPlayers.join(", ")}`;
   }
   message += `\n\n\u{1F449} Entre na sala: ${roomUrl}`;
-  return `https://wa.me/?text=${encodeURIComponent(message)}`;
+  return `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
 }

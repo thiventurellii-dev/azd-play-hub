@@ -146,7 +146,10 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
           </div>
           <div>
             <Label>Vagas Máximas</Label>
-            <Input type="number" min="2" max="50" value={maxPlayers} onChange={(e) => setMaxPlayers(e.target.value)} />
+            <Input type="number" min="2" max={games.find(g => g.id === gameId)?.max_players || 50} value={maxPlayers} onChange={(e) => setMaxPlayers(e.target.value)} />
+            {games.find(g => g.id === gameId)?.max_players && (
+              <p className="text-xs text-muted-foreground mt-1">Máximo do jogo: {games.find(g => g.id === gameId)?.max_players}</p>
+            )}
           </div>
           <div>
             <Label>Descrição (opcional)</Label>

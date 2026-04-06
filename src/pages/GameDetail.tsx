@@ -337,6 +337,16 @@ const GameDetail = () => {
 
   const handleEditSave = async () => {
     if (!game) return;
+    let factions = game.factions;
+    if (editFactions.trim()) {
+      try {
+        factions = JSON.parse(editFactions);
+      } catch {
+        return notify("error", "JSON de facções inválido. Use formato: [\"A\", \"B\"] ou [{\"name\":\"...\"}]");
+      }
+    } else {
+      factions = null;
+    }
     const { error } = await supabase
       .from("games")
       .update({
@@ -344,6 +354,10 @@ const GameDetail = () => {
         image_url: editImageUrl || null,
         rules_url: editRulesUrl || null,
         video_url: editVideoUrl || null,
+        min_players: editMinPlayers ? parseInt(editMinPlayers) : null,
+        max_players: editMaxPlayers ? parseInt(editMaxPlayers) : null,
+        slug: editSlug || null,
+        factions,
       })
       .eq("id", game.id);
     if (error) return notify("error", error.message);
@@ -355,7 +369,25 @@ const GameDetail = () => {
       image_url: editImageUrl || null,
       rules_url: editRulesUrl || null,
       video_url: editVideoUrl || null,
+      min_players: editMinPlayers ? parseInt(editMinPlayers) : null,
+      max_players: editMaxPlayers ? parseInt(editMaxPlayers) : null,
+      slug: editSlug || null,
+      factions,
     });
+  };
+
+  const handleDeleteGame = async () => {
+    if (!game) return;
+    if (!confirm("Tem certeza que deseja excluir este jogo? Esta ação não pode ser desfeita.")) return;
+    setDeleting(true);
+    const { error } = await supabase.from("games").delete().eq("id", game.id);
+    if (error) {
+      notify("error", error.message);
+      setDeleting(false);
+      return;
+    }
+    notify("success", "Jogo excluído!");
+    navigate("/games");
   };
 
   if (loading) {

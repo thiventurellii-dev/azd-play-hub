@@ -81,6 +81,7 @@ const ScriptDetail = () => {
   const [matchPlayers, setMatchPlayers] = useState<MatchPlayer[]>([]);
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [expandedChars, setExpandedChars] = useState<Record<string, boolean>>({});
 
   // Edit dialog
   const [editOpen, setEditOpen] = useState(false);
@@ -89,6 +90,14 @@ const ScriptDetail = () => {
   const [editImageUrl, setEditImageUrl] = useState("");
   const [editVictoryConditions, setEditVictoryConditions] = useState<string[]>([]);
   const [newCondition, setNewCondition] = useState("");
+
+  // Edit match dialog
+  const [editMatchOpen, setEditMatchOpen] = useState(false);
+  const [editingMatch, setEditingMatch] = useState<BloodMatch | null>(null);
+  const [editMatchWinningTeam, setEditMatchWinningTeam] = useState<'good' | 'evil'>('good');
+  const [editMatchDuration, setEditMatchDuration] = useState('');
+  const [editMatchPlayers, setEditMatchPlayers] = useState<MatchPlayer[]>([]);
+  const [editMatchSaving, setEditMatchSaving] = useState(false);
 
   useEffect(() => {
     if (!slug) return;

@@ -440,7 +440,7 @@ const ScriptDetail = () => {
                               {cStats ? `${cStats.played}x` : "0x"}
                             </span>
                             {cStats && cStats.played > 0 && (
-                              <span className="text-xs text-foreground">{winPct}%</span>
+                              <span className={`text-xs font-semibold ${winPct <= 20 ? 'text-red-400' : winPct <= 50 ? 'text-yellow-400' : 'text-green-400'}`}>{winPct}%</span>
                             )}
                           </div>
                         </div>

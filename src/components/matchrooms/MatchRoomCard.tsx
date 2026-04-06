@@ -50,6 +50,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const [showComments, setShowComments] = useState(true);
 
   const fetchPlayers = async () => {
+    if (!room?.id) return;
     const { data } = await supabase
       .from("match_room_players")
       .select("id, player_id, type, position")

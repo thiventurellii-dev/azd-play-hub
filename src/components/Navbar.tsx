@@ -116,6 +116,7 @@ const Navbar = () => {
   const handleRejectFriend = async (id: string) => {
     await supabase.from("friendships").delete().eq("id", id);
     fetchFriendRequests();
+    window.dispatchEvent(new Event('friendship-changed'));
   };
 
   const handleSignOut = async () => {

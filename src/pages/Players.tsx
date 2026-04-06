@@ -72,28 +72,28 @@ const Players = () => {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filtered.map((p, i) => (
             <motion.div key={p.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-              <Link to={p.nickname ? `/perfil/${p.nickname}` : '#'}>
               <Card className="bg-card border-border hover:border-gold/20 transition-colors h-full">
                 <CardContent className="flex items-center gap-4 py-4 h-full">
-                  {p.avatar_url ? (
-                    <img src={p.avatar_url} alt="" className="h-12 w-12 rounded-full object-cover flex-shrink-0" />
-                  ) : (
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-gold font-bold text-lg flex-shrink-0">
-                      {(p.nickname || p.name)?.charAt(0)?.toUpperCase() || '?'}
+                  <Link to={p.nickname ? `/perfil/${p.nickname}` : '#'} className="flex items-center gap-4 min-w-0 flex-1">
+                    {p.avatar_url ? (
+                      <img src={p.avatar_url} alt="" className="h-12 w-12 rounded-full object-cover flex-shrink-0" />
+                    ) : (
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-gold font-bold text-lg flex-shrink-0">
+                        {(p.nickname || p.name)?.charAt(0)?.toUpperCase() || '?'}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold truncate">{p.name}</p>
+                      {p.nickname && <p className="text-xs text-gold truncate">@{p.nickname}</p>}
+                      {(p.city || p.state) && <p className="text-xs text-muted-foreground truncate">{[p.city, p.state].filter(Boolean).join(', ')}</p>}
+                      <p className="text-xs text-muted-foreground">Desde {new Date(p.created_at).toLocaleDateString('pt-BR')}</p>
                     </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold truncate">{p.name}</p>
-                    {p.nickname && <p className="text-xs text-gold truncate">@{p.nickname}</p>}
-                    {(p.city || p.state) && <p className="text-xs text-muted-foreground truncate">{[p.city, p.state].filter(Boolean).join(', ')}</p>}
-                    <p className="text-xs text-muted-foreground">Desde {new Date(p.created_at).toLocaleDateString('pt-BR')}</p>
-                  </div>
-                  <div className="flex-shrink-0">
+                  </Link>
+                  <div className="flex-shrink-0" onClick={(e) => e.stopPropagation()}>
                     <FriendButton targetUserId={p.id} />
                   </div>
                 </CardContent>
               </Card>
-              </Link>
             </motion.div>
           ))}
           {filtered.length === 0 && !loading && (

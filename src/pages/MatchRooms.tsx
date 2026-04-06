@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,6 +31,7 @@ const MatchRooms = () => {
   const [deepLinkOpen, setDeepLinkOpen] = useState(false);
   const [deepLinkRoom, setDeepLinkRoom] = useState<MatchRoom | null>(null);
   const [deepLinkLoading, setDeepLinkLoading] = useState(false);
+  const deepLinkFetched = useRef(false);
 
   // Filters
   const [gameFilter, setGameFilter] = useState('all');
@@ -47,10 +48,12 @@ const MatchRooms = () => {
     }
   }, [location.state]);
 
-  // Handle ?room=ID deep link
+  // Handle ?room=ID deep link — runs only once
   useEffect(() => {
+    if (deepLinkFetched.current) return;
     const roomParam = searchParams.get('room');
     if (!roomParam) return;
+    deepLinkFetched.current = true;
 
     setDeepLinkOpen(true);
     setDeepLinkLoading(true);
@@ -69,14 +72,20 @@ const MatchRooms = () => {
           setSearchParams({}, { replace: true });
         }
         setDeepLinkLoading(false);
+      })
+      .catch(() => {
+        toast.error("Erro ao carregar sala");
+        setDeepLinkLoading(false);
+        setDeepLinkOpen(false);
       });
-  }, [searchParams]);
+  }, []); // empty deps — run once on mount
 
   const handleDeepLinkClose = (open: boolean) => {
     setDeepLinkOpen(open);
     if (!open) {
       setSearchParams({}, { replace: true });
       setDeepLinkRoom(null);
+      deepLinkFetched.current = false;
     }
   };
 
@@ -254,7 +263,8 @@ const MatchRooms = () => {
                   if (data) {
                     setDeepLinkRoom({ ...data, game: Array.isArray((data as any).game) ? (data as any).game[0] : (data as any).game } as MatchRoom);
                   }
-                });
+                })
+                .catch(() => {});
             }} />
           ) : null}
         </DialogContent>

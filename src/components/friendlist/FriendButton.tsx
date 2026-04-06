@@ -21,6 +21,31 @@ const FriendButton = ({ targetUserId, size = "sm" }: Props) => {
   useEffect(() => {
     if (!user || user.id === targetUserId) return;
     fetchStatus();
+
+    // Listen for friendship changes via custom event (from Navbar accept/reject)
+    const handler = () => fetchStatus();
+    window.addEventListener('friendship-changed', handler);
+
+    // Realtime subscription for instant updates
+    const channel = supabase
+      .channel(`friendship-${user.id}-${targetUserId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'friendships',
+      }, (payload: any) => {
+        const row = payload.new || payload.old;
+        if (row && ((row.user_id === user.id && row.friend_id === targetUserId) ||
+            (row.user_id === targetUserId && row.friend_id === user.id))) {
+          fetchStatus();
+        }
+      })
+      .subscribe();
+
+    return () => {
+      window.removeEventListener('friendship-changed', handler);
+      supabase.removeChannel(channel);
+    };
   }, [user, targetUserId]);
 
   const fetchStatus = async () => {

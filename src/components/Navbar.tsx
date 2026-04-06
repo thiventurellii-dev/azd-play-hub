@@ -34,7 +34,7 @@ const Navbar = () => {
   const { user, isAdmin, signOut } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [contactLinks, setContactLinks] = useState<Record<string, string>>({});
+  
   const [pendingFriends, setPendingFriends] = useState(0);
   const [friendRequests, setFriendRequests] = useState<{ id: string; user_id: string; name: string; nickname: string | null }[]>([]);
   const [roomNotifs, setRoomNotifs] = useState<{ id: string; title: string; message: string; type: string; room_id: string | null; created_at: string }[]>([]);

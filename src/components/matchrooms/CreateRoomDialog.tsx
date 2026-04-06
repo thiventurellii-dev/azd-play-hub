@@ -14,7 +14,13 @@ import { sendMatchNotification } from "@/lib/matchNotification";
 interface Game {
   id: string;
   name: string;
+  slug: string | null;
   max_players: number | null;
+}
+
+interface BloodScript {
+  id: string;
+  name: string;
 }
 
 interface Props {
@@ -33,20 +39,39 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
   const [maxPlayers, setMaxPlayers] = useState("10");
   const [saving, setSaving] = useState(false);
 
+  // BotC
+  const [bloodScripts, setBloodScripts] = useState<BloodScript[]>([]);
+  const [selectedScriptId, setSelectedScriptId] = useState("");
+
   useEffect(() => {
     supabase
       .from("games")
-      .select("id, name, max_players")
+      .select("id, name, slug, max_players")
       .order("name")
       .then(({ data }) => {
         if (data) setGames(data as Game[]);
       });
   }, []);
 
+  const selectedGame = games.find(g => g.id === gameId);
+  const isBotC = selectedGame && (selectedGame.name.toLowerCase().includes('blood') || selectedGame.slug === 'blood-on-the-clocktower');
+
   useEffect(() => {
     const game = games.find(g => g.id === gameId);
     if (game?.max_players) {
       setMaxPlayers(String(game.max_players));
+    }
+    // Fetch BotC scripts if applicable
+    if (game) {
+      const gName = game.name.toLowerCase();
+      if (gName.includes('blood') || game.slug === 'blood-on-the-clocktower') {
+        supabase.from('blood_scripts').select('id, name').order('name').then(({ data }) => {
+          setBloodScripts(data || []);
+        });
+      } else {
+        setBloodScripts([]);
+        setSelectedScriptId('');
+      }
     }
   }, [gameId, games]);
 
@@ -60,6 +85,13 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
       ? new Date(`${scheduledDate}T${scheduledTime}`).toISOString()
       : new Date(`${scheduledDate}T00:00:00`).toISOString();
 
+    // Build description with script info if BotC
+    let finalDescription = description || null;
+    if (isBotC && selectedScriptId) {
+      const scriptName = bloodScripts.find(s => s.id === selectedScriptId)?.name;
+      finalDescription = `[Script: ${scriptName}]${description ? `\n${description}` : ''}`;
+    }
+
     setSaving(true);
     const { data, error } = await supabase
       .from("match_rooms")
@@ -67,7 +99,7 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
         game_id: gameId,
         created_by: user.id,
         title,
-        description: description || null,
+        description: finalDescription,
         scheduled_at: scheduledAt,
         max_players: parseInt(maxPlayers) || 10,
         status: "open",
@@ -98,6 +130,7 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
       setScheduledTime("");
       setGameId("");
       setMaxPlayers("10");
+      setSelectedScriptId("");
       onCreated();
     }
     setSaving(false);
@@ -130,6 +163,21 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
               </SelectContent>
             </Select>
           </div>
+          {isBotC && bloodScripts.length > 0 && (
+            <div>
+              <Label>Script (BotC)</Label>
+              <Select value={selectedScriptId} onValueChange={setSelectedScriptId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecionar Script" />
+                </SelectTrigger>
+                <SelectContent>
+                  {bloodScripts.map(s => (
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div>
             <Label>Título *</Label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Partida de sábado" />
@@ -146,9 +194,9 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
           </div>
           <div>
             <Label>Vagas Máximas</Label>
-            <Input type="number" min="2" max={games.find(g => g.id === gameId)?.max_players || 50} value={maxPlayers} onChange={(e) => setMaxPlayers(e.target.value)} />
-            {games.find(g => g.id === gameId)?.max_players && (
-              <p className="text-xs text-muted-foreground mt-1">Máximo do jogo: {games.find(g => g.id === gameId)?.max_players}</p>
+            <Input type="number" min="2" max={selectedGame?.max_players || 50} value={maxPlayers} onChange={(e) => setMaxPlayers(e.target.value)} />
+            {selectedGame?.max_players && (
+              <p className="text-xs text-muted-foreground mt-1">Máximo do jogo: {selectedGame.max_players}</p>
             )}
           </div>
           <div>

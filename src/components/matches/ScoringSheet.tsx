@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Trophy } from 'lucide-react';
@@ -35,8 +35,13 @@ interface Props {
 
 const ScoringSheet = ({ schema, players, onScoresChange }: Props) => {
   const [playerScores, setPlayerScores] = useState<PlayerScore[]>([]);
+  const prevPlayerIdsRef = useRef<string>('');
 
   useEffect(() => {
+    const currentIds = players.map(p => p.id).sort().join(',');
+    if (currentIds === prevPlayerIdsRef.current) return;
+    prevPlayerIdsRef.current = currentIds;
+
     setPlayerScores(
       players.map(p => ({
         player_id: p.id,
@@ -47,7 +52,6 @@ const ScoringSheet = ({ schema, players, onScoresChange }: Props) => {
     );
   }, [players]);
 
-  // Get all scorable fields (subcategories if they exist, otherwise direct categories)
   const getScorableFields = (): ScoringSubcategory[] => {
     if (!schema) return [];
     const fields: ScoringSubcategory[] = [];
@@ -100,7 +104,6 @@ const ScoringSheet = ({ schema, players, onScoresChange }: Props) => {
   const maxTotal = Math.max(...playerScores.map(p => p.total), 0);
   const hasWinner = maxTotal > 0;
 
-  // Simple scoring (no schema)
   if (!schema || scorableFields.length === 0) {
     return (
       <div className="space-y-3">
@@ -137,10 +140,8 @@ const ScoringSheet = ({ schema, players, onScoresChange }: Props) => {
     );
   }
 
-  // Check if we have categories with subcategories (visual grouping)
   const hasGroupedCategories = schema.categories.some(c => c.subcategories && c.subcategories.length > 0);
 
-  // Dynamic scoring with categories
   return (
     <div className="space-y-3 overflow-x-auto">
       <p className="text-sm text-muted-foreground">Planilha de Pontuação</p>
@@ -161,14 +162,12 @@ const ScoringSheet = ({ schema, players, onScoresChange }: Props) => {
         <TableBody>
           {hasGroupedCategories ? (
             schema.categories.map(cat => (
-              <>
-                {/* Category header row */}
+              <>{/* Category header row */}
                 <TableRow key={`header-${cat.key}`} className="bg-secondary/30">
                   <TableCell colSpan={playerScores.length + 1} className="font-semibold text-gold text-sm sticky left-0 bg-secondary/30 z-10">
                     {cat.label}
                   </TableCell>
                 </TableRow>
-                {/* Subcategory rows */}
                 {(cat.subcategories || []).map(sub => (
                   <TableRow key={sub.key}>
                     <TableCell className="font-medium sticky left-0 bg-card z-10 pl-6">{sub.label}</TableCell>
@@ -203,7 +202,6 @@ const ScoringSheet = ({ schema, players, onScoresChange }: Props) => {
               </TableRow>
             ))
           )}
-          {/* Total row */}
           <TableRow className="font-bold border-t-2 border-gold/30">
             <TableCell className="sticky left-0 bg-card z-10 text-gold">TOTAL</TableCell>
             {playerScores.map(ps => (

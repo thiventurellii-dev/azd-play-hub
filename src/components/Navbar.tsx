@@ -110,11 +110,13 @@ const Navbar = () => {
   const handleAcceptFriend = async (id: string) => {
     await supabase.from("friendships").update({ status: "accepted" as any }).eq("id", id);
     fetchFriendRequests();
+    window.dispatchEvent(new Event('friendship-changed'));
   };
 
   const handleRejectFriend = async (id: string) => {
     await supabase.from("friendships").delete().eq("id", id);
     fetchFriendRequests();
+    window.dispatchEvent(new Event('friendship-changed'));
   };
 
   const handleSignOut = async () => {
@@ -258,11 +260,6 @@ const Navbar = () => {
                   </div>
                 )}
                 {userNickname || user.user_metadata?.name || "Perfil"}
-                {pendingFriends > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-[10px] font-bold text-black">
-                    {pendingFriends}
-                  </span>
-                )}
               </Button>
               <Popover>
                 <PopoverTrigger asChild>
@@ -452,11 +449,6 @@ const Navbar = () => {
                     </div>
                   )}
                   {userNickname || "Meu Perfil"}
-                  {pendingFriends > 0 && (
-                    <span className="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-[10px] font-bold text-black">
-                      {pendingFriends}
-                    </span>
-                  )}
                 </Button>
                 <Button
                   variant="outline"

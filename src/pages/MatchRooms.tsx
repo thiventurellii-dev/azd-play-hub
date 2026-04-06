@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,6 +31,7 @@ const MatchRooms = () => {
   const [deepLinkOpen, setDeepLinkOpen] = useState(false);
   const [deepLinkRoom, setDeepLinkRoom] = useState<MatchRoom | null>(null);
   const [deepLinkLoading, setDeepLinkLoading] = useState(false);
+  const deepLinkFetched = useRef(false);
 
   // Filters
   const [gameFilter, setGameFilter] = useState('all');
@@ -47,36 +48,45 @@ const MatchRooms = () => {
     }
   }, [location.state]);
 
-  // Handle ?room=ID deep link
+  // Handle ?room=ID deep link — runs only once
   useEffect(() => {
+    if (deepLinkFetched.current) return;
     const roomParam = searchParams.get('room');
     if (!roomParam) return;
+    deepLinkFetched.current = true;
 
     setDeepLinkOpen(true);
     setDeepLinkLoading(true);
 
-    supabase.from("match_rooms")
-      .select("id, title, description, scheduled_at, max_players, status, created_by, game:games(id, name, image_url)")
-      .eq("id", roomParam)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (data) {
-          const room = { ...data, game: Array.isArray((data as any).game) ? (data as any).game[0] : (data as any).game } as MatchRoom;
-          setDeepLinkRoom(room);
-        } else {
-          toast.error("Sala não encontrada");
-          setDeepLinkOpen(false);
-          setSearchParams({}, { replace: true });
-        }
-        setDeepLinkLoading(false);
-      });
-  }, [searchParams]);
+    Promise.resolve(
+      supabase.from("match_rooms")
+        .select("id, title, description, scheduled_at, max_players, status, created_by, game:games(id, name, image_url)")
+        .eq("id", roomParam)
+        .maybeSingle()
+    ).then(({ data }) => {
+      if (data) {
+        const room = { ...data, game: Array.isArray((data as any).game) ? (data as any).game[0] : (data as any).game } as MatchRoom;
+        setDeepLinkRoom(room);
+      } else {
+        toast.error("Sala não encontrada");
+        setDeepLinkOpen(false);
+        setSearchParams({}, { replace: true });
+      }
+      setDeepLinkLoading(false);
+    }).catch(() => {
+      toast.error("Erro ao carregar sala");
+      setDeepLinkLoading(false);
+      setDeepLinkOpen(false);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleDeepLinkClose = (open: boolean) => {
     setDeepLinkOpen(open);
     if (!open) {
       setSearchParams({}, { replace: true });
       setDeepLinkRoom(null);
+      deepLinkFetched.current = false;
     }
   };
 
@@ -246,15 +256,16 @@ const MatchRooms = () => {
               fetchRooms();
               const roomId = deepLinkRoom?.id;
               if (!roomId) return;
-              supabase.from("match_rooms")
-                .select("id, title, description, scheduled_at, max_players, status, created_by, game:games(id, name, image_url)")
-                .eq("id", roomId)
-                .maybeSingle()
-                .then(({ data }) => {
-                  if (data) {
-                    setDeepLinkRoom({ ...data, game: Array.isArray((data as any).game) ? (data as any).game[0] : (data as any).game } as MatchRoom);
-                  }
-                });
+              Promise.resolve(
+                supabase.from("match_rooms")
+                  .select("id, title, description, scheduled_at, max_players, status, created_by, game:games(id, name, image_url)")
+                  .eq("id", roomId)
+                  .maybeSingle()
+              ).then(({ data }) => {
+                if (data) {
+                  setDeepLinkRoom({ ...data, game: Array.isArray((data as any).game) ? (data as any).game[0] : (data as any).game } as MatchRoom);
+                }
+              }).catch(() => {});
             }} />
           ) : null}
         </DialogContent>

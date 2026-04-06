@@ -7,8 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { useNotification } from '@/components/NotificationDialog';
-import { Upload, UserPlus, Trash2, Trophy, ChevronLeft, ChevronRight, Check, Search } from 'lucide-react';
+import { Upload, UserPlus, Trash2, ChevronLeft, ChevronRight, Check, ChevronsUpDown } from 'lucide-react';
 import ScoringSheet from './ScoringSheet';
 
 interface Season { id: string; name: string; }
@@ -20,6 +22,8 @@ interface PlayerEntry {
   faction: string;
   is_new_player: boolean;
 }
+
+interface BloodScript { id: string; name: string; }
 
 interface Props {
   prefilledGameId?: string;
@@ -42,6 +46,10 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
   const [duration, setDuration] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
 
+  // BotC script
+  const [bloodScripts, setBloodScripts] = useState<BloodScript[]>([]);
+  const [selectedScriptId, setSelectedScriptId] = useState('');
+
   // Step 2
   const [allPlayers, setAllPlayers] = useState<Player[]>([]);
   const [entries, setEntries] = useState<PlayerEntry[]>(
@@ -49,7 +57,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
       player_id: pid, seat_position: i + 1, faction: '', is_new_player: false,
     })) || [{ player_id: '', seat_position: 1, faction: '', is_new_player: false }]
   );
-  const [playerSearch, setPlayerSearch] = useState('');
+  const [openPopovers, setOpenPopovers] = useState<Record<number, boolean>>({});
 
   // Step 3
   const [scoringSchema, setScoringSchema] = useState<any>(null);
@@ -61,6 +69,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
   const [saving, setSaving] = useState(false);
 
   const selectedGame = games.find(g => g.id === gameId);
+  const isBotC = selectedGame && (selectedGame.name.toLowerCase().includes('blood') || selectedGame.slug === 'blood-on-the-clocktower');
 
   useEffect(() => {
     const fetchBase = async () => {
@@ -76,16 +85,15 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
     fetchBase();
   }, []);
 
-  // Fetch scoring schema + factions when game changes
+  // Fetch scoring schema + factions + BotC scripts when game changes
   useEffect(() => {
-    if (!gameId) { setScoringSchema(null); setGameFactions([]); return; }
+    if (!gameId) { setScoringSchema(null); setGameFactions([]); setBloodScripts([]); setSelectedScriptId(''); return; }
     const fetchSchema = async () => {
       const [schemaRes, gameRes] = await Promise.all([
         supabase.from('game_scoring_schemas').select('schema').eq('game_id', gameId).maybeSingle(),
-        supabase.from('games').select('factions').eq('id', gameId).maybeSingle(),
+        supabase.from('games').select('factions, name, slug').eq('id', gameId).maybeSingle(),
       ]);
       setScoringSchema(schemaRes.data?.schema || null);
-      // Parse factions from game data — handle malformed JSON gracefully
       try {
         const fData = (gameRes.data as any)?.factions;
         if (Array.isArray(fData)) {
@@ -97,8 +105,18 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
           setGameFactions([]);
         }
       } catch {
-        console.warn('Facções com formato inválido, ignorando');
         setGameFactions([]);
+      }
+
+      // Check BotC
+      const gName = (gameRes.data as any)?.name?.toLowerCase() || '';
+      const gSlug = (gameRes.data as any)?.slug || '';
+      if (gName.includes('blood') || gSlug === 'blood-on-the-clocktower') {
+        const { data: scripts } = await supabase.from('blood_scripts').select('id, name').order('name');
+        setBloodScripts(scripts || []);
+      } else {
+        setBloodScripts([]);
+        setSelectedScriptId('');
       }
     };
     fetchSchema();
@@ -116,20 +134,14 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
 
   const removeEntry = (i: number) => setEntries(entries.filter((_, idx) => idx !== i));
 
-  const filteredPlayers = useMemo(() => {
-    if (!playerSearch) return allPlayers;
-    const q = playerSearch.toLowerCase();
-    return allPlayers.filter(p =>
-      (p.nickname || '').toLowerCase().includes(q) || p.name.toLowerCase().includes(q)
-    );
-  }, [allPlayers, playerSearch]);
+  // Memoize scoringPlayers so ScoringSheet doesn't reset
+  const scoringPlayers = useMemo(() => {
+    return entries.filter(e => e.player_id).map(e => {
+      const p = allPlayers.find(p => p.id === e.player_id);
+      return { id: e.player_id, name: p?.nickname || p?.name || '?' };
+    });
+  }, [entries.map(e => e.player_id).join(','), allPlayers]);
 
-  const scoringPlayers = entries.filter(e => e.player_id).map(e => {
-    const p = allPlayers.find(p => p.id === e.player_id);
-    return { id: e.player_id, name: p?.nickname || p?.name || '?' };
-  });
-
-  // Validate player count
   const playerCountValid = () => {
     const count = entries.filter(e => e.player_id).length;
     if (!selectedGame) return count >= 1;
@@ -179,19 +191,16 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
     }
     setSaving(true);
     try {
-      // Build results with positions based on scores
       const sorted = [...playerScores].sort((a, b) => b.total - a.total);
       const positionMap: Record<string, number> = {};
       sorted.forEach((ps, i) => { positionMap[ps.player_id] = i + 1; });
 
-      // If no scores, use seat order
       if (playerScores.length === 0) {
         entries.forEach((e, i) => { positionMap[e.player_id] = i + 1; });
       }
 
       const playerIds = entries.filter(e => e.player_id).map(e => e.player_id);
 
-      // Only do MMR if season is selected
       let mmrMap: Record<string, number> = {};
       let gpMap: Record<string, number> = {};
       let winsMap: Record<string, number> = {};
@@ -223,16 +232,10 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
       }
 
       let imageUrl: string | null = null;
-      if (imageFile && seasonId) {
+      if (imageFile) {
         const ext = imageFile.name.split('.').pop();
-        const path = `${seasonId}/${Date.now()}.${ext}`;
-        const { error: uploadErr } = await supabase.storage.from('match-images').upload(path, imageFile);
-        if (uploadErr) throw uploadErr;
-        const { data: urlData } = supabase.storage.from('match-images').getPublicUrl(path);
-        imageUrl = urlData.publicUrl;
-      } else if (imageFile) {
-        const ext = imageFile.name.split('.').pop();
-        const path = `general/${Date.now()}.${ext}`;
+        const folder = seasonId || 'general';
+        const path = `${folder}/${Date.now()}.${ext}`;
         const { error: uploadErr } = await supabase.storage.from('match-images').upload(path, imageFile);
         if (uploadErr) throw uploadErr;
         const { data: urlData } = supabase.storage.from('match-images').getPublicUrl(path);
@@ -243,7 +246,6 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
         ? new Date(`${playedDate}T${playedTime}`).toISOString()
         : new Date(`${playedDate}T00:00:00`).toISOString();
 
-      // Use a default season if not selected — find any active one or first one
       const effectiveSeasonId = seasonId || seasons[0]?.id;
       if (!effectiveSeasonId) {
         return notify('error', 'Nenhuma season disponível. Peça ao admin para criar uma.');
@@ -278,7 +280,6 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
       const { data: insertedResults, error: resErr } = await supabase.from('match_results').insert(matchResults).select();
       if (resErr) throw resErr;
 
-      // Insert detailed scores if schema exists
       if (scoringSchema && playerScores.length > 0 && insertedResults) {
         const detailedScores: any[] = [];
         for (const ir of insertedResults) {
@@ -286,11 +287,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
           if (ps?.scores) {
             for (const [key, value] of Object.entries(ps.scores)) {
               if (typeof value === 'number' && value !== 0) {
-                detailedScores.push({
-                  match_result_id: ir.id,
-                  category_key: key,
-                  value,
-                });
+                detailedScores.push({ match_result_id: ir.id, category_key: key, value });
               }
             }
           }
@@ -300,7 +297,6 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
         }
       }
 
-      // Update MMR only if season was selected
       if (seasonId) {
         for (const e of entries) {
           const pos = positionMap[e.player_id] || 1;
@@ -318,12 +314,11 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
 
       notify('success', 'Partida registrada com sucesso!');
       onComplete?.();
-      // Reset
       setStep(1);
       setEntries([{ player_id: '', seat_position: 1, faction: '', is_new_player: false }]);
       setPlayerScores([]);
       setDuration(''); setPlayedDate(''); setPlayedTime(''); setImageFile(null);
-      setSeasonId('');
+      setSeasonId(''); setSelectedScriptId('');
     } catch (err: any) {
       notify('error', err.message || 'Erro ao registrar partida');
     } finally {
@@ -370,6 +365,17 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
                   </SelectContent>
                 </Select>
               </div>
+              {isBotC && bloodScripts.length > 0 && (
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Script (BotC) *</Label>
+                  <Select value={selectedScriptId} onValueChange={setSelectedScriptId}>
+                    <SelectTrigger><SelectValue placeholder="Selecionar Script" /></SelectTrigger>
+                    <SelectContent>
+                      {bloodScripts.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>Data *</Label>
                 <Input type="date" value={playedDate} onChange={e => setPlayedDate(e.target.value)} />
@@ -394,7 +400,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
               </div>
             </div>
             <div className="flex justify-end">
-              <Button variant="gold" onClick={() => setStep(2)} disabled={!gameId || !playedDate}>
+              <Button variant="gold" onClick={() => setStep(2)} disabled={!gameId || !playedDate || (isBotC && bloodScripts.length > 0 && !selectedScriptId)}>
                 Próximo <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
@@ -410,65 +416,79 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
                 {selectedGame.name}: {selectedGame.min_players || '?'}–{selectedGame.max_players || '?'} jogadores
               </p>
             )}
-            <div className="space-y-1 mb-2">
-              <Label className="text-xs">Filtrar jogadores</Label>
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por nome..."
-                  value={playerSearch}
-                  onChange={ev => setPlayerSearch(ev.target.value)}
-                  className="h-9 pl-8"
-                />
-              </div>
-            </div>
-            {entries.map((e, i) => (
-              <div key={e.player_id || `entry-${i}`} className="flex items-center gap-2 flex-wrap border border-border rounded-lg p-3">
-                <div className="flex-1 min-w-[180px] space-y-1">
-                  <Label className="text-xs">Jogador *</Label>
-                  <Select value={e.player_id} onValueChange={v => updateEntry(i, 'player_id', v)}>
-                    <SelectTrigger><SelectValue placeholder="Selecionar jogador..." /></SelectTrigger>
-                    <SelectContent>
-                      {filteredPlayers.map(p => (
-                        <SelectItem key={p.id} value={p.id} disabled={entries.some((ee, ii) => ii !== i && ee.player_id === p.id)}>
-                          {p.nickname || p.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="w-[80px] space-y-1">
-                  <Label className="text-xs">Posição</Label>
-                  <Input type="number" min={1} value={e.seat_position} onChange={ev => updateEntry(i, 'seat_position', parseInt(ev.target.value) || 1)} />
-                </div>
-                {gameFactions.length > 0 ? (
-                  <div className="w-[120px] space-y-1">
-                    <Label className="text-xs">Facção</Label>
-                    <Select value={e.faction || "none"} onValueChange={v => updateEntry(i, 'faction', v === "none" ? "" : v)}>
-                      <SelectTrigger className="h-10"><SelectValue placeholder="Opcional" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Nenhuma</SelectItem>
-                        {gameFactions.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+            {entries.map((e, i) => {
+              const selectedPlayer = allPlayers.find(p => p.id === e.player_id);
+              const usedIds = entries.filter((_, ii) => ii !== i).map(ee => ee.player_id).filter(Boolean);
+              return (
+                <div key={e.player_id || `entry-${i}`} className="flex items-center gap-2 flex-wrap border border-border rounded-lg p-3">
+                  <div className="flex-1 min-w-[180px] space-y-1">
+                    <Label className="text-xs">Jogador *</Label>
+                    <Popover open={openPopovers[i] || false} onOpenChange={(open) => setOpenPopovers(prev => ({ ...prev, [i]: open }))}>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
+                          {selectedPlayer ? (selectedPlayer.nickname || selectedPlayer.name) : "Selecionar jogador..."}
+                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[250px] p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Buscar jogador..." />
+                          <CommandList>
+                            <CommandEmpty>Nenhum jogador encontrado.</CommandEmpty>
+                            <CommandGroup>
+                              {allPlayers.filter(p => !usedIds.includes(p.id)).map(p => (
+                                <CommandItem
+                                  key={p.id}
+                                  value={`${p.nickname || ''} ${p.name}`}
+                                  onSelect={() => {
+                                    updateEntry(i, 'player_id', p.id);
+                                    setOpenPopovers(prev => ({ ...prev, [i]: false }));
+                                  }}
+                                >
+                                  <Check className={`mr-2 h-4 w-4 ${e.player_id === p.id ? 'opacity-100' : 'opacity-0'}`} />
+                                  {p.nickname || p.name}
+                                  {p.nickname && <span className="ml-1 text-xs text-muted-foreground">({p.name})</span>}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                   </div>
-                ) : (
-                  <div className="w-[120px] space-y-1">
-                    <Label className="text-xs">Facção</Label>
-                    <Input value={e.faction} onChange={ev => updateEntry(i, 'faction', ev.target.value)} placeholder="Opcional" />
+                  <div className="w-[80px] space-y-1">
+                    <Label className="text-xs">Posição</Label>
+                    <Input type="number" min={1} value={e.seat_position} onChange={ev => updateEntry(i, 'seat_position', parseInt(ev.target.value) || 1)} />
                   </div>
-                )}
-                <div className="flex items-center gap-2 pt-5">
-                  <Checkbox checked={e.is_new_player} onCheckedChange={c => updateEntry(i, 'is_new_player', !!c)} />
-                  <span className="text-xs">Novo</span>
+                  {gameFactions.length > 0 ? (
+                    <div className="w-[120px] space-y-1">
+                      <Label className="text-xs">Facção</Label>
+                      <Select value={e.faction || "none"} onValueChange={v => updateEntry(i, 'faction', v === "none" ? "" : v)}>
+                        <SelectTrigger className="h-10"><SelectValue placeholder="Opcional" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">Nenhuma</SelectItem>
+                          {gameFactions.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : (
+                    <div className="w-[120px] space-y-1">
+                      <Label className="text-xs">Facção</Label>
+                      <Input value={e.faction} onChange={ev => updateEntry(i, 'faction', ev.target.value)} placeholder="Opcional" />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 pt-5">
+                    <Checkbox checked={e.is_new_player} onCheckedChange={c => updateEntry(i, 'is_new_player', !!c)} />
+                    <span className="text-xs">Novo</span>
+                  </div>
+                  {entries.length > 1 && (
+                    <Button variant="ghost" size="icon" className="mt-5" onClick={() => removeEntry(i)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  )}
                 </div>
-                {entries.length > 1 && (
-                  <Button variant="ghost" size="icon" className="mt-5" onClick={() => removeEntry(i)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                )}
-              </div>
-            ))}
+              );
+            })}
             <Button variant="outline" size="sm" onClick={addEntry}>
               <UserPlus className="h-4 w-4 mr-1" /> Adicionar Jogador
             </Button>
@@ -509,6 +529,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
             <div className="grid gap-2 text-sm">
               {seasonId && seasonId !== 'none' && <p><span className="text-muted-foreground">Competitivo:</span> {seasons.find(s => s.id === seasonId)?.name}</p>}
               <p><span className="text-muted-foreground">Jogo:</span> {gameName}</p>
+              {isBotC && selectedScriptId && <p><span className="text-muted-foreground">Script:</span> {bloodScripts.find(s => s.id === selectedScriptId)?.name}</p>}
               <p><span className="text-muted-foreground">Data:</span> {playedDate} {playedTime || ''}</p>
               {duration && <p><span className="text-muted-foreground">Duração:</span> {duration} min</p>}
             </div>

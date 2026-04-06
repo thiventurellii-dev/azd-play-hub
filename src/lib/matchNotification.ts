@@ -36,10 +36,10 @@ export function generateWhatsAppInvite(
     minute: "2-digit",
   });
 
-  let message = *${title}*\n\n\u{1F3AE} Jogo: ${gameName}\n\u{1F4C5} Data: ${formatted}`;
+  let message = `*${title}*\n\n\u{1F3AE} Jogo: ${gameName}\n\u{1F4C5} Data: ${formatted}`;
   if (confirmedPlayers && confirmedPlayers.length > 0) {
-    message += `\n\n\u2705 Confirmados: ${confirmedPlayers.join(", ")}`;
+    message += `\n\n\u2705 Confirmados: ${confirmedPlayers.join(", ")}`;
   }
-  message += `\n\n\u{1F449} Entre na sala: ${roomUrl}`;
+  message += `\n\n\u{1F449} Entre na sala: ${roomUrl}`;
   return `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
 }

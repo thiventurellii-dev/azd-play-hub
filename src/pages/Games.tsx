@@ -510,7 +510,11 @@ const Games = () => {
                 </CardContent>
                 {isAdmin && (
                   <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); /* TODO: edit script dialog */ toast.info("Edição de scripts em breve"); }}>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => {
+                      e.stopPropagation();
+                      const scriptSlug = (s as any).slug || s.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+                      navigate(`/scripts/${scriptSlug}`);
+                    }}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
                   </div>

@@ -23,6 +23,7 @@ import Rankings from "./pages/Rankings.tsx";
 import MatchRooms from "./pages/MatchRooms.tsx";
 import GameDetail from "./pages/GameDetail.tsx";
 import PlayerProfile from "./pages/PlayerProfile.tsx";
+import SteamCallback from "./pages/SteamCallback.tsx";
 
 const queryClient = new QueryClient();
 

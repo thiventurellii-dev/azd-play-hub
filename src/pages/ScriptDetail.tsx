@@ -680,6 +680,28 @@ const ScriptDetail = () => {
               </Button>
             </div>
 
+            {/* Victory Conditions */}
+            {script.victory_conditions.length > 0 && (
+              <div className="space-y-2 p-3 rounded-lg border border-gold/20 bg-gold/5">
+                <Label className="text-gold">Condições de Vitória Especiais</Label>
+                <div className="space-y-2">
+                  {script.victory_conditions.map((vc: string, i: number) => (
+                    <label key={i} className="flex items-center gap-2 cursor-pointer">
+                      <Checkbox
+                        checked={emVictoryConditions.includes(vc)}
+                        onCheckedChange={(checked) => {
+                          setEmVictoryConditions(prev =>
+                            checked ? [...prev, vc] : prev.filter(v => v !== vc)
+                          );
+                        }}
+                      />
+                      <span className="text-sm">{vc}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <Button variant="gold" onClick={handleMatchSave} disabled={emSaving} className="w-full">
               {emSaving ? 'Salvando...' : 'Salvar Partida'}
             </Button>

@@ -225,6 +225,21 @@ const PlayerProfile = () => {
         setAchievements((achDefs || []) as any[]);
       }
 
+      // BotC stats
+      const { data: botcRatings } = await supabase
+        .from('blood_mmr_ratings')
+        .select('games_played, wins_good, wins_evil, games_as_storyteller')
+        .eq('player_id', prof.id);
+      if (botcRatings && botcRatings.length > 0) {
+        const totals = botcRatings.reduce((acc, r) => ({
+          gamesPlayed: acc.gamesPlayed + r.games_played,
+          winsGood: acc.winsGood + r.wins_good,
+          winsEvil: acc.winsEvil + r.wins_evil,
+          storytellerGames: acc.storytellerGames + r.games_as_storyteller,
+        }), { gamesPlayed: 0, winsGood: 0, winsEvil: 0, storytellerGames: 0 });
+        setBotcStats(totals);
+      }
+
       setLoading(false);
     };
     fetchProfile();

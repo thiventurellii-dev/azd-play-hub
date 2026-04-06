@@ -28,7 +28,7 @@ interface Game {
 }
 
 interface SeasonLink { season_id: string; season_name: string; status: string; }
-interface BloodScript { id: string; name: string; description: string | null; slug: string | null; victory_conditions: any; }
+interface BloodScript { id: string; name: string; description: string | null; slug: string | null; victory_conditions: any; image_url: string | null; }
 interface BloodCharacter { id: string; script_id: string; name: string; name_en: string; team: "good" | "evil"; role_type: string; }
 interface GameTag { id: string; name: string; }
 

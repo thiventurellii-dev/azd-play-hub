@@ -93,6 +93,15 @@ const Games = () => {
   const [editAdvImageUrl, setEditAdvImageUrl] = useState('');
   const [editAdvSystemId, setEditAdvSystemId] = useState('');
 
+  // Edit blood script dialog
+  const [editScriptOpen, setEditScriptOpen] = useState(false);
+  const [editScript, setEditScript] = useState<BloodScript | null>(null);
+  const [editScriptName, setEditScriptName] = useState('');
+  const [editScriptDesc, setEditScriptDesc] = useState('');
+  const [editScriptImageUrl, setEditScriptImageUrl] = useState('');
+  const [editScriptVictoryConditions, setEditScriptVictoryConditions] = useState<string[]>([]);
+  const [newScriptCondition, setNewScriptCondition] = useState('');
+
   // Tags
   const [allTags, setAllTags] = useState<GameTag[]>([]);
   const [gameTagMap, setGameTagMap] = useState<Record<string, string[]>>({});

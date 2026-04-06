@@ -111,7 +111,7 @@ const RoomComments = ({ roomId }: Props) => {
             ))}
             <div ref={scrollRef} />
           </div>
-        </ScrollArea>
+        </div>
       )}
 
       {user && (

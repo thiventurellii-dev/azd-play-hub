@@ -94,12 +94,8 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
     return true;
   });
 
-  // Filter seasons by category type
-  const filteredSeasons = seasons.filter(s => {
-    if (category === 'botc') return s.type === 'blood';
-    if (category === 'boardgame') return s.type === 'boardgame';
-    return true;
-  });
+  // Season only for boardgame
+  const filteredSeasons = category === 'boardgame' ? seasons.filter(s => s.type === 'boardgame') : [];
 
   useEffect(() => {
     const game = games.find(g => g.id === gameId);

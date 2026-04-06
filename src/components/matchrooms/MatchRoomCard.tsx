@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Calendar, Users, LogIn, Clock, Share2, ClipboardList, MessageCircle, ChevronDown, ChevronUp, XCircle, Pencil, Trash2, Trophy, TrendingUp } from "lucide-react";
+import { Calendar, Users, LogIn, Clock, Share2, ClipboardList, MessageCircle, ChevronDown, ChevronUp, XCircle, Pencil, Trash2, TrendingUp } from "lucide-react";
 import { generateWhatsAppInvite } from "@/lib/matchNotification";
 import { sendRoomNotifications } from "@/lib/roomNotifications";
 import { toast } from "sonner";
@@ -83,18 +83,28 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
     }));
     setPlayers(mappedPlayers);
 
-    // Calculate avg MMR for competitive rooms
+    // Calculate avg MMR for competitive boardgame rooms with a season
     if (room.season_id) {
       const confirmedIds = data.filter(p => p.type === 'confirmed').map(p => p.player_id);
       if (confirmedIds.length > 0) {
-        const { data: mmrData } = await supabase
-          .from("mmr_ratings")
-          .select("current_mmr")
-          .eq("season_id", room.season_id)
-          .in("player_id", confirmedIds);
-        if (mmrData && mmrData.length > 0) {
-          const avg = mmrData.reduce((sum, r) => sum + Number(r.current_mmr), 0) / mmrData.length;
-          setAvgMmr(Math.round(avg));
+        // Check if the season is boardgame type
+        const { data: seasonData } = await supabase
+          .from("seasons")
+          .select("type")
+          .eq("id", room.season_id)
+          .maybeSingle();
+        if (seasonData?.type === 'boardgame') {
+          const { data: mmrData } = await supabase
+            .from("mmr_ratings")
+            .select("current_mmr")
+            .eq("season_id", room.season_id)
+            .in("player_id", confirmedIds);
+          if (mmrData && mmrData.length > 0) {
+            const avg = mmrData.reduce((sum, r) => sum + Number(r.current_mmr), 0) / mmrData.length;
+            setAvgMmr(Math.round(avg));
+          } else {
+            setAvgMmr(null);
+          }
         } else {
           setAvgMmr(null);
         }
@@ -256,7 +266,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const handleShare = () => {
     const roomUrl = `${window.location.origin}/partidas?room=${room.id}`;
     const playerNames = confirmed.map(p => displayName(p));
-    const link = generateWhatsAppInvite(room?.title || '', room?.game?.name || '', room?.scheduled_at || '', roomUrl, playerNames);
+    const link = generateWhatsAppInvite(room?.title || '', room?.game?.name || '', room?.scheduled_at || '', roomUrl, playerNames, room?.description);
     window.open(link, "_blank");
   };
 
@@ -300,19 +310,14 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
             </div>
           </div>
 
-          {/* Tags + Competitive MMR */}
-          {(tags.length > 0 || room.season_id) && (
+          {/* Tags + MMR */}
+          {(tags.length > 0 || avgMmr !== null) && (
             <div className="flex flex-wrap items-center gap-1.5 mt-2">
               {tags.map(tag => (
                 <Badge key={tag} variant="outline" className="text-[10px] px-2 py-0 border-gold/30 text-gold/80">
                   {tag}
                 </Badge>
               ))}
-              {room.season_id && (
-                <Badge variant="outline" className="text-[10px] px-2 py-0 border-amber-500/40 text-amber-400 gap-1">
-                  <Trophy className="h-2.5 w-2.5" /> Competitivo
-                </Badge>
-              )}
               {avgMmr !== null && (
                 <Badge variant="outline" className="text-[10px] px-2 py-0 border-blue-500/40 text-blue-400 gap-1">
                   <TrendingUp className="h-2.5 w-2.5" /> MMR médio: {avgMmr}

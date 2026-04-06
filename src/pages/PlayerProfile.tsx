@@ -336,7 +336,7 @@ const PlayerProfile = () => {
       acc[opp.name] = { label: opp.name, color: CHART_COLORS[i % CHART_COLORS.length] };
       return acc;
     },
-    { games: { label: "Partidas Juntos -", color: CHART_COLORS[0] } } as Record<string, any>,
+    { games: { label: "Partidas Juntos - ", color: CHART_COLORS[0] } } as Record<string, any>,
   );
 
   return (

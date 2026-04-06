@@ -237,7 +237,7 @@ const Games = () => {
     if (!editGame) return;
     let factions = null;
     if (editFactions.trim()) {
-      try { factions = JSON.parse(editFactions); } catch { return notify('error', 'JSON de facções inválido'); }
+      factions = editFactions.split(',').map(f => f.trim()).filter(Boolean);
     }
     const { error } = await supabase.from('games').update({
       name: editName, image_url: editImageUrl || null, rules_url: editRulesUrl || null,

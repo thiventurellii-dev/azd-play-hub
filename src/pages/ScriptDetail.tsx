@@ -99,6 +99,7 @@ const ScriptDetail = () => {
   const [emDuration, setEmDuration] = useState('');
   const [emStoryteller, setEmStoryteller] = useState('');
   const [emPlayers, setEmPlayers] = useState<{ player_id: string; character_id: string; team: 'good' | 'evil' }[]>([]);
+  const [emVictoryConditions, setEmVictoryConditions] = useState<string[]>([]);
   const [emSaving, setEmSaving] = useState(false);
   const [allPlayers, setAllPlayers] = useState<{ id: string; name: string; nickname?: string }[]>([]);
 

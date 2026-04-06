@@ -38,7 +38,15 @@ const MatchRooms = () => {
       setMatchFlowOpen(true);
       window.history.replaceState({}, document.title);
     }
-  }, [location.state]);
+    const roomParam = searchParams.get('room');
+    if (roomParam) {
+      setHighlightRoomId(roomParam);
+      setTimeout(() => {
+        const el = document.getElementById(`room-${roomParam}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 500);
+    }
+  }, [location.state, searchParams]);
 
   const fetchRooms = async () => {
     const now = new Date().toISOString();

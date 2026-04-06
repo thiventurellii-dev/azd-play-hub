@@ -194,6 +194,17 @@ const ScriptDetail = () => {
     return Object.entries(playerCounts).sort(([, a], [, b]) => b - a).slice(0, 5).map(([id, count]) => ({ id, name: profiles[id] || "?", count }));
   }, [characters, matchPlayers, profiles]);
 
+  const victoryConditionCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const m of matches) {
+      const vcs = Array.isArray(m.victory_conditions) ? m.victory_conditions : [];
+      for (const vc of vcs) {
+        counts[vc] = (counts[vc] || 0) + 1;
+      }
+    }
+    return counts;
+  }, [matches]);
+
   // Edit script handlers
   const openEdit = () => {
     if (!script) return;

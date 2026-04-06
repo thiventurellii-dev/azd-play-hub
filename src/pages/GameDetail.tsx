@@ -931,28 +931,51 @@ const GameDetail = () => {
 
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Jogo</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Nome</Label>
-              <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Nome</Label>
+                <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Slug (URL)</Label>
+                <Input value={editSlug} onChange={(e) => setEditSlug(e.target.value)} placeholder="brass-birmingham" />
+              </div>
+              <div className="space-y-2">
+                <Label>URL da Imagem</Label>
+                <Input value={editImageUrl} onChange={(e) => setEditImageUrl(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>URL das Regras</Label>
+                <Input value={editRulesUrl} onChange={(e) => setEditRulesUrl(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>URL do Vídeo</Label>
+                <Input value={editVideoUrl} onChange={(e) => setEditVideoUrl(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Mín. Jogadores</Label>
+                <Input type="number" min={1} value={editMinPlayers} onChange={(e) => setEditMinPlayers(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Máx. Jogadores</Label>
+                <Input type="number" min={1} value={editMaxPlayers} onChange={(e) => setEditMaxPlayers(e.target.value)} />
+              </div>
             </div>
             <div className="space-y-2">
-              <Label>URL da Imagem</Label>
-              <Input value={editImageUrl} onChange={(e) => setEditImageUrl(e.target.value)} />
+              <Label>Facções/Personagens (JSON, opcional)</Label>
+              <textarea
+                value={editFactions}
+                onChange={(e) => setEditFactions(e.target.value)}
+                placeholder='["Facção A", "Facção B"] ou [{"name":"...", "color":"..."}]'
+                className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-xs font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
             </div>
-            <div className="space-y-2">
-              <Label>URL das Regras</Label>
-              <Input value={editRulesUrl} onChange={(e) => setEditRulesUrl(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>URL do Vídeo</Label>
-              <Input value={editVideoUrl} onChange={(e) => setEditVideoUrl(e.target.value)} />
-            </div>
-            <Button variant="gold" onClick={handleEditSave}>
+            <Button variant="gold" onClick={handleEditSave} className="w-full">
               Salvar
             </Button>
           </div>

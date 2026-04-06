@@ -558,7 +558,7 @@ const Games = () => {
       {rpgSystems.length === 0 ? (
         <Card className="bg-card border-border">
           <CardContent className="py-12 text-center text-muted-foreground">
-            <Wand2 className="h-12 w-12 mx-auto mb-4 text-purple-400 opacity-50" />
+            <Sword className="h-12 w-12 mx-auto mb-4 text-purple-400 opacity-50" />
             <p>Nenhum sistema de RPG cadastrado.</p>
           </CardContent>
         </Card>

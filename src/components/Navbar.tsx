@@ -10,10 +10,7 @@ import {
   X,
   FileText,
   User,
-  Lock,
-  Pencil,
   Info,
-  
   Lightbulb,
   AtSign,
   Trophy,
@@ -25,7 +22,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import logo from "@/assets/azd-logo.png";
@@ -66,7 +62,6 @@ const Navbar = () => {
       });
   }, []);
 
-  // Fetch pending friend requests count and user nickname
   useEffect(() => {
     if (!user) return;
     supabase
@@ -97,7 +92,10 @@ const Navbar = () => {
 
   const closeMobile = () => setMobileOpen(false);
 
-  const profileLink = userNickname ? `/perfil/${userNickname}` : "/profile";
+  const getInitials = () => {
+    const name = userNickname || user?.user_metadata?.name || "?";
+    return name.charAt(0).toUpperCase();
+  };
 
   return (
     <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
@@ -117,7 +115,6 @@ const Navbar = () => {
             </Button>
           </Link>
 
-          {/* Competitivo dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="gap-1 text-muted-foreground hover:text-foreground">
@@ -147,7 +144,6 @@ const Navbar = () => {
             </Button>
           </Link>
 
-          {/* Acervo dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="gap-1 text-muted-foreground hover:text-foreground">
@@ -170,7 +166,6 @@ const Navbar = () => {
             </Button>
           </Link>
 
-          {/* Nossas Redes */}
           {(contactLinks.discord || contactLinks.whatsapp || contactLinks.whatsapp_botc) && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -213,46 +208,40 @@ const Navbar = () => {
           )}
         </div>
 
-        {/* Desktop auth */}
+        {/* Desktop auth — no dropdown, direct click to profile + logout button */}
         <div className="hidden md:flex items-center gap-2">
           {user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="gap-2 relative">
-                  {userAvatar ? (
-                    <img src={userAvatar} alt="" className="h-6 w-6 rounded-full object-cover" />
-                  ) : (
-                    <User className="h-4 w-4" />
-                  )}
-                  {user.user_metadata?.name || "Perfil"}
-                  {pendingFriends > 0 && (
-                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-[10px] font-bold text-black">
-                      {pendingFriends}
-                    </span>
-                  )}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => navigate(profileLink)}>
-                  <User className="h-4 w-4 mr-2" /> Meu Perfil
-                  {pendingFriends > 0 && (
-                    <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-gold text-[10px] font-bold text-black">
-                      {pendingFriends}
-                    </span>
-                  )}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/profile")}>
-                  <Pencil className="h-4 w-4 mr-2" /> Editar Perfil
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/profile?tab=password")}>
-                  <Lock className="h-4 w-4 mr-2" /> Alterar Senha
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut}>
-                  <LogOut className="h-4 w-4 mr-2" /> Sair
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="gap-2 relative"
+                onClick={() => navigate("/profile")}
+              >
+                {userAvatar ? (
+                  <img src={userAvatar} alt="" className="h-6 w-6 rounded-full object-cover" />
+                ) : (
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary text-gold font-bold text-xs">
+                    {getInitials()}
+                  </div>
+                )}
+                {userNickname || user.user_metadata?.name || "Perfil"}
+                {pendingFriends > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-[10px] font-bold text-black">
+                    {pendingFriends}
+                  </span>
+                )}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-11 w-11 text-muted-foreground hover:text-foreground"
+                onClick={handleSignOut}
+                title="Sair"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
           ) : (
             <>
               <Link to="/login">
@@ -284,7 +273,6 @@ const Navbar = () => {
             </Button>
           </Link>
 
-          {/* Competitivo accordion */}
           <details className="group">
             <summary className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground">
               <Trophy className="h-4 w-4" /> Competitivo
@@ -314,7 +302,6 @@ const Navbar = () => {
             </Button>
           </Link>
 
-          {/* Acervo accordion */}
           <details className="group">
             <summary className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground">
               <LayoutGrid className="h-4 w-4" /> Acervo
@@ -340,7 +327,6 @@ const Navbar = () => {
             </Button>
           </Link>
 
-          {/* Nossas Redes accordion */}
           {(contactLinks.discord || contactLinks.whatsapp || contactLinks.whatsapp_botc) && (
             <details className="group">
               <summary className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground">
@@ -383,26 +369,36 @@ const Navbar = () => {
 
           <div className="pt-2 border-t border-border space-y-2">
             {user ? (
-              <>
-                <Link to={profileLink} onClick={closeMobile}>
-                  <Button variant="ghost" className="w-full justify-start gap-2 relative">
-                    <User className="h-4 w-4" /> Meu Perfil
-                    {pendingFriends > 0 && (
-                      <span className="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-[10px] font-bold text-black">
-                        {pendingFriends}
-                      </span>
-                    )}
-                  </Button>
-                </Link>
-                <Link to="/profile" onClick={closeMobile}>
-                  <Button variant="ghost" className="w-full justify-start gap-2">
-                    <Pencil className="h-4 w-4" /> Editar Perfil
-                  </Button>
-                </Link>
-                <Button variant="outline" className="w-full" onClick={handleSignOut}>
-                  Sair
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  className="flex-1 justify-start gap-2 relative"
+                  onClick={() => { closeMobile(); navigate("/profile"); }}
+                >
+                  {userAvatar ? (
+                    <img src={userAvatar} alt="" className="h-6 w-6 rounded-full object-cover" />
+                  ) : (
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary text-gold font-bold text-xs">
+                      {getInitials()}
+                    </div>
+                  )}
+                  {userNickname || "Meu Perfil"}
+                  {pendingFriends > 0 && (
+                    <span className="ml-2 flex h-5 w-5 items-center justify-center rounded-full bg-gold text-[10px] font-bold text-black">
+                      {pendingFriends}
+                    </span>
+                  )}
                 </Button>
-              </>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-11 w-11 flex-shrink-0"
+                  onClick={() => { closeMobile(); handleSignOut(); }}
+                  title="Sair"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
             ) : (
               <>
                 <Link to="/login" onClick={closeMobile}>

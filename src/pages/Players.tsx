@@ -12,6 +12,7 @@ interface Player {
   city: string;
   state: string;
   created_at: string;
+  avatar_url: string | null;
 }
 
 const Players = () => {
@@ -20,7 +21,7 @@ const Players = () => {
 
   useEffect(() => {
     const fetchPlayers = async () => {
-      const { data } = await supabase.from('profiles').select('id, name, nickname, city, state, created_at').order('name');
+      const { data } = await supabase.from('profiles').select('id, name, nickname, city, state, created_at, avatar_url').order('name');
       setPlayers((data || []).map(p => ({
         id: p.id,
         name: p.name,
@@ -28,6 +29,7 @@ const Players = () => {
         city: p.city || '',
         state: p.state || '',
         created_at: p.created_at,
+        avatar_url: (p as any).avatar_url || null,
       })));
       setLoading(false);
     };
@@ -52,9 +54,13 @@ const Players = () => {
               <Link to={p.nickname ? `/perfil/${p.nickname}` : '#'}>
               <Card className="bg-card border-border hover:border-gold/20 transition-colors h-full">
                 <CardContent className="flex items-center gap-4 py-4 h-full">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-gold font-bold text-lg flex-shrink-0">
-                    {(p.nickname || p.name)?.charAt(0)?.toUpperCase() || '?'}
-                  </div>
+                  {p.avatar_url ? (
+                    <img src={p.avatar_url} alt="" className="h-12 w-12 rounded-full object-cover flex-shrink-0" />
+                  ) : (
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-secondary text-gold font-bold text-lg flex-shrink-0">
+                      {(p.nickname || p.name)?.charAt(0)?.toUpperCase() || '?'}
+                    </div>
+                  )}
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold truncate">{p.name}</p>
                     {p.nickname && <p className="text-xs text-gold truncate">@{p.nickname}</p>}

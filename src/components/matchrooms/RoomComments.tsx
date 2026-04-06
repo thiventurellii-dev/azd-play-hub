@@ -98,7 +98,7 @@ const RoomComments = ({ roomId }: Props) => {
       </p>
 
       {comments.length > 0 && (
-        <ScrollArea className="max-h-[200px] mb-2">
+        <div className="max-h-60 overflow-y-auto mb-2 pr-1">
           <div className="space-y-1.5 pr-2">
             {comments.map(c => (
               <div key={c.id} className="text-xs">

@@ -441,7 +441,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
                 {gameFactions.length > 0 ? (
                   <div className="w-[120px] space-y-1">
                     <Label className="text-xs">Facção</Label>
-                    <Select value={e.faction} onValueChange={v => updateEntry(i, 'faction', v)}>
+                    <Select value={e.faction || "none"} onValueChange={v => updateEntry(i, 'faction', v === "none" ? "" : v)}>
                       <SelectTrigger className="h-10"><SelectValue placeholder="Opcional" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="none">Nenhuma</SelectItem>

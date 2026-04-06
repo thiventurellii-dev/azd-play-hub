@@ -43,6 +43,9 @@ const MatchRooms = () => {
     }
   }, [location.state]);
 
+  // Tab state for controlling active tab
+  const [activeTab, setActiveTab] = useState("active");
+
   // Handle ?room=ID deep link after rooms load
   useEffect(() => {
     const roomParam = searchParams.get('room');
@@ -51,6 +54,9 @@ const MatchRooms = () => {
       if (found) {
         setDeepLinkRoom(found);
         setHighlightRoomId(roomParam);
+        // Auto-switch to the correct tab
+        const isPast = found.status === "finished" || found.status === "cancelled";
+        setActiveTab(isPast ? "past" : "active");
         setTimeout(() => {
           const el = document.getElementById(`room-${roomParam}`);
           if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });

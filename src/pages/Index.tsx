@@ -20,7 +20,7 @@ const hoverSpring = {
 };
 
 const LoggedOutIndex = () => (
-  <div className="min-h-screen">
+  <div>
     <section className="relative flex flex-col items-center justify-center px-4 py-32 text-center overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-gold/5 via-transparent to-transparent" />
       <motion.div
@@ -157,7 +157,7 @@ const LoggedInIndex = () => {
   const posColors = ["text-yellow-400", "text-gray-400", "text-amber-600"];
 
   return (
-    <div className="min-h-screen">
+    <div>
       <section className="relative flex flex-col items-center justify-center px-4 py-20 text-center overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-gold/5 via-transparent to-transparent" />
         <motion.div

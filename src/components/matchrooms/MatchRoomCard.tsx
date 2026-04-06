@@ -266,7 +266,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const handleShare = () => {
     const roomUrl = `${window.location.origin}/partidas?room=${room.id}`;
     const playerNames = confirmed.map(p => displayName(p));
-    const link = generateWhatsAppInvite(room?.title || '', room?.game?.name || '', room?.scheduled_at || '', roomUrl, playerNames);
+    const link = generateWhatsAppInvite(room?.title || '', room?.game?.name || '', room?.scheduled_at || '', roomUrl, playerNames, room?.description);
     window.open(link, "_blank");
   };
 

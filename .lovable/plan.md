@@ -1,107 +1,95 @@
 
 
-## Plan: Unified Match Editing, Activity Logs, Room UX Fixes & Deep Link Refactor
+## Plan: Bug Fixes — NewMatchFlow Focus, Deep Link Crash, UI/UX, Notifications, Search, Admin
 
-### 1. Unified Match Editing Flow
+### 1. NewMatchFlow — Fix Input Focus Loss
 
-**Current state**: Match editing exists in 3 places — `AdminMatches.tsx`, `GameDetail.tsx` (edit match dialog), and `NewMatchFlow.tsx` (creation only). Each has its own UI/logic.
+**Root cause**: The player search `Input` at line 421-427 is inside a `SelectContent` which re-renders when `playerSearch` state changes, causing the Select dropdown to re-mount. Also, `entries.map((e, i) => ...)` uses `key={i}` (index-based) which causes remount when entries change.
 
-**Approach**:
-- Create a reusable `EditMatchDialog` component (`src/components/matches/EditMatchDialog.tsx`) that wraps `NewMatchFlow`-like step UI but pre-populated with existing match data
-- Admins: direct save to `matches` + `match_results` tables
-- Regular users: save to a new `match_edit_proposals` table with status `pending`, admin reviews and approves
+**Fix in `src/components/matches/NewMatchFlow.tsx`**:
+- Change `key={i}` on player entry rows (line 414) to `key={e.player_id || \`entry-${i}\`}` for stable keys
+- Move the `playerSearch` input **outside** the `SelectContent` — place it above the Select as a standalone filter input, so typing doesn't cause the Select dropdown to re-render
+- This avoids the Radix Select dropdown trapping/losing focus on state change
 
-**Database migration**: Create `match_edit_proposals` table:
-```sql
-CREATE TABLE match_edit_proposals (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  match_id uuid NOT NULL,
-  proposed_by uuid NOT NULL,
-  proposed_data jsonb NOT NULL,
-  status text NOT NULL DEFAULT 'pending',
-  reviewed_by uuid,
-  reviewed_at timestamptz,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-ALTER TABLE match_edit_proposals ENABLE ROW LEVEL SECURITY;
--- RLS: users see own proposals, admins see all
-```
+### 2. Deep Link — Fix Crash After Load
 
-**Files**:
-- Create `src/components/matches/EditMatchDialog.tsx` — unified edit component
-- Modify `src/pages/GameDetail.tsx` — replace inline edit dialog with `EditMatchDialog`
-- Modify `src/components/admin/AdminMatches.tsx` — use same `EditMatchDialog`
-- Modify `src/pages/Admin.tsx` — add "Propostas de Edição" section for admin review
+**Root cause**: The `MatchRoomCard` inside the deep link Dialog accesses `room.game.name`, `room.game.image_url` etc. without optional chaining. When `onUpdate` triggers a re-fetch and `deepLinkRoom` briefly becomes stale or the re-fetch returns a different shape, it crashes.
 
-### 2. Activity Logs (Admin)
+**Fix in `src/pages/MatchRooms.tsx`**:
+- Add optional chaining in the deep link modal: `deepLinkRoom?.game?.name`
+- Wrap the `onUpdate` callback to catch errors and not set null data
+- Add a guard: if `deepLinkRoom` becomes null during re-fetch, keep the old data until new data arrives (use a ref or conditional set)
 
-**Database migration**: Create `activity_logs` table:
-```sql
-CREATE TABLE activity_logs (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  action text NOT NULL, -- 'create', 'update', 'delete'
-  entity_type text NOT NULL, -- 'room', 'match', 'game', 'player', etc.
-  entity_id uuid,
-  old_data jsonb,
-  new_data jsonb,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-ALTER TABLE activity_logs ENABLE ROW LEVEL SECURITY;
--- Only admins can read
-```
+**Fix in `src/components/matchrooms/MatchRoomCard.tsx`**:
+- Add optional chaining throughout: `room?.game?.name`, `room?.game?.image_url`, `room?.scheduled_at`
+- Guard `fetchPlayers` against undefined `room.id`
 
-**Files**:
-- Create `src/components/admin/AdminLogs.tsx` — log viewer with filters (entity type, user, date range)
-- Modify `src/pages/Admin.tsx` — add "Logs" menu item under a new "Sistema" group
-- Create `src/lib/activityLog.ts` — helper `logActivity(userId, action, entityType, entityId, oldData?, newData?)` that inserts into `activity_logs`
-- Instrument key operations: room CRUD in `MatchRoomCard.tsx`, match creation in `NewMatchFlow.tsx`, game editing in `GameDetail.tsx`, player status changes in `AdminPlayers.tsx`
+**Logged-out access**: Already handled — `/partidas` uses `ProtectedRoute` which redirects to `/login`. The `?room=ID` param is preserved in the URL after redirect.
 
-### 3. MatchRoom Comments UX Fix
+### 3. Comments Scroll — Remove Double Scroll
 
-**Problem**: Comments are hidden behind toggle but when opened, buttons get blocked.
+**Fix in `src/components/matchrooms/MatchRoomCard.tsx`**:
+- The card has `overflow-hidden` on `CardContent` AND the comments section has `max-h-[200px] overflow-y-auto` — this is correct but the `RoomComments` component also has `max-h-60 overflow-y-auto` internally (line 101 of RoomComments.tsx). Remove the outer `max-h-[200px] overflow-y-auto` from MatchRoomCard's comments wrapper (line 283), let only RoomComments handle its own scroll
+- Add smooth transition for comments expand/collapse using CSS transition on max-height
 
-**Changes in `src/components/matchrooms/MatchRoomCard.tsx`**:
-- Remove fixed `h-[340px]` from Card — use `min-h-[340px]` instead so the card can grow when comments open
-- Show comments open by default (set `showComments` initial state to `true`)
-- Keep `max-h-60 overflow-y-auto` on comment list to cap height
-- Ensure action buttons (Sair, Compartilhar, Fechar) remain above the comments section and never get overlapped — move comments BELOW the action buttons in DOM order
+### 4. WhatsApp Emojis
 
-### 4. Room Deep Link — Modal with Direct Fetch
-
-**Problem**: Current scroll+highlight approach doesn't feel premium; previous modal approach had black screen due to race condition.
-
-**Changes in `src/pages/MatchRooms.tsx`**:
-- Remove scroll/highlight logic entirely
-- When `?room=ID` detected, immediately open a Dialog
-- Inside Dialog: show a Skeleton loader, then fire an isolated Supabase query `.select('*').eq('id', roomId).maybeSingle()`
-- On success: render a full `MatchRoomCard` inside the Dialog with all interactions (join, leave, comment)
-- On failure (null): show toast "Sala não encontrada", close dialog, clean URL params
-- On dialog close: clean `?room` from URL via `setSearchParams`
-- Apply optional chaining throughout `MatchRoomCard` to handle partial data gracefully
-
-### 5. WhatsApp Emoji Fix
-
-**Root cause**: The emojis in `matchNotification.ts` are standard Unicode and `encodeURIComponent` handles them correctly. The `�` replacement character suggests the file might have been saved with incorrect encoding, or there's a build-time transformation stripping non-ASCII.
+**Root cause**: The current code uses `\u{1F3B2}` Unicode escapes which should work. The issue may be that the `wa.me` link is opened with `window.open` which in some browsers double-encodes. 
 
 **Fix in `src/lib/matchNotification.ts`**:
-- Replace emoji literals with their Unicode escape sequences to avoid encoding issues:
-  - `\u{1F3B2}` for 🎲, `\u{1F3AE}` for 🎮, `\u{1F4C5}` for 📅, `\u2705` for ✅, `\u{1F449}` for 👉
-- This ensures consistent encoding regardless of file save format
+- Change from `https://wa.me/?text=` to `https://api.whatsapp.com/send?text=` which handles Unicode better
+- Verify the escapes are correct (they are)
+
+### 5. Room Capacity Validation
+
+**Fix in `src/components/matchrooms/CreateRoomDialog.tsx`**:
+- Fetch `max_players` from the selected game when `gameId` changes
+- Set `maxPlayers` default to the game's `max_players` when a game is selected
+- Validate that the entered `maxPlayers` doesn't exceed the game's `max_players` on submit
+
+**Fix in `src/components/matchrooms/MatchRoomCard.tsx`**:
+- In `handleJoin`, the existing check `isFull = confirmed.length >= room.max_players` already enforces this at join time — no change needed here
+
+### 6. Notification Bell — Friend Requests
+
+**Fix in `src/components/Navbar.tsx`**:
+- Replace the static "Sem notificações" with actual friend request data
+- Fetch pending friend requests (where `friend_id === user.id` and `status === 'pending'`) with requester profile info
+- Display each request with Accept/Reject buttons inline (no navigation)
+- On accept/reject, update the friendship and re-fetch the list immediately
+- Show the pending count as a badge on the Bell icon
+
+### 7. Player Search Bar
+
+**Fix in `src/pages/Players.tsx`**:
+- Add a `search` state and an `Input` with search icon above the player grid
+- Filter `players` by `name` or `nickname` matching the search query (case-insensitive)
+
+### 8. Admin Match Edit — Unified + Delete
+
+**Status**: `EditMatchDialog` already exists and is used in `GameDetail.tsx`. `AdminMatches.tsx` still has its own inline edit logic.
+
+**Fix in `src/components/admin/AdminMatches.tsx`**:
+- Import and use `EditMatchDialog` instead of the inline edit dialog
+- Remove duplicated edit form code
+
+**Fix in `src/components/matches/EditMatchDialog.tsx`**:
+- Add a "Excluir Partida" button (admin-only) with confirmation dialog
+- On confirm: delete from `match_results` where `match_id`, then delete from `matches`
+- Log the deletion via `logActivity`
 
 ### Technical Summary
 
-**New files** (4):
-- `src/components/matches/EditMatchDialog.tsx`
-- `src/components/admin/AdminLogs.tsx`
-- `src/lib/activityLog.ts`
-- Migration: `match_edit_proposals` + `activity_logs` tables
+**Files to modify (9)**:
+- `src/components/matches/NewMatchFlow.tsx` — stable keys, move search outside Select
+- `src/pages/MatchRooms.tsx` — optional chaining in deep link modal
+- `src/components/matchrooms/MatchRoomCard.tsx` — optional chaining, remove double scroll
+- `src/lib/matchNotification.ts` — use api.whatsapp.com URL
+- `src/components/matchrooms/CreateRoomDialog.tsx` — capacity validation from game
+- `src/components/Navbar.tsx` — friend requests in notification bell
+- `src/pages/Players.tsx` — search bar
+- `src/components/admin/AdminMatches.tsx` — use EditMatchDialog
+- `src/components/matches/EditMatchDialog.tsx` — add delete button
 
-**Modified files** (6):
-- `src/components/matchrooms/MatchRoomCard.tsx` — comments open by default, flexible card height
-- `src/pages/MatchRooms.tsx` — modal-based deep link with direct fetch + skeleton
-- `src/pages/GameDetail.tsx` — use unified `EditMatchDialog`
-- `src/pages/Admin.tsx` — add Logs + Edit Proposals menu items
-- `src/components/admin/AdminMatches.tsx` — use unified `EditMatchDialog`
-- `src/lib/matchNotification.ts` — Unicode escape sequences for emojis
+**No database changes required.**
 

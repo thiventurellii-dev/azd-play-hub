@@ -47,7 +47,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const navigate = useNavigate();
   const [players, setPlayers] = useState<RoomPlayer[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showComments, setShowComments] = useState(false);
+  const [showComments, setShowComments] = useState(true);
 
   const fetchPlayers = async () => {
     const { data } = await supabase

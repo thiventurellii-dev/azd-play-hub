@@ -14,6 +14,8 @@ interface BloodScript {
   id: string;
   name: string;
   description: string | null;
+  slug: string | null;
+  victory_conditions: string[];
 }
 
 interface BloodCharacter {

@@ -52,6 +52,7 @@ const AdminBloodMatches = () => {
   const [editWinningTeam, setEditWinningTeam] = useState<'good' | 'evil'>('good');
   const [editEvilPlayers, setEditEvilPlayers] = useState<BloodPlayerEntry[]>([]);
   const [editGoodPlayers, setEditGoodPlayers] = useState<BloodPlayerEntry[]>([]);
+  const [editVictoryConditions, setEditVictoryConditions] = useState<string[]>([]);
   const [editSaving, setEditSaving] = useState(false);
 
   useEffect(() => {

@@ -167,8 +167,8 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
       <CardHeader className="pb-3 flex-shrink-0">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <CardTitle className="text-lg truncate">{room.title}</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">🎮 {room.game.name}</p>
+            <CardTitle className="text-lg truncate">{room?.title}</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">{"\u{1F3AE}"} {room?.game?.name}</p>
           </div>
           <Badge variant="outline" className={status.className}>
             {status.label}

@@ -29,13 +29,16 @@ const SocialLinks = () => {
   const [links, setLinks] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    supabase.from("contact_links").select("name, url").then(({ data }) => {
-      if (data) {
-        const map: Record<string, string> = {};
-        for (const r of data) map[r.name] = r.url;
-        setLinks(map);
-      }
-    });
+    supabase
+      .from("contact_links")
+      .select("name, url")
+      .then(({ data }) => {
+        if (data) {
+          const map: Record<string, string> = {};
+          for (const r of data) map[r.name] = r.url;
+          setLinks(map);
+        }
+      });
   }, []);
 
   const hasAny = links.discord || links.whatsapp || links.whatsapp_botc;
@@ -46,7 +49,11 @@ const SocialLinks = () => {
       {links.discord && (
         <a href={links.discord} target="_blank" rel="noopener noreferrer">
           <motion.div {...hoverSpring}>
-            <Button variant="outline" size="sm" className="gap-2 border-[#5865F2]/40 text-[#5865F2] hover:bg-[#5865F2]/10 hover:text-[#5865F2]">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 border-[#5865F2]/40 text-[#5865F2] hover:bg-[#5865F2]/10 hover:text-[#5865F2]"
+            >
               <DiscordIcon size={16} /> Discord
             </Button>
           </motion.div>
@@ -55,8 +62,14 @@ const SocialLinks = () => {
       {links.whatsapp && (
         <a href={links.whatsapp} target="_blank" rel="noopener noreferrer">
           <motion.div {...hoverSpring}>
-            <Button variant="outline" size="sm" className="gap-2 border-[#25D366]/40 text-[#25D366] hover:bg-[#25D366]/10 hover:text-[#25D366]">
-              <svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 border-[#25D366]/40 text-[#25D366] hover:bg-[#25D366]/10 hover:text-[#25D366]"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+              </svg>
               Boardgame
             </Button>
           </motion.div>
@@ -65,8 +78,14 @@ const SocialLinks = () => {
       {links.whatsapp_botc && (
         <a href={links.whatsapp_botc} target="_blank" rel="noopener noreferrer">
           <motion.div {...hoverSpring}>
-            <Button variant="outline" size="sm" className="gap-2 border-[#25D366]/40 text-[#25D366] hover:bg-[#25D366]/10 hover:text-[#25D366]">
-              <svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 border-[#25D366]/40 text-[#25D366] hover:bg-[#25D366]/10 hover:text-[#25D366]"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width={16} height={16} viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
+              </svg>
               Blood
             </Button>
           </motion.div>
@@ -80,7 +99,12 @@ const LoggedOutIndex = () => (
   <div className="min-h-screen">
     <section className="relative flex flex-col items-center justify-center px-4 py-32 text-center overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-gold/5 via-transparent to-transparent" />
-      <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }} className="relative">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.6 }}
+        className="relative"
+      >
         <img src={logo} alt="AzD" className="h-32 w-32 mx-auto mb-8 drop-shadow-[0_0_30px_hsl(43,100%,50%,0.3)]" />
       </motion.div>
       <motion.h1 {...fadeUp(0.2)} className="relative text-5xl md:text-7xl font-black tracking-tight">
@@ -92,7 +116,9 @@ const LoggedOutIndex = () => (
       <motion.div {...fadeUp(0.4)} className="relative mt-8 flex flex-wrap justify-center gap-4">
         <Link to="/register">
           <motion.div {...hoverSpring}>
-            <Button variant="gold" size="lg">Faça parte da comunidade</Button>
+            <Button variant="gold" size="lg">
+              Faça parte da comunidade
+            </Button>
           </motion.div>
         </Link>
       </motion.div>
@@ -119,7 +145,7 @@ const LoggedInIndex = () => {
         .select("room_id")
         .eq("player_id", user.id);
       if (playerRooms && playerRooms.length > 0) {
-        const roomIds = playerRooms.map(r => r.room_id);
+        const roomIds = playerRooms.map((r) => r.room_id);
         const { data: rooms } = await supabase
           .from("match_rooms")
           .select("id, title, scheduled_at, status, game:games(name)")
@@ -128,7 +154,8 @@ const LoggedInIndex = () => {
           .gte("scheduled_at", new Date().toISOString())
           .order("scheduled_at")
           .limit(3);
-        if (rooms) setUpcomingRooms(rooms.map((r: any) => ({ ...r, game: Array.isArray(r.game) ? r.game[0] : r.game })));
+        if (rooms)
+          setUpcomingRooms(rooms.map((r: any) => ({ ...r, game: Array.isArray(r.game) ? r.game[0] : r.game })));
       }
 
       // Recent boardgame matches — fetch ALL recent matches, not just user's
@@ -145,14 +172,14 @@ const LoggedInIndex = () => {
           .select("match_id, position, score, player_id")
           .in("match_id", matchIds);
         for (const m of recentBoardMatches as any[]) {
-          const userResult = allResults?.find(r => r.match_id === m.id && r.player_id === user.id);
+          const userResult = allResults?.find((r) => r.match_id === m.id && r.player_id === user.id);
           allRecent.push({
             id: m.id,
             played_at: m.played_at,
             game: Array.isArray(m.game) ? m.game[0] : m.game,
             position: userResult?.position ?? null,
             score: userResult?.score ?? null,
-            type: 'boardgame',
+            type: "boardgame",
             isUserMatch: !!userResult,
           });
         }
@@ -171,15 +198,15 @@ const LoggedInIndex = () => {
           .select("match_id, team, player_id")
           .in("match_id", bMatchIds);
         for (const m of recentBloodMatches as any[]) {
-          const userPlay = allBloodPlayers?.find(p => p.match_id === m.id && p.player_id === user.id);
+          const userPlay = allBloodPlayers?.find((p) => p.match_id === m.id && p.player_id === user.id);
           const won = userPlay ? userPlay.team === m.winning_team : null;
           allRecent.push({
             id: `blood-${m.id}`,
             played_at: m.played_at,
-            game: { name: `Blood — ${(Array.isArray(m.script) ? m.script[0] : m.script)?.name || '?'}` },
+            game: { name: `Blood — ${(Array.isArray(m.script) ? m.script[0] : m.script)?.name || "?"}` },
             position: won === null ? null : won ? 1 : 2,
             score: null,
-            type: 'blood',
+            type: "blood",
             isUserMatch: !!userPlay,
           });
         }
@@ -213,13 +240,10 @@ const LoggedInIndex = () => {
           .limit(5);
 
         if (ratings && ratings.length > 0) {
-          const pIds = ratings.map(r => r.player_id);
-          const { data: profiles } = await supabase
-            .from("profiles")
-            .select("id, nickname, name")
-            .in("id", pIds);
+          const pIds = ratings.map((r) => r.player_id);
+          const { data: profiles } = await supabase.from("profiles").select("id, nickname, name").in("id", pIds);
           const pMap = new Map((profiles || []).map((p: any) => [p.id, p.nickname || p.name]));
-          setTopPlayers(ratings.map(r => ({ ...r, name: pMap.get(r.player_id) || '?' })));
+          setTopPlayers(ratings.map((r) => ({ ...r, name: pMap.get(r.player_id) || "?" })));
         } else {
           setTopPlayers([]);
         }
@@ -228,13 +252,18 @@ const LoggedInIndex = () => {
     fetchDashboard();
   }, [user]);
 
-  const posColors = ['text-yellow-400', 'text-gray-400', 'text-amber-600'];
+  const posColors = ["text-yellow-400", "text-gray-400", "text-amber-600"];
 
   return (
     <div className="min-h-screen">
       <section className="relative flex flex-col items-center justify-center px-4 py-20 text-center overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-gold/5 via-transparent to-transparent" />
-        <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }} className="relative">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6 }}
+          className="relative"
+        >
           <img src={logo} alt="AzD" className="h-24 w-24 mx-auto mb-6 drop-shadow-[0_0_30px_hsl(43,100%,50%,0.3)]" />
         </motion.div>
         <motion.h1 {...fadeUp(0.2)} className="relative text-4xl md:text-6xl font-black tracking-tight">
@@ -246,12 +275,9 @@ const LoggedInIndex = () => {
         <motion.div {...fadeUp(0.4)} className="relative mt-6 flex flex-wrap justify-center gap-4">
           <Link to="/partidas">
             <motion.div {...hoverSpring}>
-              <Button variant="gold" size="lg">Agendar Partida</Button>
-            </motion.div>
-          </Link>
-          <Link to="/seasons">
-            <motion.div {...hoverSpring}>
-              <Button variant="outline" size="lg">Cenário Competitivo</Button>
+              <Button variant="gold" size="lg">
+                Agendar Partida
+              </Button>
             </motion.div>
           </Link>
         </motion.div>
@@ -270,11 +296,13 @@ const LoggedInIndex = () => {
                 </h3>
                 {upcomingRooms.length > 0 ? (
                   <div className="space-y-2">
-                    {upcomingRooms.map(r => (
+                    {upcomingRooms.map((r) => (
                       <div key={r.id} className="flex justify-between items-center text-sm">
-                        <span className="truncate">{r.game?.name} — {r.title}</span>
+                        <span className="truncate">
+                          {r.game?.name} — {r.title}
+                        </span>
                         <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
-                          {new Date(r.scheduled_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                          {new Date(r.scheduled_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
                         </span>
                       </div>
                     ))}
@@ -298,7 +326,9 @@ const LoggedInIndex = () => {
                     <div className="space-y-1.5">
                       {topPlayers.map((p, i) => (
                         <div key={p.player_id} className="flex justify-between items-center text-sm">
-                          <span className={`font-medium ${posColors[i] || ''}`}>{i + 1}. {p.name}</span>
+                          <span className={`font-medium ${posColors[i] || ""}`}>
+                            {i + 1}. {p.name}
+                          </span>
                           <span className="text-xs text-muted-foreground">{p.current_mmr} MMR</span>
                         </div>
                       ))}
@@ -315,21 +345,24 @@ const LoggedInIndex = () => {
           <Link to="/games" className="block">
             <motion.div {...fadeUp(0.7)}>
               <div className="rounded-xl border border-border bg-card p-5 hover:border-gold/30 transition-colors h-full">
-                <h3 className="text-sm font-semibold text-gold mb-3 flex items-center gap-2">
-                  🎲 Últimas Partidas
-                </h3>
+                <h3 className="text-sm font-semibold text-gold mb-3 flex items-center gap-2">🎲 Últimas Partidas</h3>
                 {recentMatches.length > 0 ? (
                   <div className="space-y-2">
-                    {recentMatches.map(m => (
+                    {recentMatches.map((m) => (
                       <div key={m.id} className="flex justify-between items-center text-sm">
-                        <span className={`truncate ${m.isUserMatch ? '' : 'text-muted-foreground'}`}>{m.game?.name}</span>
+                        <span className={`truncate ${m.isUserMatch ? "" : "text-muted-foreground"}`}>
+                          {m.game?.name}
+                        </span>
                         <div className="flex items-center gap-2 ml-2 shrink-0">
                           <span className="text-[10px] text-muted-foreground">
-                            {new Date(m.played_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
+                            {new Date(m.played_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
                           </span>
                           {m.position != null ? (
-                            <span className={`text-xs font-medium ${m.position === 1 ? 'text-gold' : 'text-muted-foreground'}`}>
-                              {m.position === 1 ? '🏆' : `${m.position}º`}{m.score != null ? ` ${m.score}pts` : ''}
+                            <span
+                              className={`text-xs font-medium ${m.position === 1 ? "text-gold" : "text-muted-foreground"}`}
+                            >
+                              {m.position === 1 ? "🏆" : `${m.position}º`}
+                              {m.score != null ? ` ${m.score}pts` : ""}
                             </span>
                           ) : (
                             <span className="text-[10px] text-muted-foreground">—</span>

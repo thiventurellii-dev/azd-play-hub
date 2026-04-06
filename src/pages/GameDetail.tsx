@@ -1059,6 +1059,77 @@ const GameDetail = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Match Dialog */}
+      <Dialog open={editMatchOpen} onOpenChange={setEditMatchOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Partida</DialogTitle>
+          </DialogHeader>
+          {editMatch && (
+            <div className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Data</Label>
+                  <Input type="date" value={editMatchDate} onChange={e => setEditMatchDate(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Duração (min)</Label>
+                  <Input type="number" min={0} value={editMatchDuration} onChange={e => setEditMatchDuration(e.target.value)} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Resultados</Label>
+                {editMatchResults.map((r: any, i: number) => (
+                  <div key={r.id} className="flex items-center gap-2 text-sm">
+                    <span className="w-6 text-center font-bold text-gold">{r.position}º</span>
+                    <span className="flex-1 truncate">{r.player_name}</span>
+                    <Input
+                      type="number"
+                      className="w-20 h-8 text-xs"
+                      value={r.score ?? 0}
+                      onChange={e => {
+                        const updated = [...editMatchResults];
+                        updated[i] = { ...updated[i], score: parseInt(e.target.value) || 0 };
+                        setEditMatchResults(updated);
+                      }}
+                    />
+                    <span className="text-xs text-muted-foreground">pts</span>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  variant="gold"
+                  disabled={savingMatch}
+                  onClick={async () => {
+                    setSavingMatch(true);
+                    // Update match
+                    await supabase.from("matches").update({
+                      played_at: editMatchDate ? new Date(editMatchDate).toISOString() : editMatch.played_at,
+                      duration_minutes: editMatchDuration ? parseInt(editMatchDuration) : null,
+                    }).eq("id", editMatch.id);
+                    // Update results
+                    for (const r of editMatchResults) {
+                      await supabase.from("match_results").update({
+                        score: r.score ?? 0,
+                        position: r.position,
+                      }).eq("id", r.id);
+                    }
+                    setSavingMatch(false);
+                    setEditMatchOpen(false);
+                    notify("success", "Partida atualizada!");
+                    // Refresh
+                    window.location.reload();
+                  }}
+                >
+                  {savingMatch ? "Salvando..." : "Salvar"}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -5,10 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Badge } from '@/components/ui/badge';
 import { useNotification } from '@/components/NotificationDialog';
-import { ChevronLeft, ChevronRight, Check, Trash2, UserPlus, Skull, Shield } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Trash2, UserPlus, Skull, Shield, ChevronsUpDown } from 'lucide-react';
 import { submitBloodMatch } from '@/lib/bloodRatings';
+import { cn } from '@/lib/utils';
 
 interface Season { id: string; name: string; }
 interface BloodScript { id: string; name: string; }
@@ -24,27 +27,27 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
   const { notify } = useNotification();
   const [step, setStep] = useState(1);
 
-  // Data
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [scripts, setScripts] = useState<BloodScript[]>([]);
   const [characters, setCharacters] = useState<BloodCharacter[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
 
-  // Step 1
   const [seasonId, setSeasonId] = useState('');
   const [scriptId, setScriptId] = useState('');
   const [playedDate, setPlayedDate] = useState('');
   const [playedTime, setPlayedTime] = useState('');
   const [duration, setDuration] = useState('');
 
-  // Step 2
   const [storytellerId, setStorytellerId] = useState('');
   const [evilPlayers, setEvilPlayers] = useState<BloodPlayerEntry[]>([{ player_id: '', character_id: '', team: 'evil' }]);
   const [goodPlayers, setGoodPlayers] = useState<BloodPlayerEntry[]>([{ player_id: '', character_id: '', team: 'good' }]);
 
-  // Step 3
   const [winningTeam, setWinningTeam] = useState<'good' | 'evil'>('good');
   const [saving, setSaving] = useState(false);
+
+  // Popover open states
+  const [storytellerOpen, setStorytellerOpen] = useState(false);
+  const [playerPopovers, setPlayerPopovers] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const fetchBase = async () => {
@@ -96,21 +99,17 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
     if (!seasonId || !scriptId || !playedDate || !playedTime || !storytellerId) {
       return notify('error', 'Preencha todos os campos obrigatórios');
     }
-    const allPlayers = [...evilPlayers, ...goodPlayers];
-    if (allPlayers.some(p => !p.player_id || !p.character_id)) {
+    const allP = [...evilPlayers, ...goodPlayers];
+    if (allP.some(p => !p.player_id || !p.character_id)) {
       return notify('error', 'Preencha jogador e personagem para todos os participantes');
     }
-
     setSaving(true);
     try {
       await submitBloodMatch({
-        seasonId,
-        scriptId,
+        seasonId, scriptId,
         playedAt: new Date(`${playedDate}T${playedTime}`).toISOString(),
         durationMinutes: parseInt(duration) || null,
-        storytellerId,
-        winningTeam,
-        players: allPlayers,
+        storytellerId, winningTeam, players: allP,
       });
       notify('success', 'Partida de Blood registrada!');
       onComplete?.();
@@ -124,6 +123,43 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
     } finally {
       setSaving(false);
     }
+  };
+
+  const PlayerCombobox = ({ value, onSelect, excludeIds, popoverKey }: { value: string; onSelect: (id: string) => void; excludeIds: string[]; popoverKey: string }) => {
+    const isOpen = playerPopovers[popoverKey] || false;
+    const setOpen = (open: boolean) => setPlayerPopovers(prev => ({ ...prev, [popoverKey]: open }));
+    const selected = players.find(p => p.id === value);
+    return (
+      <Popover open={isOpen} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" role="combobox" className="justify-between w-full font-normal text-left">
+            {selected ? (selected.nickname || selected.name) : 'Buscar jogador...'}
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[250px] p-0">
+          <Command>
+            <CommandInput placeholder="Buscar jogador..." />
+            <CommandList>
+              <CommandEmpty>Nenhum jogador encontrado.</CommandEmpty>
+              <CommandGroup>
+                {players.map(p => (
+                  <CommandItem
+                    key={p.id}
+                    value={p.nickname || p.name}
+                    disabled={excludeIds.includes(p.id) && p.id !== value}
+                    onSelect={() => { onSelect(p.id); setOpen(false); }}
+                  >
+                    <Check className={cn("mr-2 h-4 w-4", value === p.id ? "opacity-100" : "opacity-0")} />
+                    {p.nickname || p.name}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    );
   };
 
   const renderPlayerSelectors = (
@@ -140,16 +176,12 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
         </div>
         {playersList.map((ep, i) => (
           <div key={i} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] items-end">
-            <Select value={ep.player_id} onValueChange={v => updatePlayer(team, i, 'player_id', v)}>
-              <SelectTrigger><SelectValue placeholder="Jogador" /></SelectTrigger>
-              <SelectContent>
-                {players.map(p => (
-                  <SelectItem key={p.id} value={p.id} disabled={allSelectedPlayerIds.includes(p.id) && p.id !== ep.player_id}>
-                    {p.nickname || p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <PlayerCombobox
+              value={ep.player_id}
+              onSelect={v => updatePlayer(team, i, 'player_id', v)}
+              excludeIds={allSelectedPlayerIds}
+              popoverKey={`${team}-${i}`}
+            />
             <Select value={ep.character_id} onValueChange={v => updatePlayer(team, i, 'character_id', v)}>
               <SelectTrigger><SelectValue placeholder="Personagem" /></SelectTrigger>
               <SelectContent>
@@ -183,7 +215,6 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* STEP 1: Script & Header */}
         {step === 1 && (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">1. Cabeçalho</h3>
@@ -192,9 +223,7 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
                 <Label>Season *</Label>
                 <Select value={seasonId} onValueChange={setSeasonId}>
                   <SelectTrigger><SelectValue placeholder="Selecione a season" /></SelectTrigger>
-                  <SelectContent>
-                    {seasons.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                  </SelectContent>
+                  <SelectContent>{seasons.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
@@ -205,25 +234,14 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
                   setGoodPlayers([{ player_id: '', character_id: '', team: 'good' }]);
                 }}>
                   <SelectTrigger><SelectValue placeholder="Selecione o script" /></SelectTrigger>
-                  <SelectContent>
-                    {scripts.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                  </SelectContent>
+                  <SelectContent>{scripts.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
-              <div className="space-y-2">
-                <Label>Data *</Label>
-                <Input type="date" value={playedDate} onChange={e => setPlayedDate(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Hora *</Label>
-                <Input type="time" value={playedTime} onChange={e => setPlayedTime(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Duração (min)</Label>
-                <Input type="number" value={duration} onChange={e => setDuration(e.target.value)} placeholder="90" />
-              </div>
+              <div className="space-y-2"><Label>Data *</Label><Input type="date" value={playedDate} onChange={e => setPlayedDate(e.target.value)} /></div>
+              <div className="space-y-2"><Label>Hora *</Label><Input type="time" value={playedTime} onChange={e => setPlayedTime(e.target.value)} /></div>
+              <div className="space-y-2"><Label>Duração (min)</Label><Input type="number" value={duration} onChange={e => setDuration(e.target.value)} placeholder="90" /></div>
             </div>
             <div className="flex justify-end">
               <Button variant="gold" onClick={() => setStep(2)} disabled={!seasonId || !scriptId || !playedDate || !playedTime}>
@@ -233,22 +251,17 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
           </div>
         )}
 
-        {/* STEP 2: Players */}
         {step === 2 && (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">2. Jogadores</h3>
             <div className="space-y-2">
               <Label>Storyteller *</Label>
-              <Select value={storytellerId} onValueChange={setStorytellerId}>
-                <SelectTrigger><SelectValue placeholder="Quem narrou?" /></SelectTrigger>
-                <SelectContent>
-                  {players.map(p => (
-                    <SelectItem key={p.id} value={p.id} disabled={allSelectedPlayerIds.includes(p.id) && p.id !== storytellerId}>
-                      {p.nickname || p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <PlayerCombobox
+                value={storytellerId}
+                onSelect={setStorytellerId}
+                excludeIds={allSelectedPlayerIds}
+                popoverKey="storyteller"
+              />
             </div>
             {renderPlayerSelectors('evil', evilPlayers, evilChars)}
             {renderPlayerSelectors('good', goodPlayers, goodChars)}
@@ -261,27 +274,20 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
           </div>
         )}
 
-        {/* STEP 3: Result */}
         {step === 3 && (
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">3. Resultado</h3>
             <div className="space-y-2">
               <Label>Time Vencedor *</Label>
               <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setWinningTeam('good')}
-                  className={`p-4 rounded-lg border-2 text-center transition-all ${winningTeam === 'good' ? 'border-blue-500 bg-blue-500/10' : 'border-border hover:border-blue-500/30'}`}
-                >
+                <button type="button" onClick={() => setWinningTeam('good')}
+                  className={`p-4 rounded-lg border-2 text-center transition-all ${winningTeam === 'good' ? 'border-blue-500 bg-blue-500/10' : 'border-border hover:border-blue-500/30'}`}>
                   <Shield className="h-8 w-8 mx-auto mb-2 text-blue-400" />
                   <p className="font-semibold text-blue-400">Vitória do Bem</p>
                   <p className="text-xs text-muted-foreground">Execução do Demônio</p>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setWinningTeam('evil')}
-                  className={`p-4 rounded-lg border-2 text-center transition-all ${winningTeam === 'evil' ? 'border-red-500 bg-red-500/10' : 'border-border hover:border-red-500/30'}`}
-                >
+                <button type="button" onClick={() => setWinningTeam('evil')}
+                  className={`p-4 rounded-lg border-2 text-center transition-all ${winningTeam === 'evil' ? 'border-red-500 bg-red-500/10' : 'border-border hover:border-red-500/30'}`}>
                   <Skull className="h-8 w-8 mx-auto mb-2 text-red-400" />
                   <p className="font-semibold text-red-400">Vitória do Mal</p>
                   <p className="text-xs text-muted-foreground">Vitória do Demônio</p>
@@ -289,7 +295,6 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
               </div>
             </div>
 
-            {/* Summary */}
             <div className="border border-border rounded-lg p-4 space-y-2 text-sm">
               <p><span className="text-muted-foreground">Season:</span> {seasons.find(s => s.id === seasonId)?.name}</p>
               <p><span className="text-muted-foreground">Script:</span> {scripts.find(s => s.id === scriptId)?.name}</p>

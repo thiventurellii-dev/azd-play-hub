@@ -35,7 +35,6 @@ const LoggedOutIndex = () => (
           </motion.div>
         </Link>
       </motion.div>
-      <SocialLinks />
     </section>
   </div>
 );

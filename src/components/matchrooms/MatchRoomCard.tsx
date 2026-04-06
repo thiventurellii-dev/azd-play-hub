@@ -310,19 +310,14 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
             </div>
           </div>
 
-          {/* Tags + Competitive MMR */}
-          {(tags.length > 0 || room.season_id) && (
+          {/* Tags + MMR */}
+          {(tags.length > 0 || avgMmr !== null) && (
             <div className="flex flex-wrap items-center gap-1.5 mt-2">
               {tags.map(tag => (
                 <Badge key={tag} variant="outline" className="text-[10px] px-2 py-0 border-gold/30 text-gold/80">
                   {tag}
                 </Badge>
               ))}
-              {room.season_id && (
-                <Badge variant="outline" className="text-[10px] px-2 py-0 border-amber-500/40 text-amber-400 gap-1">
-                  <Trophy className="h-2.5 w-2.5" /> Competitivo
-                </Badge>
-              )}
               {avgMmr !== null && (
                 <Badge variant="outline" className="text-[10px] px-2 py-0 border-blue-500/40 text-blue-400 gap-1">
                   <TrendingUp className="h-2.5 w-2.5" /> MMR médio: {avgMmr}

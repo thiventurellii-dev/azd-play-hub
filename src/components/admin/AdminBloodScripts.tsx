@@ -99,7 +99,8 @@ const AdminBloodScripts = () => {
 
   const openEditScript = (s: BloodScript) => {
     setEditingScript(s);
-    setEditScriptForm({ name: s.name, description: s.description || '' });
+    setEditScriptForm({ name: s.name, description: s.description || '', victory_conditions: [...s.victory_conditions] });
+    setNewEditCondition('');
     setEditScriptOpen(true);
   };
 

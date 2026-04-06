@@ -444,7 +444,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
                     <Select value={e.faction} onValueChange={v => updateEntry(i, 'faction', v)}>
                       <SelectTrigger className="h-10"><SelectValue placeholder="Opcional" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Nenhuma</SelectItem>
+                        <SelectItem value="none">Nenhuma</SelectItem>
                         {gameFactions.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
                       </SelectContent>
                     </Select>

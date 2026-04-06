@@ -373,7 +373,22 @@ const PlayerProfile = () => {
               )}
             </div>
             <div className="flex-1 text-center sm:text-left">
-              <h1 className="text-2xl font-bold">{profile.name}</h1>
+              <div className="flex items-center gap-2 justify-center sm:justify-start">
+                <h1 className="text-2xl font-bold">{profile.name}</h1>
+                {profile.steam_id && (
+                  <a
+                    href={`https://steamcommunity.com/profiles/${profile.steam_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Perfil Steam"
+                    className="text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.08 3.16 9.42 7.63 11.17l3.69-5.27a3.48 3.48 0 01-.32-1.46c0-1.93 1.57-3.5 3.5-3.5s3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5c-.5 0-.97-.11-1.4-.3L9.84 24c.7.1 1.42.15 2.16.15 6.63 0 12-5.37 12-12S18.63 0 12 0z"/>
+                    </svg>
+                  </a>
+                )}
+              </div>
               {profile.nickname && <p className="text-gold">@{profile.nickname}</p>}
               <div className="flex items-center gap-2 justify-center sm:justify-start mt-2">
                 <Badge variant={role === "admin" ? "default" : "secondary"}>

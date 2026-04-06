@@ -468,8 +468,8 @@ const Games = () => {
                       navigate(`/scripts/${scriptSlug}`);
                     }}
                   >
-                    {getScriptImage(s.name) ? (
-                      <img src={getScriptImage(s.name)!} alt={s.name} className="h-20 w-20 rounded-lg object-cover flex-shrink-0" loading="lazy" />
+                    {(s.image_url || getScriptImage(s.name)) ? (
+                      <img src={s.image_url || getScriptImage(s.name)!} alt={s.name} className="h-20 w-20 rounded-lg object-cover flex-shrink-0" loading="lazy" />
                     ) : (
                       <div className="h-20 w-20 rounded-lg bg-secondary flex items-center justify-center text-2xl flex-shrink-0">🩸</div>
                     )}

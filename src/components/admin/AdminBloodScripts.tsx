@@ -53,7 +53,8 @@ const AdminBloodScripts = () => {
   // Edit script dialog
   const [editScriptOpen, setEditScriptOpen] = useState(false);
   const [editingScript, setEditingScript] = useState<BloodScript | null>(null);
-  const [editScriptForm, setEditScriptForm] = useState({ name: '', description: '' });
+  const [editScriptForm, setEditScriptForm] = useState({ name: '', description: '', victory_conditions: [] as string[] });
+  const [newEditCondition, setNewEditCondition] = useState('');
 
   // Edit character dialog
   const [editCharOpen, setEditCharOpen] = useState(false);

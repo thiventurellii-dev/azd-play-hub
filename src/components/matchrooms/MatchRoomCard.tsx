@@ -166,12 +166,21 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const handleLeave = async () => {
     if (!user) return;
     setLoading(true);
+    const wasConfirmed = confirmed.some(p => p.player_id === user.id);
     await supabase.from("match_room_players").delete().eq("room_id", room.id).eq("player_id", user.id);
 
-    if (room.status === "full") {
+    if (wasConfirmed && room.status === "full") {
       const nextWaitlist = waitlist[0];
       if (nextWaitlist) {
         await supabase.from("match_room_players").update({ type: "confirmed" }).eq("id", nextWaitlist.id);
+        // Notify promoted player
+        sendRoomNotifications({
+          userIds: [nextWaitlist.player_id],
+          type: "waitlist_promoted",
+          title: "Você foi confirmado!",
+          message: `Uma vaga abriu e você saiu da reserva para confirmado na sala "${room.title}".`,
+          roomId: room.id,
+        });
       } else {
         await supabase.from("match_rooms").update({ status: "open" }).eq("id", room.id);
       }

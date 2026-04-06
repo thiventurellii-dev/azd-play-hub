@@ -18,7 +18,7 @@ interface Props {
 }
 
 const RoomComments = ({ roomId }: Props) => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);

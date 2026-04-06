@@ -439,7 +439,7 @@ const ScriptDetail = () => {
                               className="flex items-center gap-1 text-[10px] text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors w-full"
                             >
                               <ChevronDown className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                              Top Jogadores
+                              Mais Jogado Por
                             </button>
                             {isExpanded && (
                               <div className="space-y-1 mt-1.5">

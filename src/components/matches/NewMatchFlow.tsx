@@ -13,7 +13,7 @@ import { useNotification } from '@/components/NotificationDialog';
 import { Upload, UserPlus, Trash2, ChevronLeft, ChevronRight, Check, ChevronsUpDown } from 'lucide-react';
 import ScoringSheet from './ScoringSheet';
 import NewMatchBotcFlow from './NewMatchBotcFlow';
-import { Gamepad2, Skull, Wand2 } from 'lucide-react';
+import { Gamepad2, Skull, Sword } from 'lucide-react';
 
 interface Season { id: string; name: string; }
 interface Game { id: string; name: string; slug: string | null; min_players: number | null; max_players: number | null; }
@@ -352,7 +352,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
               <p className="text-xs text-muted-foreground mt-1">BotC</p>
             </button>
             <button type="button" onClick={() => setCategory('rpg')} className="p-6 rounded-lg border-2 border-border hover:border-purple-500/50 text-center transition-all group">
-              <Wand2 className="h-10 w-10 mx-auto mb-3 text-purple-400 group-hover:scale-110 transition-transform" />
+              <Sword className="h-10 w-10 mx-auto mb-3 text-purple-400 group-hover:scale-110 transition-transform" />
               <p className="font-semibold">RPG</p>
               <p className="text-xs text-muted-foreground mt-1">Em breve</p>
             </button>
@@ -378,7 +378,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
       <Card className="bg-card border-border">
         <CardHeader><CardTitle>RPG</CardTitle></CardHeader>
         <CardContent className="text-center py-12">
-          <Wand2 className="h-12 w-12 mx-auto mb-4 text-purple-400" />
+          <Sword className="h-12 w-12 mx-auto mb-4 text-purple-400" />
           <p className="text-muted-foreground">Registro de sessões de RPG em breve!</p>
           <Button variant="outline" className="mt-4" onClick={() => setCategory('')}>
             <ChevronLeft className="h-4 w-4 mr-1" /> Voltar

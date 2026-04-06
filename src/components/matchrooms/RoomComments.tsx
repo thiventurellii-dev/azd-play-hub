@@ -23,7 +23,6 @@ const RoomComments = ({ roomId }: Props) => {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const channelIdRef = useRef(`room-comments-${roomId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`);
 
   const fetchComments = async () => {
     const { data } = await supabase
@@ -50,8 +49,9 @@ const RoomComments = ({ roomId }: Props) => {
   useEffect(() => {
     fetchComments();
 
+    const channelId = `room-comments-${roomId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const channel = supabase
-      .channel(channelIdRef.current)
+      .channel(channelId)
       .on("postgres_changes", {
         event: "*",
         schema: "public",
@@ -88,6 +88,12 @@ const RoomComments = ({ roomId }: Props) => {
     }
   };
 
+  const handleDelete = async (commentId: string) => {
+    // Optimistic delete
+    setComments(prev => prev.filter(c => c.id !== commentId));
+    await supabase.from("match_room_comments").delete().eq("id", commentId);
+  };
+
   const formatTime = (d: string) =>
     new Date(d).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
@@ -114,9 +120,7 @@ const RoomComments = ({ roomId }: Props) => {
                     variant="ghost"
                     size="icon"
                     className="h-5 w-5 opacity-0 group-hover/comment:opacity-100 transition-opacity text-destructive hover:text-destructive flex-shrink-0"
-                    onClick={async () => {
-                      await supabase.from("match_room_comments").delete().eq("id", c.id);
-                    }}
+                    onClick={() => handleDelete(c.id)}
                   >
                     <Trash2 className="h-3 w-3" />
                   </Button>

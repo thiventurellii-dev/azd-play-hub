@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ExternalLink, Video, Users, Calendar, Clock, Plus, Pencil, Trash2, Wand2, BookOpen } from "lucide-react";
+import { ExternalLink, Video, Users, Calendar, Clock, Plus, Pencil, Trash2, Sword, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotification } from "@/components/NotificationDialog";
@@ -558,7 +558,7 @@ const Games = () => {
       {rpgSystems.length === 0 ? (
         <Card className="bg-card border-border">
           <CardContent className="py-12 text-center text-muted-foreground">
-            <Wand2 className="h-12 w-12 mx-auto mb-4 text-purple-400 opacity-50" />
+            <Sword className="h-12 w-12 mx-auto mb-4 text-purple-400 opacity-50" />
             <p>Nenhum sistema de RPG cadastrado.</p>
           </CardContent>
         </Card>
@@ -697,7 +697,7 @@ const Games = () => {
           <TabsList>
             <TabsTrigger value="boardgame">🎲 Boardgames</TabsTrigger>
             <TabsTrigger value="blood">🩸 Blood on the Clocktower</TabsTrigger>
-            <TabsTrigger value="rpg">🎭 RPG</TabsTrigger>
+            <TabsTrigger value="rpg">⚔️ RPG</TabsTrigger>
           </TabsList>
           <TabsContent value="boardgame">{renderBoardgames()}</TabsContent>
           <TabsContent value="blood">{renderBloodScripts()}</TabsContent>

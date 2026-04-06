@@ -742,8 +742,42 @@ export type Database = {
           },
         ]
       }
+      match_room_tag_links: {
+        Row: {
+          id: string
+          room_id: string
+          tag_id: string
+        }
+        Insert: {
+          id?: string
+          room_id: string
+          tag_id: string
+        }
+        Update: {
+          id?: string
+          room_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "match_room_tag_links_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "match_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_room_tag_links_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "room_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       match_rooms: {
         Row: {
+          blood_script_id: string | null
           created_at: string
           created_by: string
           description: string | null
@@ -751,11 +785,13 @@ export type Database = {
           id: string
           max_players: number
           scheduled_at: string
+          season_id: string | null
           status: Database["public"]["Enums"]["match_room_status"]
           title: string
           updated_at: string
         }
         Insert: {
+          blood_script_id?: string | null
           created_at?: string
           created_by: string
           description?: string | null
@@ -763,11 +799,13 @@ export type Database = {
           id?: string
           max_players?: number
           scheduled_at: string
+          season_id?: string | null
           status?: Database["public"]["Enums"]["match_room_status"]
           title: string
           updated_at?: string
         }
         Update: {
+          blood_script_id?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
@@ -775,16 +813,31 @@ export type Database = {
           id?: string
           max_players?: number
           scheduled_at?: string
+          season_id?: string | null
           status?: Database["public"]["Enums"]["match_room_status"]
           title?: string
           updated_at?: string
         }
         Relationships: [
           {
+            foreignKeyName: "match_rooms_blood_script_id_fkey"
+            columns: ["blood_script_id"]
+            isOneToOne: false
+            referencedRelation: "blood_scripts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "match_rooms_game_id_fkey"
             columns: ["game_id"]
             isOneToOne: false
             referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_rooms_season_id_fkey"
+            columns: ["season_id"]
+            isOneToOne: false
+            referencedRelation: "seasons"
             referencedColumns: ["id"]
           },
         ]
@@ -1011,6 +1064,24 @@ export type Database = {
           status?: string
           steam_id?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      room_tags: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
         }
         Relationships: []
       }

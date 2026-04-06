@@ -101,12 +101,26 @@ const RoomComments = ({ roomId }: Props) => {
         <div className="max-h-60 overflow-y-auto mb-2 pr-1">
           <div className="space-y-1.5 pr-2">
             {comments.map(c => (
-              <div key={c.id} className="text-xs">
-                <span className="font-medium text-gold">
-                  {c.profile?.nickname || c.profile?.name || "Jogador"}
-                </span>
-                <span className="text-muted-foreground ml-1">{formatTime(c.created_at)}</span>
-                <p className="text-foreground">{c.text}</p>
+              <div key={c.id} className="text-xs group/comment flex items-start gap-1">
+                <div className="flex-1 min-w-0">
+                  <span className="font-medium text-gold">
+                    {c.profile?.nickname || c.profile?.name || "Jogador"}
+                  </span>
+                  <span className="text-muted-foreground ml-1">{formatTime(c.created_at)}</span>
+                  <p className="text-foreground">{c.text}</p>
+                </div>
+                {user && (c.user_id === user.id || isAdmin) && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-5 w-5 opacity-0 group-hover/comment:opacity-100 transition-opacity text-destructive hover:text-destructive flex-shrink-0"
+                    onClick={async () => {
+                      await supabase.from("match_room_comments").delete().eq("id", c.id);
+                    }}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                )}
               </div>
             ))}
             <div ref={scrollRef} />

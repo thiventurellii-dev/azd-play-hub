@@ -442,11 +442,14 @@ const Games = () => {
           const seasons = scriptSeasons[s.id] || [];
           return (
             <motion.div key={s.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-              <Card className={`bg-card border-border hover:border-gold/20 transition-all ${isExpanded ? '' : 'h-[280px] overflow-hidden'} flex flex-col relative group`}>
+              <Card className={`bg-card border-border hover:border-gold/20 transition-all ${isExpanded ? '' : 'h-[280px] overflow-hidden'} flex flex-col relative group cursor-pointer`}>
                 <CardContent className="py-5 space-y-3 flex-1 flex flex-col">
                   <div
-                    className="flex items-start gap-4 cursor-pointer"
-                    onClick={() => setExpandedScript(isExpanded ? null : s.id)}
+                    className="flex items-start gap-4"
+                    onClick={() => {
+                      const scriptSlug = (s as any).slug || s.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+                      navigate(`/scripts/${scriptSlug}`);
+                    }}
                   >
                     {getScriptImage(s.name) ? (
                       <img src={getScriptImage(s.name)!} alt={s.name} className="h-20 w-20 rounded-lg object-cover flex-shrink-0" loading="lazy" />

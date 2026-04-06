@@ -355,15 +355,33 @@ const Games = () => {
                             {gameTags.map(t => <Badge key={t} variant="outline" className="text-[10px] py-0">{t}</Badge>)}
                           </div>
                         )}
+                        {(g.rules_url || g.video_url) && (
+                          <div className="flex gap-2 mt-2 flex-wrap">
+                            {g.rules_url && (
+                              <a href={g.rules_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                                <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1 py-0.5 px-2 text-[10px]"><ExternalLink className="h-3 w-3" /> Regras</Badge>
+                              </a>
+                            )}
+                            {g.video_url && (
+                              <a href={g.video_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                                <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1 py-0.5 px-2 text-[10px]"><Video className="h-3 w-3" /> Vídeo</Badge>
+                              </a>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="flex-1" />
-                    {seasons.length > 0 && (
+                    {seasons.length > 0 ? (
                       <div className="border-t border-border pt-3">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1"><Calendar className="h-3 w-3" /> Seasons</p>
                         <div className="flex gap-2 flex-wrap">
                           {seasons.map(s => <Badge key={s.season_id} className={`${statusColors[s.status] || "bg-muted text-muted-foreground border-border"} text-xs`}>{s.season_name}</Badge>)}
                         </div>
+                      </div>
+                    ) : (
+                      <div className="border-t border-border pt-3">
+                        <p className="text-xs text-muted-foreground italic">Nenhuma season vinculada</p>
                       </div>
                     )}
                   </CardContent>

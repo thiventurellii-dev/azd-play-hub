@@ -245,7 +245,8 @@ const ScriptDetail = () => {
         winning_team: emWinningTeam as any,
         duration_minutes: parseInt(emDuration) || null,
         storyteller_player_id: emStoryteller,
-      }).eq("id", editingMatchId);
+        victory_conditions: emVictoryConditions,
+      } as any).eq("id", editingMatchId);
       if (matchError) throw matchError;
 
       // Delete old players and re-insert

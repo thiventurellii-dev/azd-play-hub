@@ -925,9 +925,6 @@ const GameDetail = () => {
                             className="h-6 w-6"
                             onClick={() => {
                               setEditMatch(m);
-                              setEditMatchDate(m.played_at?.slice(0, 10) || "");
-                              setEditMatchDuration(m.duration_minutes?.toString() || "");
-                              setEditMatchResults(m.results.map((r: any) => ({ ...r })));
                               setEditMatchOpen(true);
                             }}
                           >

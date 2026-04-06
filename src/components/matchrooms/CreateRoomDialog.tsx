@@ -243,6 +243,7 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
             {saving ? "Criando..." : "Agendar Partida"}
           </Button>
         </div>
+        )}
       </DialogContent>
     </Dialog>
   );

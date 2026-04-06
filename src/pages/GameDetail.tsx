@@ -501,6 +501,18 @@ const GameDetail = () => {
                       <Users className="h-4 w-4" /> {game.min_players || "?"}–{game.max_players || "?"} jogadores
                     </span>
                   )}
+                  {(() => {
+                    const withDuration = allMatches.filter(m => m.duration_minutes);
+                    if (withDuration.length > 0) {
+                      const avg = Math.round(withDuration.reduce((s, m) => s + m.duration_minutes, 0) / withDuration.length);
+                      return (
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-4 w-4" /> ~{avg} min
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()}
                   {tags.length > 0 &&
                     tags.map((t) => (
                       <Badge key={t} variant="outline" className="text-xs">

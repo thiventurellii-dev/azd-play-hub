@@ -58,7 +58,6 @@ const PlayerProfile = () => {
 
   // Category carousel
   const allCategories = ['boardgame', 'botc', 'rpg'] as const;
-  type Category = typeof allCategories[number];
   const [categoryIdx, setCategoryIdx] = useState(0);
 
   // Edit profile state

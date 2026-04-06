@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Calendar, Users, LogIn, Clock, Share2, ClipboardList } from "lucide-react";
+import { Calendar, Users, LogIn, Clock, Share2, ClipboardList, MessageCircle, ChevronDown, ChevronUp } from "lucide-react";
 import { generateWhatsAppInvite, sendMatchNotification } from "@/lib/matchNotification";
 import { toast } from "sonner";
 import RoomComments from "./RoomComments";
@@ -47,6 +47,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const navigate = useNavigate();
   const [players, setPlayers] = useState<RoomPlayer[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showComments, setShowComments] = useState(false);
 
   const fetchPlayers = async () => {
     const { data } = await supabase
@@ -119,7 +120,6 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
         created_by: room.created_by,
       });
 
-      // Auto-update room status to full
       if (type === "confirmed" && confirmed.length + 1 >= room.max_players) {
         await supabase.from("match_rooms").update({ status: "full" }).eq("id", room.id);
       }
@@ -132,7 +132,6 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
     setLoading(true);
     await supabase.from("match_room_players").delete().eq("room_id", room.id).eq("player_id", user.id);
 
-    // If was full and someone left, reopen + promote waitlist
     if (room.status === "full") {
       const nextWaitlist = waitlist[0];
       if (nextWaitlist) {
@@ -143,7 +142,6 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
     }
 
     toast.success("Você saiu da sala");
-    // Immediately refresh players list
     await fetchPlayers();
     onUpdate();
     setLoading(false);
@@ -164,8 +162,8 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const displayName = (p: RoomPlayer) => p.profile?.nickname || p.profile?.name || "Jogador";
 
   return (
-    <Card className="flex flex-col h-full">
-      <CardHeader className="pb-3">
+    <Card className="flex flex-col h-[340px] overflow-hidden">
+      <CardHeader className="pb-3 flex-shrink-0">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <CardTitle className="text-lg truncate">{room.title}</CardTitle>
@@ -176,8 +174,8 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col gap-3">
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+      <CardContent className="flex-1 flex flex-col gap-3 overflow-hidden">
+        <div className="flex items-center gap-4 text-sm text-muted-foreground flex-shrink-0">
           <span className="flex items-center gap-1">
             <Calendar className="h-3.5 w-3.5 text-gold" /> {formattedDate}
           </span>
@@ -190,12 +188,12 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
         </div>
 
         {room.description && (
-          <p className="text-sm text-muted-foreground line-clamp-2">{room.description}</p>
+          <p className="text-sm text-muted-foreground line-clamp-2 flex-shrink-0">{room.description}</p>
         )}
 
         {/* Confirmed players */}
         {confirmed.length > 0 && (
-          <div>
+          <div className="flex-shrink-0">
             <p className="text-xs font-medium text-muted-foreground mb-1">Confirmados:</p>
             <div className="flex flex-wrap gap-1">
               {confirmed.map((p) => (
@@ -209,7 +207,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
 
         {/* Waitlist */}
         {waitlist.length > 0 && (
-          <div>
+          <div className="flex-shrink-0">
             <p className="text-xs font-medium text-amber-400 mb-1">Reserva ({waitlist.length}):</p>
             <div className="flex flex-wrap gap-1">
               {waitlist.map((p) => (
@@ -221,8 +219,10 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
           </div>
         )}
 
+        <div className="flex-1" />
+
         {/* Actions */}
-        <div className="mt-auto pt-3 flex gap-2">
+        <div className="flex gap-2 flex-shrink-0">
           {canInteract && user && (
             isInRoom ? (
               <Button variant="outline" size="sm" className="flex-1 min-h-[44px]" onClick={handleLeave} disabled={loading}>
@@ -266,10 +266,24 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
               <ClipboardList className="h-4 w-4 mr-1" /> Inserir Resultado
             </Button>
           )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="min-h-[44px] gap-1"
+            onClick={(e) => { e.stopPropagation(); setShowComments(!showComments); }}
+          >
+            <MessageCircle className="h-4 w-4" />
+            {showComments ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+          </Button>
         </div>
-
-        <RoomComments roomId={room.id} />
       </CardContent>
+
+      {/* Expandable comments */}
+      {showComments && (
+        <div className="border-t border-border px-6 pb-4 max-h-[200px] overflow-y-auto">
+          <RoomComments roomId={room.id} />
+        </div>
+      )}
     </Card>
   );
 };

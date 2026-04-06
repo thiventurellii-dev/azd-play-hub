@@ -396,8 +396,7 @@ const Games = () => {
           const seasons = scriptSeasons[s.id] || [];
           return (
             <motion.div key={s.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-              <Card className="bg-card border-border hover:border-gold/20 transition-colors cursor-pointer h-full flex flex-col"
-                onClick={() => setExpandedScript(isExpanded ? null : s.id)}>
+              <Card className={`bg-card border-border hover:border-gold/20 transition-all ${isExpanded ? '' : 'h-[240px] overflow-hidden'} flex flex-col`}>
                 <CardContent className="py-5 space-y-3 flex-1 flex flex-col">
                   <div className="flex items-start gap-4">
                     {getScriptImage(s.name) ? (
@@ -407,7 +406,7 @@ const Games = () => {
                     )}
                     <div className="flex-1 min-w-0">
                       <h3 className="text-lg font-bold">{s.name}</h3>
-                      {s.description && <p className="text-sm text-muted-foreground mt-1">{s.description}</p>}
+                      {s.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{s.description}</p>}
                       <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
                         <span className="flex items-center gap-1"><Users className="h-4 w-4" /> {chars.length} personagens</span>
                         <span>👼 {goodChars.length}</span>
@@ -424,6 +423,14 @@ const Games = () => {
                       </div>
                     </div>
                   )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-muted-foreground self-start"
+                    onClick={(e) => { e.stopPropagation(); setExpandedScript(isExpanded ? null : s.id); }}
+                  >
+                    {isExpanded ? "▲ Ocultar personagens" : "▼ Ver personagens"}
+                  </Button>
                   {isExpanded && (
                     <div className="border-t border-border pt-3 space-y-2">
                       {goodChars.length > 0 && (

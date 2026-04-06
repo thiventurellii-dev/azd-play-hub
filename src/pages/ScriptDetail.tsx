@@ -9,12 +9,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ArrowLeft, Clock, Skull, Shield, Pencil, Plus, Trash2, Timer, ChevronDown } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotification } from "@/components/NotificationDialog";
-import NewMatchBotcFlow from "@/components/matches/NewMatchBotcFlow";
+import { recalculateSeasonRatings } from "@/lib/bloodRatings";
 
 interface BloodScript {
   id: string;

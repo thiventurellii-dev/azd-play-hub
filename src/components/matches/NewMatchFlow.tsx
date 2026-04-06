@@ -352,7 +352,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
               <p className="text-xs text-muted-foreground mt-1">BotC</p>
             </button>
             <button type="button" onClick={() => setCategory('rpg')} className="p-6 rounded-lg border-2 border-border hover:border-purple-500/50 text-center transition-all group">
-              <Wand2 className="h-10 w-10 mx-auto mb-3 text-purple-400 group-hover:scale-110 transition-transform" />
+              <Sword className="h-10 w-10 mx-auto mb-3 text-purple-400 group-hover:scale-110 transition-transform" />
               <p className="font-semibold">RPG</p>
               <p className="text-xs text-muted-foreground mt-1">Em breve</p>
             </button>

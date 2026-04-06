@@ -54,6 +54,7 @@ const PlayerProfile = () => {
   const [opponents, setOpponents] = useState<{ name: string; games: number; wins: number }[]>([]);
   const [upcomingRooms, setUpcomingRooms] = useState<any[]>([]);
   const [achievements, setAchievements] = useState<{ icon: string; name: string; description: string | null }[]>([]);
+  const [botcStats, setBotcStats] = useState<{ gamesPlayed: number; winsGood: number; winsEvil: number; storytellerGames: number } | null>(null);
 
   // Edit profile state
   const [editing, setEditing] = useState(false);

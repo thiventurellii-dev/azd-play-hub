@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useNotification } from '@/components/NotificationDialog';
 import { Plus, Trash2, UserPlus, ChevronDown, ChevronUp, Search, Skull, Shield, Pencil } from 'lucide-react';
+import { recalculateSeasonRatings, submitBloodMatch } from '@/lib/bloodRatings';
 
 interface Season { id: string; name: string; }
 interface BloodScript { id: string; name: string; }

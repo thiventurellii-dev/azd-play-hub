@@ -57,6 +57,13 @@ const menuGroups: MenuGroup[] = [
       { value: "suggestions", label: "Sugestões", icon: Lightbulb },
     ],
   },
+  {
+    label: "Sistema",
+    items: [
+      { value: "logs", label: "Logs de Atividade", icon: ScrollText },
+      { value: "proposals", label: "Propostas de Edição", icon: GitPullRequest },
+    ],
+  },
 ];
 
 const contentMap: Record<string, React.ReactNode> = {

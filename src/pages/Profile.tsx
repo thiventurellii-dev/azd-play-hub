@@ -102,7 +102,6 @@ const Profile = () => {
     const ext = file.name.split('.').pop();
     const path = `${user.id}/avatar.${ext}`;
     
-    // Delete old files in the folder
     const { data: existing } = await supabase.storage.from('avatars').list(user.id);
     if (existing && existing.length > 0) {
       await supabase.storage.from('avatars').remove(existing.map(f => `${user.id}/${f.name}`));
@@ -163,11 +162,19 @@ const Profile = () => {
                 </Badge>
               </div>
             </div>
-            {!editing && (
-              <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
-                <Pencil className="h-4 w-4 mr-1" /> Editar
-              </Button>
-            )}
+            {/* Action buttons always visible */}
+            <div className="flex flex-col gap-1.5 sm:flex-row sm:gap-2">
+              {!editing && (
+                <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+                  <Pencil className="h-4 w-4 mr-1" /> Editar Perfil
+                </Button>
+              )}
+              {!changingPassword && !editing && (
+                <Button variant="outline" size="sm" onClick={() => setChangingPassword(true)}>
+                  <Lock className="h-4 w-4 mr-1" /> Resetar Senha
+                </Button>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -270,10 +277,10 @@ const Profile = () => {
             </div>
           )}
 
-          <Separator className="my-6" />
-
-          <div>
-            {changingPassword ? (
+          {/* Password change section */}
+          {changingPassword && (
+            <>
+              <Separator className="my-6" />
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold flex items-center gap-2"><Lock className="h-4 w-4" /> Alterar Senha</h3>
                 <div className="space-y-2">
@@ -291,12 +298,8 @@ const Profile = () => {
                   <Button variant="outline" onClick={() => { setChangingPassword(false); setNewPassword(''); setConfirmPassword(''); }}>Cancelar</Button>
                 </div>
               </div>
-            ) : (
-              <Button variant="outline" onClick={() => setChangingPassword(true)}>
-                <Lock className="h-4 w-4 mr-1" /> Alterar Senha
-              </Button>
-            )}
-          </div>
+            </>
+          )}
         </CardContent>
       </Card>
 

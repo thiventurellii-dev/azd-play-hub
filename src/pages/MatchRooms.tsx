@@ -220,12 +220,14 @@ const MatchRooms = () => {
       <Dialog open={matchFlowOpen} onOpenChange={setMatchFlowOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Registrar Resultado</DialogTitle></DialogHeader>
-          <NewMatchFlow
-            prefilledGameId={prefill?.gameId}
-            prefilledPlayers={prefill?.playerIds}
-            prefilledDate={prefill?.date?.slice(0, 10)}
-            onComplete={() => { setMatchFlowOpen(false); fetchRooms(); }}
-          />
+          <ErrorBoundary>
+            <NewMatchFlow
+              prefilledGameId={prefill?.gameId}
+              prefilledPlayers={prefill?.playerIds}
+              prefilledDate={prefill?.date?.slice(0, 10)}
+              onComplete={() => { setMatchFlowOpen(false); fetchRooms(); }}
+            />
+          </ErrorBoundary>
         </DialogContent>
       </Dialog>
 

@@ -14,6 +14,7 @@ import { sendMatchNotification } from "@/lib/matchNotification";
 interface Game {
   id: string;
   name: string;
+  max_players: number | null;
 }
 
 interface Props {

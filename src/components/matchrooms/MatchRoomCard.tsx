@@ -132,8 +132,31 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
     if (error) {
       toast.error("Erro ao entrar na sala");
     } else {
+      const joinerName = displayName({ player_id: user.id, profile: undefined } as any) || "Alguém";
+      // Notify room creator
+      if (room.created_by !== user.id) {
+        sendRoomNotifications({
+          userIds: [room.created_by],
+          type: "room_join",
+          title: "Novo jogador na sala",
+          message: `${joinerName} entrou na sala "${room.title}"`,
+          roomId: room.id,
+        });
+      }
+
       if (type === "confirmed" && confirmed.length + 1 >= room.max_players) {
         await supabase.from("match_rooms").update({ status: "full" }).eq("id", room.id);
+        // Notify all confirmed players that room is full
+        const allPlayerIds = [...confirmed.map(p => p.player_id), user.id].filter(id => id !== user.id);
+        if (allPlayerIds.length > 0) {
+          sendRoomNotifications({
+            userIds: allPlayerIds,
+            type: "room_full",
+            title: "Sala lotada!",
+            message: `A sala "${room.title}" atingiu o número máximo de jogadores.`,
+            roomId: room.id,
+          });
+        }
       }
       toast.success(type === "confirmed" ? "Você entrou na sala!" : "Você entrou na lista de espera!");
     }

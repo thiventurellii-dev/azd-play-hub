@@ -568,6 +568,52 @@ const Games = () => {
     fetchData();
   };
 
+  const openEditSystem = (sys: any) => {
+    setEditSystem(sys);
+    setEditSysName(sys.name);
+    setEditSysDesc(sys.description || '');
+    setEditSysImageUrl(sys.image_url || '');
+    setEditSysRulesUrl(sys.rules_url || '');
+    setEditSysVideoUrl(sys.video_url || '');
+    setEditSystemOpen(true);
+  };
+
+  const handleEditSystemSave = async () => {
+    if (!editSystem) return;
+    const { error } = await supabase.from('rpg_systems').update({
+      name: editSysName, description: editSysDesc || null,
+      image_url: editSysImageUrl || null, rules_url: editSysRulesUrl || null,
+      video_url: editSysVideoUrl || null,
+    } as any).eq('id', editSystem.id);
+    if (error) return notify('error', error.message);
+    notify('success', 'Sistema atualizado!');
+    setEditSystemOpen(false);
+    fetchData();
+  };
+
+  const openEditAdventure = (adv: any) => {
+    setEditAdv(adv);
+    setEditAdvName(adv.name);
+    setEditAdvDesc(adv.description || '');
+    setEditAdvTag(adv.tag || 'official');
+    setEditAdvImageUrl(adv.image_url || '');
+    setEditAdvSystemId(adv.system_id);
+    setEditAdvOpen(true);
+  };
+
+  const handleEditAdventureSave = async () => {
+    if (!editAdv) return;
+    const { error } = await supabase.from('rpg_adventures').update({
+      name: editAdvName, description: editAdvDesc || null,
+      tag: editAdvTag, image_url: editAdvImageUrl || null,
+      system_id: editAdvSystemId,
+    } as any).eq('id', editAdv.id);
+    if (error) return notify('error', error.message);
+    notify('success', 'Aventura atualizada!');
+    setEditAdvOpen(false);
+    fetchData();
+  };
+
   const renderRpg = () => (
     <>
       {isAdmin && (

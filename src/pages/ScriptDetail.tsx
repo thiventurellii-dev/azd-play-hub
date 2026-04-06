@@ -8,11 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, Clock, Skull, Shield, Pencil, Plus, Trash2, Timer } from "lucide-react";
+import { ArrowLeft, Clock, Skull, Shield, Pencil, Plus, Trash2, Timer, ChevronDown } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotification } from "@/components/NotificationDialog";
+import { recalculateSeasonRatings } from "@/lib/bloodRatings";
 
 interface BloodScript {
   id: string;
@@ -79,14 +81,25 @@ const ScriptDetail = () => {
   const [matchPlayers, setMatchPlayers] = useState<MatchPlayer[]>([]);
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
+  const [expandedChars, setExpandedChars] = useState<Record<string, boolean>>({});
 
-  // Edit dialog
+  // Edit script dialog
   const [editOpen, setEditOpen] = useState(false);
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [editImageUrl, setEditImageUrl] = useState("");
   const [editVictoryConditions, setEditVictoryConditions] = useState<string[]>([]);
   const [newCondition, setNewCondition] = useState("");
+
+  // Edit match dialog
+  const [editMatchOpen, setEditMatchOpen] = useState(false);
+  const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
+  const [emWinningTeam, setEmWinningTeam] = useState<'good' | 'evil'>('good');
+  const [emDuration, setEmDuration] = useState('');
+  const [emStoryteller, setEmStoryteller] = useState('');
+  const [emPlayers, setEmPlayers] = useState<{ player_id: string; character_id: string; team: 'good' | 'evil' }[]>([]);
+  const [emSaving, setEmSaving] = useState(false);
+  const [allPlayers, setAllPlayers] = useState<{ id: string; name: string; nickname?: string }[]>([]);
 
   useEffect(() => {
     if (!slug) return;
@@ -111,15 +124,16 @@ const ScriptDetail = () => {
         victory_conditions: Array.isArray(found.victory_conditions) ? found.victory_conditions : [],
       };
       setScript(scriptData);
-      // Use a dedicated image_url field if it exists in DB, otherwise null
       setScriptImageUrl(found.image_url || null);
 
-      const [charsRes, matchesRes] = await Promise.all([
+      const [charsRes, matchesRes, playersRes] = await Promise.all([
         supabase.from("blood_characters").select("*").eq("script_id", found.id).order("team, role_type, name"),
         supabase.from("blood_matches").select("*").eq("script_id", found.id).order("played_at", { ascending: false }),
+        supabase.from("profiles").select("id, name, nickname").order("name"),
       ]);
 
       setCharacters((charsRes.data || []) as BloodCharacter[]);
+      setAllPlayers((playersRes.data || []) as any[]);
       const matchesData = (matchesRes.data || []) as BloodMatch[];
       setMatches(matchesData);
 
@@ -177,7 +191,7 @@ const ScriptDetail = () => {
     return Object.entries(playerCounts).sort(([, a], [, b]) => b - a).slice(0, 5).map(([id, count]) => ({ id, name: profiles[id] || "?", count }));
   }, [characters, matchPlayers, profiles]);
 
-  // Edit handlers
+  // Edit script handlers
   const openEdit = () => {
     if (!script) return;
     setEditName(script.name);
@@ -195,7 +209,6 @@ const ScriptDetail = () => {
       description: editDesc || null,
       victory_conditions: editVictoryConditions,
     };
-    // image_url field – we'll attempt to save it even if column doesn't exist yet
     if (editImageUrl !== (scriptImageUrl || "")) {
       updateData.image_url = editImageUrl || null;
     }
@@ -205,6 +218,56 @@ const ScriptDetail = () => {
     setScript({ ...script, name: editName, description: editDesc || null, victory_conditions: editVictoryConditions });
     setScriptImageUrl(editImageUrl || null);
     setEditOpen(false);
+  };
+
+  // Edit match handlers
+  const openEditMatch = (m: BloodMatch) => {
+    setEditingMatchId(m.id);
+    setEmWinningTeam(m.winning_team);
+    setEmDuration(m.duration_minutes?.toString() || '');
+    setEmStoryteller(m.storyteller_player_id);
+    const mps = matchPlayers.filter(mp => mp.match_id === m.id);
+    setEmPlayers(mps.map(mp => ({ player_id: mp.player_id, character_id: mp.character_id, team: mp.team })));
+    setEditMatchOpen(true);
+  };
+
+  const handleMatchSave = async () => {
+    if (!editingMatchId || !script) return;
+    setEmSaving(true);
+    try {
+      const match = matches.find(m => m.id === editingMatchId);
+      if (!match) throw new Error("Partida não encontrada");
+
+      const { error: matchError } = await supabase.from("blood_matches").update({
+        winning_team: emWinningTeam as any,
+        duration_minutes: parseInt(emDuration) || null,
+        storyteller_player_id: emStoryteller,
+      }).eq("id", editingMatchId);
+      if (matchError) throw matchError;
+
+      // Delete old players and re-insert
+      await supabase.from("blood_match_players").delete().eq("match_id", editingMatchId);
+      if (emPlayers.length > 0) {
+        const { error: pError } = await supabase.from("blood_match_players").insert(
+          emPlayers.map(p => ({ match_id: editingMatchId, player_id: p.player_id, character_id: p.character_id, team: p.team as any }))
+        );
+        if (pError) throw pError;
+      }
+
+      await recalculateSeasonRatings(match.season_id);
+      notify("success", "Partida atualizada!");
+      setEditMatchOpen(false);
+      // Refresh data
+      window.location.reload();
+    } catch (err: any) {
+      notify("error", err.message || "Erro ao salvar");
+    } finally {
+      setEmSaving(false);
+    }
+  };
+
+  const toggleCharExpanded = (charId: string) => {
+    setExpandedChars(prev => ({ ...prev, [charId]: !prev[charId] }));
   };
 
   if (loading) {
@@ -224,6 +287,9 @@ const ScriptDetail = () => {
     );
   }
 
+  const evilChars = characters.filter(c => c.team === 'evil');
+  const goodChars = characters.filter(c => c.team === 'good');
+
   return (
     <div className="container py-8 space-y-8">
       {/* Back */}
@@ -231,20 +297,13 @@ const ScriptDetail = () => {
         <ArrowLeft className="h-4 w-4" /> Voltar aos Jogos
       </Link>
 
-      {/* Header: centered image + title + stats */}
+      {/* Header */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-4">
-        {/* Cover Image */}
         {scriptImageUrl && (
           <div className="flex justify-center">
-            <img
-              src={scriptImageUrl}
-              alt={script.name}
-              className="h-48 w-auto max-w-full rounded-xl object-contain"
-            />
+            <img src={scriptImageUrl} alt={script.name} className="h-48 w-auto max-w-full rounded-xl object-contain" />
           </div>
         )}
-
-        {/* Title + Description */}
         <div>
           <div className="flex items-center justify-center gap-2">
             <h1 className="text-2xl font-bold">{script.name}</h1>
@@ -259,10 +318,8 @@ const ScriptDetail = () => {
           )}
         </div>
 
-        {/* Inline Stats */}
         {stats && (
           <div className="space-y-2">
-            {/* Time stats */}
             <div className="flex items-center justify-center gap-6 text-sm">
               <span className="flex items-center gap-1.5 text-muted-foreground">
                 <Clock className="h-4 w-4 text-foreground" />
@@ -276,8 +333,6 @@ const ScriptDetail = () => {
                 Média por Partida
               </span>
             </div>
-
-            {/* Win percentages */}
             <div className="flex items-center justify-center gap-6 text-sm">
               <span className="flex items-center gap-1.5">
                 <Shield className="h-4 w-4 text-foreground" />
@@ -294,7 +349,6 @@ const ScriptDetail = () => {
           </div>
         )}
 
-        {/* Victory Conditions - 3 columns, no card borders */}
         {script.victory_conditions.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3 max-w-2xl mx-auto pt-2">
             {script.victory_conditions.map((vc, i) => (
@@ -335,6 +389,7 @@ const ScriptDetail = () => {
                     : [];
                   const winPct = cStats && cStats.played > 0 ? Math.round((cStats.wins / cStats.played) * 100) : 0;
                   const iconUrl = getCharIconUrl(char);
+                  const isExpanded = expandedChars[char.id] || false;
 
                   return (
                     <Card key={char.id} className={`bg-card ${cardBorder} transition-colors`}>
@@ -363,32 +418,43 @@ const ScriptDetail = () => {
                             <p className={`font-semibold ${isGood ? "text-blue-300" : "text-red-300"}`}>{char.name}</p>
                             <p className="text-xs text-muted-foreground">{char.name_en}</p>
                           </div>
+                          {/* Stats in top-right */}
+                          <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+                            <span className="text-xs text-muted-foreground">
+                              {cStats ? `${cStats.played}x` : "0x"}
+                            </span>
+                            {cStats && cStats.played > 0 && (
+                              <Badge variant="outline" className={`text-[10px] ${winPct >= 50 ? "border-green-500/30 text-green-400" : "border-red-500/30 text-red-400"}`}>
+                                {winPct}%
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                         {char.description && (
                           <p className="text-xs text-muted-foreground italic leading-relaxed">{char.description}</p>
                         )}
-                        <Separator className="opacity-30" />
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">
-                            {cStats ? `${cStats.played}x jogado` : "Nunca jogado"}
-                          </span>
-                          {cStats && cStats.played > 0 && (
-                            <Badge variant="outline" className={`text-[10px] ${winPct >= 50 ? "border-green-500/30 text-green-400" : "border-red-500/30 text-red-400"}`}>
-                              {winPct}% vitória
-                            </Badge>
-                          )}
-                        </div>
+                        {/* Collapsible Top Players */}
                         {topPlayers.length > 0 && (
-                          <div className="space-y-1">
-                            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Top Jogadores</p>
-                            {topPlayers.map(([pid, count]) => (
-                              <div key={pid} className="flex items-center justify-between text-xs">
-                                <Link to={`/perfil/${profiles[pid] || pid}`} className="hover:text-foreground text-muted-foreground transition-colors">
-                                  {profiles[pid] || "?"}
-                                </Link>
-                                <span className="text-muted-foreground">{count}x</span>
+                          <div>
+                            <button
+                              onClick={() => toggleCharExpanded(char.id)}
+                              className="flex items-center gap-1 text-[10px] text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors w-full"
+                            >
+                              <ChevronDown className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                              Top Jogadores
+                            </button>
+                            {isExpanded && (
+                              <div className="space-y-1 mt-1.5">
+                                {topPlayers.map(([pid, count]) => (
+                                  <div key={pid} className="flex items-center justify-between text-xs">
+                                    <Link to={`/perfil/${profiles[pid] || pid}`} className="hover:text-foreground text-muted-foreground transition-colors">
+                                      {profiles[pid] || "?"}
+                                    </Link>
+                                    <span className="text-muted-foreground">{count}x</span>
+                                  </div>
+                                ))}
                               </div>
-                            ))}
+                            )}
                           </div>
                         )}
                       </CardContent>
@@ -445,6 +511,11 @@ const ScriptDetail = () => {
                       <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <span>Narrador: <span className="text-foreground">{profiles[m.storyteller_player_id] || "?"}</span></span>
                         <span>· {mPlayers.length} jogadores</span>
+                        {isAdmin && (
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => openEditMatch(m)}>
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -455,7 +526,7 @@ const ScriptDetail = () => {
         </div>
       )}
 
-      {/* Edit Dialog */}
+      {/* Edit Script Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Editar Script</DialogTitle></DialogHeader>
@@ -502,6 +573,114 @@ const ScriptDetail = () => {
               </div>
             </div>
             <Button variant="gold" onClick={handleSave} className="w-full">Salvar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Match Dialog */}
+      <Dialog open={editMatchOpen} onOpenChange={setEditMatchOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Editar Partida</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Time Vencedor</Label>
+                <Select value={emWinningTeam} onValueChange={(v) => setEmWinningTeam(v as 'good' | 'evil')}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="good">🛡️ Bem</SelectItem>
+                    <SelectItem value="evil">💀 Mal</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Duração (min)</Label>
+                <Input type="number" value={emDuration} onChange={(e) => setEmDuration(e.target.value)} placeholder="90" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Narrador</Label>
+              <Select value={emStoryteller} onValueChange={setEmStoryteller}>
+                <SelectTrigger><SelectValue placeholder="Selecione o narrador" /></SelectTrigger>
+                <SelectContent>
+                  {allPlayers.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.nickname || p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Separator />
+
+            {/* Evil players */}
+            <div className="space-y-3 p-3 rounded-lg border border-red-500/30 bg-red-500/5">
+              <div className="flex items-center gap-2">
+                <Skull className="h-4 w-4 text-red-400" />
+                <Label className="text-red-400 font-semibold">Time Maligno</Label>
+              </div>
+              {emPlayers.filter(p => p.team === 'evil').map((ep, i) => {
+                const idx = emPlayers.findIndex(p => p === ep);
+                return (
+                  <div key={i} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] items-end">
+                    <Select value={ep.player_id} onValueChange={v => { const u = [...emPlayers]; u[idx] = { ...u[idx], player_id: v }; setEmPlayers(u); }}>
+                      <SelectTrigger><SelectValue placeholder="Jogador" /></SelectTrigger>
+                      <SelectContent>
+                        {allPlayers.map(p => <SelectItem key={p.id} value={p.id}>{p.nickname || p.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <Select value={ep.character_id} onValueChange={v => { const u = [...emPlayers]; u[idx] = { ...u[idx], character_id: v }; setEmPlayers(u); }}>
+                      <SelectTrigger><SelectValue placeholder="Personagem" /></SelectTrigger>
+                      <SelectContent>
+                        {evilChars.map(c => <SelectItem key={c.id} value={c.id}>{c.name} ({c.role_type})</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <Button variant="ghost" size="icon" onClick={() => setEmPlayers(emPlayers.filter((_, j) => j !== idx))}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                );
+              })}
+              <Button variant="outline" size="sm" onClick={() => setEmPlayers([...emPlayers, { player_id: '', character_id: '', team: 'evil' }])}>
+                <Plus className="h-4 w-4 mr-1" /> Maligno
+              </Button>
+            </div>
+
+            {/* Good players */}
+            <div className="space-y-3 p-3 rounded-lg border border-blue-500/30 bg-blue-500/5">
+              <div className="flex items-center gap-2">
+                <Shield className="h-4 w-4 text-blue-400" />
+                <Label className="text-blue-400 font-semibold">Time Benigno</Label>
+              </div>
+              {emPlayers.filter(p => p.team === 'good').map((ep, i) => {
+                const idx = emPlayers.findIndex(p => p === ep);
+                return (
+                  <div key={i} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] items-end">
+                    <Select value={ep.player_id} onValueChange={v => { const u = [...emPlayers]; u[idx] = { ...u[idx], player_id: v }; setEmPlayers(u); }}>
+                      <SelectTrigger><SelectValue placeholder="Jogador" /></SelectTrigger>
+                      <SelectContent>
+                        {allPlayers.map(p => <SelectItem key={p.id} value={p.id}>{p.nickname || p.name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <Select value={ep.character_id} onValueChange={v => { const u = [...emPlayers]; u[idx] = { ...u[idx], character_id: v }; setEmPlayers(u); }}>
+                      <SelectTrigger><SelectValue placeholder="Personagem" /></SelectTrigger>
+                      <SelectContent>
+                        {goodChars.map(c => <SelectItem key={c.id} value={c.id}>{c.name} ({c.role_type})</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <Button variant="ghost" size="icon" onClick={() => setEmPlayers(emPlayers.filter((_, j) => j !== idx))}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                );
+              })}
+              <Button variant="outline" size="sm" onClick={() => setEmPlayers([...emPlayers, { player_id: '', character_id: '', team: 'good' }])}>
+                <Plus className="h-4 w-4 mr-1" /> Benigno
+              </Button>
+            </div>
+
+            <Button variant="gold" onClick={handleMatchSave} disabled={emSaving} className="w-full">
+              {emSaving ? 'Salvando...' : 'Salvar Partida'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

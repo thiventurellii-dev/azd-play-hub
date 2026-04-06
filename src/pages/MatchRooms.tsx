@@ -15,7 +15,7 @@ import { toast } from "sonner";
 
 interface MatchRoom {
   id: string; title: string; description: string | null; scheduled_at: string;
-  max_players: number; status: string; created_by: string;
+  max_players: number; status: string; created_by: string; season_id?: string | null;
   game: { id: string; name: string; image_url: string | null };
 }
 

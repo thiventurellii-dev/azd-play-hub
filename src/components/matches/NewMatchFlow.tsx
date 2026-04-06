@@ -74,7 +74,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
   useEffect(() => {
     const fetchBase = async () => {
       const [s, g, p] = await Promise.all([
-        supabase.from('seasons').select('id, name').eq('type', 'boardgame' as any).order('start_date', { ascending: false }),
+        supabase.from('seasons').select('id, name, status').eq('type', 'boardgame' as any).neq('status', 'finished').order('start_date', { ascending: false }),
         supabase.from('games').select('id, name, slug, min_players, max_players').order('name'),
         supabase.from('profiles').select('id, name, nickname').order('name'),
       ]);

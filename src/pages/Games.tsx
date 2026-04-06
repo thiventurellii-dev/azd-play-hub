@@ -1014,6 +1014,56 @@ const Games = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Blood Script Dialog */}
+      <Dialog open={editScriptOpen} onOpenChange={setEditScriptOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Editar Script</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Nome</Label>
+              <Input value={editScriptName} onChange={(e) => setEditScriptName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Descrição</Label>
+              <Textarea value={editScriptDesc} onChange={(e) => setEditScriptDesc(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>URL da Imagem</Label>
+              <Input value={editScriptImageUrl} onChange={(e) => setEditScriptImageUrl(e.target.value)} placeholder="https://exemplo.com/imagem.png" />
+            </div>
+            <div className="space-y-2">
+              <Label>Condições de Vitória Especiais</Label>
+              <div className="space-y-2">
+                {editScriptVictoryConditions.map((vc, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <Input value={vc} onChange={(e) => {
+                      const updated = [...editScriptVictoryConditions];
+                      updated[i] = e.target.value;
+                      setEditScriptVictoryConditions(updated);
+                    }} />
+                    <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" onClick={() => setEditScriptVictoryConditions(editScriptVictoryConditions.filter((_, idx) => idx !== i))}>
+                      <Trash2 className="h-3 w-3 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+                <div className="flex items-center gap-2">
+                  <Input value={newScriptCondition} onChange={(e) => setNewScriptCondition(e.target.value)} placeholder="Ex: Vitória pelo Prefeito" />
+                  <Button variant="outline" size="sm" className="flex-shrink-0" onClick={() => {
+                    if (newScriptCondition.trim()) {
+                      setEditScriptVictoryConditions([...editScriptVictoryConditions, newScriptCondition.trim()]);
+                      setNewScriptCondition('');
+                    }
+                  }}>
+                    <Plus className="h-3 w-3 mr-1" /> Adicionar
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <Button variant="gold" onClick={handleEditScriptSave} className="w-full">Salvar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

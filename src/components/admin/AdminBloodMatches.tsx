@@ -14,7 +14,7 @@ import { Plus, Trash2, UserPlus, ChevronDown, ChevronUp, Search, Skull, Shield, 
 import { recalculateSeasonRatings, submitBloodMatch } from '@/lib/bloodRatings';
 
 interface Season { id: string; name: string; }
-interface BloodScript { id: string; name: string; }
+interface BloodScript { id: string; name: string; victory_conditions: string[]; }
 interface BloodCharacter { id: string; script_id: string; name: string; name_en: string; role_type: string; team: string; }
 interface Player { id: string; name: string; nickname?: string; }
 interface BloodPlayerEntry { player_id: string; character_id: string; team: 'good' | 'evil'; }

@@ -65,7 +65,7 @@ const AdminBloodMatches = () => {
         supabase.from('profiles').select('id, name, nickname').order('name'),
       ]);
       setSeasons((s.data || []) as Season[]);
-      setScripts((sc.data || []) as BloodScript[]);
+      setScripts((sc.data || []).map((x: any) => ({ ...x, victory_conditions: Array.isArray(x.victory_conditions) ? x.victory_conditions : [] })) as BloodScript[]);
       setCharacters((ch.data || []) as BloodCharacter[]);
       setPlayers((p.data || []) as Player[]);
     };

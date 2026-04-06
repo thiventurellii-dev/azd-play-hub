@@ -216,7 +216,7 @@ const Navbar = () => {
                 variant="ghost"
                 size="sm"
                 className="gap-2 relative"
-                onClick={() => navigate("/profile")}
+                onClick={() => navigate(userNickname ? `/perfil/${userNickname}` : "/profile")}
               >
                 {userAvatar ? (
                   <img src={userAvatar} alt="" className="h-6 w-6 rounded-full object-cover" />

@@ -180,10 +180,10 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
             <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
           </Button>
           <div>
-            <Label>Jogo *</Label>
+            <Label>{category === 'botc' ? 'Script *' : 'Jogo *'}</Label>
             <Select value={gameId} onValueChange={setGameId}>
               <SelectTrigger>
-                <SelectValue placeholder="Selecione o jogo" />
+                <SelectValue placeholder={category === 'botc' ? 'Selecione o script' : 'Selecione o jogo'} />
               </SelectTrigger>
               <SelectContent>
                 {filteredGames.map((g) => (

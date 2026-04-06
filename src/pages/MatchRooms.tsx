@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import MatchRoomCard from "@/components/matchrooms/MatchRoomCard";
@@ -43,6 +44,9 @@ const MatchRooms = () => {
     }
   }, [location.state]);
 
+  // Tab state for controlling active tab
+  const [activeTab, setActiveTab] = useState("active");
+
   // Handle ?room=ID deep link after rooms load
   useEffect(() => {
     const roomParam = searchParams.get('room');
@@ -51,6 +55,9 @@ const MatchRooms = () => {
       if (found) {
         setDeepLinkRoom(found);
         setHighlightRoomId(roomParam);
+        // Auto-switch to the correct tab
+        const isPast = found.status === "finished" || found.status === "cancelled";
+        setActiveTab(isPast ? "past" : "active");
         setTimeout(() => {
           const el = document.getElementById(`room-${roomParam}`);
           if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -172,7 +179,7 @@ const MatchRooms = () => {
       {loading ? (
         <div className="flex justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-2 border-gold border-t-transparent" /></div>
       ) : (
-        <Tabs defaultValue="active">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="bg-secondary mb-6">
             <TabsTrigger value="active">Abertas ({activeRooms.length})</TabsTrigger>
             <TabsTrigger value="past">Encerradas ({pastRooms.length})</TabsTrigger>
@@ -213,12 +220,14 @@ const MatchRooms = () => {
       <Dialog open={matchFlowOpen} onOpenChange={setMatchFlowOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Registrar Resultado</DialogTitle></DialogHeader>
-          <NewMatchFlow
-            prefilledGameId={prefill?.gameId}
-            prefilledPlayers={prefill?.playerIds}
-            prefilledDate={prefill?.date?.slice(0, 10)}
-            onComplete={() => { setMatchFlowOpen(false); fetchRooms(); }}
-          />
+          <ErrorBoundary>
+            <NewMatchFlow
+              prefilledGameId={prefill?.gameId}
+              prefilledPlayers={prefill?.playerIds}
+              prefilledDate={prefill?.date?.slice(0, 10)}
+              onComplete={() => { setMatchFlowOpen(false); fetchRooms(); }}
+            />
+          </ErrorBoundary>
         </DialogContent>
       </Dialog>
 

@@ -851,6 +851,7 @@ export type Database = {
           pronouns: string | null
           state: string | null
           status: string
+          steam_id: string | null
           updated_at: string
         }
         Insert: {
@@ -868,6 +869,7 @@ export type Database = {
           pronouns?: string | null
           state?: string | null
           status?: string
+          steam_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -885,6 +887,7 @@ export type Database = {
           pronouns?: string | null
           state?: string | null
           status?: string
+          steam_id?: string | null
           updated_at?: string
         }
         Relationships: []

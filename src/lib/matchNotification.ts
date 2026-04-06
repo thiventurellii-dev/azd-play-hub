@@ -24,7 +24,8 @@ export function generateWhatsAppInvite(
   title: string,
   gameName: string,
   scheduledAt: string,
-  roomUrl: string
+  roomUrl: string,
+  confirmedPlayers?: string[]
 ): string {
   const date = new Date(scheduledAt);
   const formatted = date.toLocaleDateString("pt-BR", {
@@ -35,6 +36,10 @@ export function generateWhatsAppInvite(
     minute: "2-digit",
   });
 
-  const message = `🎲 *${title}*\n\n🎮 Jogo: ${gameName}\n📅 Data: ${formatted}\n\n👉 Entre na sala: ${roomUrl}`;
+  let message = `🎲 *${title}*\n\n🎮 Jogo: ${gameName}\n📅 Data: ${formatted}`;
+  if (confirmedPlayers && confirmedPlayers.length > 0) {
+    message += `\n\n✅ Confirmados: ${confirmedPlayers.join(", ")}`;
+  }
+  message += `\n\n👉 Entre na sala: ${roomUrl}`;
   return `https://wa.me/?text=${encodeURIComponent(message)}`;
 }

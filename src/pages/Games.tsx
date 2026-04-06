@@ -531,10 +531,11 @@ const Games = () => {
               <div className="space-y-2"><Label>Máx. Jogadores</Label><Input type="number" value={editMaxP} onChange={e => setEditMaxP(e.target.value)} /></div>
             </div>
 
-            {/* Factions JSON */}
+            {/* Factions */}
             <div className="space-y-2">
-              <Label>Facções (JSON)</Label>
-              <Textarea value={editFactions} onChange={e => setEditFactions(e.target.value)} placeholder='["Facção A", "Facção B"]' rows={3} className="font-mono text-xs" />
+              <Label>Facções</Label>
+              <Input value={editFactions} onChange={e => setEditFactions(e.target.value)} placeholder="Facção A, Facção B, Facção C" />
+              <p className="text-xs text-muted-foreground">Separe as facções por vírgula. Ex: Norte, Sul, Leste, Oeste</p>
             </div>
 
             {/* Tags */}

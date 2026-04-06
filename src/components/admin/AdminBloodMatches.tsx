@@ -259,6 +259,7 @@ const AdminBloodMatches = () => {
         duration_minutes: parseInt(editDuration) || null,
         storyteller_player_id: editStorytellerId,
         winning_team: editWinningTeam,
+        victory_conditions: editVictoryConditions,
       } as any).eq('id', editingMatch.id);
       if (matchErr) throw matchErr;
 

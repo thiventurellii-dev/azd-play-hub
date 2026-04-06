@@ -15,6 +15,7 @@ import { ExternalLink, Video, Users, Calendar, Clock, Plus, Pencil, Trash2 } fro
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotification } from "@/components/NotificationDialog";
+import { toast } from "sonner";
 import troubleBrewingImg from "@/assets/trouble-brewing.jpg";
 import badMoonRisingImg from "@/assets/bad-moon-rising.jpg";
 import overTheRiverImg from "@/assets/over-the-river.png";

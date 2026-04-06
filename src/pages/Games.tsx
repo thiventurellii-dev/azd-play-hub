@@ -15,6 +15,7 @@ import { ExternalLink, Video, Users, Calendar, Clock, Plus, Pencil, Trash2 } fro
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotification } from "@/components/NotificationDialog";
+import { toast } from "sonner";
 import troubleBrewingImg from "@/assets/trouble-brewing.jpg";
 import badMoonRisingImg from "@/assets/bad-moon-rising.jpg";
 import overTheRiverImg from "@/assets/over-the-river.png";
@@ -355,15 +356,33 @@ const Games = () => {
                             {gameTags.map(t => <Badge key={t} variant="outline" className="text-[10px] py-0">{t}</Badge>)}
                           </div>
                         )}
+                        {(g.rules_url || g.video_url) && (
+                          <div className="flex gap-2 mt-2 flex-wrap">
+                            {g.rules_url && (
+                              <a href={g.rules_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                                <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1 py-0.5 px-2 text-[10px]"><ExternalLink className="h-3 w-3" /> Regras</Badge>
+                              </a>
+                            )}
+                            {g.video_url && (
+                              <a href={g.video_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                                <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1 py-0.5 px-2 text-[10px]"><Video className="h-3 w-3" /> Vídeo</Badge>
+                              </a>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="flex-1" />
-                    {seasons.length > 0 && (
+                    {seasons.length > 0 ? (
                       <div className="border-t border-border pt-3">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1"><Calendar className="h-3 w-3" /> Seasons</p>
                         <div className="flex gap-2 flex-wrap">
                           {seasons.map(s => <Badge key={s.season_id} className={`${statusColors[s.status] || "bg-muted text-muted-foreground border-border"} text-xs`}>{s.season_name}</Badge>)}
                         </div>
+                      </div>
+                    ) : (
+                      <div className="border-t border-border pt-3">
+                        <p className="text-xs text-muted-foreground italic">Nenhuma season vinculada</p>
                       </div>
                     )}
                   </CardContent>
@@ -396,9 +415,12 @@ const Games = () => {
           const seasons = scriptSeasons[s.id] || [];
           return (
             <motion.div key={s.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-              <Card className={`bg-card border-border hover:border-gold/20 transition-all ${isExpanded ? '' : 'h-[240px] overflow-hidden'} flex flex-col`}>
+              <Card className={`bg-card border-border hover:border-gold/20 transition-all ${isExpanded ? '' : 'h-[280px] overflow-hidden'} flex flex-col relative group`}>
                 <CardContent className="py-5 space-y-3 flex-1 flex flex-col">
-                  <div className="flex items-start gap-4">
+                  <div
+                    className="flex items-start gap-4 cursor-pointer"
+                    onClick={() => setExpandedScript(isExpanded ? null : s.id)}
+                  >
                     {getScriptImage(s.name) ? (
                       <img src={getScriptImage(s.name)!} alt={s.name} className="h-20 w-20 rounded-lg object-cover flex-shrink-0" loading="lazy" />
                     ) : (
@@ -415,12 +437,16 @@ const Games = () => {
                     </div>
                   </div>
                   <div className="flex-1" />
-                  {seasons.length > 0 && (
+                  {seasons.length > 0 ? (
                     <div className="border-t border-border pt-3">
                       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1"><Calendar className="h-3 w-3" /> Seasons</p>
                       <div className="flex gap-2 flex-wrap">
                         {seasons.map(ss => <Badge key={ss.season_id} className={`${statusColors[ss.status] || ""} text-xs`}>{ss.season_name}</Badge>)}
                       </div>
+                    </div>
+                  ) : (
+                    <div className="border-t border-border pt-3">
+                      <p className="text-xs text-muted-foreground italic">Nenhuma season vinculada</p>
                     </div>
                   )}
                   <Button
@@ -452,6 +478,13 @@ const Games = () => {
                     </div>
                   )}
                 </CardContent>
+                {isAdmin && (
+                  <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); /* TODO: edit script dialog */ toast.info("Edição de scripts em breve"); }}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                )}
               </Card>
             </motion.div>
           );

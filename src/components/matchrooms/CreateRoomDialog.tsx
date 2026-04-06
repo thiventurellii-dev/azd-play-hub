@@ -164,12 +164,12 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
                 <Gamepad2 className="h-8 w-8 mx-auto mb-2 text-gold group-hover:scale-110 transition-transform" />
                 <p className="text-sm font-semibold">Boardgame</p>
               </button>
-              <button type="button" onClick={() => setCategory('botc')} className="p-4 rounded-lg border-2 border-border hover:border-red-500/50 text-center transition-all group">
+              <button type="button" onClick={() => { setCategory('botc'); setMaxPlayers("15"); }} className="p-4 rounded-lg border-2 border-border hover:border-red-500/50 text-center transition-all group">
                 <Skull className="h-8 w-8 mx-auto mb-2 text-red-400 group-hover:scale-110 transition-transform" />
                 <p className="text-sm font-semibold">BotC</p>
               </button>
               <button type="button" onClick={() => setCategory('rpg')} className="p-4 rounded-lg border-2 border-border hover:border-purple-500/50 text-center transition-all group">
-                <Wand2 className="h-8 w-8 mx-auto mb-2 text-purple-400 group-hover:scale-110 transition-transform" />
+                <Sword className="h-8 w-8 mx-auto mb-2 text-purple-400 group-hover:scale-110 transition-transform" />
                 <p className="text-sm font-semibold">RPG</p>
               </button>
             </div>

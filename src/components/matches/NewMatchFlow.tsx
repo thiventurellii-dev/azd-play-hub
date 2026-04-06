@@ -635,8 +635,9 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

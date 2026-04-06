@@ -300,8 +300,20 @@ const PlayerProfile = () => {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         <Card className="bg-card border-border">
           <CardContent className="pt-6 flex flex-col sm:flex-row items-center gap-6">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-secondary text-gold font-bold text-3xl flex-shrink-0">
-              {(profile.nickname || profile.name || "?").charAt(0).toUpperCase()}
+            <div className="relative group cursor-pointer flex-shrink-0" onClick={() => isOwnProfile && fileInputRef.current?.click()}>
+              {profile.avatar_url ? (
+                <img src={profile.avatar_url} alt="Avatar" className="h-20 w-20 rounded-full object-cover" />
+              ) : (
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-secondary text-gold font-bold text-3xl">
+                  {(profile.nickname || profile.name || "?").charAt(0).toUpperCase()}
+                </div>
+              )}
+              {isOwnProfile && (
+                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Camera className="h-5 w-5 text-white" />
+                </div>
+              )}
+              {isOwnProfile && <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploadingAvatar} />}
             </div>
             <div className="flex-1 text-center sm:text-left">
               <h1 className="text-2xl font-bold">{profile.name}</h1>
@@ -315,12 +327,107 @@ const PlayerProfile = () => {
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <FriendButton targetUserId={profile.id} />
+            <div className="flex items-center gap-2 flex-wrap justify-center">
+              {isOwnProfile ? (
+                <>
+                  {!editing && (
+                    <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+                      <Pencil className="h-4 w-4 mr-1" /> Editar Perfil
+                    </Button>
+                  )}
+                  {!changingPassword && !editing && (
+                    <Button variant="outline" size="sm" onClick={() => setChangingPassword(true)}>
+                      <Lock className="h-4 w-4 mr-1" /> Resetar Senha
+                    </Button>
+                  )}
+                </>
+              ) : (
+                <FriendButton targetUserId={profile.id} />
+              )}
             </div>
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* Edit Profile Form */}
+      {isOwnProfile && editing && (
+        <Card className="bg-card border-border">
+          <CardContent className="pt-6 space-y-4">
+            <h2 className="text-lg font-semibold">Editar Perfil</h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2"><Label>Nickname *</Label><Input value={form.nickname} onChange={e => setForm({ ...form, nickname: e.target.value })} /></div>
+              <div className="space-y-2"><Label>Nome Completo *</Label><Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} /></div>
+            </div>
+            <div className="space-y-2"><Label>E-mail</Label><Input value={form.email} disabled className="opacity-60" /></div>
+            <div className="space-y-2">
+              <Label>Telefone *</Label>
+              <div className="flex gap-2">
+                <Select value={form.country_code} onValueChange={v => setForm({ ...form, country_code: v })}>
+                  <SelectTrigger className="w-[110px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>{countryCodes.map(c => <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>)}</SelectContent>
+                </Select>
+                <Input value={form.phone} onChange={e => setForm({ ...form, phone: formatPhone(e.target.value) })} placeholder="(11) 99999-9999" className="flex-1" />
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Estado *</Label>
+                <Select value={form.state} onValueChange={v => setForm({ ...form, state: v, city: '' })}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>{brazilianStates.map(s => <SelectItem key={s.uf} value={s.uf}>{s.name}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Cidade *</Label>
+                <Select value={form.city} onValueChange={v => setForm({ ...form, city: v })} disabled={!form.state}>
+                  <SelectTrigger><SelectValue placeholder={form.state ? 'Selecione' : 'Selecione o estado'} /></SelectTrigger>
+                  <SelectContent>{cities.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2"><Label>Data de Nascimento *</Label><Input type="date" value={form.birth_date} onChange={e => setForm({ ...form, birth_date: e.target.value })} /></div>
+              <div className="space-y-2">
+                <Label>Gênero *</Label>
+                <Select value={form.gender} onValueChange={v => setForm({ ...form, gender: v })}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="masculino">Masculino</SelectItem><SelectItem value="feminino">Feminino</SelectItem>
+                    <SelectItem value="nao_binario">Não-binário</SelectItem><SelectItem value="outro">Outro</SelectItem>
+                    <SelectItem value="prefiro_nao_dizer">Prefiro não dizer</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Pronomes *</Label>
+              <Select value={form.pronouns} onValueChange={v => setForm({ ...form, pronouns: v })}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>{pronounsOptions.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="gold" onClick={handleSaveProfile} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
+              <Button variant="outline" onClick={() => setEditing(false)}>Cancelar</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Change Password Form */}
+      {isOwnProfile && changingPassword && (
+        <Card className="bg-card border-border">
+          <CardContent className="pt-6 space-y-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2"><Lock className="h-4 w-4" /> Alterar Senha</h2>
+            <div className="space-y-2"><Label>Nova Senha</Label><Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Mínimo 8 caracteres, 1 maiúscula, 1 minúscula, 1 especial" /></div>
+            <div className="space-y-2"><Label>Confirmar Nova Senha</Label><Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Digite a senha novamente" /></div>
+            <div className="flex gap-2">
+              <Button variant="gold" onClick={handleChangePassword} disabled={savingPassword}>{savingPassword ? 'Salvando...' : 'Alterar Senha'}</Button>
+              <Button variant="outline" onClick={() => { setChangingPassword(false); setNewPassword(''); setConfirmPassword(''); }}>Cancelar</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
 
       <div className="grid gap-4 grid-cols-2">

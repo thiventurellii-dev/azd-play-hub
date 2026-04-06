@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Calendar, Users, LogIn, Clock, Share2, ClipboardList, MessageCircle, ChevronDown, ChevronUp, XCircle, Pencil, Trash2, Trophy, TrendingUp } from "lucide-react";
+import { Calendar, Users, LogIn, Clock, Share2, ClipboardList, MessageCircle, ChevronDown, ChevronUp, XCircle, Pencil, Trash2, TrendingUp } from "lucide-react";
 import { generateWhatsAppInvite } from "@/lib/matchNotification";
 import { sendRoomNotifications } from "@/lib/roomNotifications";
 import { toast } from "sonner";

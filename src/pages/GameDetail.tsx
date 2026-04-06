@@ -955,7 +955,7 @@ const GameDetail = () => {
 
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Jogo</DialogTitle>
           </DialogHeader>
@@ -991,17 +991,46 @@ const GameDetail = () => {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Facções/Personagens (JSON, opcional)</Label>
-              <textarea
+              <Label>Facções</Label>
+              <Input
                 value={editFactions}
                 onChange={(e) => setEditFactions(e.target.value)}
-                placeholder='["Facção A", "Facção B"] ou [{"name":"...", "color":"..."}]'
-                className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-xs font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                placeholder="Facção A, Facção B, Facção C"
               />
+              <p className="text-xs text-muted-foreground">Separe as facções por vírgula</p>
             </div>
-            <Button variant="gold" onClick={handleEditSave} className="w-full">
-              Salvar
-            </Button>
+
+            {/* Scoring Schema */}
+            <div className="space-y-2">
+              <Label>Schema de Pontuação</Label>
+              {editCategories.map((cat: any, ci: number) => (
+                <div key={ci} className="border border-border rounded-lg p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Input value={cat.label} onChange={e => updateCategory(ci, e.target.value)} placeholder="Nome da categoria" className="flex-1 h-8" />
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeCategory(ci)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                  </div>
+                  {(cat.subcategories || []).map((sub: any, si: number) => (
+                    <div key={si} className="flex items-center gap-2 ml-4">
+                      <Input value={sub.label} onChange={e => updateSubcategory(ci, si, e.target.value)} placeholder="Subcategoria" className="flex-1 h-7 text-xs" />
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeSubcategory(ci, si)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                    </div>
+                  ))}
+                  <Button variant="ghost" size="sm" className="ml-4 text-xs" onClick={() => addSubcategory(ci)}>
+                    + Subcategoria
+                  </Button>
+                </div>
+              ))}
+              <Button variant="outline" size="sm" onClick={addCategory}>
+                + Categoria
+              </Button>
+            </div>
+
+            <div className="flex gap-2 justify-between">
+              <Button variant="destructive" size="sm" onClick={handleDeleteGame} disabled={deleting}>
+                <Trash2 className="h-4 w-4 mr-1" /> Excluir Jogo
+              </Button>
+              <Button variant="gold" onClick={handleEditSave}>Salvar</Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

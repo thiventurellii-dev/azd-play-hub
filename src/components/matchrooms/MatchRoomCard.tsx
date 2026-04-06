@@ -196,7 +196,29 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
     if (!confirm("Tem certeza que deseja cancelar esta sala?")) return;
     setLoading(true);
     await supabase.from("match_rooms").update({ status: "cancelled" }).eq("id", room.id);
+    // Notify all players
+    const allPlayerIds = players.map(p => p.player_id).filter(id => id !== user?.id);
+    if (allPlayerIds.length > 0) {
+      sendRoomNotifications({
+        userIds: allPlayerIds,
+        type: "room_cancelled",
+        title: "Sala cancelada",
+        message: `A sala "${room.title}" foi cancelada.`,
+        roomId: room.id,
+      });
+    }
     toast.success("Sala cancelada");
+    onUpdate();
+    setLoading(false);
+  };
+
+  const handleDelete = async () => {
+    if (!confirm("Tem certeza que deseja excluir esta sala?")) return;
+    setLoading(true);
+    await supabase.from("match_room_players").delete().eq("room_id", room.id);
+    await supabase.from("match_room_comments").delete().eq("room_id", room.id);
+    await supabase.from("match_rooms").delete().eq("id", room.id);
+    toast.success("Sala excluída");
     onUpdate();
     setLoading(false);
   };

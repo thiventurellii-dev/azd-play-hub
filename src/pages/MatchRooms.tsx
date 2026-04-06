@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import MatchRoomCard from "@/components/matchrooms/MatchRoomCard";

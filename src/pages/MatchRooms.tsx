@@ -244,10 +244,11 @@ const MatchRooms = () => {
           ) : deepLinkRoom ? (
             <MatchRoomCard room={deepLinkRoom} onUpdate={() => {
               fetchRooms();
-              // Refresh the deep link room too
+              const roomId = deepLinkRoom?.id;
+              if (!roomId) return;
               supabase.from("match_rooms")
                 .select("id, title, description, scheduled_at, max_players, status, created_by, game:games(id, name, image_url)")
-                .eq("id", deepLinkRoom.id)
+                .eq("id", roomId)
                 .maybeSingle()
                 .then(({ data }) => {
                   if (data) {

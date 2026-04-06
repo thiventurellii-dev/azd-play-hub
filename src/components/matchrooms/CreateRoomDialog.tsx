@@ -14,6 +14,7 @@ import { sendMatchNotification } from "@/lib/matchNotification";
 interface Game {
   id: string;
   name: string;
+  max_players: number | null;
 }
 
 interface Props {
@@ -35,12 +36,19 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
   useEffect(() => {
     supabase
       .from("games")
-      .select("id, name")
+      .select("id, name, max_players")
       .order("name")
       .then(({ data }) => {
-        if (data) setGames(data);
+        if (data) setGames(data as Game[]);
       });
   }, []);
+
+  useEffect(() => {
+    const game = games.find(g => g.id === gameId);
+    if (game?.max_players) {
+      setMaxPlayers(String(game.max_players));
+    }
+  }, [gameId, games]);
 
   const handleSubmit = async () => {
     if (!user || !gameId || !title || !scheduledDate) {
@@ -138,7 +146,10 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
           </div>
           <div>
             <Label>Vagas Máximas</Label>
-            <Input type="number" min="2" max="50" value={maxPlayers} onChange={(e) => setMaxPlayers(e.target.value)} />
+            <Input type="number" min="2" max={games.find(g => g.id === gameId)?.max_players || 50} value={maxPlayers} onChange={(e) => setMaxPlayers(e.target.value)} />
+            {games.find(g => g.id === gameId)?.max_players && (
+              <p className="text-xs text-muted-foreground mt-1">Máximo do jogo: {games.find(g => g.id === gameId)?.max_players}</p>
+            )}
           </div>
           <div>
             <Label>Descrição (opcional)</Label>

@@ -50,6 +50,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const [showComments, setShowComments] = useState(true);
 
   const fetchPlayers = async () => {
+    if (!room?.id) return;
     const { data } = await supabase
       .from("match_room_players")
       .select("id, player_id, type, position")
@@ -150,7 +151,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const handleShare = () => {
     const roomUrl = `${window.location.origin}/partidas?room=${room.id}`;
     const playerNames = confirmed.map(p => displayName(p));
-    const link = generateWhatsAppInvite(room.title, room.game.name, room.scheduled_at, roomUrl, playerNames);
+    const link = generateWhatsAppInvite(room?.title || '', room?.game?.name || '', room?.scheduled_at || '', roomUrl, playerNames);
     window.open(link, "_blank");
   };
 
@@ -166,8 +167,8 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
       <CardHeader className="pb-3 flex-shrink-0">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <CardTitle className="text-lg truncate">{room.title}</CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">🎮 {room.game.name}</p>
+            <CardTitle className="text-lg truncate">{room?.title}</CardTitle>
+            <p className="text-sm text-muted-foreground mt-1">{"\u{1F3AE}"} {room?.game?.name}</p>
           </div>
           <Badge variant="outline" className={status.className}>
             {status.label}
@@ -280,7 +281,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
 
       {/* Expandable comments */}
       {showComments && (
-        <div className="border-t border-border px-6 pb-4 max-h-[200px] overflow-y-auto">
+        <div className="border-t border-border px-6 pb-4">
           <RoomComments roomId={room.id} />
         </div>
       )}

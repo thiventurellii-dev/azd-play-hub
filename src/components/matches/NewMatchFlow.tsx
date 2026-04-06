@@ -410,22 +410,25 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
                 {selectedGame.name}: {selectedGame.min_players || '?'}–{selectedGame.max_players || '?'} jogadores
               </p>
             )}
+            <div className="space-y-1 mb-2">
+              <Label className="text-xs">Filtrar jogadores</Label>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por nome..."
+                  value={playerSearch}
+                  onChange={ev => setPlayerSearch(ev.target.value)}
+                  className="h-9 pl-8"
+                />
+              </div>
+            </div>
             {entries.map((e, i) => (
-              <div key={i} className="flex items-center gap-2 flex-wrap border border-border rounded-lg p-3">
+              <div key={e.player_id || `entry-${i}`} className="flex items-center gap-2 flex-wrap border border-border rounded-lg p-3">
                 <div className="flex-1 min-w-[180px] space-y-1">
                   <Label className="text-xs">Jogador *</Label>
                   <Select value={e.player_id} onValueChange={v => updateEntry(i, 'player_id', v)}>
-                    <SelectTrigger><SelectValue placeholder="Buscar jogador..." /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Selecionar jogador..." /></SelectTrigger>
                     <SelectContent>
-                      <div className="px-2 pb-2">
-                        <Input
-                          placeholder="Buscar por nome..."
-                          value={playerSearch}
-                          onChange={ev => setPlayerSearch(ev.target.value)}
-                          className="h-8"
-                          onClick={ev => ev.stopPropagation()}
-                        />
-                      </div>
                       {filteredPlayers.map(p => (
                         <SelectItem key={p.id} value={p.id} disabled={entries.some((ee, ii) => ii !== i && ee.player_id === p.id)}>
                           {p.nickname || p.name}

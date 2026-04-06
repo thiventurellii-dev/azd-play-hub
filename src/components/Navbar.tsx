@@ -27,8 +27,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import logo from "@/assets/azd-logo.png";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Check, X as XIcon } from "lucide-react";
 
 const DiscordIcon = ({ size = 16 }: { size?: number }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
@@ -48,6 +49,7 @@ const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [contactLinks, setContactLinks] = useState<Record<string, string>>({});
   const [pendingFriends, setPendingFriends] = useState(0);
+  const [friendRequests, setFriendRequests] = useState<{ id: string; user_id: string; name: string; nickname: string | null }[]>([]);
   const [userNickname, setUserNickname] = useState<string | null>(null);
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
 
@@ -64,16 +66,34 @@ const Navbar = () => {
       });
   }, []);
 
+  const fetchFriendRequests = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("friendships")
+      .select("id, user_id")
+      .eq("friend_id", user.id)
+      .eq("status", "pending" as any);
+    if (!data || data.length === 0) {
+      setPendingFriends(0);
+      setFriendRequests([]);
+      return;
+    }
+    setPendingFriends(data.length);
+    const userIds = data.map(d => d.user_id);
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, name, nickname")
+      .in("id", userIds);
+    const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+    setFriendRequests(data.map(d => {
+      const p = profileMap.get(d.user_id);
+      return { id: d.id, user_id: d.user_id, name: p?.name || '?', nickname: p?.nickname || null };
+    }));
+  }, [user]);
+
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("friendships")
-      .select("id", { count: "exact", head: true })
-      .eq("friend_id", user.id)
-      .eq("status", "pending" as any)
-      .then(({ count }) => {
-        setPendingFriends(count || 0);
-      });
+    fetchFriendRequests();
     supabase
       .from("profiles")
       .select("nickname, avatar_url")
@@ -85,7 +105,17 @@ const Navbar = () => {
           setUserAvatar((data as any).avatar_url || null);
         }
       });
-  }, [user]);
+  }, [user, fetchFriendRequests]);
+
+  const handleAcceptFriend = async (id: string) => {
+    await supabase.from("friendships").update({ status: "accepted" as any }).eq("id", id);
+    fetchFriendRequests();
+  };
+
+  const handleRejectFriend = async (id: string) => {
+    await supabase.from("friendships").delete().eq("id", id);
+    fetchFriendRequests();
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -238,11 +268,37 @@ const Navbar = () => {
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-9 w-9 relative text-muted-foreground hover:text-foreground">
                     <Bell className="h-4 w-4" />
+                    {pendingFriends > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[9px] font-bold text-black">
+                        {pendingFriends}
+                      </span>
+                    )}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent align="end" className="w-72 p-3">
+                <PopoverContent align="end" className="w-80 p-3">
                   <p className="text-sm font-medium mb-2">Notificações</p>
-                  <p className="text-xs text-muted-foreground text-center py-6">Sem notificações</p>
+                  {friendRequests.length > 0 ? (
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {friendRequests.map(fr => (
+                        <div key={fr.id} className="flex items-center justify-between gap-2 p-2 rounded-md bg-secondary/50">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{fr.nickname || fr.name}</p>
+                            <p className="text-xs text-muted-foreground">Pedido de amizade</p>
+                          </div>
+                          <div className="flex gap-1 flex-shrink-0">
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-green-500 hover:text-green-400" onClick={() => handleAcceptFriend(fr.id)}>
+                              <Check className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleRejectFriend(fr.id)}>
+                              <XIcon className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground text-center py-6">Sem notificações</p>
+                  )}
                 </PopoverContent>
               </Popover>
               <Button

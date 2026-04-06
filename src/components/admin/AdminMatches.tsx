@@ -8,10 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useNotification } from '@/components/NotificationDialog';
 import { Trash2, UserPlus, Upload, Image, Pencil, Search, ChevronDown, ChevronUp } from 'lucide-react';
 import NewMatchFlow from '@/components/matches/NewMatchFlow';
+import EditMatchDialog from '@/components/matches/EditMatchDialog';
 
 interface Season { id: string; name: string; }
 interface Game { id: string; name: string; }
@@ -50,10 +50,7 @@ const AdminMatches = () => {
   const [filterDate, setFilterDate] = useState('');
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editingMatch, setEditingMatch] = useState<MatchRecord | null>(null);
-  const [editForm, setEditForm] = useState({ played_date: '', played_time: '', duration: '', season_id: '', game_id: '' });
-  const [editResults, setEditResults] = useState<MatchResult[]>([]);
-
+  const [editingMatch, setEditingMatch] = useState<any>(null);
   const [expandedSeasons, setExpandedSeasons] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -267,44 +264,7 @@ const AdminMatches = () => {
 
   const openEditMatch = (m: MatchRecord) => {
     setEditingMatch(m);
-    const d = new Date(m.played_at);
-    setEditForm({
-      played_date: d.toISOString().split('T')[0],
-      played_time: d.toTimeString().slice(0, 5),
-      duration: m.duration_minutes ? String(m.duration_minutes) : '',
-      season_id: m.season_id,
-      game_id: m.game_id,
-    });
-    setEditResults(m.results.map(r => ({
-      player_id: r.player_id, position: r.position, score: r.score, is_first_player: r.is_first,
-    })));
     setEditDialogOpen(true);
-  };
-
-  const handleEditMatchSave = async () => {
-    if (!editingMatch) return;
-    const { error } = await supabase.from('matches').update({
-      season_id: editForm.season_id,
-      game_id: editForm.game_id,
-      duration_minutes: parseInt(editForm.duration) || null,
-      played_at: new Date(`${editForm.played_date}T${editForm.played_time}`).toISOString(),
-    }).eq('id', editingMatch.id);
-    if (error) return notify('error', error.message);
-
-    for (const r of editResults) {
-      await supabase.from('match_results').update({
-        position: r.position, score: r.score,
-      }).eq('match_id', editingMatch.id).eq('player_id', r.player_id);
-    }
-
-    const firstPlayer = editResults.find(r => r.is_first_player);
-    if (firstPlayer) {
-      await supabase.from('matches').update({ first_player_id: firstPlayer.player_id }).eq('id', editingMatch.id);
-    }
-
-    notify('success', 'Partida atualizada!');
-    setEditDialogOpen(false);
-    fetchMatches();
   };
 
   const filteredMatches = matches.filter(m => {
@@ -443,92 +403,12 @@ const AdminMatches = () => {
       )}
 
       {/* Edit Match Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Editar Partida</DialogTitle></DialogHeader>
-          <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Season</Label>
-                <Select value={editForm.season_id} onValueChange={v => setEditForm({ ...editForm, season_id: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {seasons.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Jogo</Label>
-                <Select value={editForm.game_id} onValueChange={v => setEditForm({ ...editForm, game_id: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {games.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Data</Label>
-                <Input type="date" value={editForm.played_date} onChange={e => setEditForm({ ...editForm, played_date: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Hora</Label>
-                <Input type="time" value={editForm.played_time} onChange={e => setEditForm({ ...editForm, played_time: e.target.value })} />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Duração (min)</Label>
-              <Input type="number" value={editForm.duration} onChange={e => setEditForm({ ...editForm, duration: e.target.value })} />
-            </div>
-
-            <Label>Resultados</Label>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Jogador</TableHead>
-                  <TableHead className="w-[80px]">Posição</TableHead>
-                  <TableHead className="w-[80px]">Pontuação</TableHead>
-                  <TableHead className="w-[100px]">Primeiro</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {editResults.map((r, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="text-sm truncate">
-                      {players.find(p => p.id === r.player_id)?.nickname || players.find(p => p.id === r.player_id)?.name || '?'}
-                    </TableCell>
-                    <TableCell>
-                      <Input type="number" min={1} value={r.position} onChange={e => {
-                        const updated = [...editResults];
-                        updated[i].position = parseInt(e.target.value) || 1;
-                        setEditResults(updated);
-                      }} className="w-[70px]" />
-                    </TableCell>
-                    <TableCell>
-                      <Input type="number" value={r.score} onChange={e => {
-                        const updated = [...editResults];
-                        updated[i].score = parseInt(e.target.value) || 0;
-                        setEditResults(updated);
-                      }} className="w-[80px]" />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Checkbox checked={r.is_first_player} onCheckedChange={(checked) => {
-                          const updated = [...editResults];
-                          updated.forEach((rr, idx) => { rr.is_first_player = idx === i && !!checked; });
-                          setEditResults(updated);
-                        }} />
-                        <span className="text-xs">1º</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-
-            <Button variant="gold" onClick={handleEditMatchSave} className="w-full">Salvar Alterações</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <EditMatchDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        match={editingMatch}
+        onSaved={fetchMatches}
+      />
     </div>
   );
 };

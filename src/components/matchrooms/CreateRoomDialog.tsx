@@ -318,7 +318,7 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
           {filteredSeasons.length > 0 && (
             <div>
               <Label>Temporada (competitivo - opcional)</Label>
-              <Select value={selectedSeasonId} onValueChange={setSelectedSeasonId}>
+              <Select value={selectedSeasonId || "none"} onValueChange={(v) => setSelectedSeasonId(v === "none" ? "" : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Nenhuma (casual)" />
                 </SelectTrigger>

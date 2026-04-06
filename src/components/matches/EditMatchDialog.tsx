@@ -66,7 +66,7 @@ const EditMatchDialog = ({ open, onOpenChange, match, onSaved }: Props) => {
     if (!open) return;
     const fetchBase = async () => {
       const [s, g] = await Promise.all([
-        supabase.from('seasons').select('id, name').order('start_date', { ascending: false }),
+        supabase.from('seasons').select('id, name').neq('status', 'finished').order('start_date', { ascending: false }),
         supabase.from('games').select('id, name').order('name'),
       ]);
       setSeasons(s.data || []);

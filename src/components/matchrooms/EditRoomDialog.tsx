@@ -91,8 +91,8 @@ const EditRoomDialog = ({ open, onOpenChange, room, onSaved }: Props) => {
     );
   };
 
-  // Filter seasons to boardgame type only
-  const filteredSeasons = seasons.filter(s => s.type === 'boardgame');
+  // Filter seasons by game type and only active
+  const filteredSeasons = seasons.filter(s => s.status === 'active');
 
   const handleSave = async () => {
     if (!gameId || !title || !scheduledDate) {

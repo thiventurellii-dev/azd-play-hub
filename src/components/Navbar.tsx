@@ -49,6 +49,7 @@ const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [contactLinks, setContactLinks] = useState<Record<string, string>>({});
   const [pendingFriends, setPendingFriends] = useState(0);
+  const [friendRequests, setFriendRequests] = useState<{ id: string; user_id: string; name: string; nickname: string | null }[]>([]);
   const [userNickname, setUserNickname] = useState<string | null>(null);
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
 

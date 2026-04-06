@@ -30,6 +30,7 @@ interface Props {
 const CreateRoomDialog = ({ onCreated }: Props) => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  const [category, setCategory] = useState<'boardgame' | 'botc' | 'rpg' | ''>('');
   const [games, setGames] = useState<Game[]>([]);
   const [gameId, setGameId] = useState("");
   const [title, setTitle] = useState("");

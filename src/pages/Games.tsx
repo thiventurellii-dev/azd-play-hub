@@ -785,6 +785,55 @@ const Games = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit System Dialog */}
+      <Dialog open={editSystemOpen} onOpenChange={setEditSystemOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Editar Sistema de RPG</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2"><Label>Nome</Label><Input value={editSysName} onChange={e => setEditSysName(e.target.value)} /></div>
+            <div className="space-y-2"><Label>Descrição</Label><Input value={editSysDesc} onChange={e => setEditSysDesc(e.target.value)} /></div>
+            <div className="space-y-2"><Label>URL da Imagem</Label><Input value={editSysImageUrl} onChange={e => setEditSysImageUrl(e.target.value)} /></div>
+            <div className="grid gap-4 grid-cols-2">
+              <div className="space-y-2"><Label>URL Regras</Label><Input value={editSysRulesUrl} onChange={e => setEditSysRulesUrl(e.target.value)} /></div>
+              <div className="space-y-2"><Label>URL Vídeo</Label><Input value={editSysVideoUrl} onChange={e => setEditSysVideoUrl(e.target.value)} /></div>
+            </div>
+            <Button variant="gold" onClick={handleEditSystemSave}>Salvar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Adventure Dialog */}
+      <Dialog open={editAdvOpen} onOpenChange={setEditAdvOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Editar Aventura</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Sistema</Label>
+              <Select value={editAdvSystemId} onValueChange={setEditAdvSystemId}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {rpgSystems.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2"><Label>Nome</Label><Input value={editAdvName} onChange={e => setEditAdvName(e.target.value)} /></div>
+            <div className="space-y-2"><Label>Descrição</Label><Input value={editAdvDesc} onChange={e => setEditAdvDesc(e.target.value)} /></div>
+            <div className="space-y-2">
+              <Label>Tipo</Label>
+              <Select value={editAdvTag} onValueChange={v => setEditAdvTag(v as 'official' | 'homebrew')}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="official">📖 Oficial</SelectItem>
+                  <SelectItem value="homebrew">🏠 Homebrew</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2"><Label>URL da Imagem</Label><Input value={editAdvImageUrl} onChange={e => setEditAdvImageUrl(e.target.value)} /></div>
+            <Button variant="gold" onClick={handleEditAdventureSave}>Salvar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 

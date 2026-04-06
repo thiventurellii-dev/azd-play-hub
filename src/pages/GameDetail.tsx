@@ -29,6 +29,7 @@ import { Label } from "@/components/ui/label";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotification } from "@/components/NotificationDialog";
+import EditMatchDialog from "@/components/matches/EditMatchDialog";
 
 interface GameData {
   id: string;

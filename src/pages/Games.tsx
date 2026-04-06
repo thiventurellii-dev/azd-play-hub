@@ -219,7 +219,12 @@ const Games = () => {
     setEditMinP(g.min_players?.toString() || '');
     setEditMaxP(g.max_players?.toString() || '');
     setEditSlug(g.slug || '');
-    setEditFactions(g.factions ? JSON.stringify(g.factions, null, 2) : '');
+    // Convert factions to comma-separated string
+    if (Array.isArray(g.factions)) {
+      setEditFactions(g.factions.map((f: any) => typeof f === 'string' ? f : f.name || '').filter(Boolean).join(', '));
+    } else {
+      setEditFactions('');
+    }
     setEditTagIds(gameTagIdMap[g.id] || []);
 
     // Load scoring schema
@@ -232,7 +237,7 @@ const Games = () => {
     if (!editGame) return;
     let factions = null;
     if (editFactions.trim()) {
-      try { factions = JSON.parse(editFactions); } catch { return notify('error', 'JSON de facções inválido'); }
+      factions = editFactions.split(',').map(f => f.trim()).filter(Boolean);
     }
     const { error } = await supabase.from('games').update({
       name: editName, image_url: editImageUrl || null, rules_url: editRulesUrl || null,
@@ -366,9 +371,6 @@ const Games = () => {
                     <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-10">
                       <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); openEditGame(g); }}>
                         <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); handleDeleteGame(g.id); }}>
-                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
                       </Button>
                     </div>
                   )}
@@ -531,10 +533,11 @@ const Games = () => {
               <div className="space-y-2"><Label>Máx. Jogadores</Label><Input type="number" value={editMaxP} onChange={e => setEditMaxP(e.target.value)} /></div>
             </div>
 
-            {/* Factions JSON */}
+            {/* Factions */}
             <div className="space-y-2">
-              <Label>Facções (JSON)</Label>
-              <Textarea value={editFactions} onChange={e => setEditFactions(e.target.value)} placeholder='["Facção A", "Facção B"]' rows={3} className="font-mono text-xs" />
+              <Label>Facções</Label>
+              <Input value={editFactions} onChange={e => setEditFactions(e.target.value)} placeholder="Facção A, Facção B, Facção C" />
+              <p className="text-xs text-muted-foreground">Separe as facções por vírgula. Ex: Norte, Sul, Leste, Oeste</p>
             </div>
 
             {/* Tags */}
@@ -583,7 +586,12 @@ const Games = () => {
               </Button>
             </div>
 
-            <Button variant="gold" onClick={handleEditSave}>Salvar</Button>
+            <div className="flex gap-2 justify-between">
+              <Button variant="destructive" size="sm" onClick={() => { if (editGame) handleDeleteGame(editGame.id); setEditOpen(false); }}>
+                <Trash2 className="h-4 w-4 mr-1" /> Excluir Jogo
+              </Button>
+              <Button variant="gold" onClick={handleEditSave}>Salvar</Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

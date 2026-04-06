@@ -93,6 +93,7 @@ const GameDetail = () => {
   const [editMaxPlayers, setEditMaxPlayers] = useState("");
   const [editSlug, setEditSlug] = useState("");
   const [editFactions, setEditFactions] = useState("");
+  const [editCategories, setEditCategories] = useState<any[]>([]);
   const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
@@ -336,17 +337,49 @@ const GameDetail = () => {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [pMap]);
 
+  const generateKey = (label: string) => label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/(^_|_$)/g, '');
+  const addCategory = () => setEditCategories([...editCategories, { key: '', label: '', type: 'number' }]);
+  const removeCategory = (i: number) => setEditCategories(editCategories.filter((_, idx) => idx !== i));
+  const updateCategory = (i: number, label: string) => {
+    const cats = [...editCategories]; cats[i] = { ...cats[i], label, key: generateKey(label) }; setEditCategories(cats);
+  };
+  const addSubcategory = (catIdx: number) => {
+    const cats = [...editCategories]; const sub = cats[catIdx].subcategories || [];
+    cats[catIdx] = { ...cats[catIdx], type: 'group', subcategories: [...sub, { key: '', label: '', type: 'number' }] }; setEditCategories(cats);
+  };
+  const removeSubcategory = (catIdx: number, subIdx: number) => {
+    const cats = [...editCategories]; cats[catIdx].subcategories = cats[catIdx].subcategories?.filter((_: any, i: number) => i !== subIdx); setEditCategories(cats);
+  };
+  const updateSubcategory = (catIdx: number, subIdx: number, label: string) => {
+    const cats = [...editCategories];
+    if (cats[catIdx].subcategories) { cats[catIdx].subcategories[subIdx] = { ...cats[catIdx].subcategories[subIdx], label, key: generateKey(label) }; }
+    setEditCategories(cats);
+  };
+
+  const openEditDialog = async () => {
+    if (!game) return;
+    setEditName(game.name);
+    setEditImageUrl(game.image_url || "");
+    setEditRulesUrl(game.rules_url || "");
+    setEditVideoUrl(game.video_url || "");
+    setEditMinPlayers(game.min_players ? String(game.min_players) : "");
+    setEditMaxPlayers(game.max_players ? String(game.max_players) : "");
+    setEditSlug(game.slug || "");
+    if (Array.isArray(game.factions)) {
+      setEditFactions(game.factions.map((f: any) => typeof f === 'string' ? f : f.name || '').filter(Boolean).join(', '));
+    } else {
+      setEditFactions('');
+    }
+    const { data: schemaData } = await supabase.from('game_scoring_schemas').select('schema').eq('game_id', game.id).maybeSingle();
+    setEditCategories((schemaData?.schema as any)?.categories || []);
+    setEditOpen(true);
+  };
+
   const handleEditSave = async () => {
     if (!game) return;
-    let factions = game.factions;
+    let factions = null;
     if (editFactions.trim()) {
-      try {
-        factions = JSON.parse(editFactions);
-      } catch {
-        return notify("error", "JSON de facções inválido. Use formato: [\"A\", \"B\"] ou [{\"name\":\"...\"}]");
-      }
-    } else {
-      factions = null;
+      factions = editFactions.split(',').map(f => f.trim()).filter(Boolean);
     }
     const { error } = await supabase
       .from("games")
@@ -362,6 +395,16 @@ const GameDetail = () => {
       })
       .eq("id", game.id);
     if (error) return notify("error", error.message);
+
+    // Save scoring schema
+    const schemaPayload = { categories: editCategories };
+    const { data: existing } = await supabase.from('game_scoring_schemas').select('id').eq('game_id', game.id).maybeSingle();
+    if (existing) {
+      await supabase.from('game_scoring_schemas').update({ schema: schemaPayload as any }).eq('id', existing.id);
+    } else if (editCategories.length > 0) {
+      await supabase.from('game_scoring_schemas').insert({ game_id: game.id, schema: schemaPayload as any });
+    }
+
     notify("success", "Jogo atualizado!");
     setEditOpen(false);
     setGame({
@@ -474,33 +517,13 @@ const GameDetail = () => {
                 </div>
               </div>
               {isAdmin && (
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setEditName(game.name);
-                      setEditImageUrl(game.image_url || "");
-                      setEditRulesUrl(game.rules_url || "");
-                      setEditVideoUrl(game.video_url || "");
-                      setEditMinPlayers(game.min_players ? String(game.min_players) : "");
-                      setEditMaxPlayers(game.max_players ? String(game.max_players) : "");
-                      setEditSlug(game.slug || "");
-                      setEditFactions(game.factions ? JSON.stringify(game.factions, null, 2) : "");
-                      setEditOpen(true);
-                    }}
-                  >
-                    <Pencil className="h-4 w-4 mr-1" /> Editar
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleDeleteGame}
-                    disabled={deleting}
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" /> Excluir
-                  </Button>
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={openEditDialog}
+                >
+                  <Pencil className="h-4 w-4 mr-1" /> Editar
+                </Button>
               )}
             </div>
           </div>
@@ -932,7 +955,7 @@ const GameDetail = () => {
 
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Jogo</DialogTitle>
           </DialogHeader>
@@ -968,17 +991,46 @@ const GameDetail = () => {
               </div>
             </div>
             <div className="space-y-2">
-              <Label>Facções/Personagens (JSON, opcional)</Label>
-              <textarea
+              <Label>Facções</Label>
+              <Input
                 value={editFactions}
                 onChange={(e) => setEditFactions(e.target.value)}
-                placeholder='["Facção A", "Facção B"] ou [{"name":"...", "color":"..."}]'
-                className="w-full min-h-[80px] rounded-md border border-input bg-background px-3 py-2 text-xs font-mono ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                placeholder="Facção A, Facção B, Facção C"
               />
+              <p className="text-xs text-muted-foreground">Separe as facções por vírgula</p>
             </div>
-            <Button variant="gold" onClick={handleEditSave} className="w-full">
-              Salvar
-            </Button>
+
+            {/* Scoring Schema */}
+            <div className="space-y-2">
+              <Label>Schema de Pontuação</Label>
+              {editCategories.map((cat: any, ci: number) => (
+                <div key={ci} className="border border-border rounded-lg p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Input value={cat.label} onChange={e => updateCategory(ci, e.target.value)} placeholder="Nome da categoria" className="flex-1 h-8" />
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeCategory(ci)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                  </div>
+                  {(cat.subcategories || []).map((sub: any, si: number) => (
+                    <div key={si} className="flex items-center gap-2 ml-4">
+                      <Input value={sub.label} onChange={e => updateSubcategory(ci, si, e.target.value)} placeholder="Subcategoria" className="flex-1 h-7 text-xs" />
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeSubcategory(ci, si)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                    </div>
+                  ))}
+                  <Button variant="ghost" size="sm" className="ml-4 text-xs" onClick={() => addSubcategory(ci)}>
+                    + Subcategoria
+                  </Button>
+                </div>
+              ))}
+              <Button variant="outline" size="sm" onClick={addCategory}>
+                + Categoria
+              </Button>
+            </div>
+
+            <div className="flex gap-2 justify-between">
+              <Button variant="destructive" size="sm" onClick={handleDeleteGame} disabled={deleting}>
+                <Trash2 className="h-4 w-4 mr-1" /> Excluir Jogo
+              </Button>
+              <Button variant="gold" onClick={handleEditSave}>Salvar</Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

@@ -31,6 +31,9 @@ const MatchRooms = () => {
   const [availabilityFilter, setAvailabilityFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
 
+  // Deep link room modal
+  const [deepLinkRoom, setDeepLinkRoom] = useState<MatchRoom | null>(null);
+
   useEffect(() => {
     const state = location.state as any;
     if (state?.prefill) {
@@ -38,15 +41,23 @@ const MatchRooms = () => {
       setMatchFlowOpen(true);
       window.history.replaceState({}, document.title);
     }
+  }, [location.state]);
+
+  // Handle ?room=ID deep link after rooms load
+  useEffect(() => {
     const roomParam = searchParams.get('room');
-    if (roomParam) {
-      setHighlightRoomId(roomParam);
-      setTimeout(() => {
-        const el = document.getElementById(`room-${roomParam}`);
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }, 500);
+    if (roomParam && rooms.length > 0) {
+      const found = rooms.find(r => r.id === roomParam);
+      if (found) {
+        setDeepLinkRoom(found);
+        setHighlightRoomId(roomParam);
+        setTimeout(() => {
+          const el = document.getElementById(`room-${roomParam}`);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 300);
+      }
     }
-  }, [location.state, searchParams]);
+  }, [searchParams, rooms]);
 
   const fetchRooms = async () => {
     const now = new Date().toISOString();
@@ -209,6 +220,16 @@ const MatchRooms = () => {
             onComplete={() => { setMatchFlowOpen(false); fetchRooms(); }}
           />
         </DialogContent>
+      </Dialog>
+
+      {/* Deep link room modal */}
+      <Dialog open={!!deepLinkRoom} onOpenChange={(open) => !open && setDeepLinkRoom(null)}>
+        {deepLinkRoom && (
+          <DialogContent className="max-w-lg">
+            <DialogHeader><DialogTitle>{deepLinkRoom.title}</DialogTitle></DialogHeader>
+            <MatchRoomCard room={deepLinkRoom} onUpdate={() => { fetchRooms(); }} />
+          </DialogContent>
+        )}
       </Dialog>
     </div>
   );

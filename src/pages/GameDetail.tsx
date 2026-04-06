@@ -337,17 +337,49 @@ const GameDetail = () => {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [pMap]);
 
+  const generateKey = (label: string) => label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/(^_|_$)/g, '');
+  const addCategory = () => setEditCategories([...editCategories, { key: '', label: '', type: 'number' }]);
+  const removeCategory = (i: number) => setEditCategories(editCategories.filter((_, idx) => idx !== i));
+  const updateCategory = (i: number, label: string) => {
+    const cats = [...editCategories]; cats[i] = { ...cats[i], label, key: generateKey(label) }; setEditCategories(cats);
+  };
+  const addSubcategory = (catIdx: number) => {
+    const cats = [...editCategories]; const sub = cats[catIdx].subcategories || [];
+    cats[catIdx] = { ...cats[catIdx], type: 'group', subcategories: [...sub, { key: '', label: '', type: 'number' }] }; setEditCategories(cats);
+  };
+  const removeSubcategory = (catIdx: number, subIdx: number) => {
+    const cats = [...editCategories]; cats[catIdx].subcategories = cats[catIdx].subcategories?.filter((_: any, i: number) => i !== subIdx); setEditCategories(cats);
+  };
+  const updateSubcategory = (catIdx: number, subIdx: number, label: string) => {
+    const cats = [...editCategories];
+    if (cats[catIdx].subcategories) { cats[catIdx].subcategories[subIdx] = { ...cats[catIdx].subcategories[subIdx], label, key: generateKey(label) }; }
+    setEditCategories(cats);
+  };
+
+  const openEditDialog = async () => {
+    if (!game) return;
+    setEditName(game.name);
+    setEditImageUrl(game.image_url || "");
+    setEditRulesUrl(game.rules_url || "");
+    setEditVideoUrl(game.video_url || "");
+    setEditMinPlayers(game.min_players ? String(game.min_players) : "");
+    setEditMaxPlayers(game.max_players ? String(game.max_players) : "");
+    setEditSlug(game.slug || "");
+    if (Array.isArray(game.factions)) {
+      setEditFactions(game.factions.map((f: any) => typeof f === 'string' ? f : f.name || '').filter(Boolean).join(', '));
+    } else {
+      setEditFactions('');
+    }
+    const { data: schemaData } = await supabase.from('game_scoring_schemas').select('schema').eq('game_id', game.id).maybeSingle();
+    setEditCategories((schemaData?.schema as any)?.categories || []);
+    setEditOpen(true);
+  };
+
   const handleEditSave = async () => {
     if (!game) return;
-    let factions = game.factions;
+    let factions = null;
     if (editFactions.trim()) {
-      try {
-        factions = JSON.parse(editFactions);
-      } catch {
-        return notify("error", "JSON de facções inválido. Use formato: [\"A\", \"B\"] ou [{\"name\":\"...\"}]");
-      }
-    } else {
-      factions = null;
+      factions = editFactions.split(',').map(f => f.trim()).filter(Boolean);
     }
     const { error } = await supabase
       .from("games")
@@ -363,6 +395,16 @@ const GameDetail = () => {
       })
       .eq("id", game.id);
     if (error) return notify("error", error.message);
+
+    // Save scoring schema
+    const schemaPayload = { categories: editCategories };
+    const { data: existing } = await supabase.from('game_scoring_schemas').select('id').eq('game_id', game.id).maybeSingle();
+    if (existing) {
+      await supabase.from('game_scoring_schemas').update({ schema: schemaPayload as any }).eq('id', existing.id);
+    } else if (editCategories.length > 0) {
+      await supabase.from('game_scoring_schemas').insert({ game_id: game.id, schema: schemaPayload as any });
+    }
+
     notify("success", "Jogo atualizado!");
     setEditOpen(false);
     setGame({

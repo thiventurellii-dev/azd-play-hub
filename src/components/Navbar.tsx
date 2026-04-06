@@ -50,6 +50,7 @@ const Navbar = () => {
   const [contactLinks, setContactLinks] = useState<Record<string, string>>({});
   const [pendingFriends, setPendingFriends] = useState(0);
   const [friendRequests, setFriendRequests] = useState<{ id: string; user_id: string; name: string; nickname: string | null }[]>([]);
+  const [roomNotifs, setRoomNotifs] = useState<{ id: string; title: string; message: string; type: string; room_id: string | null; created_at: string }[]>([]);
   const [userNickname, setUserNickname] = useState<string | null>(null);
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
 
@@ -91,9 +92,22 @@ const Navbar = () => {
     }));
   }, [user]);
 
+  const fetchRoomNotifs = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("notifications")
+      .select("id, title, message, type, room_id, created_at")
+      .eq("user_id", user.id)
+      .eq("is_read", false)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    setRoomNotifs(data || []);
+  }, [user]);
+
   useEffect(() => {
     if (!user) return;
     fetchFriendRequests();
+    fetchRoomNotifs();
     supabase
       .from("profiles")
       .select("nickname, avatar_url")
@@ -105,7 +119,17 @@ const Navbar = () => {
           setUserAvatar((data as any).avatar_url || null);
         }
       });
-  }, [user, fetchFriendRequests]);
+
+    // Realtime for notifications
+    const notifChannel = supabase
+      .channel(`navbar-notifs-${user.id}-${Date.now()}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, () => {
+        fetchRoomNotifs();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(notifChannel); };
+  }, [user, fetchFriendRequests, fetchRoomNotifs]);
 
   const handleAcceptFriend = async (id: string) => {
     await supabase.from("friendships").update({ status: "accepted" as any }).eq("id", id);
@@ -265,16 +289,16 @@ const Navbar = () => {
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-9 w-9 relative text-muted-foreground hover:text-foreground">
                     <Bell className="h-4 w-4" />
-                    {pendingFriends > 0 && (
+                    {(pendingFriends + roomNotifs.length) > 0 && (
                       <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[9px] font-bold text-black">
-                        {pendingFriends}
+                        {pendingFriends + roomNotifs.length}
                       </span>
                     )}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent align="end" className="w-80 p-3">
                   <p className="text-sm font-medium mb-2">Notificações</p>
-                  {friendRequests.length > 0 ? (
+                  {(friendRequests.length > 0 || roomNotifs.length > 0) ? (
                     <div className="space-y-2 max-h-60 overflow-y-auto">
                       {friendRequests.map(fr => (
                         <div key={fr.id} className="flex items-center justify-between gap-2 p-2 rounded-md bg-secondary/50">
@@ -290,6 +314,25 @@ const Navbar = () => {
                               <XIcon className="h-4 w-4" />
                             </Button>
                           </div>
+                        </div>
+                      ))}
+                      {roomNotifs.map(n => (
+                        <div key={n.id} className="flex items-center justify-between gap-2 p-2 rounded-md bg-secondary/50">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{n.title}</p>
+                            <p className="text-xs text-muted-foreground truncate">{n.message}</p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-muted-foreground hover:text-foreground flex-shrink-0"
+                            onClick={async () => {
+                              await supabase.from("notifications").update({ is_read: true }).eq("id", n.id);
+                              fetchRoomNotifs();
+                            }}
+                          >
+                            <XIcon className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                       ))}
                     </div>

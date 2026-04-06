@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Calendar, Users, LogIn, Clock, Share2, ClipboardList, MessageCircle, ChevronDown, ChevronUp, XCircle, Pencil } from "lucide-react";
+import { Calendar, Users, LogIn, Clock, Share2, ClipboardList, MessageCircle, ChevronDown, ChevronUp, XCircle, Pencil, Trash2 } from "lucide-react";
 import { generateWhatsAppInvite } from "@/lib/matchNotification";
+import { sendRoomNotifications } from "@/lib/roomNotifications";
 import { toast } from "sonner";
 import RoomComments from "./RoomComments";
 import EditRoomDialog from "./EditRoomDialog";
@@ -131,8 +132,31 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
     if (error) {
       toast.error("Erro ao entrar na sala");
     } else {
+      const joinerName = displayName({ player_id: user.id, profile: undefined } as any) || "Alguém";
+      // Notify room creator
+      if (room.created_by !== user.id) {
+        sendRoomNotifications({
+          userIds: [room.created_by],
+          type: "room_join",
+          title: "Novo jogador na sala",
+          message: `${joinerName} entrou na sala "${room.title}"`,
+          roomId: room.id,
+        });
+      }
+
       if (type === "confirmed" && confirmed.length + 1 >= room.max_players) {
         await supabase.from("match_rooms").update({ status: "full" }).eq("id", room.id);
+        // Notify all confirmed players that room is full
+        const allPlayerIds = [...confirmed.map(p => p.player_id), user.id].filter(id => id !== user.id);
+        if (allPlayerIds.length > 0) {
+          sendRoomNotifications({
+            userIds: allPlayerIds,
+            type: "room_full",
+            title: "Sala lotada!",
+            message: `A sala "${room.title}" atingiu o número máximo de jogadores.`,
+            roomId: room.id,
+          });
+        }
       }
       toast.success(type === "confirmed" ? "Você entrou na sala!" : "Você entrou na lista de espera!");
     }
@@ -142,12 +166,21 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const handleLeave = async () => {
     if (!user) return;
     setLoading(true);
+    const wasConfirmed = confirmed.some(p => p.player_id === user.id);
     await supabase.from("match_room_players").delete().eq("room_id", room.id).eq("player_id", user.id);
 
-    if (room.status === "full") {
+    if (wasConfirmed && room.status === "full") {
       const nextWaitlist = waitlist[0];
       if (nextWaitlist) {
         await supabase.from("match_room_players").update({ type: "confirmed" }).eq("id", nextWaitlist.id);
+        // Notify promoted player
+        sendRoomNotifications({
+          userIds: [nextWaitlist.player_id],
+          type: "waitlist_promoted",
+          title: "Você foi confirmado!",
+          message: `Uma vaga abriu e você saiu da reserva para confirmado na sala "${room.title}".`,
+          roomId: room.id,
+        });
       } else {
         await supabase.from("match_rooms").update({ status: "open" }).eq("id", room.id);
       }
@@ -163,7 +196,29 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
     if (!confirm("Tem certeza que deseja cancelar esta sala?")) return;
     setLoading(true);
     await supabase.from("match_rooms").update({ status: "cancelled" }).eq("id", room.id);
+    // Notify all players
+    const allPlayerIds = players.map(p => p.player_id).filter(id => id !== user?.id);
+    if (allPlayerIds.length > 0) {
+      sendRoomNotifications({
+        userIds: allPlayerIds,
+        type: "room_cancelled",
+        title: "Sala cancelada",
+        message: `A sala "${room.title}" foi cancelada.`,
+        roomId: room.id,
+      });
+    }
     toast.success("Sala cancelada");
+    onUpdate();
+    setLoading(false);
+  };
+
+  const handleDelete = async () => {
+    if (!confirm("Tem certeza que deseja excluir esta sala?")) return;
+    setLoading(true);
+    await supabase.from("match_room_players").delete().eq("room_id", room.id);
+    await supabase.from("match_room_comments").delete().eq("room_id", room.id);
+    await supabase.from("match_rooms").delete().eq("id", room.id);
+    toast.success("Sala excluída");
     onUpdate();
     setLoading(false);
   };
@@ -203,6 +258,11 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
                     <XCircle className="h-3.5 w-3.5" />
                   </Button>
                 </>
+              )}
+              {canManage && (room?.status === "finished" || room?.status === "cancelled") && (
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={handleDelete} disabled={loading} title="Excluir sala">
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
               )}
               <Badge variant="outline" className={status.className}>
                 {status.label}

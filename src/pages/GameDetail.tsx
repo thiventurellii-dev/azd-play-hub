@@ -101,10 +101,6 @@ const GameDetail = () => {
   // Edit match state
   const [editMatchOpen, setEditMatchOpen] = useState(false);
   const [editMatch, setEditMatch] = useState<any>(null);
-  const [editMatchDate, setEditMatchDate] = useState("");
-  const [editMatchDuration, setEditMatchDuration] = useState("");
-  const [editMatchResults, setEditMatchResults] = useState<any[]>([]);
-  const [savingMatch, setSavingMatch] = useState(false);
 
   useEffect(() => {
     const fetchGame = async () => {

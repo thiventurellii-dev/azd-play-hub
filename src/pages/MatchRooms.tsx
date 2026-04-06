@@ -178,7 +178,7 @@ const MatchRooms = () => {
       {loading ? (
         <div className="flex justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-2 border-gold border-t-transparent" /></div>
       ) : (
-        <Tabs defaultValue="active">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="bg-secondary mb-6">
             <TabsTrigger value="active">Abertas ({activeRooms.length})</TabsTrigger>
             <TabsTrigger value="past">Encerradas ({pastRooms.length})</TabsTrigger>

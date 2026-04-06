@@ -142,6 +142,10 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
       }
     }
 
+    toast.success("Você saiu da sala");
+    // Immediately refresh players list
+    await fetchPlayers();
+    onUpdate();
     setLoading(false);
   };
 

@@ -322,14 +322,18 @@ const LoggedInIndex = () => {
                   <div className="space-y-2">
                     {recentMatches.map(m => (
                       <div key={m.id} className="flex justify-between items-center text-sm">
-                        <span className="truncate">{m.game?.name}</span>
+                        <span className={`truncate ${m.isUserMatch ? '' : 'text-muted-foreground'}`}>{m.game?.name}</span>
                         <div className="flex items-center gap-2 ml-2 shrink-0">
                           <span className="text-[10px] text-muted-foreground">
                             {new Date(m.played_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}
                           </span>
-                          <span className={`text-xs font-medium ${m.position === 1 ? 'text-gold' : 'text-muted-foreground'}`}>
-                            {m.position === 1 ? '🏆' : `${m.position}º`}{m.score != null ? ` ${m.score}pts` : ''}
-                          </span>
+                          {m.position != null ? (
+                            <span className={`text-xs font-medium ${m.position === 1 ? 'text-gold' : 'text-muted-foreground'}`}>
+                              {m.position === 1 ? '🏆' : `${m.position}º`}{m.score != null ? ` ${m.score}pts` : ''}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground">—</span>
+                          )}
                         </div>
                       </div>
                     ))}

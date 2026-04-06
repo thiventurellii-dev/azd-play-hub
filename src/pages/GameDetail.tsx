@@ -658,8 +658,8 @@ const GameDetail = () => {
             <Card className="bg-card border-border">
               <CardContent className="pt-6">
                 <h2 className="text-lg font-semibold mb-4">Atividade (6 meses)</h2>
-                <ChartContainer config={chartConfig} className="h-[200px]">
-                  <BarChart data={monthlyData}>
+                <ChartContainer config={chartConfig} className="h-[200px] w-full mx-auto">
+                  <BarChart data={monthlyData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis dataKey="month" tick={{ fill: "hsl(var(--muted-foreground))" }} />
                     <YAxis allowDecimals={false} tick={{ fill: "hsl(var(--muted-foreground))" }} />

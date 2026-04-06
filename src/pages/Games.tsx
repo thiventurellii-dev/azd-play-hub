@@ -698,7 +698,7 @@ const Games = () => {
                   const system = rpgSystems.find((s: any) => s.id === adv.system_id);
                   return (
                     <motion.div key={adv.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
-                      <Card className="bg-card border-border hover:border-purple-500/20 transition-colors">
+                      <Card className="bg-card border-border hover:border-purple-500/20 transition-colors relative group">
                         <CardContent className="py-4">
                           <div className="flex items-start gap-3">
                             {adv.image_url ? (
@@ -720,6 +720,13 @@ const Games = () => {
                             </div>
                           </div>
                         </CardContent>
+                        {isAdmin && (
+                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditAdventure(adv)}>
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        )}
                       </Card>
                     </motion.div>
                   );

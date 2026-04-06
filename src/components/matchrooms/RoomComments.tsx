@@ -24,6 +24,7 @@ const RoomComments = ({ roomId }: Props) => {
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const channelIdRef = useRef(`room-comments-${roomId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`);
 
   const fetchComments = async () => {
     const { data } = await supabase
@@ -51,7 +52,7 @@ const RoomComments = ({ roomId }: Props) => {
     fetchComments();
 
     const channel = supabase
-      .channel(`room-comments-${roomId}`)
+      .channel(channelIdRef.current)
       .on("postgres_changes", {
         event: "*",
         schema: "public",

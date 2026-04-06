@@ -180,6 +180,15 @@ const Games = () => {
     const avgMap: Record<string, number> = {};
     for (const [gid, d] of Object.entries(durMap)) avgMap[gid] = Math.round(d.total / d.count);
     setAvgDurations(avgMap);
+
+    // RPG data
+    const [rpgSysRes, rpgAdvRes] = await Promise.all([
+      supabase.from('rpg_systems').select('*').order('name'),
+      supabase.from('rpg_adventures').select('*').order('name'),
+    ]);
+    setRpgSystems(rpgSysRes.data || []);
+    setRpgAdventures(rpgAdvRes.data || []);
+
     setLoading(false);
   };
 

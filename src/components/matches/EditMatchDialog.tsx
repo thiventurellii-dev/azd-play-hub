@@ -4,13 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { logActivity } from '@/lib/activityLog';
 import { recalculateSeasonGameMmr } from '@/lib/mmrRecalculation';
+import { EntitySheet } from '@/components/shared/EntitySheet';
 
 interface MatchData {
   id: string;
@@ -113,7 +113,6 @@ const EditMatchDialog = ({ open, onOpenChange, match, onSaved }: Props) => {
 
     try {
       if (isAdmin) {
-        // Direct save
         const { error } = await supabase.from('matches').update({
           season_id: seasonId,
           game_id: gameId,
@@ -137,16 +136,13 @@ const EditMatchDialog = ({ open, onOpenChange, match, onSaved }: Props) => {
           }
         }
 
-        // Recalculate MMR for affected season/game combinations
         const oldSeasonId = match.season_id;
         const oldGameId = match.game_id;
         const recalcPairs: { sid: string; gid: string }[] = [];
         recalcPairs.push({ sid: seasonId, gid: gameId });
-        
         if (oldSeasonId !== seasonId || oldGameId !== gameId) {
           recalcPairs.push({ sid: oldSeasonId, gid: oldGameId });
         }
-        
         for (const pair of recalcPairs) {
           await recalculateSeasonGameMmr(pair.sid, pair.gid);
         }
@@ -161,7 +157,6 @@ const EditMatchDialog = ({ open, onOpenChange, match, onSaved }: Props) => {
 
         toast.success('Partida atualizada e MMR recalculado!');
       } else {
-        // Save as proposal
         const { error } = await supabase.from('match_edit_proposals').insert({
           match_id: match.id,
           proposed_by: user.id,
@@ -181,135 +176,129 @@ const EditMatchDialog = ({ open, onOpenChange, match, onSaved }: Props) => {
     }
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {isAdmin ? 'Editar Partida' : 'Propor Edição'}
-          </DialogTitle>
-        </DialogHeader>
-        {match && (
-          <div className="space-y-4">
-            {!isAdmin && (
-              <p className="text-sm text-muted-foreground bg-secondary/50 p-3 rounded-lg">
-                Suas alterações serão enviadas como proposta para aprovação de um administrador.
-              </p>
-            )}
+  const handleDelete = async () => {
+    if (!match || !user || !confirm('Tem certeza que deseja excluir esta partida? Esta ação não pode ser desfeita.')) return;
+    try {
+      const sId = match.season_id;
+      const gId = match.game_id;
+      const { data: resultIds } = await supabase.from('match_results').select('id').eq('match_id', match.id);
+      if (resultIds && resultIds.length > 0) {
+        await supabase.from('match_result_scores').delete().in('match_result_id', resultIds.map(r => r.id));
+      }
+      await supabase.from('match_results').delete().eq('match_id', match.id);
+      await supabase.from('matches').delete().eq('id', match.id);
+      await recalculateSeasonGameMmr(sId, gId);
+      await logActivity(user.id, 'delete', 'match', match.id, { played_at: match.played_at }, null);
+      toast.success('Partida excluída e MMR recalculado');
+      onOpenChange(false);
+      onSaved();
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao excluir');
+    }
+  };
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              {isAdmin && (
-                <>
-                  <div className="space-y-2">
-                    <Label>Season</Label>
-                    <Select value={seasonId} onValueChange={setSeasonId}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {seasons.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Jogo</Label>
-                    <Select value={gameId} onValueChange={setGameId}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {games.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </>
-              )}
-              <div className="space-y-2">
-                <Label>Data</Label>
-                <Input type="date" value={playedDate} onChange={e => setPlayedDate(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label>Hora</Label>
-                <Input type="time" value={playedTime} onChange={e => setPlayedTime(e.target.value)} />
-              </div>
+  return (
+    <EntitySheet
+      open={open}
+      onOpenChange={onOpenChange}
+      title={isAdmin ? 'Editar Partida' : 'Propor Edição'}
+      description={!isAdmin ? 'Suas alterações serão enviadas como proposta para aprovação de um administrador.' : undefined}
+    >
+      {match && (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {isAdmin && (
+              <>
+                <div className="space-y-2">
+                  <Label>Season</Label>
+                  <Select value={seasonId} onValueChange={setSeasonId}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {seasons.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Jogo</Label>
+                  <Select value={gameId} onValueChange={setGameId}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {games.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
+            <div className="space-y-2">
+              <Label>Data</Label>
+              <Input type="date" value={playedDate} onChange={e => setPlayedDate(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label>Duração (min)</Label>
-              <Input type="number" value={duration} onChange={e => setDuration(e.target.value)} />
+              <Label>Hora</Label>
+              <Input type="time" value={playedTime} onChange={e => setPlayedTime(e.target.value)} />
             </div>
-
-            <Label>Resultados</Label>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Jogador</TableHead>
-                  <TableHead className="w-[80px]">Posição</TableHead>
-                  <TableHead className="w-[80px]">Pontuação</TableHead>
-                  {isAdmin && <TableHead className="w-[70px]">1º</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {results.map((r, i) => (
-                  <TableRow key={r.player_id}>
-                    <TableCell className="text-sm truncate">{r.player_name}</TableCell>
-                    <TableCell>
-                      <Input type="number" min={1} value={r.position} onChange={e => {
-                        const updated = [...results];
-                        updated[i] = { ...updated[i], position: parseInt(e.target.value) || 1 };
-                        setResults(updated);
-                      }} className="w-[70px]" />
-                    </TableCell>
-                    <TableCell>
-                      <Input type="number" value={r.score} onChange={e => {
-                        const updated = [...results];
-                        updated[i] = { ...updated[i], score: parseInt(e.target.value) || 0 };
-                        setResults(updated);
-                      }} className="w-[80px]" />
-                    </TableCell>
-                    {isAdmin && (
-                      <TableCell>
-                        <Checkbox checked={r.is_first} onCheckedChange={(checked) => {
-                          const updated = results.map((rr, idx) => ({ ...rr, is_first: idx === i && !!checked }));
-                          setResults(updated);
-                        }} />
-                      </TableCell>
-                    )}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-
-            <Button variant="gold" onClick={handleSave} disabled={saving} className="w-full">
-              {saving ? 'Salvando...' : isAdmin ? 'Salvar Alterações' : 'Enviar Proposta'}
-            </Button>
-            {isAdmin && match && (
-              <Button
-                variant="outline"
-                className="w-full text-destructive border-destructive/30 hover:bg-destructive/10 mt-2"
-                onClick={async () => {
-                  if (!confirm('Tem certeza que deseja excluir esta partida? Esta ação não pode ser desfeita.')) return;
-                  try {
-                    const seasonId = match.season_id;
-                    const gameId = match.game_id;
-                    const { data: resultIds } = await supabase.from('match_results').select('id').eq('match_id', match.id);
-                    if (resultIds && resultIds.length > 0) {
-                      await supabase.from('match_result_scores').delete().in('match_result_id', resultIds.map(r => r.id));
-                    }
-                    await supabase.from('match_results').delete().eq('match_id', match.id);
-                    await supabase.from('matches').delete().eq('id', match.id);
-                    await recalculateSeasonGameMmr(seasonId, gameId);
-                    await logActivity(user!.id, 'delete', 'match', match.id, { played_at: match.played_at }, null);
-                    toast.success('Partida excluída e MMR recalculado');
-                    onOpenChange(false);
-                    onSaved();
-                  } catch (err: any) {
-                    toast.error(err.message || 'Erro ao excluir');
-                  }
-                }}
-              >
-                Excluir Partida
-              </Button>
-            )}
           </div>
-        )}
-      </DialogContent>
-    </Dialog>
+          <div className="space-y-2">
+            <Label>Duração (min)</Label>
+            <Input type="number" value={duration} onChange={e => setDuration(e.target.value)} />
+          </div>
+
+          <Label>Resultados</Label>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Jogador</TableHead>
+                <TableHead className="w-[80px]">Posição</TableHead>
+                <TableHead className="w-[80px]">Pontuação</TableHead>
+                {isAdmin && <TableHead className="w-[70px]">1º</TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {results.map((r, i) => (
+                <TableRow key={r.player_id}>
+                  <TableCell className="text-sm truncate">{r.player_name}</TableCell>
+                  <TableCell>
+                    <Input type="number" min={1} value={r.position} onChange={e => {
+                      const updated = [...results];
+                      updated[i] = { ...updated[i], position: parseInt(e.target.value) || 1 };
+                      setResults(updated);
+                    }} className="w-[70px]" />
+                  </TableCell>
+                  <TableCell>
+                    <Input type="number" value={r.score} onChange={e => {
+                      const updated = [...results];
+                      updated[i] = { ...updated[i], score: parseInt(e.target.value) || 0 };
+                      setResults(updated);
+                    }} className="w-[80px]" />
+                  </TableCell>
+                  {isAdmin && (
+                    <TableCell>
+                      <Checkbox checked={r.is_first} onCheckedChange={(checked) => {
+                        const updated = results.map((rr, idx) => ({ ...rr, is_first: idx === i && !!checked }));
+                        setResults(updated);
+                      }} />
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+
+          <Button variant="gold" onClick={handleSave} disabled={saving} className="w-full">
+            {saving ? 'Salvando...' : isAdmin ? 'Salvar Alterações' : 'Enviar Proposta'}
+          </Button>
+          {isAdmin && (
+            <Button
+              variant="outline"
+              className="w-full text-destructive border-destructive/30 hover:bg-destructive/10"
+              onClick={handleDelete}
+            >
+              Excluir Partida
+            </Button>
+          )}
+        </>
+      )}
+    </EntitySheet>
   );
 };
 

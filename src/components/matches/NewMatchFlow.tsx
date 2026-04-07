@@ -189,8 +189,9 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
   };
 
   const handleSubmit = async () => {
-    if (!gameId || !playedDate || entries.some(e => !e.player_id)) {
-      return notify('error', 'Preencha Jogo, Data e todos os jogadores');
+    const filledEntries = entries.filter(e => e.player_id);
+    if (!gameId || !playedDate || filledEntries.length === 0) {
+      return notify('error', 'Preencha Jogo, Data e pelo menos um jogador');
     }
     setSaving(true);
     try {

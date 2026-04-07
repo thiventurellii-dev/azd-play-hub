@@ -76,7 +76,7 @@ const SeasonDetail = () => {
     if (!id) return;
     const fetchAll = async () => {
       const { data: sData } = await supabase.from("seasons").select("*").eq("id", id).single();
-      const seasonData: Season | null = sData
+      const seasonData: SeasonFull | null = sData
         ? {
             ...sData,
             prize: (sData as any).prize || "",

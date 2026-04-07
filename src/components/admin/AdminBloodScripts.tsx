@@ -88,23 +88,12 @@ const AdminBloodScripts = () => {
   };
 
   const openEditScript = (s: BloodScript) => {
-    setEditingScript(s);
-    setEditScriptForm({ name: s.name, description: s.description || '', victory_conditions: [...s.victory_conditions] });
-    setNewEditCondition('');
+    setEditingScript({
+      ...s,
+      image_url: null, // will be loaded by the dialog
+      victory_conditions: [...s.victory_conditions],
+    });
     setEditScriptOpen(true);
-  };
-
-  const handleEditScriptSave = async () => {
-    if (!editingScript) return;
-    const { error } = await supabase.from('blood_scripts').update({
-      name: editScriptForm.name,
-      description: editScriptForm.description || null,
-      victory_conditions: editScriptForm.victory_conditions as any,
-    }).eq('id', editingScript.id);
-    if (error) return notify('error', error.message);
-    notify('success', 'Script atualizado!');
-    setEditScriptOpen(false);
-    fetchData();
   };
 
   // Character CRUD
@@ -124,46 +113,8 @@ const AdminBloodScripts = () => {
     fetchData();
   };
 
-  const handleDeleteChar = async (id: string) => {
-    const { error } = await supabase.from('blood_characters').delete().eq('id', id);
-    if (error) return notify('error', error.message);
-    notify('success', 'Personagem removido');
-    fetchData();
-  };
-
-  const openEditChar = (c: BloodCharacter) => {
-    setEditingChar(c);
-    setEditCharForm({ name: c.name, name_en: c.name_en, team: c.team, role_type: c.role_type, description: c.description || '' });
-    setEditCharOpen(true);
-  };
-
-  const handleEditCharSave = async () => {
-    if (!editingChar) return;
-    const { error } = await supabase.from('blood_characters').update({
-      name: editCharForm.name,
-      name_en: editCharForm.name_en,
-      team: editCharForm.team,
-      role_type: editCharForm.role_type,
-      description: editCharForm.description || null,
-    }).eq('id', editingChar.id);
-    if (error) return notify('error', error.message);
-    notify('success', 'Personagem atualizado!');
-    setEditCharOpen(false);
-    fetchData();
-  };
-
   const getScriptChars = (scriptId: string) => characters.filter(c => c.script_id === scriptId);
-  const getOtherChars = (scriptId: string) => characters.filter(c => c.script_id !== scriptId);
 
-  const handleAddExistingChar = async (scriptId: string) => {
-    if (!addExistingCharId) return notify('error', 'Selecione um personagem');
-    const { error } = await supabase.from('blood_characters').update({ script_id: scriptId }).eq('id', addExistingCharId);
-    if (error) return notify('error', error.message);
-    notify('success', 'Personagem adicionado ao script!');
-    setAddExistingCharId('');
-    fetchData();
-  };
-  const teamColor = (team: string) => team === 'evil' ? 'text-red-400' : 'text-blue-400';
   const roleColor = (rt: string) => {
     if (rt === 'demon') return 'text-red-500';
     if (rt === 'minion') return 'text-orange-400';

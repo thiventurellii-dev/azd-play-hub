@@ -14,7 +14,6 @@ import { ExternalLink, Video, Users, Plus, Sword } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotification } from "@/components/NotificationDialog";
-import EditBloodScriptDialog from "@/components/blood/EditBloodScriptDialog";
 import BoardgameCard from "@/components/games/BoardgameCard";
 import BloodScriptCard from "@/components/games/BloodScriptCard";
 import { EntityEditButton } from "@/components/shared/EntityEditButton";

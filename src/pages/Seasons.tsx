@@ -100,6 +100,7 @@ const Seasons = () => {
 
   useEffect(() => {
     supabase.from('games').select('id, name').order('name').then(({ data }) => setAllGames(data || []));
+    supabase.from('blood_scripts').select('id, name').order('name').then(({ data }) => setAllScripts((data || []) as any[]));
   }, []);
 
   const openCreate = () => { setEditId(null); setFormName(''); setFormDesc(''); setFormStart(''); setFormEnd(''); setFormType('boardgame'); setFormGameId(''); setDialogOpen(true); };

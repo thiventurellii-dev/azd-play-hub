@@ -103,12 +103,13 @@ const Seasons = () => {
     supabase.from('blood_scripts').select('id, name').order('name').then(({ data }) => setAllScripts((data || []) as any[]));
   }, []);
 
-  const openCreate = () => { setEditId(null); setFormName(''); setFormDesc(''); setFormStart(''); setFormEnd(''); setFormType('boardgame'); setFormGameId(''); setDialogOpen(true); };
+  const openCreate = () => { setEditId(null); setFormName(''); setFormDesc(''); setFormStart(''); setFormEnd(''); setFormType('boardgame'); setFormGameId(''); setFormScriptId(''); setDialogOpen(true); };
   const openEdit = async (s: Season) => {
     setEditId(s.id); setFormName(s.name); setFormDesc(s.description || ''); setFormStart(s.start_date); setFormEnd(s.end_date); setFormType(s.type);
-    // Load linked game
     const { data: sg } = await supabase.from('season_games').select('game_id').eq('season_id', s.id).limit(1);
     setFormGameId(sg?.[0]?.game_id || '');
+    const { data: sbs } = await supabase.from('season_blood_scripts').select('script_id').eq('season_id', s.id).limit(1);
+    setFormScriptId((sbs as any)?.[0]?.script_id || '');
     setDialogOpen(true);
   };
 

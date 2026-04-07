@@ -231,18 +231,18 @@ const Navbar = () => {
                 {userNickname || user.user_metadata?.name || "Perfil"}
               </Button>
               <Popover onOpenChange={async (open) => {
-                if (open && roomNotifs.length > 0) {
-                  const ids = roomNotifs.map(n => n.id);
-                  await supabase.from("notifications").update({ is_read: true }).in("id", ids);
-                  setRoomNotifs(prev => prev.map(n => ({ ...n })));
+                if (open && unreadNotifCount > 0) {
+                  const unreadIds = roomNotifs.map(n => n.id);
+                  await supabase.from("notifications").update({ is_read: true }).in("id", unreadIds);
+                  setUnreadNotifCount(0);
                 }
               }}>
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-9 w-9 relative text-muted-foreground hover:text-foreground">
                     <Bell className="h-4 w-4" />
-                    {(pendingFriends + roomNotifs.length) > 0 && (
+                    {(pendingFriends + unreadNotifCount) > 0 && (
                       <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[9px] font-bold text-black">
-                        {pendingFriends + roomNotifs.length}
+                        {pendingFriends + unreadNotifCount}
                       </span>
                     )}
                   </Button>

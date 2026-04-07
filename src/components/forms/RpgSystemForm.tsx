@@ -16,33 +16,37 @@ export interface RpgSystemData {
 }
 
 interface Props {
-  system: RpgSystemData;
+  system?: RpgSystemData;
   onSuccess: () => void;
 }
 
 const RpgSystemForm = ({ system, onSuccess }: Props) => {
-  const [name, setName] = useState(system.name);
-  const [desc, setDesc] = useState(system.description || "");
-  const [imageUrl, setImageUrl] = useState(system.image_url || "");
-  const [rulesUrl, setRulesUrl] = useState(system.rules_url || "");
-  const [videoUrl, setVideoUrl] = useState(system.video_url || "");
+  const isCreate = !system;
+  const [name, setName] = useState(system?.name || "");
+  const [desc, setDesc] = useState(system?.description || "");
+  const [imageUrl, setImageUrl] = useState(system?.image_url || "");
+  const [rulesUrl, setRulesUrl] = useState(system?.rules_url || "");
+  const [videoUrl, setVideoUrl] = useState(system?.video_url || "");
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
-        .from("rpg_systems")
-        .update({
-          name,
-          description: desc || null,
-          image_url: imageUrl || null,
-          rules_url: rulesUrl || null,
-          video_url: videoUrl || null,
-        } as any)
-        .eq("id", system.id);
-      if (error) throw error;
+      const payload = {
+        name,
+        description: desc || null,
+        image_url: imageUrl || null,
+        rules_url: rulesUrl || null,
+        video_url: videoUrl || null,
+      };
+      if (isCreate) {
+        const { error } = await supabase.from("rpg_systems").insert(payload as any);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("rpg_systems").update(payload as any).eq("id", system.id);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
-      toast.success("Sistema atualizado!");
+      toast.success(isCreate ? "Sistema adicionado!" : "Sistema atualizado!");
       onSuccess();
     },
     onError: (err: any) => toast.error(err.message),
@@ -51,12 +55,12 @@ const RpgSystemForm = ({ system, onSuccess }: Props) => {
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label>Nome</Label>
-        <Input value={name} onChange={(e) => setName(e.target.value)} />
+        <Label>Nome *</Label>
+        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="D&D 5e, Pathfinder..." />
       </div>
       <div className="space-y-2">
         <Label>Descrição</Label>
-        <Input value={desc} onChange={(e) => setDesc(e.target.value)} />
+        <Input value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Descrição do sistema" />
       </div>
       <div className="space-y-2">
         <Label>URL da Imagem</Label>
@@ -72,8 +76,8 @@ const RpgSystemForm = ({ system, onSuccess }: Props) => {
           <Input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} />
         </div>
       </div>
-      <Button variant="gold" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} className="w-full">
-        {saveMutation.isPending ? "Salvando..." : "Salvar"}
+      <Button variant="gold" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !name.trim()} className="w-full">
+        {saveMutation.isPending ? "Salvando..." : isCreate ? "Adicionar" : "Salvar"}
       </Button>
     </div>
   );

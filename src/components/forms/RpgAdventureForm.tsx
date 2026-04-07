@@ -17,40 +17,47 @@ export interface RpgAdventureData {
 }
 
 interface Props {
-  adventure: RpgAdventureData;
+  adventure?: RpgAdventureData;
+  systems?: { id: string; name: string }[];
   onSuccess: () => void;
 }
 
-const RpgAdventureForm = ({ adventure, onSuccess }: Props) => {
-  const [name, setName] = useState(adventure.name);
-  const [desc, setDesc] = useState(adventure.description || "");
-  const [tag, setTag] = useState<"official" | "homebrew">(adventure.tag);
-  const [imageUrl, setImageUrl] = useState(adventure.image_url || "");
-  const [systemId, setSystemId] = useState(adventure.system_id);
-  const [systems, setSystems] = useState<{ id: string; name: string }[]>([]);
+const RpgAdventureForm = ({ adventure, systems: externalSystems, onSuccess }: Props) => {
+  const isCreate = !adventure;
+  const [name, setName] = useState(adventure?.name || "");
+  const [desc, setDesc] = useState(adventure?.description || "");
+  const [tag, setTag] = useState<"official" | "homebrew">(adventure?.tag || "official");
+  const [imageUrl, setImageUrl] = useState(adventure?.image_url || "");
+  const [systemId, setSystemId] = useState(adventure?.system_id || "");
+  const [systems, setSystems] = useState<{ id: string; name: string }[]>(externalSystems || []);
 
   useEffect(() => {
-    supabase.from("rpg_systems").select("id, name").order("name").then(({ data }) => {
-      setSystems((data || []) as { id: string; name: string }[]);
-    });
-  }, []);
+    if (!externalSystems) {
+      supabase.from("rpg_systems").select("id, name").order("name").then(({ data }) => {
+        setSystems((data || []) as { id: string; name: string }[]);
+      });
+    }
+  }, [externalSystems]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
-        .from("rpg_adventures")
-        .update({
-          name,
-          description: desc || null,
-          tag,
-          image_url: imageUrl || null,
-          system_id: systemId,
-        } as any)
-        .eq("id", adventure.id);
-      if (error) throw error;
+      const payload = {
+        name,
+        description: desc || null,
+        tag,
+        image_url: imageUrl || null,
+        system_id: systemId,
+      };
+      if (isCreate) {
+        const { error } = await supabase.from("rpg_adventures").insert(payload as any);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("rpg_adventures").update(payload as any).eq("id", adventure.id);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
-      toast.success("Aventura atualizada!");
+      toast.success(isCreate ? "Aventura adicionada!" : "Aventura atualizada!");
       onSuccess();
     },
     onError: (err: any) => toast.error(err.message),
@@ -59,9 +66,9 @@ const RpgAdventureForm = ({ adventure, onSuccess }: Props) => {
   return (
     <div className="space-y-4">
       <div className="space-y-2">
-        <Label>Sistema</Label>
+        <Label>Sistema *</Label>
         <Select value={systemId} onValueChange={setSystemId}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectTrigger><SelectValue placeholder="Selecione o sistema" /></SelectTrigger>
           <SelectContent>
             {systems.map((s) => (
               <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
@@ -70,8 +77,8 @@ const RpgAdventureForm = ({ adventure, onSuccess }: Props) => {
         </Select>
       </div>
       <div className="space-y-2">
-        <Label>Nome</Label>
-        <Input value={name} onChange={(e) => setName(e.target.value)} />
+        <Label>Nome *</Label>
+        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nome da aventura" />
       </div>
       <div className="space-y-2">
         <Label>Descrição</Label>
@@ -91,8 +98,8 @@ const RpgAdventureForm = ({ adventure, onSuccess }: Props) => {
         <Label>URL da Imagem</Label>
         <Input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} />
       </div>
-      <Button variant="gold" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending} className="w-full">
-        {saveMutation.isPending ? "Salvando..." : "Salvar"}
+      <Button variant="gold" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending || !name.trim() || !systemId} className="w-full">
+        {saveMutation.isPending ? "Salvando..." : isCreate ? "Adicionar" : "Salvar"}
       </Button>
     </div>
   );

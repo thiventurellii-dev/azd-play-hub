@@ -534,15 +534,12 @@ const GameDetail = () => {
                   )}
                 </div>
               </div>
-              {isAdmin && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={openEditDialog}
-                >
-                  <Pencil className="h-4 w-4 mr-1" /> Editar
-                </Button>
-              )}
+              <EditActionButton
+                entityType="boardgame"
+                onClick={openEditDialog}
+                size="sm"
+                label="Editar"
+              />
             </div>
           </div>
         </div>

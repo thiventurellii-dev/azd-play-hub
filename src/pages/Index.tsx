@@ -243,7 +243,8 @@ const LoggedInIndex = () => {
               </Button>
             </motion.div>
           </Link>
-        </motion.div>
+      </motion.div>
+        <SocialButtons />
       </section>
 
       {/* Dashboard Cards */}

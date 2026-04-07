@@ -54,7 +54,9 @@ const Seasons = () => {
   const [formEnd, setFormEnd] = useState('');
   const [formType, setFormType] = useState<'boardgame' | 'blood'>('boardgame');
   const [formGameId, setFormGameId] = useState('');
+  const [formScriptId, setFormScriptId] = useState('');
   const [allGames, setAllGames] = useState<{ id: string; name: string }[]>([]);
+  const [allScripts, setAllScripts] = useState<{ id: string; name: string }[]>([]);
 
   const fetchData = async () => {
     const [seasonsRes, sgRes, sbsRes] = await Promise.all([
@@ -98,14 +100,16 @@ const Seasons = () => {
 
   useEffect(() => {
     supabase.from('games').select('id, name').order('name').then(({ data }) => setAllGames(data || []));
+    supabase.from('blood_scripts').select('id, name').order('name').then(({ data }) => setAllScripts((data || []) as any[]));
   }, []);
 
-  const openCreate = () => { setEditId(null); setFormName(''); setFormDesc(''); setFormStart(''); setFormEnd(''); setFormType('boardgame'); setFormGameId(''); setDialogOpen(true); };
+  const openCreate = () => { setEditId(null); setFormName(''); setFormDesc(''); setFormStart(''); setFormEnd(''); setFormType('boardgame'); setFormGameId(''); setFormScriptId(''); setDialogOpen(true); };
   const openEdit = async (s: Season) => {
     setEditId(s.id); setFormName(s.name); setFormDesc(s.description || ''); setFormStart(s.start_date); setFormEnd(s.end_date); setFormType(s.type);
-    // Load linked game
     const { data: sg } = await supabase.from('season_games').select('game_id').eq('season_id', s.id).limit(1);
     setFormGameId(sg?.[0]?.game_id || '');
+    const { data: sbs } = await supabase.from('season_blood_scripts').select('script_id').eq('season_id', s.id).limit(1);
+    setFormScriptId((sbs as any)?.[0]?.script_id || '');
     setDialogOpen(true);
   };
 
@@ -126,6 +130,10 @@ const Seasons = () => {
     if (seasonId && formType === 'boardgame' && formGameId) {
       await supabase.from('season_games').delete().eq('season_id', seasonId);
       await supabase.from('season_games').insert({ season_id: seasonId, game_id: formGameId });
+    }
+    if (seasonId && formType === 'blood' && formScriptId) {
+      await supabase.from('season_blood_scripts').delete().eq('season_id', seasonId);
+      await supabase.from('season_blood_scripts').insert({ season_id: seasonId, script_id: formScriptId } as any);
     }
     setDialogOpen(false);
     fetchData();
@@ -261,6 +269,17 @@ const Seasons = () => {
                   <SelectTrigger><SelectValue placeholder="Selecione o jogo" /></SelectTrigger>
                   <SelectContent>
                     {allGames.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            {formType === 'blood' && (
+              <div className="space-y-2">
+                <Label>Script</Label>
+                <Select value={formScriptId} onValueChange={setFormScriptId}>
+                  <SelectTrigger><SelectValue placeholder="Selecione o script" /></SelectTrigger>
+                  <SelectContent>
+                    {allScripts.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

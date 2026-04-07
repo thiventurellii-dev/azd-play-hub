@@ -38,6 +38,7 @@ const Navbar = () => {
   const [pendingFriends, setPendingFriends] = useState(0);
   const [friendRequests, setFriendRequests] = useState<{ id: string; user_id: string; name: string; nickname: string | null }[]>([]);
   const [roomNotifs, setRoomNotifs] = useState<{ id: string; title: string; message: string; type: string; room_id: string | null; created_at: string }[]>([]);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const [userNickname, setUserNickname] = useState<string | null>(null);
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
 
@@ -71,12 +72,13 @@ const Navbar = () => {
     if (!user) return;
     const { data } = await supabase
       .from("notifications")
-      .select("id, title, message, type, room_id, created_at")
+      .select("id, title, message, type, room_id, created_at, is_read")
       .eq("user_id", user.id)
-      .eq("is_read", false)
       .order("created_at", { ascending: false })
       .limit(20);
-    setRoomNotifs(data || []);
+    const allNotifs = (data || []).map(n => ({ id: n.id, title: n.title, message: n.message, type: n.type, room_id: n.room_id, created_at: n.created_at }));
+    setRoomNotifs(allNotifs);
+    setUnreadNotifCount((data || []).filter(n => !n.is_read).length);
   }, [user]);
 
   useEffect(() => {
@@ -228,13 +230,19 @@ const Navbar = () => {
                 )}
                 {userNickname || user.user_metadata?.name || "Perfil"}
               </Button>
-              <Popover>
+              <Popover onOpenChange={async (open) => {
+                if (open && unreadNotifCount > 0) {
+                  const unreadIds = roomNotifs.map(n => n.id);
+                  await supabase.from("notifications").update({ is_read: true }).in("id", unreadIds);
+                  setUnreadNotifCount(0);
+                }
+              }}>
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-9 w-9 relative text-muted-foreground hover:text-foreground">
                     <Bell className="h-4 w-4" />
-                    {(pendingFriends + roomNotifs.length) > 0 && (
+                    {(pendingFriends + unreadNotifCount) > 0 && (
                       <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-gold text-[9px] font-bold text-black">
-                        {pendingFriends + roomNotifs.length}
+                        {pendingFriends + unreadNotifCount}
                       </span>
                     )}
                   </Button>

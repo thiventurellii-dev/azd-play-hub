@@ -733,6 +733,43 @@ const AdminSeasons = () => {
                 </Collapsible>
               </div>
             )}
+            {editingSeason?.type === "blood" && (
+              <div className="space-y-2">
+                <Collapsible open={editGamesOpen} onOpenChange={setEditGamesOpen}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2 w-full justify-between">
+                      <span className="flex items-center gap-2">
+                        🩸 Scripts vinculados ({editingSeason ? (seasonBloodScriptsMap[editingSeason.id] || []).length : 0})
+                      </span>
+                      {editGamesOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-3">
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {bloodScripts.map((bs) => {
+                        const isLinked = editingSeason
+                          ? (seasonBloodScriptsMap[editingSeason.id] || []).includes(bs.id)
+                          : false;
+                        return (
+                          <label
+                            key={bs.id}
+                            className="flex items-center gap-2 rounded-md border border-border p-2 cursor-pointer hover:bg-secondary/50 transition-colors"
+                          >
+                            <Checkbox
+                              checked={isLinked}
+                              onCheckedChange={() =>
+                                editingSeason && toggleScriptInSeason(editingSeason.id, bs.id, isLinked)
+                              }
+                            />
+                            <span className="text-sm">{bs.name}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              </div>
+            )}
             <Button variant="gold" onClick={handleEditSave} className="w-full">
               Salvar Alterações
             </Button>

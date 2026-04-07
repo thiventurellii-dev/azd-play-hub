@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { logActivity } from '@/lib/activityLog';
+import { recalculateSeasonGameMmr } from '@/lib/mmrRecalculation';
 
 interface MatchData {
   id: string;
@@ -270,14 +271,17 @@ const EditMatchDialog = ({ open, onOpenChange, match, onSaved }: Props) => {
                 onClick={async () => {
                   if (!confirm('Tem certeza que deseja excluir esta partida? Esta ação não pode ser desfeita.')) return;
                   try {
+                    const seasonId = match.season_id;
+                    const gameId = match.game_id;
                     const { data: resultIds } = await supabase.from('match_results').select('id').eq('match_id', match.id);
                     if (resultIds && resultIds.length > 0) {
                       await supabase.from('match_result_scores').delete().in('match_result_id', resultIds.map(r => r.id));
                     }
                     await supabase.from('match_results').delete().eq('match_id', match.id);
                     await supabase.from('matches').delete().eq('id', match.id);
+                    await recalculateSeasonGameMmr(seasonId, gameId);
                     await logActivity(user!.id, 'delete', 'match', match.id, { played_at: match.played_at }, null);
-                    toast.success('Partida excluída');
+                    toast.success('Partida excluída e MMR recalculado');
                     onOpenChange(false);
                     onSaved();
                   } catch (err: any) {

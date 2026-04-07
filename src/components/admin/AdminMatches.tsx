@@ -338,12 +338,15 @@ const AdminMatches = () => {
                         </Button>
                         <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={async () => {
                           if (!confirm('Tem certeza que deseja excluir esta partida? Esta ação não pode ser desfeita.')) return;
+                          const seasonId = m.season_id;
+                          const gameId = m.game_id;
                           await supabase.from('match_result_scores').delete().in('match_result_id', 
                             (await supabase.from('match_results').select('id').eq('match_id', m.id)).data?.map(r => r.id) || []
                           );
                           await supabase.from('match_results').delete().eq('match_id', m.id);
                           await supabase.from('matches').delete().eq('id', m.id);
-                          notify('success', 'Partida excluída');
+                          await recalculateSeasonGameMmr(seasonId, gameId);
+                          notify('success', 'Partida excluída e MMR recalculado');
                           fetchMatches();
                         }}>
                           <Trash2 className="h-4 w-4" />

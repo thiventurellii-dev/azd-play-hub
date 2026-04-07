@@ -71,7 +71,22 @@ const Games = () => {
   const [newAdvTag, setNewAdvTag] = useState<'official' | 'homebrew'>('official');
   const [newAdvImageUrl, setNewAdvImageUrl] = useState('');
 
-  // (Edit RPG state removed — now handled by EntityEditButton + Forms)
+  // Edit RPG dialogs
+  const [editSystemOpen, setEditSystemOpen] = useState(false);
+  const [editSystem, setEditSystem] = useState<any>(null);
+  const [editSysName, setEditSysName] = useState('');
+  const [editSysDesc, setEditSysDesc] = useState('');
+  const [editSysImageUrl, setEditSysImageUrl] = useState('');
+  const [editSysRulesUrl, setEditSysRulesUrl] = useState('');
+  const [editSysVideoUrl, setEditSysVideoUrl] = useState('');
+
+  const [editAdvOpen, setEditAdvOpen] = useState(false);
+  const [editAdv, setEditAdv] = useState<any>(null);
+  const [editAdvName, setEditAdvName] = useState('');
+  const [editAdvDesc, setEditAdvDesc] = useState('');
+  const [editAdvTag, setEditAdvTag] = useState<'official' | 'homebrew'>('official');
+  const [editAdvImageUrl, setEditAdvImageUrl] = useState('');
+  const [editAdvSystemId, setEditAdvSystemId] = useState('');
 
   // Add blood script dialog
   const [addScriptOpen, setAddScriptOpen] = useState(false);

@@ -175,7 +175,8 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
     if (error) {
       toast.error("Erro ao entrar na sala");
     } else {
-      const joinerName = displayName({ player_id: user.id, profile: undefined } as any) || "Alguém";
+      const { data: joinerProfile } = await supabase.from("profiles").select("nickname, name").eq("id", user.id).single();
+      const joinerName = joinerProfile?.nickname || joinerProfile?.name || "Jogador";
       if (room.created_by !== user.id) {
         sendRoomNotifications({
           userIds: [room.created_by],

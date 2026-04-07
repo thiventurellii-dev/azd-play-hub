@@ -144,7 +144,7 @@ const Games = () => {
       supabase.from("game_tag_links").select("game_id, tag_id"),
     ]);
 
-    const gamesData = (gamesRes.data || []) as Game[];
+    const gamesData = ((gamesRes.data || []) as Game[]).filter(g => g.slug !== 'blood-on-the-clocktower');
     setGames(gamesData);
     setBloodScripts((scriptsRes.data || []) as BloodScript[]);
     setBloodCharacters((charsRes.data || []) as BloodCharacter[]);
@@ -233,9 +233,8 @@ const Games = () => {
   const roleTypeLabels: Record<string, string> = { townsfolk: "Cidadão", outsider: "Forasteiro", minion: "Lacaio", demon: "Demônio" };
 
   const filteredGames = useMemo(() => {
-    const nonBotc = games.filter(g => g.slug !== 'blood-on-the-clocktower');
-    if (tagFilter === 'all') return nonBotc;
-    return nonBotc.filter(g => (gameTagMap[g.id] || []).includes(tagFilter));
+    if (tagFilter === 'all') return games;
+    return games.filter(g => (gameTagMap[g.id] || []).includes(tagFilter));
   }, [games, tagFilter, gameTagMap]);
 
   const handleAddGame = async () => {

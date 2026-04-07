@@ -90,7 +90,8 @@ const EditBloodScriptDialog = ({ open, onOpenChange, script, onSaved, showCharac
     if (showCharacters) {
       fetchCharacters();
     }
-  }, [script, open]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [script, open, showCharacters]);
 
   const fetchCharacters = async () => {
     if (!script) return;

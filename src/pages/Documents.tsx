@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,78 +6,50 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useNotification } from '@/components/NotificationDialog';
-import { FileText, Download, Plus, Trash2, Upload } from 'lucide-react';
+import { FileText, Download, Trash2, Upload } from 'lucide-react';
 import { motion } from 'framer-motion';
-
-interface Document {
-  id: string;
-  title: string;
-  file_url: string;
-  created_at: string;
-}
+import { useDocuments } from '@/hooks/useDocuments';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 const Documents = () => {
   const { notify } = useNotification();
   const { isAdmin } = useAuth();
-  const [docs, setDocs] = useState<Document[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: docs = [], isLoading } = useDocuments();
   const [title, setTitle] = useState('');
   const [file, setFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
 
-  const fetchDocs = async () => {
-    const { data } = await supabase
-      .from('community_documents')
-      .select('*')
-      .order('created_at', { ascending: false });
-    setDocs((data || []) as Document[]);
-    setLoading(false);
-  };
-
-  useEffect(() => { fetchDocs(); }, []);
-
-  const handleUpload = async () => {
-    if (!title || !file) return notify('error', 'Título e arquivo são obrigatórios');
-    setUploading(true);
-
-    const ext = file.name.split('.').pop();
-    const path = `${Date.now()}-${file.name}`;
-    const { error: uploadError } = await supabase.storage
-      .from('community-docs')
-      .upload(path, file);
-
-    if (uploadError) {
-      notify('error', uploadError.message);
-      setUploading(false);
-      return;
-    }
-
-    const { data: urlData } = supabase.storage.from('community-docs').getPublicUrl(path);
-
-    const { error } = await supabase.from('community_documents').insert({
-      title,
-      file_url: urlData.publicUrl,
-    });
-
-    if (error) {
-      notify('error', error.message);
-    } else {
+  const uploadMutation = useMutation({
+    mutationFn: async () => {
+      if (!title || !file) throw new Error('Título e arquivo são obrigatórios');
+      const path = `${Date.now()}-${file.name}`;
+      const { error: uploadError } = await supabase.storage.from('community-docs').upload(path, file);
+      if (uploadError) throw uploadError;
+      const { data: urlData } = supabase.storage.from('community-docs').getPublicUrl(path);
+      const { error } = await supabase.from('community_documents').insert({ title, file_url: urlData.publicUrl });
+      if (error) throw error;
+    },
+    onSuccess: () => {
       notify('success', 'Documento adicionado!');
-      setTitle('');
-      setFile(null);
-      fetchDocs();
-    }
-    setUploading(false);
-  };
+      setTitle(''); setFile(null);
+      queryClient.invalidateQueries({ queryKey: ["community-documents"] });
+    },
+    onError: (e: any) => notify('error', e.message),
+  });
 
-  const handleDelete = async (id: string) => {
-    const { error } = await supabase.from('community_documents').delete().eq('id', id);
-    if (error) return notify('error', error.message);
-    notify('success', 'Documento removido');
-    fetchDocs();
-  };
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('community_documents').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      notify('success', 'Documento removido');
+      queryClient.invalidateQueries({ queryKey: ["community-documents"] });
+    },
+    onError: (e: any) => notify('error', e.message),
+  });
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="container py-10 flex justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-gold border-t-transparent" />
@@ -109,8 +81,8 @@ const Documents = () => {
                 <Input type="file" accept=".pdf,.doc,.docx,.xlsx,.xls" onChange={e => setFile(e.target.files?.[0] || null)} />
               </div>
             </div>
-            <Button variant="gold" onClick={handleUpload} disabled={uploading}>
-              <Upload className="h-4 w-4 mr-1" /> {uploading ? 'Enviando...' : 'Enviar Documento'}
+            <Button variant="gold" onClick={() => uploadMutation.mutate()} disabled={uploadMutation.isPending}>
+              <Upload className="h-4 w-4 mr-1" /> {uploadMutation.isPending ? 'Enviando...' : 'Enviar Documento'}
             </Button>
           </CardContent>
         </Card>
@@ -125,31 +97,22 @@ const Documents = () => {
       ) : (
         <div className="space-y-3">
           {docs.map((doc, i) => (
-            <motion.div
-              key={doc.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-            >
+            <motion.div key={doc.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
               <Card className="bg-card border-border">
                 <CardContent className="py-4 flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3 min-w-0">
                     <FileText className="h-5 w-5 text-gold flex-shrink-0" />
                     <div className="min-w-0">
                       <p className="font-medium truncate">{doc.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(doc.created_at).toLocaleDateString('pt-BR')}
-                      </p>
+                      <p className="text-xs text-muted-foreground">{new Date(doc.created_at).toLocaleDateString('pt-BR')}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
-                      <Button variant="outline" size="sm">
-                        <Download className="h-4 w-4 mr-1" /> Baixar
-                      </Button>
+                      <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-1" /> Baixar</Button>
                     </a>
                     {isAdmin && (
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(doc.id)}>
+                      <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(doc.id)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     )}

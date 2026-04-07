@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,37 +13,31 @@ import { ExternalLink, Video, Users, Plus, Sword } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotification } from "@/components/NotificationDialog";
+import { useQueryClient } from "@tanstack/react-query";
 import BoardgameCard from "@/components/games/BoardgameCard";
 import BloodScriptCard from "@/components/games/BloodScriptCard";
 import { EntityEditButton } from "@/components/shared/EntityEditButton";
 import RpgSystemForm from "@/components/forms/RpgSystemForm";
 import RpgAdventureForm from "@/components/forms/RpgAdventureForm";
-import type { GameFormData } from "@/components/forms/GameForm";
-
-interface SeasonLink { season_id: string; season_name: string; status: string; }
-interface BloodScript { id: string; name: string; description: string | null; slug: string | null; victory_conditions: any; image_url: string | null; }
-interface BloodCharacter { id: string; script_id: string; name: string; name_en: string; team: "good" | "evil"; role_type: string; }
-interface GameTag { id: string; name: string; }
+import { useGamesData } from "@/hooks/useGamesData";
 
 const Games = () => {
   const { user, isAdmin } = useAuth();
   const { notify } = useNotification();
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useGamesData();
 
-  const [games, setGames] = useState<GameFormData[]>([]);
-  const [gameSeasons, setGameSeasons] = useState<Record<string, SeasonLink[]>>({});
-  const [avgDurations, setAvgDurations] = useState<Record<string, number>>({});
-  const [loading, setLoading] = useState(true);
-  const [bloodScripts, setBloodScripts] = useState<BloodScript[]>([]);
-  const [bloodCharacters, setBloodCharacters] = useState<BloodCharacter[]>([]);
-  const [scriptSeasons, setScriptSeasons] = useState<Record<string, SeasonLink[]>>({});
+  const games = data?.games || [];
+  const gameSeasons = data?.gameSeasons || {};
+  const avgDurations = data?.avgDurations || {};
+  const bloodScripts = data?.bloodScripts || [];
+  const bloodCharacters = data?.bloodCharacters || [];
+  const scriptSeasons = data?.scriptSeasons || {};
+  const rpgSystems = data?.rpgSystems || [];
+  const rpgAdventures = data?.rpgAdventures || [];
+  const allTags = data?.allTags || [];
+  const gameTagMap = data?.gameTagMap || {};
 
-  // RPG
-  const [rpgSystems, setRpgSystems] = useState<any[]>([]);
-  const [rpgAdventures, setRpgAdventures] = useState<any[]>([]);
-
-  // Tags
-  const [allTags, setAllTags] = useState<GameTag[]>([]);
-  const [gameTagMap, setGameTagMap] = useState<Record<string, string[]>>({});
   const [tagFilter, setTagFilter] = useState("all");
 
   // Add dialogs
@@ -59,98 +53,11 @@ const Games = () => {
   const [addSystemOpen, setAddSystemOpen] = useState(false);
   const [addAdventureOpen, setAddAdventureOpen] = useState(false);
 
-  const fetchData = async () => {
-    const [gamesRes, sgRes, matchesRes, scriptsRes, charsRes, sbsRes, tagsRes, tagLinksRes] = await Promise.all([
-      supabase.from("games").select("*").order("name"),
-      supabase.from("season_games").select("game_id, season_id"),
-      supabase.from("matches").select("game_id, duration_minutes"),
-      supabase.from("blood_scripts").select("*").order("name"),
-      supabase.from("blood_characters").select("*").order("team, role_type, name"),
-      supabase.from("season_blood_scripts").select("season_id, script_id"),
-      supabase.from("game_tags").select("*").order("name"),
-      supabase.from("game_tag_links").select("game_id, tag_id"),
-    ]);
-
-    const gamesData = ((gamesRes.data || []) as GameFormData[]).filter((g) => g.slug !== "blood-on-the-clocktower");
-    setGames(gamesData);
-    setBloodScripts((scriptsRes.data || []) as BloodScript[]);
-    setBloodCharacters((charsRes.data || []) as BloodCharacter[]);
-    setAllTags((tagsRes.data || []) as GameTag[]);
-
-    // Tag maps
-    const tMap: Record<string, string[]> = {};
-    const tagNameMap: Record<string, string> = {};
-    for (const t of (tagsRes.data || []) as GameTag[]) tagNameMap[t.id] = t.name;
-    for (const tl of (tagLinksRes.data || []) as any[]) {
-      if (!tMap[tl.game_id]) tMap[tl.game_id] = [];
-      const name = tagNameMap[tl.tag_id];
-      if (name) tMap[tl.game_id].push(name);
-    }
-    setGameTagMap(tMap);
-
-    // Seasons
-    const sgData = sgRes.data || [];
-    if (sgData.length > 0) {
-      const seasonIds = [...new Set(sgData.map((sg) => sg.season_id))];
-      const { data: seasons } = await supabase.from("seasons").select("id, name, status").in("id", seasonIds);
-      const seasonMap: Record<string, { name: string; status: string }> = {};
-      for (const s of seasons || []) seasonMap[s.id] = { name: s.name, status: s.status };
-      const map: Record<string, SeasonLink[]> = {};
-      for (const sg of sgData) {
-        const s = seasonMap[sg.season_id];
-        if (!s) continue;
-        if (!map[sg.game_id]) map[sg.game_id] = [];
-        map[sg.game_id].push({ season_id: sg.season_id, season_name: s.name, status: s.status });
-      }
-      setGameSeasons(map);
-    }
-
-    const sbsData = (sbsRes.data || []) as any[];
-    if (sbsData.length > 0) {
-      const bsSeasonIds = [...new Set(sbsData.map((s: any) => s.season_id))];
-      const { data: bsSeasons } = await supabase.from("seasons").select("id, name, status").in("id", bsSeasonIds);
-      const bsSeasonMap: Record<string, { name: string; status: string }> = {};
-      for (const s of bsSeasons || []) bsSeasonMap[s.id] = { name: s.name, status: s.status };
-      const bsMap: Record<string, SeasonLink[]> = {};
-      for (const sbs of sbsData) {
-        const s = bsSeasonMap[sbs.season_id];
-        if (!s) continue;
-        if (!bsMap[sbs.script_id]) bsMap[sbs.script_id] = [];
-        bsMap[sbs.script_id].push({ season_id: sbs.season_id, season_name: s.name, status: s.status });
-      }
-      setScriptSeasons(bsMap);
-    }
-
-    // Avg durations
-    const matchesData = matchesRes.data || [];
-    const durMap: Record<string, { total: number; count: number }> = {};
-    for (const m of matchesData) {
-      if (m.duration_minutes) {
-        if (!durMap[m.game_id]) durMap[m.game_id] = { total: 0, count: 0 };
-        durMap[m.game_id].total += m.duration_minutes;
-        durMap[m.game_id].count += 1;
-      }
-    }
-    const avgMap: Record<string, number> = {};
-    for (const [gid, d] of Object.entries(durMap)) avgMap[gid] = Math.round(d.total / d.count);
-    setAvgDurations(avgMap);
-
-    // RPG
-    const [rpgSysRes, rpgAdvRes] = await Promise.all([
-      supabase.from("rpg_systems").select("*").order("name"),
-      supabase.from("rpg_adventures").select("*").order("name"),
-    ]);
-    setRpgSystems(rpgSysRes.data || []);
-    setRpgAdventures(rpgAdvRes.data || []);
-
-    setLoading(false);
-  };
-
-  useEffect(() => { fetchData(); }, []);
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["games-page-data"] });
 
   const filteredGames = useMemo(() => {
     if (tagFilter === "all") return games;
-    return games.filter((g) => (gameTagMap[g.id] || []).includes(tagFilter));
+    return games.filter((g: any) => (gameTagMap[g.id] || []).includes(tagFilter));
   }, [games, tagFilter, gameTagMap]);
 
   const handleAddGame = async () => {
@@ -162,7 +69,7 @@ const Games = () => {
     if (error) return notify("error", error.message);
     notify("success", "Jogo adicionado!");
     setAddOpen(false); setNewName(""); setNewMinP(""); setNewMaxP("");
-    fetchData();
+    invalidate();
   };
 
   const handleAddScript = async () => {
@@ -176,18 +83,15 @@ const Games = () => {
     notify("success", "Script adicionado!");
     setAddScriptOpen(false);
     setNewScriptName(""); setNewScriptDesc(""); setNewScriptImageUrl(""); setNewScriptSlug("");
-    fetchData();
+    invalidate();
   };
-
-
-
 
   return (
     <div className="container py-10">
       <div className="mb-2"><h1 className="text-3xl font-bold">Jogos</h1></div>
       <p className="text-muted-foreground mb-8">Coleção de jogos da comunidade AzD</p>
 
-      {loading ? (
+      {isLoading ? (
         <div className="flex justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-2 border-gold border-t-transparent" /></div>
       ) : (
         <Tabs defaultValue="boardgame" className="space-y-6">
@@ -219,16 +123,8 @@ const Games = () => {
               <Card className="bg-card border-border"><CardContent className="py-12 text-center text-muted-foreground">Nenhum jogo encontrado.</CardContent></Card>
             ) : (
               <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                {filteredGames.map((g, i) => (
-                  <BoardgameCard
-                    key={g.id}
-                    game={g}
-                    seasons={gameSeasons[g.id] || []}
-                    avgDuration={avgDurations[g.id]}
-                    tags={gameTagMap[g.id] || []}
-                    index={i}
-                    onUpdated={fetchData}
-                  />
+                {filteredGames.map((g: any, i: number) => (
+                  <BoardgameCard key={g.id} game={g} seasons={gameSeasons[g.id] || []} avgDuration={avgDurations[g.id]} tags={gameTagMap[g.id] || []} index={i} onUpdated={invalidate} />
                 ))}
               </div>
             )}
@@ -247,15 +143,8 @@ const Games = () => {
               <Card className="bg-card border-border"><CardContent className="py-12 text-center text-muted-foreground">Nenhum script cadastrado.</CardContent></Card>
             ) : (
               <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                {bloodScripts.map((s, i) => (
-                  <BloodScriptCard
-                    key={s.id}
-                    script={s}
-                    characters={bloodCharacters.filter((c) => c.script_id === s.id)}
-                    seasons={scriptSeasons[s.id] || []}
-                    index={i}
-                    onUpdated={fetchData}
-                  />
+                {bloodScripts.map((s: any, i: number) => (
+                  <BloodScriptCard key={s.id} script={s} characters={bloodCharacters.filter((c: any) => c.script_id === s.id)} seasons={scriptSeasons[s.id] || []} index={i} onUpdated={invalidate} />
                 ))}
               </div>
             )}
@@ -334,7 +223,7 @@ const Games = () => {
                             </CardContent>
                             <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                               <EntityEditButton entityType="rpg" title="Editar Sistema">
-                                {(onClose) => <RpgSystemForm system={sys} onSuccess={() => { onClose(); fetchData(); }} />}
+                                {(onClose) => <RpgSystemForm system={sys} onSuccess={() => { onClose(); invalidate(); }} />}
                               </EntityEditButton>
                             </div>
                           </Card>
@@ -375,7 +264,7 @@ const Games = () => {
                               </CardContent>
                               <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                 <EntityEditButton entityType="rpg" title="Editar Aventura">
-                                  {(onClose) => <RpgAdventureForm adventure={adv} systems={rpgSystems} onSuccess={() => { onClose(); fetchData(); }} />}
+                                  {(onClose) => <RpgAdventureForm adventure={adv} systems={rpgSystems} onSuccess={() => { onClose(); invalidate(); }} />}
                                 </EntityEditButton>
                               </div>
                             </Card>
@@ -388,19 +277,16 @@ const Games = () => {
               </div>
             )}
 
-            {/* Add System Dialog */}
             <Dialog open={addSystemOpen} onOpenChange={setAddSystemOpen}>
               <DialogContent>
                 <DialogHeader><DialogTitle>Adicionar Sistema de RPG</DialogTitle></DialogHeader>
-                <RpgSystemForm onSuccess={() => { setAddSystemOpen(false); fetchData(); }} />
+                <RpgSystemForm onSuccess={() => { setAddSystemOpen(false); invalidate(); }} />
               </DialogContent>
             </Dialog>
-
-            {/* Add Adventure Dialog */}
             <Dialog open={addAdventureOpen} onOpenChange={setAddAdventureOpen}>
               <DialogContent>
                 <DialogHeader><DialogTitle>Adicionar Aventura</DialogTitle></DialogHeader>
-                <RpgAdventureForm systems={rpgSystems} onSuccess={() => { setAddAdventureOpen(false); fetchData(); }} />
+                <RpgAdventureForm systems={rpgSystems} onSuccess={() => { setAddAdventureOpen(false); invalidate(); }} />
               </DialogContent>
             </Dialog>
           </TabsContent>

@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,95 +14,70 @@ import { EntityEditButton } from "@/components/shared/EntityEditButton";
 import GameForm from "@/components/forms/GameForm";
 import GameStatsCarousel from "@/components/games/GameStatsCarousel";
 import GameMatchHistory from "@/components/games/GameMatchHistory";
-import type { GameFormData } from "@/components/forms/GameForm";
+import { useGameDetail } from "@/hooks/useGameDetail";
+import { useQueryClient } from "@tanstack/react-query";
 
 const GameDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { notify } = useNotification();
+  const queryClient = useQueryClient();
 
-  const [game, setGame] = useState<GameFormData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ totalMatches: 0, avgScore: 0, highScore: 0, highScorePlayer: "", worstWinScore: 0 });
-  const [monthlyData, setMonthlyData] = useState<{ month: string; count: number }[]>([]);
-  const [leaderboard, setLeaderboard] = useState<any[]>([]);
-  const [allHistory, setAllHistory] = useState<any[]>([]);
-  const [allResults, setAllResults] = useState<any[]>([]);
-  const [allMatches, setAllMatches] = useState<any[]>([]);
-  const [pMap, setPMap] = useState<Record<string, string>>({});
-  const [tags, setTags] = useState<string[]>([]);
+  const { data, isLoading } = useGameDetail(slug);
   const [slide, setSlide] = useState(1);
   const [detailPlayerCount, setDetailPlayerCount] = useState("all");
 
-  const fetchGame = async () => {
-    const { data } = await supabase.from("games").select("*").eq("slug", slug as string).maybeSingle();
-    if (!data) { setLoading(false); return; }
-    const gameData = data as any as GameFormData;
-    setGame(gameData);
+  const game = data?.game;
+  const tags = data?.tags || [];
+  const allMatches = data?.matches || [];
+  const allResults = data?.results || [];
+  const pMap = data?.playerMap || {};
 
-    const { data: tagLinks } = await supabase.from("game_tag_links").select("tag_id").eq("game_id", gameData.id);
-    if (tagLinks && tagLinks.length > 0) {
-      const tagIds = tagLinks.map((t: any) => t.tag_id);
-      const { data: tagData } = await supabase.from("game_tags").select("name").in("id", tagIds);
-      setTags((tagData || []).map((t: any) => t.name));
-    }
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["game-detail", slug] });
 
-    const { data: matches } = await supabase.from("matches").select("id, played_at, duration_minutes, season_id").eq("game_id", gameData.id).order("played_at", { ascending: false });
-    const matchIds = (matches || []).map((m) => m.id);
-    setAllMatches(matches || []);
-
-    if (matchIds.length === 0) { setLoading(false); return; }
-
-    const { data: results } = await supabase.from("match_results").select("*").in("match_id", matchIds);
-    setAllResults(results || []);
-    const playerIds = [...new Set((results || []).map((r) => r.player_id))];
-    const { data: profiles } = await supabase.from("profiles").select("id, name, nickname").in("id", playerIds);
-    const playerMap: Record<string, string> = {};
-    for (const p of profiles || []) playerMap[p.id] = (p as any).nickname || p.name;
-    setPMap(playerMap);
-
-    // Stats
-    const scores = (results || []).map((r) => r.score || 0);
-    const winnerScores = (results || []).filter((r) => r.position === 1).map((r) => r.score || 0);
-    const highScore = scores.length > 0 ? Math.max(...scores) : 0;
-    const highScoreResult = (results || []).find((r) => (r.score || 0) === highScore);
+  // Computed stats
+  const stats = useMemo(() => {
+    if (allResults.length === 0) return { totalMatches: 0, avgScore: 0, highScore: 0, highScorePlayer: "—", worstWinScore: 0 };
+    const scores = allResults.map((r) => r.score || 0);
+    const winnerScores = allResults.filter((r) => r.position === 1).map((r) => r.score || 0);
+    const highScore = Math.max(...scores);
+    const highScoreResult = allResults.find((r) => (r.score || 0) === highScore);
     const worstWin = winnerScores.length > 0 ? Math.min(...winnerScores) : 0;
-    const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
-    setStats({ totalMatches: matchIds.length, avgScore, highScore, highScorePlayer: highScoreResult ? playerMap[highScoreResult.player_id] || "?" : "—", worstWinScore: worstWin });
+    const avgScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+    return { totalMatches: allMatches.length, avgScore, highScore, highScorePlayer: highScoreResult ? pMap[highScoreResult.player_id] || "?" : "—", worstWinScore: worstWin };
+  }, [allResults, allMatches, pMap]);
 
-    // Monthly
+  const monthlyData = useMemo(() => {
     const months: Record<string, number> = {};
     const now = new Date();
     for (let i = 5; i >= 0; i--) { const d = new Date(now.getFullYear(), now.getMonth() - i, 1); months[`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`] = 0; }
-    for (const m of matches || []) { const key = m.played_at.slice(0, 7); if (key in months) months[key]++; }
-    setMonthlyData(Object.entries(months).map(([month, count]) => ({ month: new Date(month + "-01").toLocaleDateString("pt-BR", { month: "short" }), count })));
+    for (const m of allMatches) { const key = m.played_at.slice(0, 7); if (key in months) months[key]++; }
+    return Object.entries(months).map(([month, count]) => ({ month: new Date(month + "-01").toLocaleDateString("pt-BR", { month: "short" }), count }));
+  }, [allMatches]);
 
-    // Leaderboard
+  const leaderboard = useMemo(() => {
     const playerStats: Record<string, { wins: number; games: number; totalScore: number; best: number }> = {};
-    for (const r of results || []) {
+    for (const r of allResults) {
       if (!playerStats[r.player_id]) playerStats[r.player_id] = { wins: 0, games: 0, totalScore: 0, best: 0 };
       playerStats[r.player_id].games++; playerStats[r.player_id].totalScore += r.score || 0;
       playerStats[r.player_id].best = Math.max(playerStats[r.player_id].best, r.score || 0);
       if (r.position === 1) playerStats[r.player_id].wins++;
     }
-    setLeaderboard(Object.entries(playerStats).map(([pid, s]) => ({
-      player_id: pid, player_name: playerMap[pid] || "?", wins: s.wins, games: s.games,
+    return Object.entries(playerStats).map(([pid, s]) => ({
+      player_id: pid, player_name: pMap[pid] || "?", wins: s.wins, games: s.games,
       winPct: s.games > 0 ? Math.round((s.wins / s.games) * 100) : 0,
       avgScore: s.games > 0 ? Math.round(s.totalScore / s.games) : 0, best: s.best,
-    })).sort((a, b) => b.wins - a.wins || b.winPct - a.winPct));
+    })).sort((a, b) => b.wins - a.wins || b.winPct - a.winPct);
+  }, [allResults, pMap]);
 
-    // History
-    setAllHistory((matches || []).map((m) => ({
+  const allHistory = useMemo(() => {
+    return allMatches.map((m) => ({
       ...m,
-      results: (results || []).filter((r) => r.match_id === m.id).sort((a, b) => a.position - b.position).map((r) => ({ ...r, player_name: playerMap[r.player_id] || "?" })),
-    })));
-    setLoading(false);
-  };
+      results: allResults.filter((r) => r.match_id === m.id).sort((a, b) => a.position - b.position).map((r) => ({ ...r, player_name: pMap[r.player_id] || "?" })),
+    }));
+  }, [allMatches, allResults, pMap]);
 
-  useEffect(() => { fetchGame(); }, [slug]);
-
-  // Personal stats
   const personalStats = useMemo(() => {
     if (!user || allResults.length === 0) return null;
     const myResults = allResults.filter((r) => r.player_id === user.id);
@@ -117,7 +92,6 @@ const GameDetail = () => {
     return { games: myResults.length, wins, winPct: myResults.length > 0 ? Math.round((wins / myResults.length) * 100) : 0, avgScore, currentStreak: tempStreak, bestStreak };
   }, [user, allResults, allMatches]);
 
-  // Detailed stats
   const detailedStats = useMemo(() => {
     if (allResults.length === 0 || allMatches.length === 0) return null;
     let matchIds = allMatches.map((m) => m.id);
@@ -150,7 +124,7 @@ const GameDetail = () => {
 
   const uniquePlayers = useMemo(() => Object.entries(pMap).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name)), [pMap]);
 
-  if (loading) return <div className="flex justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-2 border-gold border-t-transparent" /></div>;
+  if (isLoading) return <div className="flex justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-2 border-gold border-t-transparent" /></div>;
   if (!game) return <div className="container py-10 text-center"><h1 className="text-2xl font-bold mb-4">Jogo não encontrado</h1><Link to="/games"><Button variant="outline"><ArrowLeft className="h-4 w-4 mr-1" /> Voltar</Button></Link></div>;
 
   const chartConfig = { count: { label: "Partidas", color: "hsl(var(--gold))" } };
@@ -182,7 +156,7 @@ const GameDetail = () => {
               <EntityEditButton entityType="boardgame" title="Editar Jogo" widthClass="sm:max-w-2xl" size="sm" label="Editar">
                 {(onClose) => (
                   <div className="space-y-4">
-                    <GameForm game={game} onSuccess={() => { onClose(); fetchGame(); }} />
+                    <GameForm game={game} onSuccess={() => { onClose(); invalidate(); }} />
                     <Button variant="destructive" size="sm" className="w-full" onClick={async () => {
                       if (!confirm("Tem certeza que deseja excluir este jogo?")) return;
                       const { error } = await supabase.from("games").delete().eq("id", game.id);
@@ -201,19 +175,8 @@ const GameDetail = () => {
       </div>
 
       <div className="container space-y-6">
-        <GameStatsCarousel
-          stats={stats}
-          personalStats={personalStats}
-          detailedStats={detailedStats}
-          isLoggedIn={!!user}
-          slide={slide}
-          setSlide={setSlide}
-          playerCounts={playerCounts}
-          detailPlayerCount={detailPlayerCount}
-          setDetailPlayerCount={setDetailPlayerCount}
-        />
+        <GameStatsCarousel stats={stats} personalStats={personalStats} detailedStats={detailedStats} isLoggedIn={!!user} slide={slide} setSlide={setSlide} playerCounts={playerCounts} detailPlayerCount={detailPlayerCount} setDetailPlayerCount={setDetailPlayerCount} />
 
-        {/* Activity + Leaderboard */}
         <div className="grid gap-6 lg:grid-cols-2">
           {monthlyData.some((d) => d.count > 0) && (
             <Card className="bg-card border-border">
@@ -256,7 +219,7 @@ const GameDetail = () => {
           )}
         </div>
 
-        <GameMatchHistory allHistory={allHistory} uniquePlayers={uniquePlayers} gameId={game.id} onSaved={() => window.location.reload()} />
+        <GameMatchHistory allHistory={allHistory} uniquePlayers={uniquePlayers} gameId={game.id} onSaved={invalidate} />
       </div>
     </div>
   );

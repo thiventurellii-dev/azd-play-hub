@@ -200,10 +200,10 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
       sorted.forEach((ps, i) => { positionMap[ps.player_id] = i + 1; });
 
       if (playerScores.length === 0) {
-        entries.forEach((e, i) => { positionMap[e.player_id] = i + 1; });
+        filledEntries.forEach((e, i) => { positionMap[e.player_id] = i + 1; });
       }
 
-      const playerIds = entries.filter(e => e.player_id).map(e => e.player_id);
+      const playerIds = filledEntries.map(e => e.player_id);
 
       let mmrMap: Record<string, number> = {};
       let gpMap: Record<string, number> = {};

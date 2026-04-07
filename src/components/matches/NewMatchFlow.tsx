@@ -573,7 +573,12 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
             )}
             <div className="flex justify-between">
               <Button variant="outline" onClick={() => setStep(1)}><ChevronLeft className="h-4 w-4 mr-1" /> Voltar</Button>
-              <Button variant="gold" onClick={() => setStep(3)} disabled={entries.some(e => !e.player_id) || !playerCountValid()}>
+              <Button variant="gold" onClick={() => {
+                // Filter out empty entries before proceeding
+                const filledEntries = entries.filter(e => e.player_id);
+                if (filledEntries.length > 0) setEntries(filledEntries);
+                setStep(3);
+              }} disabled={!playerCountValid()}>
                 Próximo <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>

@@ -137,6 +137,20 @@ const EditMatchDialog = ({ open, onOpenChange, match, onSaved }: Props) => {
           }
         }
 
+        // Recalculate MMR for affected season/game combinations
+        const oldSeasonId = match.season_id;
+        const oldGameId = match.game_id;
+        const recalcPairs: { sid: string; gid: string }[] = [];
+        recalcPairs.push({ sid: seasonId, gid: gameId });
+        
+        if (oldSeasonId !== seasonId || oldGameId !== gameId) {
+          recalcPairs.push({ sid: oldSeasonId, gid: oldGameId });
+        }
+        
+        for (const pair of recalcPairs) {
+          await recalculateSeasonGameMmr(pair.sid, pair.gid);
+        }
+
         await logActivity(user.id, 'update', 'match', match.id, {
           played_at: match.played_at,
           duration_minutes: match.duration_minutes,
@@ -145,7 +159,7 @@ const EditMatchDialog = ({ open, onOpenChange, match, onSaved }: Props) => {
           duration_minutes: updatedData.duration_minutes,
         });
 
-        toast.success('Partida atualizada!');
+        toast.success('Partida atualizada e MMR recalculado!');
       } else {
         // Save as proposal
         const { error } = await supabase.from('match_edit_proposals').insert({

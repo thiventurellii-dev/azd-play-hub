@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { logActivity } from '@/lib/activityLog';
+import { recalculateSeasonGameMmr } from '@/lib/mmrRecalculation';
 
 interface MatchData {
   id: string;

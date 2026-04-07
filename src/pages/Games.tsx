@@ -180,21 +180,8 @@ const Games = () => {
     fetchData();
   };
 
-  const handleAddSystem = async (data: any) => {
-    const { error } = await supabase.from("rpg_systems").insert(data as any);
-    if (error) return notify("error", error.message);
-    notify("success", "Sistema adicionado!");
-    setAddSystemOpen(false);
-    fetchData();
-  };
 
-  const handleAddAdventure = async (data: any) => {
-    const { error } = await supabase.from("rpg_adventures").insert(data as any);
-    if (error) return notify("error", error.message);
-    notify("success", "Aventura adicionada!");
-    setAddAdventureOpen(false);
-    fetchData();
-  };
+
 
   return (
     <div className="container py-10">

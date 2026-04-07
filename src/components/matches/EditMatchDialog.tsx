@@ -140,26 +140,15 @@ const EditMatchDialog = ({ open, onOpenChange, match, onSaved }: Props) => {
         // Recalculate MMR for affected season/game combinations
         const oldSeasonId = match.season_id;
         const oldGameId = match.game_id;
-        const seasonsToRecalc = new Set<string>();
-        const gamesToRecalc = new Set<string>();
+        const recalcPairs: { sid: string; gid: string }[] = [];
+        recalcPairs.push({ sid: seasonId, gid: gameId });
         
-        // Always recalculate current (possibly new) season+game
-        seasonsToRecalc.add(seasonId);
-        gamesToRecalc.add(gameId);
-        
-        // If season or game changed, also recalculate old combination
         if (oldSeasonId !== seasonId || oldGameId !== gameId) {
-          seasonsToRecalc.add(oldSeasonId);
-          gamesToRecalc.add(oldGameId);
+          recalcPairs.push({ sid: oldSeasonId, gid: oldGameId });
         }
         
-        for (const sid of seasonsToRecalc) {
-          for (const gid of gamesToRecalc) {
-            // Only recalculate valid combinations
-            if ((sid === seasonId && gid === gameId) || (sid === oldSeasonId && gid === oldGameId)) {
-              await recalculateSeasonGameMmr(sid, gid);
-            }
-          }
+        for (const pair of recalcPairs) {
+          await recalculateSeasonGameMmr(pair.sid, pair.gid);
         }
 
         await logActivity(user.id, 'update', 'match', match.id, {

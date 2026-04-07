@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
+import { Pencil } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import EditRoomDialog from "@/components/matchrooms/EditRoomDialog";
 
 interface RoomData {
   id: string;
@@ -13,7 +13,10 @@ interface RoomData {
   scheduled_at: string;
   max_players: number;
   created_by: string;
-  game: { name: string } | null;
+  description: string | null;
+  season_id: string | null;
+  blood_script_id: string | null;
+  game: { id: string; name: string; image_url: string | null };
   creator?: { name: string; nickname: string | null } | null;
   players: { id: string; player_id: string; type: string; profile?: { name: string; nickname: string | null } }[];
 }
@@ -21,11 +24,12 @@ interface RoomData {
 const AdminMatchRooms = () => {
   const [rooms, setRooms] = useState<RoomData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editRoom, setEditRoom] = useState<RoomData | null>(null);
 
   const fetchRooms = async () => {
     const { data: roomsData } = await supabase
       .from("match_rooms")
-      .select("id, title, status, scheduled_at, max_players, created_by, game:games(name)")
+      .select("id, title, status, scheduled_at, max_players, created_by, description, season_id, blood_script_id, game:games(id, name, image_url)")
       .order("scheduled_at", { ascending: false });
 
     if (!roomsData) { setLoading(false); return; }
@@ -61,11 +65,6 @@ const AdminMatchRooms = () => {
 
   useEffect(() => { fetchRooms(); }, []);
 
-  const updateStatus = async (roomId: string, status: "open" | "full" | "in_progress" | "finished" | "cancelled") => {
-    await supabase.from("match_rooms").update({ status }).eq("id", roomId);
-    fetchRooms();
-  };
-
   if (loading) return <div className="flex justify-center py-10"><div className="h-6 w-6 animate-spin rounded-full border-2 border-gold border-t-transparent" /></div>;
 
   return (
@@ -90,7 +89,12 @@ const AdminMatchRooms = () => {
                       {new Date(room.scheduled_at).toLocaleString("pt-BR")}
                     </p>
                   </div>
-                  <Badge variant="outline">{room.status}</Badge>
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setEditRoom(room)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Badge variant="outline">{room.status}</Badge>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -110,24 +114,20 @@ const AdminMatchRooms = () => {
                     ))}
                   </div>
                 )}
-                <div className="flex gap-2 pt-2">
-                  <Select value={room.status} onValueChange={(val: "open" | "full" | "in_progress" | "finished" | "cancelled") => updateStatus(room.id, val)}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="open">Aberto</SelectItem>
-                      <SelectItem value="full">Lotado</SelectItem>
-                      <SelectItem value="in_progress">Em Andamento</SelectItem>
-                      <SelectItem value="finished">Encerrado</SelectItem>
-                      <SelectItem value="cancelled">Cancelado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </CardContent>
             </Card>
           );
         })
+      )}
+
+      {editRoom && (
+        <EditRoomDialog
+          open={!!editRoom}
+          onOpenChange={(open) => { if (!open) setEditRoom(null); }}
+          room={editRoom}
+          isAdminMode={true}
+          onSaved={() => { setEditRoom(null); fetchRooms(); }}
+        />
       )}
     </div>
   );

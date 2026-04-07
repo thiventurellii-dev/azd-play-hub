@@ -147,7 +147,20 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
       ? new Date(`${scheduledDate}T${scheduledTime}`).toISOString()
       : new Date(`${scheduledDate}T00:00:00`).toISOString();
 
-    const finalGameId = isBotC ? botcGameId : gameId;
+    let finalGameId = isBotC ? botcGameId : gameId;
+    if (isBotC && !finalGameId) {
+      // Auto-create the BotC game if missing
+      const { data: newGame } = await supabase.from("games").insert({
+        name: "Blood on the Clocktower",
+        slug: "blood-on-the-clocktower",
+        min_players: 5,
+        max_players: 20,
+      }).select("id").single();
+      if (newGame) {
+        finalGameId = newGame.id;
+        setBotcGameId(newGame.id);
+      }
+    }
     if (!finalGameId) {
       toast.error("Erro: jogo não encontrado");
       return;

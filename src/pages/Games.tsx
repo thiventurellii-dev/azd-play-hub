@@ -908,8 +908,8 @@ const Games = () => {
           <TabsContent value="boardgame">{renderBoardgames()}</TabsContent>
           <TabsContent value="blood">
             {isAdmin && (
-              <div className="flex justify-end mb-4">
-                <Button variant="gold" onClick={() => setAddScriptOpen(true)}>
+              <div className="flex flex-wrap gap-2 mb-4">
+                <Button variant="outline" size="sm" onClick={() => setAddScriptOpen(true)}>
                   <Plus className="h-4 w-4 mr-1" /> Adicionar Script
                 </Button>
               </div>

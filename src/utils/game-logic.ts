@@ -11,8 +11,7 @@ export const getRankIcon = (pos: number) => {
   if (pos === 2) return createElement(Medal, { className: "h-5 w-5 text-amber-700" });
   return createElement("span", {
     className: "text-sm font-bold text-muted-foreground w-5 text-center",
-    children: pos + 1,
-  });
+  }, pos + 1);
 };
 
 /**

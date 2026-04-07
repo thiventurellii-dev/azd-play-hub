@@ -273,6 +273,17 @@ const Seasons = () => {
                 </Select>
               </div>
             )}
+            {formType === 'blood' && (
+              <div className="space-y-2">
+                <Label>Script</Label>
+                <Select value={formScriptId} onValueChange={setFormScriptId}>
+                  <SelectTrigger><SelectValue placeholder="Selecione o script" /></SelectTrigger>
+                  <SelectContent>
+                    {allScripts.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="grid gap-4 grid-cols-2">
               <div className="space-y-2"><Label>Início *</Label><Input type="date" value={formStart} onChange={e => setFormStart(e.target.value)} /></div>
               <div className="space-y-2"><Label>Fim *</Label><Input type="date" value={formEnd} onChange={e => setFormEnd(e.target.value)} /></div>

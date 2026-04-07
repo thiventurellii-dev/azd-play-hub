@@ -403,9 +403,7 @@ const SeasonDetail = () => {
                   <span className="text-right">Pontos</span>
                 </div>
                 {bloodRankings.map((r, i) => {
-                  const gamesNotSt = r.games_played - r.games_as_storyteller;
-                  const totalWins = r.wins_evil + r.wins_good;
-                  const winPct = gamesNotSt > 0 ? Math.round((totalWins / gamesNotSt) * 100) : 0;
+                  const { winPct } = getBloodWinStats(r);
                   return (
                     <motion.div
                       key={r.player_id}

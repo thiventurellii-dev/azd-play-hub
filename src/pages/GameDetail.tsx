@@ -19,14 +19,29 @@ import {
   Hash,
   ChevronLeft,
   ChevronRight,
+  Trash2,
   Clock,
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNotification } from "@/components/NotificationDialog";
 import EditMatchDialog from "@/components/matches/EditMatchDialog";
-import { EntityEditButton } from "@/components/shared/EntityEditButton";
-import GameForm, { type GameFormData } from "@/components/forms/GameForm";
+import { EditActionButton } from "@/components/shared/EditActionButton";
+
+interface GameData {
+  id: string;
+  name: string;
+  slug: string | null;
+  image_url: string | null;
+  rules_url: string | null;
+  video_url: string | null;
+  min_players: number | null;
+  max_players: number | null;
+  factions: any;
+}
 
 const positionColors: Record<number, string> = {
   1: "bg-yellow-500/15 text-yellow-300 border-yellow-500/30",
@@ -37,9 +52,10 @@ const positionColors: Record<number, string> = {
 const GameDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const { notify } = useNotification();
 
-  const [game, setGame] = useState<GameFormData | null>(null);
+  const [game, setGame] = useState<GameData | null>(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalMatches: 0,
@@ -69,122 +85,134 @@ const GameDetail = () => {
   // Detailed stats filter
   const [detailPlayerCount, setDetailPlayerCount] = useState("all");
 
+  // Edit dialog
+  const [editOpen, setEditOpen] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editImageUrl, setEditImageUrl] = useState("");
+  const [editRulesUrl, setEditRulesUrl] = useState("");
+  const [editVideoUrl, setEditVideoUrl] = useState("");
+  const [editMinPlayers, setEditMinPlayers] = useState("");
+  const [editMaxPlayers, setEditMaxPlayers] = useState("");
+  const [editSlug, setEditSlug] = useState("");
+  const [editFactions, setEditFactions] = useState("");
+  const [editCategories, setEditCategories] = useState<any[]>([]);
+  const [deleting, setDeleting] = useState(false);
+
   // Edit match state
   const [editMatchOpen, setEditMatchOpen] = useState(false);
   const [editMatch, setEditMatch] = useState<any>(null);
 
-  const fetchGame = async () => {
-    const { data } = await supabase
-      .from("games")
-      .select("*")
-      .eq("slug", slug as string)
-      .maybeSingle();
-    if (!data) {
-      setLoading(false);
-      return;
-    }
-    const gameData = data as any;
-    setGame(gameData as GameFormData);
-
-    // Fetch tags
-    const { data: tagLinks } = await supabase.from("game_tag_links").select("tag_id").eq("game_id", gameData.id);
-    if (tagLinks && tagLinks.length > 0) {
-      const tagIds = tagLinks.map((t: any) => t.tag_id);
-      const { data: tagData } = await supabase.from("game_tags").select("name").in("id", tagIds);
-      setTags((tagData || []).map((t: any) => t.name));
-    }
-
-    const { data: matches } = await supabase
-      .from("matches")
-      .select("id, played_at, duration_minutes, season_id")
-      .eq("game_id", gameData.id)
-      .order("played_at", { ascending: false });
-    const matchIds = (matches || []).map((m) => m.id);
-    setAllMatches(matches || []);
-
-    if (matchIds.length === 0) {
-      setLoading(false);
-      return;
-    }
-
-    const { data: results } = await supabase.from("match_results").select("*").in("match_id", matchIds);
-    setAllResults(results || []);
-    const playerIds = [...new Set((results || []).map((r) => r.player_id))];
-    const { data: profiles } = await supabase.from("profiles").select("id, name, nickname").in("id", playerIds);
-    const playerMap: Record<string, string> = {};
-    for (const p of profiles || []) playerMap[p.id] = (p as any).nickname || p.name;
-    setPMap(playerMap);
-
-    // Stats
-    const scores = (results || []).map((r) => r.score || 0);
-    const winnerScores = (results || []).filter((r) => r.position === 1).map((r) => r.score || 0);
-    const highScore = scores.length > 0 ? Math.max(...scores) : 0;
-    const highScoreResult = (results || []).find((r) => (r.score || 0) === highScore);
-    const worstWin = winnerScores.length > 0 ? Math.min(...winnerScores) : 0;
-    const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
-
-    setStats({
-      totalMatches: matchIds.length,
-      avgScore,
-      highScore,
-      highScorePlayer: highScoreResult ? playerMap[highScoreResult.player_id] || "?" : "—",
-      worstWinScore: worstWin,
-    });
-
-    // Monthly activity
-    const months: Record<string, number> = {};
-    const now = new Date();
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-      months[key] = 0;
-    }
-    for (const m of matches || []) {
-      const key = m.played_at.slice(0, 7);
-      if (key in months) months[key]++;
-    }
-    setMonthlyData(
-      Object.entries(months).map(([month, count]) => ({
-        month: new Date(month + "-01").toLocaleDateString("pt-BR", { month: "short" }),
-        count,
-      })),
-    );
-
-    // Leaderboard
-    const playerStats: Record<string, { wins: number; games: number; totalScore: number; best: number }> = {};
-    for (const r of results || []) {
-      if (!playerStats[r.player_id]) playerStats[r.player_id] = { wins: 0, games: 0, totalScore: 0, best: 0 };
-      playerStats[r.player_id].games++;
-      playerStats[r.player_id].totalScore += r.score || 0;
-      playerStats[r.player_id].best = Math.max(playerStats[r.player_id].best, r.score || 0);
-      if (r.position === 1) playerStats[r.player_id].wins++;
-    }
-    const lb = Object.entries(playerStats)
-      .map(([pid, s]) => ({
-        player_id: pid,
-        player_name: playerMap[pid] || "?",
-        wins: s.wins,
-        games: s.games,
-        winPct: s.games > 0 ? Math.round((s.wins / s.games) * 100) : 0,
-        avgScore: s.games > 0 ? Math.round(s.totalScore / s.games) : 0,
-        best: s.best,
-      }))
-      .sort((a, b) => b.wins - a.wins || b.winPct - a.winPct);
-    setLeaderboard(lb);
-
-    // History
-    const hist = (matches || []).map((m) => ({
-      ...m,
-      results: (results || [])
-        .filter((r) => r.match_id === m.id)
-        .sort((a, b) => a.position - b.position)
-        .map((r) => ({ ...r, player_name: playerMap[r.player_id] || "?" })),
-    }));
-    setAllHistory(hist);
-    setLoading(false);
-  };
-
   useEffect(() => {
+    const fetchGame = async () => {
+      const { data } = await supabase
+        .from("games")
+        .select("*")
+        .eq("slug", slug as string)
+        .maybeSingle();
+      if (!data) {
+        setLoading(false);
+        return;
+      }
+      const gameData = data as any;
+      setGame(gameData as GameData);
+
+      // Fetch tags
+      const { data: tagLinks } = await supabase.from("game_tag_links").select("tag_id").eq("game_id", gameData.id);
+      if (tagLinks && tagLinks.length > 0) {
+        const tagIds = tagLinks.map((t: any) => t.tag_id);
+        const { data: tagData } = await supabase.from("game_tags").select("name").in("id", tagIds);
+        setTags((tagData || []).map((t: any) => t.name));
+      }
+
+      const { data: matches } = await supabase
+        .from("matches")
+        .select("id, played_at, duration_minutes, season_id")
+        .eq("game_id", gameData.id)
+        .order("played_at", { ascending: false });
+      const matchIds = (matches || []).map((m) => m.id);
+      setAllMatches(matches || []);
+
+      if (matchIds.length === 0) {
+        setLoading(false);
+        return;
+      }
+
+      const { data: results } = await supabase.from("match_results").select("*").in("match_id", matchIds);
+      setAllResults(results || []);
+      const playerIds = [...new Set((results || []).map((r) => r.player_id))];
+      const { data: profiles } = await supabase.from("profiles").select("id, name, nickname").in("id", playerIds);
+      const playerMap: Record<string, string> = {};
+      for (const p of profiles || []) playerMap[p.id] = (p as any).nickname || p.name;
+      setPMap(playerMap);
+
+      // Stats
+      const scores = (results || []).map((r) => r.score || 0);
+      const winnerScores = (results || []).filter((r) => r.position === 1).map((r) => r.score || 0);
+      const highScore = scores.length > 0 ? Math.max(...scores) : 0;
+      const highScoreResult = (results || []).find((r) => (r.score || 0) === highScore);
+      const worstWin = winnerScores.length > 0 ? Math.min(...winnerScores) : 0;
+      const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
+
+      setStats({
+        totalMatches: matchIds.length,
+        avgScore,
+        highScore,
+        highScorePlayer: highScoreResult ? playerMap[highScoreResult.player_id] || "?" : "—",
+        worstWinScore: worstWin,
+      });
+
+      // Monthly activity
+      const months: Record<string, number> = {};
+      const now = new Date();
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        months[key] = 0;
+      }
+      for (const m of matches || []) {
+        const key = m.played_at.slice(0, 7);
+        if (key in months) months[key]++;
+      }
+      setMonthlyData(
+        Object.entries(months).map(([month, count]) => ({
+          month: new Date(month + "-01").toLocaleDateString("pt-BR", { month: "short" }),
+          count,
+        })),
+      );
+
+      // Leaderboard
+      const playerStats: Record<string, { wins: number; games: number; totalScore: number; best: number }> = {};
+      for (const r of results || []) {
+        if (!playerStats[r.player_id]) playerStats[r.player_id] = { wins: 0, games: 0, totalScore: 0, best: 0 };
+        playerStats[r.player_id].games++;
+        playerStats[r.player_id].totalScore += r.score || 0;
+        playerStats[r.player_id].best = Math.max(playerStats[r.player_id].best, r.score || 0);
+        if (r.position === 1) playerStats[r.player_id].wins++;
+      }
+      const lb = Object.entries(playerStats)
+        .map(([pid, s]) => ({
+          player_id: pid,
+          player_name: playerMap[pid] || "?",
+          wins: s.wins,
+          games: s.games,
+          winPct: s.games > 0 ? Math.round((s.wins / s.games) * 100) : 0,
+          avgScore: s.games > 0 ? Math.round(s.totalScore / s.games) : 0,
+          best: s.best,
+        }))
+        .sort((a, b) => b.wins - a.wins || b.winPct - a.winPct);
+      setLeaderboard(lb);
+
+      // History
+      const hist = (matches || []).map((m) => ({
+        ...m,
+        results: (results || [])
+          .filter((r) => r.match_id === m.id)
+          .sort((a, b) => a.position - b.position)
+          .map((r) => ({ ...r, player_name: playerMap[r.player_id] || "?" })),
+      }));
+      setAllHistory(hist);
+      setLoading(false);
+    };
     fetchGame();
   }, [slug]);
 
@@ -216,9 +244,11 @@ const GameDetail = () => {
     const scores = myResults.map((r) => r.score || 0);
     const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
 
+    // Win streaks
     const matchDates = allMatches.map((m) => m.id);
     const sortedResults = matchDates.map((mid) => myResults.find((r) => r.match_id === mid)).filter(Boolean);
-    let bestStreak = 0,
+    let currentStreak = 0,
+      bestStreak = 0,
       tempStreak = 0;
     for (const r of sortedResults) {
       if (r!.position === 1) {
@@ -228,13 +258,14 @@ const GameDetail = () => {
         tempStreak = 0;
       }
     }
+    currentStreak = tempStreak;
 
     return {
       games: myResults.length,
       wins,
       winPct: myResults.length > 0 ? Math.round((wins / myResults.length) * 100) : 0,
       avgScore,
-      currentStreak: tempStreak,
+      currentStreak,
       bestStreak,
     };
   }, [user, allResults, allMatches]);
@@ -243,6 +274,7 @@ const GameDetail = () => {
   const detailedStats = useMemo(() => {
     if (allResults.length === 0 || allMatches.length === 0) return null;
 
+    // Filter by player count
     let matchIds = allMatches.map((m) => m.id);
     const matchPlayerCounts: Record<string, number> = {};
     for (const r of allResults) {
@@ -255,6 +287,7 @@ const GameDetail = () => {
     const filteredResults = allResults.filter((r) => matchIds.includes(r.match_id));
     if (filteredResults.length === 0) return null;
 
+    // Faction stats
     const factionStats: Record<string, { games: number; wins: number }> = {};
     for (const r of filteredResults) {
       if (!r.faction) continue;
@@ -263,6 +296,7 @@ const GameDetail = () => {
       if (r.position === 1) factionStats[r.faction].wins++;
     }
 
+    // Seat position stats
     const seatStats: Record<number, { games: number; wins: number }> = {};
     for (const r of filteredResults) {
       const seat = r.seat_position || 0;
@@ -291,6 +325,7 @@ const GameDetail = () => {
     };
   }, [allResults, allMatches, detailPlayerCount]);
 
+  // Unique player counts for filter
   const playerCounts = useMemo(() => {
     const counts = new Set<number>();
     const matchPlayerCounts: Record<string, number> = {};
@@ -301,11 +336,109 @@ const GameDetail = () => {
     return [...counts].sort((a, b) => a - b);
   }, [allResults]);
 
+  // Unique players for filter
   const uniquePlayers = useMemo(() => {
     return Object.entries(pMap)
       .map(([id, name]) => ({ id, name }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [pMap]);
+
+  const generateKey = (label: string) => label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/(^_|_$)/g, '');
+  const addCategory = () => setEditCategories([...editCategories, { key: '', label: '', type: 'number' }]);
+  const removeCategory = (i: number) => setEditCategories(editCategories.filter((_, idx) => idx !== i));
+  const updateCategory = (i: number, label: string) => {
+    const cats = [...editCategories]; cats[i] = { ...cats[i], label, key: generateKey(label) }; setEditCategories(cats);
+  };
+  const addSubcategory = (catIdx: number) => {
+    const cats = [...editCategories]; const sub = cats[catIdx].subcategories || [];
+    cats[catIdx] = { ...cats[catIdx], type: 'group', subcategories: [...sub, { key: '', label: '', type: 'number' }] }; setEditCategories(cats);
+  };
+  const removeSubcategory = (catIdx: number, subIdx: number) => {
+    const cats = [...editCategories]; cats[catIdx].subcategories = cats[catIdx].subcategories?.filter((_: any, i: number) => i !== subIdx); setEditCategories(cats);
+  };
+  const updateSubcategory = (catIdx: number, subIdx: number, label: string) => {
+    const cats = [...editCategories];
+    if (cats[catIdx].subcategories) { cats[catIdx].subcategories[subIdx] = { ...cats[catIdx].subcategories[subIdx], label, key: generateKey(label) }; }
+    setEditCategories(cats);
+  };
+
+  const openEditDialog = async () => {
+    if (!game) return;
+    setEditName(game.name);
+    setEditImageUrl(game.image_url || "");
+    setEditRulesUrl(game.rules_url || "");
+    setEditVideoUrl(game.video_url || "");
+    setEditMinPlayers(game.min_players ? String(game.min_players) : "");
+    setEditMaxPlayers(game.max_players ? String(game.max_players) : "");
+    setEditSlug(game.slug || "");
+    if (Array.isArray(game.factions)) {
+      setEditFactions(game.factions.map((f: any) => typeof f === 'string' ? f : f.name || '').filter(Boolean).join(', '));
+    } else {
+      setEditFactions('');
+    }
+    const { data: schemaData } = await supabase.from('game_scoring_schemas').select('schema').eq('game_id', game.id).maybeSingle();
+    setEditCategories((schemaData?.schema as any)?.categories || []);
+    setEditOpen(true);
+  };
+
+  const handleEditSave = async () => {
+    if (!game) return;
+    let factions = null;
+    if (editFactions.trim()) {
+      factions = editFactions.split(',').map(f => f.trim()).filter(Boolean);
+    }
+    const { error } = await supabase
+      .from("games")
+      .update({
+        name: editName,
+        image_url: editImageUrl || null,
+        rules_url: editRulesUrl || null,
+        video_url: editVideoUrl || null,
+        min_players: editMinPlayers ? parseInt(editMinPlayers) : null,
+        max_players: editMaxPlayers ? parseInt(editMaxPlayers) : null,
+        slug: editSlug || null,
+        factions,
+      })
+      .eq("id", game.id);
+    if (error) return notify("error", error.message);
+
+    // Save scoring schema
+    const schemaPayload = { categories: editCategories };
+    const { data: existing } = await supabase.from('game_scoring_schemas').select('id').eq('game_id', game.id).maybeSingle();
+    if (existing) {
+      await supabase.from('game_scoring_schemas').update({ schema: schemaPayload as any }).eq('id', existing.id);
+    } else if (editCategories.length > 0) {
+      await supabase.from('game_scoring_schemas').insert({ game_id: game.id, schema: schemaPayload as any });
+    }
+
+    notify("success", "Jogo atualizado!");
+    setEditOpen(false);
+    setGame({
+      ...game,
+      name: editName,
+      image_url: editImageUrl || null,
+      rules_url: editRulesUrl || null,
+      video_url: editVideoUrl || null,
+      min_players: editMinPlayers ? parseInt(editMinPlayers) : null,
+      max_players: editMaxPlayers ? parseInt(editMaxPlayers) : null,
+      slug: editSlug || null,
+      factions,
+    });
+  };
+
+  const handleDeleteGame = async () => {
+    if (!game) return;
+    if (!confirm("Tem certeza que deseja excluir este jogo? Esta ação não pode ser desfeita.")) return;
+    setDeleting(true);
+    const { error } = await supabase.from("games").delete().eq("id", game.id);
+    if (error) {
+      notify("error", error.message);
+      setDeleting(false);
+      return;
+    }
+    notify("success", "Jogo excluído!");
+    navigate("/games");
+  };
 
   if (loading) {
     return (
@@ -368,7 +501,7 @@ const GameDetail = () => {
                   {(() => {
                     const withDuration = allMatches.filter(m => m.duration_minutes);
                     if (withDuration.length > 0) {
-                      const avg = Math.round(withDuration.reduce((s: number, m: any) => s + m.duration_minutes, 0) / withDuration.length);
+                      const avg = Math.round(withDuration.reduce((s, m) => s + m.duration_minutes, 0) / withDuration.length);
                       return (
                         <span className="flex items-center gap-1">
                           <Clock className="h-4 w-4" /> ~{avg} min
@@ -401,23 +534,12 @@ const GameDetail = () => {
                   )}
                 </div>
               </div>
-              <EntityEditButton
+              <EditActionButton
                 entityType="boardgame"
-                title="Editar Jogo"
-                widthClass="sm:max-w-2xl"
+                onClick={openEditDialog}
                 size="sm"
                 label="Editar"
-              >
-                {(onClose) => (
-                  <GameForm
-                    game={game}
-                    onSuccess={() => {
-                      onClose();
-                      fetchGame();
-                    }}
-                  />
-                )}
-              </EntityEditButton>
+              />
             </div>
           </div>
         </div>
@@ -692,8 +814,16 @@ const GameDetail = () => {
               <h2 className="text-lg font-semibold mb-4">Histórico de Partidas</h2>
               {/* Filters */}
               <div className="flex flex-wrap gap-3 mb-4 items-center">
-                <Select value={timeFilter} onValueChange={(v) => { setTimeFilter(v); setPage(0); }}>
-                  <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+                <Select
+                  value={timeFilter}
+                  onValueChange={(v) => {
+                    setTimeFilter(v);
+                    setPage(0);
+                  }}
+                >
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todo o tempo</SelectItem>
                     <SelectItem value="1y">1 ano</SelectItem>
@@ -701,25 +831,51 @@ const GameDetail = () => {
                     <SelectItem value="3m">3 meses</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setPage(0); }}>
-                  <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+                <Select
+                  value={typeFilter}
+                  onValueChange={(v) => {
+                    setTypeFilter(v);
+                    setPage(0);
+                  }}
+                >
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todas</SelectItem>
                     <SelectItem value="competitive">Competitivas</SelectItem>
                     <SelectItem value="casual">Não-Competitivas</SelectItem>
                   </SelectContent>
                 </Select>
-                <Select value={playerFilter} onValueChange={(v) => { setPlayerFilter(v); setPage(0); }}>
-                  <SelectTrigger className="w-[160px]"><SelectValue placeholder="Jogador..." /></SelectTrigger>
+                <Select
+                  value={playerFilter}
+                  onValueChange={(v) => {
+                    setPlayerFilter(v);
+                    setPage(0);
+                  }}
+                >
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue placeholder="Jogador..." />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos</SelectItem>
                     {uniquePlayers.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(parseInt(v)); setPage(0); }}>
-                  <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
+                <Select
+                  value={String(pageSize)}
+                  onValueChange={(v) => {
+                    setPageSize(parseInt(v));
+                    setPage(0);
+                  }}
+                >
+                  <SelectTrigger className="w-[100px]">
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="5">5/pág</SelectItem>
                     <SelectItem value="10">10/pág</SelectItem>
@@ -731,7 +887,12 @@ const GameDetail = () => {
                     variant="ghost"
                     size="sm"
                     className="gap-1 text-muted-foreground"
-                    onClick={() => { setTimeFilter("all"); setTypeFilter("all"); setPlayerFilter("all"); setPage(0); }}
+                    onClick={() => {
+                      setTimeFilter("all");
+                      setTypeFilter("all");
+                      setPlayerFilter("all");
+                      setPage(0);
+                    }}
                   >
                     <span className="text-xs">✕</span> Limpar Filtros
                   </Button>
@@ -747,38 +908,20 @@ const GameDetail = () => {
                       </span>
                       <div className="flex items-center gap-2">
                         {m.season_id && (
-                          <Badge variant="outline" className="text-xs">Competitiva</Badge>
+                          <Badge variant="outline" className="text-xs">
+                            Competitiva
+                          </Badge>
                         )}
                         {m.duration_minutes && (
                           <span className="text-xs text-muted-foreground">{m.duration_minutes} min</span>
                         )}
-                        <EntityEditButton
+                        <EditActionButton
                           entityType="match"
-                          title="Editar Partida"
-                        >
-                          {(onClose) => {
-                            // When opening, set match for EditMatchDialog
-                            if (!editMatch || editMatch.id !== m.id) {
-                              setEditMatch(m);
-                            }
-                            return (
-                              <div className="text-sm text-muted-foreground text-center py-4">
-                                Use o botão abaixo para editar esta partida.
-                                <Button
-                                  variant="gold"
-                                  className="w-full mt-4"
-                                  onClick={() => {
-                                    onClose();
-                                    setEditMatch(m);
-                                    setEditMatchOpen(true);
-                                  }}
-                                >
-                                  Abrir Editor de Partida
-                                </Button>
-                              </div>
-                            );
+                          onClick={() => {
+                            setEditMatch(m);
+                            setEditMatchOpen(true);
                           }}
-                        </EntityEditButton>
+                        />
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -794,11 +937,23 @@ const GameDetail = () => {
 
               {totalPages > 1 && (
                 <div className="flex items-center justify-between mt-4">
-                  <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((p) => Math.max(0, p - 1))}
+                    disabled={page === 0}
+                  >
                     Anterior
                   </Button>
-                  <span className="text-sm text-muted-foreground">{page + 1} / {totalPages}</span>
-                  <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}>
+                  <span className="text-sm text-muted-foreground">
+                    {page + 1} / {totalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                    disabled={page >= totalPages - 1}
+                  >
                     Próxima
                   </Button>
                 </div>
@@ -807,6 +962,88 @@ const GameDetail = () => {
           </Card>
         )}
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Jogo</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Nome</Label>
+                <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Slug (URL)</Label>
+                <Input value={editSlug} onChange={(e) => setEditSlug(e.target.value)} placeholder="brass-birmingham" />
+              </div>
+              <div className="space-y-2">
+                <Label>URL da Imagem</Label>
+                <Input value={editImageUrl} onChange={(e) => setEditImageUrl(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>URL das Regras</Label>
+                <Input value={editRulesUrl} onChange={(e) => setEditRulesUrl(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>URL do Vídeo</Label>
+                <Input value={editVideoUrl} onChange={(e) => setEditVideoUrl(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Mín. Jogadores</Label>
+                <Input type="number" min={1} value={editMinPlayers} onChange={(e) => setEditMinPlayers(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Máx. Jogadores</Label>
+                <Input type="number" min={1} value={editMaxPlayers} onChange={(e) => setEditMaxPlayers(e.target.value)} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Facções</Label>
+              <Input
+                value={editFactions}
+                onChange={(e) => setEditFactions(e.target.value)}
+                placeholder="Facção A, Facção B, Facção C"
+              />
+              <p className="text-xs text-muted-foreground">Separe as facções por vírgula</p>
+            </div>
+
+            {/* Scoring Schema */}
+            <div className="space-y-2">
+              <Label>Schema de Pontuação</Label>
+              {editCategories.map((cat: any, ci: number) => (
+                <div key={ci} className="border border-border rounded-lg p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Input value={cat.label} onChange={e => updateCategory(ci, e.target.value)} placeholder="Nome da categoria" className="flex-1 h-8" />
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeCategory(ci)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                  </div>
+                  {(cat.subcategories || []).map((sub: any, si: number) => (
+                    <div key={si} className="flex items-center gap-2 ml-4">
+                      <Input value={sub.label} onChange={e => updateSubcategory(ci, si, e.target.value)} placeholder="Subcategoria" className="flex-1 h-7 text-xs" />
+                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removeSubcategory(ci, si)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                    </div>
+                  ))}
+                  <Button variant="ghost" size="sm" className="ml-4 text-xs" onClick={() => addSubcategory(ci)}>
+                    + Subcategoria
+                  </Button>
+                </div>
+              ))}
+              <Button variant="outline" size="sm" onClick={addCategory}>
+                + Categoria
+              </Button>
+            </div>
+
+            <div className="flex gap-2 justify-between">
+              <Button variant="destructive" size="sm" onClick={handleDeleteGame} disabled={deleting}>
+                <Trash2 className="h-4 w-4 mr-1" /> Excluir Jogo
+              </Button>
+              <Button variant="gold" onClick={handleEditSave}>Salvar</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Match Dialog */}
       <EditMatchDialog

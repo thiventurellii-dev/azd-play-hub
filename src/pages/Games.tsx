@@ -555,27 +555,12 @@ const Games = () => {
     );
 
   const openEditScript = (s: BloodScript) => {
-    setEditScript(s);
-    setEditScriptName(s.name);
-    setEditScriptDesc(s.description || '');
-    setEditScriptImageUrl((s as any).image_url || '');
-    setEditScriptVictoryConditions(Array.isArray(s.victory_conditions) ? [...s.victory_conditions] : []);
-    setNewScriptCondition('');
+    setEditScriptTarget({
+      ...s,
+      image_url: s.image_url || null,
+      victory_conditions: Array.isArray(s.victory_conditions) ? [...s.victory_conditions] : [],
+    });
     setEditScriptOpen(true);
-  };
-
-  const handleEditScriptSave = async () => {
-    if (!editScript) return;
-    const { error } = await supabase.from('blood_scripts').update({
-      name: editScriptName,
-      description: editScriptDesc || null,
-      image_url: editScriptImageUrl || null,
-      victory_conditions: editScriptVictoryConditions,
-    } as any).eq('id', editScript.id);
-    if (error) return notify('error', error.message);
-    notify('success', 'Script atualizado!');
-    setEditScriptOpen(false);
-    fetchData();
   };
   const handleAddScript = async () => {
     if (!newScriptName.trim()) return notify('error', 'Nome obrigatório');

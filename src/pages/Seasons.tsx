@@ -54,7 +54,9 @@ const Seasons = () => {
   const [formEnd, setFormEnd] = useState('');
   const [formType, setFormType] = useState<'boardgame' | 'blood'>('boardgame');
   const [formGameId, setFormGameId] = useState('');
+  const [formScriptId, setFormScriptId] = useState('');
   const [allGames, setAllGames] = useState<{ id: string; name: string }[]>([]);
+  const [allScripts, setAllScripts] = useState<{ id: string; name: string }[]>([]);
 
   const fetchData = async () => {
     const [seasonsRes, sgRes, sbsRes] = await Promise.all([

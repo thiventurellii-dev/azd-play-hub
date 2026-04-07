@@ -69,10 +69,10 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
   const isEdit = !!room;
 
   const { data: options, isLoading: optionsLoading } = useFormOptions(true);
-  const games = options?.games ?? [];
-  const bloodScripts = options?.scripts ?? [];
-  const availableTags = options?.tags ?? [];
-  const seasons = options?.seasons ?? [];
+  const games = useMemo(() => options?.games ?? [], [options?.games]);
+  const bloodScripts = useMemo(() => options?.scripts ?? [], [options?.scripts]);
+  const availableTags = useMemo(() => options?.tags ?? [], [options?.tags]);
+  const seasons = useMemo(() => options?.seasons ?? [], [options?.seasons]);
 
   // Category picker (create only)
   const [category, setCategory] = useState<"boardgame" | "botc" | "rpg" | "">("");

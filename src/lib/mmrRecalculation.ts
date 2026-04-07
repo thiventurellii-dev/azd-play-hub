@@ -19,15 +19,8 @@ export const recalculateSeasonGameMmr = async (seasonId: string, gameId: string)
   const matchIds = matches.map(m => m.id);
   
   // Delete existing MMR ratings for this season+game
-  const { data: existingRatings } = await supabase
-    .from('mmr_ratings')
-    .select('id')
-    .eq('season_id', seasonId)
-    .eq('game_id', gameId);
-  
-  if (existingRatings && existingRatings.length > 0) {
-    await supabase.from('mmr_ratings').delete().eq('season_id', seasonId).eq('game_id', gameId);
-  }
+  // Delete existing MMR ratings for this season+game
+  await supabase.from('mmr_ratings').delete().eq('season_id', seasonId).eq('game_id', gameId);
 
   if (matchIds.length === 0) return;
 

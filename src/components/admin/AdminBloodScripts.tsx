@@ -264,6 +264,16 @@ const AdminBloodScripts = () => {
             </Card>
           );
         })}
+      </div>
+
+      {/* Unified Edit Script Dialog */}
+      <EditBloodScriptDialog
+        open={editScriptOpen}
+        onOpenChange={setEditScriptOpen}
+        script={editingScript}
+        onSaved={fetchData}
+        showCharacters
+      />
     </div>
   );
 };

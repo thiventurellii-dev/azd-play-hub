@@ -62,7 +62,6 @@ const EditBloodScriptDialog = ({ open, onOpenChange, script, onSaved, showCharac
   const [characters, setCharacters] = useState<BloodCharacter[]>([]);
   const [allCharacters, setAllCharacters] = useState<BloodCharacter[]>([]);
   const [allScripts, setAllScripts] = useState<{ id: string; name: string }[]>([]);
-  const [expandedTeam, setExpandedTeam] = useState<string | null>(null);
 
   // Add existing character
   const [addExistingCharId, setAddExistingCharId] = useState('');

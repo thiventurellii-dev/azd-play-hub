@@ -293,9 +293,11 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
             <div className="flex items-center gap-2">
               {canManage && canInteract && (
                 <>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditOpen(true)} title="Editar sala">
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
+                  <EditActionButton
+                    entityType="match_room"
+                    createdBy={room?.created_by}
+                    onClick={() => setEditOpen(true)}
+                  />
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={handleCancel} disabled={loading} title="Cancelar sala">
                     <XCircle className="h-3.5 w-3.5" />
                   </Button>

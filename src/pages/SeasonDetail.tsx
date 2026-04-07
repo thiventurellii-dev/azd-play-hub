@@ -59,38 +59,10 @@ const MatchImage = ({ src }: { src: string }) => {
   );
 };
 
-const MatchImage = ({ src }: { src: string }) => {
-  const [expanded, setExpanded] = useState(false);
-  return (
-    <div className="rounded-lg overflow-hidden border border-border">
-      <img
-        src={src}
-        alt="Partida"
-        className={`w-full object-cover cursor-pointer transition-all duration-300 ${expanded ? "max-h-[600px]" : "h-48"}`}
-        onClick={() => setExpanded(!expanded)}
-      />
-      {!expanded && (
-        <button
-          onClick={() => setExpanded(true)}
-          className="w-full py-1.5 text-xs text-muted-foreground hover:text-foreground bg-secondary/50 transition-colors"
-        >
-          Expandir imagem
-        </button>
-      )}
-    </div>
-  );
-};
-
-const getBloodPrizeClass = (pos: number) => {
-  if (pos <= 2) return "border-gold/30 bg-card";
-  if (pos <= 5) return "border-gray-400/30 bg-card";
-  if (pos <= 9) return "border-amber-700/30 bg-card";
-  return "bg-card";
-};
 
 const SeasonDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const [season, setSeason] = useState<Season | null>(null);
+  const [season, setSeason] = useState<SeasonFull | null>(null);
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
   const [bloodRankings, setBloodRankings] = useState<BloodRankingEntry[]>([]);
   const [matches, setMatches] = useState<MatchRecord[]>([]);

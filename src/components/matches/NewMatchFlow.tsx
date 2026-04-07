@@ -498,7 +498,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
               return (
                 <div key={e.player_id || `entry-${i}`} className="flex items-center gap-2 flex-wrap border border-border rounded-lg p-3">
                   <div className="flex-1 min-w-[180px] space-y-1">
-                    <Label className="text-xs">Jogador *</Label>
+                    <Label className="text-xs">Jogador</Label>
                     <Popover open={openPopovers[i] || false} onOpenChange={(open) => setOpenPopovers(prev => ({ ...prev, [i]: open }))}>
                       <PopoverTrigger asChild>
                         <Button variant="outline" role="combobox" className="w-full justify-between font-normal">

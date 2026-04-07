@@ -29,7 +29,6 @@ interface GameTag { id: string; name: string; }
 const Games = () => {
   const { user, isAdmin } = useAuth();
   const { notify } = useNotification();
-  const navigate = useNavigate();
 
   const [games, setGames] = useState<GameFormData[]>([]);
   const [gameSeasons, setGameSeasons] = useState<Record<string, SeasonLink[]>>({});

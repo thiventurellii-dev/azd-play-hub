@@ -225,7 +225,6 @@ const AdminBloodScripts = () => {
 
                 {isExpanded && (
                   <div className="mt-4 space-y-3">
-                    {/* Good team */}
                     {goodChars.length > 0 && (
                       <div>
                         <p className="text-sm font-medium text-blue-400 mb-2">👼 Time do Bem ({goodChars.length})</p>
@@ -237,16 +236,11 @@ const AdminBloodScripts = () => {
                                 <span className="text-xs text-muted-foreground ml-1">({c.name_en})</span>
                                 <p className="text-xs text-muted-foreground">{roleTypeLabels[c.role_type]}</p>
                               </div>
-                              <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditChar(c)}><Pencil className="h-3 w-3" /></Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteChar(c.id)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
-                              </div>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
-                    {/* Evil team */}
                     {evilChars.length > 0 && (
                       <div>
                         <p className="text-sm font-medium text-red-400 mb-2">😈 Time do Mal ({evilChars.length})</p>
@@ -258,138 +252,18 @@ const AdminBloodScripts = () => {
                                 <span className="text-xs text-muted-foreground ml-1">({c.name_en})</span>
                                 <p className="text-xs text-muted-foreground">{roleTypeLabels[c.role_type]}</p>
                               </div>
-                              <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditChar(c)}><Pencil className="h-3 w-3" /></Button>
-                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDeleteChar(c.id)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
-                              </div>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
                     {chars.length === 0 && <p className="text-sm text-muted-foreground italic">Nenhum personagem cadastrado neste script.</p>}
-
-                    {/* Add existing character */}
-                    {getOtherChars(s.id).length > 0 && (
-                      <div className="mt-3 pt-3 border-t border-border">
-                        <p className="text-sm font-medium mb-2 flex items-center gap-1"><UserPlus className="h-4 w-4" /> Adicionar personagem existente</p>
-                        <div className="flex items-center gap-2">
-                          <Select value={addExistingCharId} onValueChange={setAddExistingCharId}>
-                            <SelectTrigger className="flex-1"><SelectValue placeholder="Selecione um personagem" /></SelectTrigger>
-                            <SelectContent>
-                              {getOtherChars(s.id).map(c => {
-                                const fromScript = scripts.find(sc => sc.id === c.script_id);
-                                return (
-                                  <SelectItem key={c.id} value={c.id}>
-                                    {c.name} ({c.name_en}) — {teamLabels[c.team]}/{roleTypeLabels[c.role_type]} {fromScript ? `[${fromScript.name}]` : ''}
-                                  </SelectItem>
-                                );
-                              })}
-                            </SelectContent>
-                          </Select>
-                          <Button variant="gold" size="sm" onClick={() => handleAddExistingChar(s.id)}>
-                            <Plus className="h-4 w-4 mr-1" /> Adicionar
-                          </Button>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )}
               </CardContent>
             </Card>
           );
         })}
-      </div>
-
-      {/* Edit Script Dialog */}
-      <Dialog open={editScriptOpen} onOpenChange={setEditScriptOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Editar Script</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Nome</Label>
-              <Input value={editScriptForm.name} onChange={e => setEditScriptForm({ ...editScriptForm, name: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label>Descrição</Label>
-              <Textarea value={editScriptForm.description} onChange={e => setEditScriptForm({ ...editScriptForm, description: e.target.value })} />
-            </div>
-            <div className="space-y-2">
-              <Label>Condições de Vitória Especiais</Label>
-              <div className="space-y-2">
-                {editScriptForm.victory_conditions.map((vc, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <Input value={vc} onChange={e => {
-                      const updated = [...editScriptForm.victory_conditions];
-                      updated[i] = e.target.value;
-                      setEditScriptForm({ ...editScriptForm, victory_conditions: updated });
-                    }} />
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => {
-                      setEditScriptForm({ ...editScriptForm, victory_conditions: editScriptForm.victory_conditions.filter((_, idx) => idx !== i) });
-                    }}><Trash2 className="h-3 w-3 text-destructive" /></Button>
-                  </div>
-                ))}
-                <div className="flex items-center gap-2">
-                  <Input value={newEditCondition} onChange={e => setNewEditCondition(e.target.value)} placeholder="Ex: Vitória pelo Prefeito" />
-                  <Button variant="outline" size="sm" onClick={() => {
-                    if (newEditCondition.trim()) {
-                      setEditScriptForm({ ...editScriptForm, victory_conditions: [...editScriptForm.victory_conditions, newEditCondition.trim()] });
-                      setNewEditCondition('');
-                    }
-                  }}><Plus className="h-3 w-3 mr-1" /> Adicionar</Button>
-                </div>
-              </div>
-            </div>
-            <Button variant="gold" onClick={handleEditScriptSave} className="w-full">Salvar</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Character Dialog */}
-      <Dialog open={editCharOpen} onOpenChange={setEditCharOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Editar Personagem</DialogTitle></DialogHeader>
-          <div className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Nome (PT)</Label>
-                <Input value={editCharForm.name} onChange={e => setEditCharForm({ ...editCharForm, name: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Nome (EN)</Label>
-                <Input value={editCharForm.name_en} onChange={e => setEditCharForm({ ...editCharForm, name_en: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Time</Label>
-                <Select value={editCharForm.team} onValueChange={v => setEditCharForm({ ...editCharForm, team: v as 'good' | 'evil' })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="good">Bem</SelectItem>
-                    <SelectItem value="evil">Mal</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Tipo</Label>
-                <Select value={editCharForm.role_type} onValueChange={v => setEditCharForm({ ...editCharForm, role_type: v as BloodCharacter['role_type'] })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="townsfolk">Cidadão</SelectItem>
-                    <SelectItem value="outsider">Forasteiro</SelectItem>
-                    <SelectItem value="minion">Lacaio</SelectItem>
-                    <SelectItem value="demon">Demônio</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Descrição</Label>
-              <Textarea value={editCharForm.description} onChange={e => setEditCharForm({ ...editCharForm, description: e.target.value })} />
-            </div>
-            <Button variant="gold" onClick={handleEditCharSave} className="w-full">Salvar</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };

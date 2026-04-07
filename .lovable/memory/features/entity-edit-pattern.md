@@ -15,11 +15,16 @@ Usage:
 
 Available forms in src/components/forms/:
 - GameForm.tsx (boardgames, with tags + scoring schema)
+- BloodScriptForm.tsx (blood scripts, victory conditions)
 - MatchRoomForm.tsx (match rooms)
-- RpgSystemForm.tsx (RPG systems)
-- RpgAdventureForm.tsx (RPG adventures)
+- RpgSystemForm.tsx (RPG systems, supports create + edit)
+- RpgAdventureForm.tsx (RPG adventures, supports create + edit)
 
-Legacy EditActionButton still exists but is being phased out.
+Extracted UI components in src/components/games/:
+- BoardgameCard.tsx (card with edit button)
+- BloodScriptCard.tsx (card with edit button)
+- GameStatsCarousel.tsx (personal/general/detailed stats)
+- GameMatchHistory.tsx (filtered match history with pagination)
+- BloodMatchEditDialog.tsx (edit blood match via EntitySheet)
 
-**Migrated**: AdminGames.tsx ✅
-**Pending migration**: Games.tsx, GameDetail.tsx, ScriptDetail.tsx (still use old Dialog pattern)
+**Migrated**: AdminGames.tsx ✅, Games.tsx ✅, GameDetail.tsx ✅, ScriptDetail.tsx ✅

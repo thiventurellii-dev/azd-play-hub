@@ -261,7 +261,82 @@ const Games = () => {
     fetchData();
   };
 
-  // (openEditGame, handleEditSave, handleAddTag, scoring helpers removed — handled by GameForm)
+  const generateKey = (label: string) => label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/(^_|_$)/g, '');
+
+  const openEditGame = async (g: Game) => {
+    setEditGame(g);
+    setEditName(g.name);
+    setEditImageUrl(g.image_url || '');
+    setEditRulesUrl(g.rules_url || '');
+    setEditVideoUrl(g.video_url || '');
+    setEditMinP(g.min_players?.toString() || '');
+    setEditMaxP(g.max_players?.toString() || '');
+    setEditSlug(g.slug || '');
+    if (Array.isArray(g.factions)) {
+      setEditFactions(g.factions.map((f: any) => typeof f === 'string' ? f : f.name || '').filter(Boolean).join(', '));
+    } else {
+      setEditFactions('');
+    }
+    setEditTagIds(gameTagIdMap[g.id] || []);
+    const { data: schemaData } = await supabase.from('game_scoring_schemas').select('schema').eq('game_id', g.id).maybeSingle();
+    setEditCategories((schemaData?.schema as any)?.categories || []);
+    setEditOpen(true);
+  };
+
+  const handleEditSave = async () => {
+    if (!editGame) return;
+    let factions = null;
+    if (editFactions.trim()) {
+      factions = editFactions.split(',').map(f => f.trim()).filter(Boolean);
+    }
+    const { error } = await supabase.from('games').update({
+      name: editName, image_url: editImageUrl || null, rules_url: editRulesUrl || null,
+      video_url: editVideoUrl || null, min_players: parseInt(editMinP) || null,
+      max_players: parseInt(editMaxP) || null, slug: editSlug || null, factions,
+    }).eq('id', editGame.id);
+    if (error) return notify('error', error.message);
+    const schemaPayload = { categories: editCategories };
+    const { data: existing } = await supabase.from('game_scoring_schemas').select('id').eq('game_id', editGame.id).maybeSingle();
+    if (existing) {
+      await supabase.from('game_scoring_schemas').update({ schema: schemaPayload as any }).eq('id', existing.id);
+    } else if (editCategories.length > 0) {
+      await supabase.from('game_scoring_schemas').insert({ game_id: editGame.id, schema: schemaPayload as any });
+    }
+    await supabase.from('game_tag_links').delete().eq('game_id', editGame.id);
+    if (editTagIds.length > 0) {
+      await supabase.from('game_tag_links').insert(editTagIds.map(tid => ({ game_id: editGame.id, tag_id: tid })));
+    }
+    notify('success', 'Jogo atualizado!');
+    setEditOpen(false);
+    fetchData();
+  };
+
+  const handleAddTag = async () => {
+    if (!newTagName.trim()) return;
+    const { data, error } = await supabase.from('game_tags').insert({ name: newTagName.trim() }).select().single();
+    if (error) return notify('error', error.message);
+    setAllTags(prev => [...prev, data as GameTag].sort((a, b) => a.name.localeCompare(b.name)));
+    setEditTagIds(prev => [...prev, data.id]);
+    setNewTagName('');
+  };
+
+  const addCategory = () => setEditCategories([...editCategories, { key: '', label: '', type: 'number' }]);
+  const removeCategory = (i: number) => setEditCategories(editCategories.filter((_, idx) => idx !== i));
+  const updateCategory = (i: number, label: string) => {
+    const cats = [...editCategories]; cats[i] = { ...cats[i], label, key: generateKey(label) }; setEditCategories(cats);
+  };
+  const addSubcategory = (catIdx: number) => {
+    const cats = [...editCategories]; const sub = cats[catIdx].subcategories || [];
+    cats[catIdx] = { ...cats[catIdx], type: 'group', subcategories: [...sub, { key: '', label: '', type: 'number' }] }; setEditCategories(cats);
+  };
+  const removeSubcategory = (catIdx: number, subIdx: number) => {
+    const cats = [...editCategories]; cats[catIdx].subcategories = cats[catIdx].subcategories?.filter((_, i) => i !== subIdx); setEditCategories(cats);
+  };
+  const updateSubcategory = (catIdx: number, subIdx: number, label: string) => {
+    const cats = [...editCategories];
+    if (cats[catIdx].subcategories) { cats[catIdx].subcategories![subIdx] = { ...cats[catIdx].subcategories![subIdx], label, key: generateKey(label) }; }
+    setEditCategories(cats);
+  };
 
   const renderBoardgames = () => (
     <>

@@ -1330,6 +1330,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      recalculate_blood_ratings: {
+        Args: { p_season_id: string }
+        Returns: undefined
+      }
+      recalculate_boardgame_mmr: {
+        Args: { p_game_id: string; p_season_id: string }
+        Returns: undefined
+      }
       upsert_mmr_for_match: {
         Args: {
           p_current_mmr?: number

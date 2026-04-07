@@ -1,43 +1,15 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { motion } from 'framer-motion';
 import FriendButton from '@/components/friendlist/FriendButton';
 import { Search } from 'lucide-react';
-
-interface Player {
-  id: string;
-  name: string;
-  nickname: string;
-  city: string;
-  state: string;
-  created_at: string;
-  avatar_url: string | null;
-}
+import { usePlayersData } from '@/hooks/usePlayersData';
 
 const Players = () => {
-  const [players, setPlayers] = useState<Player[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: players = [], isLoading } = usePlayersData();
   const [search, setSearch] = useState('');
-
-  useEffect(() => {
-    const fetchPlayers = async () => {
-      const { data } = await supabase.from('profiles').select('id, name, nickname, city, state, created_at, avatar_url').order('name');
-      setPlayers((data || []).map(p => ({
-        id: p.id,
-        name: p.name,
-        nickname: p.nickname || '',
-        city: p.city || '',
-        state: p.state || '',
-        created_at: p.created_at,
-        avatar_url: (p as any).avatar_url || null,
-      })));
-      setLoading(false);
-    };
-    fetchPlayers();
-  }, []);
 
   const filtered = useMemo(() => {
     if (!search) return players;
@@ -64,7 +36,7 @@ const Players = () => {
         />
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="flex justify-center py-20">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-gold border-t-transparent" />
         </div>
@@ -96,7 +68,7 @@ const Players = () => {
               </Card>
             </motion.div>
           ))}
-          {filtered.length === 0 && !loading && (
+          {filtered.length === 0 && !isLoading && (
             <p className="col-span-full text-center text-muted-foreground py-8">Nenhum jogador encontrado.</p>
           )}
         </div>

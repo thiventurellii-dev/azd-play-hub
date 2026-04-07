@@ -598,7 +598,7 @@ const Games = () => {
   };
 
 
-    if (!newSystemName.trim()) return notify('error', 'Nome obrigatório');
+    const handleAddSystem = async () => {
     const { error } = await supabase.from('rpg_systems').insert({
       name: newSystemName, description: newSystemDesc || null,
       image_url: newSystemImageUrl || null, rules_url: newSystemRulesUrl || null,

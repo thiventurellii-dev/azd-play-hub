@@ -906,7 +906,30 @@ const Games = () => {
             <TabsTrigger value="rpg">⚔️ RPG</TabsTrigger>
           </TabsList>
           <TabsContent value="boardgame">{renderBoardgames()}</TabsContent>
-          <TabsContent value="blood">{renderBloodScripts()}</TabsContent>
+          <TabsContent value="blood">
+            {isAdmin && (
+              <div className="flex justify-end mb-4">
+                <Button variant="gold" onClick={() => setAddScriptOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1" /> Adicionar Script
+                </Button>
+              </div>
+            )}
+            {renderBloodScripts()}
+
+            {/* Add Script Dialog */}
+            <Dialog open={addScriptOpen} onOpenChange={setAddScriptOpen}>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Novo Script</DialogTitle></DialogHeader>
+                <div className="space-y-4">
+                  <div><Label>Nome *</Label><Input value={newScriptName} onChange={e => setNewScriptName(e.target.value)} /></div>
+                  <div><Label>Descrição</Label><Textarea value={newScriptDesc} onChange={e => setNewScriptDesc(e.target.value)} /></div>
+                  <div><Label>URL da Imagem</Label><Input value={newScriptImageUrl} onChange={e => setNewScriptImageUrl(e.target.value)} /></div>
+                  <div><Label>Slug (URL amigável)</Label><Input value={newScriptSlug} onChange={e => setNewScriptSlug(e.target.value)} placeholder="ex: trouble-brewing" /></div>
+                  <Button variant="gold" className="w-full" onClick={handleAddScript}>Salvar</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </TabsContent>
           <TabsContent value="rpg">{renderRpg()}</TabsContent>
         </Tabs>
       )}

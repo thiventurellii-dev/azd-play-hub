@@ -423,10 +423,10 @@ const Games = () => {
                     )}
                   </CardContent>
                   {isAdmin && (
-                    <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-10" onClick={(e) => e.stopPropagation()}>
-                      <EntityEditButton entityType="boardgame" title="Editar Jogo" widthClass="sm:max-w-2xl">
-                        {(onClose) => <GameForm game={g} onSuccess={() => { onClose(); fetchData(); }} />}
-                      </EntityEditButton>
+                    <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1 z-10">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); openEditGame(g); }}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
                   )}
                 </Card>

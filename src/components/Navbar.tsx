@@ -228,7 +228,13 @@ const Navbar = () => {
                 )}
                 {userNickname || user.user_metadata?.name || "Perfil"}
               </Button>
-              <Popover>
+              <Popover onOpenChange={async (open) => {
+                if (open && roomNotifs.length > 0) {
+                  const ids = roomNotifs.map(n => n.id);
+                  await supabase.from("notifications").update({ is_read: true }).in("id", ids);
+                  setRoomNotifs(prev => prev.map(n => ({ ...n })));
+                }
+              }}>
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-9 w-9 relative text-muted-foreground hover:text-foreground">
                     <Bell className="h-4 w-4" />

@@ -93,6 +93,13 @@ const Games = () => {
   const [editAdvImageUrl, setEditAdvImageUrl] = useState('');
   const [editAdvSystemId, setEditAdvSystemId] = useState('');
 
+  // Add blood script dialog
+  const [addScriptOpen, setAddScriptOpen] = useState(false);
+  const [newScriptName, setNewScriptName] = useState('');
+  const [newScriptDesc, setNewScriptDesc] = useState('');
+  const [newScriptImageUrl, setNewScriptImageUrl] = useState('');
+  const [newScriptSlug, setNewScriptSlug] = useState('');
+
   // Edit blood script dialog
   const [editScriptOpen, setEditScriptOpen] = useState(false);
   const [editScript, setEditScript] = useState<BloodScript | null>(null);

@@ -33,17 +33,11 @@ interface BloodScript { id: string; name: string; description: string | null; sl
 interface BloodCharacter { id: string; script_id: string; name: string; name_en: string; team: "good" | "evil"; role_type: string; }
 interface GameTag { id: string; name: string; }
 
-interface ScoringSubcategory { key: string; label: string; type: string; }
-interface ScoringCategory { key: string; label: string; type: string; subcategories?: ScoringSubcategory[]; }
-
-const statusLabels: Record<string, string> = { active: "Ativa", upcoming: "Em breve", finished: "Finalizada" };
 const statusColors: Record<string, string> = {
   active: "bg-green-500/20 text-green-400 border-green-500/30",
   upcoming: "bg-blue-500/20 text-blue-400 border-blue-500/30",
   finished: "bg-muted text-muted-foreground border-border",
 };
-
-const generateKey = (label: string) => label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/(^_|_$)/g, '');
 
 const Games = () => {
   const { user, isAdmin } = useAuth();
@@ -128,7 +122,7 @@ const Games = () => {
   const [editMaxP, setEditMaxP] = useState('');
   const [editSlug, setEditSlug] = useState('');
   const [editFactions, setEditFactions] = useState('');
-  const [editCategories, setEditCategories] = useState<ScoringCategory[]>([]);
+  const [editCategories, setEditCategories] = useState<{ key: string; label: string; type: string; subcategories?: { key: string; label: string; type: string }[] }[]>([]);
   const [editTagIds, setEditTagIds] = useState<string[]>([]);
   const [newTagName, setNewTagName] = useState('');
 
@@ -267,6 +261,8 @@ const Games = () => {
     fetchData();
   };
 
+  const generateKey = (label: string) => label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/(^_|_$)/g, '');
+
   const openEditGame = async (g: Game) => {
     setEditGame(g);
     setEditName(g.name);
@@ -276,15 +272,12 @@ const Games = () => {
     setEditMinP(g.min_players?.toString() || '');
     setEditMaxP(g.max_players?.toString() || '');
     setEditSlug(g.slug || '');
-    // Convert factions to comma-separated string
     if (Array.isArray(g.factions)) {
       setEditFactions(g.factions.map((f: any) => typeof f === 'string' ? f : f.name || '').filter(Boolean).join(', '));
     } else {
       setEditFactions('');
     }
     setEditTagIds(gameTagIdMap[g.id] || []);
-
-    // Load scoring schema
     const { data: schemaData } = await supabase.from('game_scoring_schemas').select('schema').eq('game_id', g.id).maybeSingle();
     setEditCategories((schemaData?.schema as any)?.categories || []);
     setEditOpen(true);
@@ -302,8 +295,6 @@ const Games = () => {
       max_players: parseInt(editMaxP) || null, slug: editSlug || null, factions,
     }).eq('id', editGame.id);
     if (error) return notify('error', error.message);
-
-    // Save scoring schema
     const schemaPayload = { categories: editCategories };
     const { data: existing } = await supabase.from('game_scoring_schemas').select('id').eq('game_id', editGame.id).maybeSingle();
     if (existing) {
@@ -311,13 +302,10 @@ const Games = () => {
     } else if (editCategories.length > 0) {
       await supabase.from('game_scoring_schemas').insert({ game_id: editGame.id, schema: schemaPayload as any });
     }
-
-    // Save tags
     await supabase.from('game_tag_links').delete().eq('game_id', editGame.id);
     if (editTagIds.length > 0) {
       await supabase.from('game_tag_links').insert(editTagIds.map(tid => ({ game_id: editGame.id, tag_id: tid })));
     }
-
     notify('success', 'Jogo atualizado!');
     setEditOpen(false);
     fetchData();
@@ -335,26 +323,18 @@ const Games = () => {
   const addCategory = () => setEditCategories([...editCategories, { key: '', label: '', type: 'number' }]);
   const removeCategory = (i: number) => setEditCategories(editCategories.filter((_, idx) => idx !== i));
   const updateCategory = (i: number, label: string) => {
-    const cats = [...editCategories];
-    cats[i] = { ...cats[i], label, key: generateKey(label) };
-    setEditCategories(cats);
+    const cats = [...editCategories]; cats[i] = { ...cats[i], label, key: generateKey(label) }; setEditCategories(cats);
   };
   const addSubcategory = (catIdx: number) => {
-    const cats = [...editCategories];
-    const sub = cats[catIdx].subcategories || [];
-    cats[catIdx] = { ...cats[catIdx], type: 'group', subcategories: [...sub, { key: '', label: '', type: 'number' }] };
-    setEditCategories(cats);
+    const cats = [...editCategories]; const sub = cats[catIdx].subcategories || [];
+    cats[catIdx] = { ...cats[catIdx], type: 'group', subcategories: [...sub, { key: '', label: '', type: 'number' }] }; setEditCategories(cats);
   };
   const removeSubcategory = (catIdx: number, subIdx: number) => {
-    const cats = [...editCategories];
-    cats[catIdx].subcategories = cats[catIdx].subcategories?.filter((_, i) => i !== subIdx);
-    setEditCategories(cats);
+    const cats = [...editCategories]; cats[catIdx].subcategories = cats[catIdx].subcategories?.filter((_, i) => i !== subIdx); setEditCategories(cats);
   };
   const updateSubcategory = (catIdx: number, subIdx: number, label: string) => {
     const cats = [...editCategories];
-    if (cats[catIdx].subcategories) {
-      cats[catIdx].subcategories![subIdx] = { ...cats[catIdx].subcategories![subIdx], label, key: generateKey(label) };
-    }
+    if (cats[catIdx].subcategories) { cats[catIdx].subcategories![subIdx] = { ...cats[catIdx].subcategories![subIdx], label, key: generateKey(label) }; }
     setEditCategories(cats);
   };
 

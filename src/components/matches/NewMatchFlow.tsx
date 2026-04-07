@@ -231,7 +231,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
           }
         }
 
-        const results = entries.map(e => ({ player_id: e.player_id, position: positionMap[e.player_id] || 1 }));
+        const results = filledEntries.map(e => ({ player_id: e.player_id, position: positionMap[e.player_id] || 1 }));
         eloChanges = calculateElo(results, mmrMap);
       }
 

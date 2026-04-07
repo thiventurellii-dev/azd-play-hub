@@ -464,7 +464,19 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
               </div>
             </div>
             <div className="flex justify-end">
-              <Button variant="gold" onClick={() => setStep(2)} disabled={!gameId || !playedDate || (isBotC && bloodScripts.length > 0 && !selectedScriptId)}>
+              <Button variant="gold" onClick={() => {
+                // Pre-fill entries to max_players count
+                const max = selectedGame?.max_players || 10;
+                const currentCount = entries.length;
+                if (currentCount < max) {
+                  const newEntries = [...entries];
+                  for (let i = currentCount; i < max; i++) {
+                    newEntries.push({ player_id: '', seat_position: i + 1, faction: '', is_new_player: false });
+                  }
+                  setEntries(newEntries);
+                }
+                setStep(2);
+              }} disabled={!gameId || !playedDate || (isBotC && bloodScripts.length > 0 && !selectedScriptId)}>
                 Próximo <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>

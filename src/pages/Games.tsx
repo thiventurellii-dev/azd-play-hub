@@ -144,7 +144,7 @@ const Games = () => {
       supabase.from("game_tag_links").select("game_id, tag_id"),
     ]);
 
-    const gamesData = (gamesRes.data || []) as Game[];
+    const gamesData = ((gamesRes.data || []) as Game[]).filter(g => g.slug !== 'blood-on-the-clocktower');
     setGames(gamesData);
     setBloodScripts((scriptsRes.data || []) as BloodScript[]);
     setBloodCharacters((charsRes.data || []) as BloodCharacter[]);

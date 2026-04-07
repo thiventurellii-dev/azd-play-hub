@@ -72,12 +72,13 @@ const Navbar = () => {
     if (!user) return;
     const { data } = await supabase
       .from("notifications")
-      .select("id, title, message, type, room_id, created_at")
+      .select("id, title, message, type, room_id, created_at, is_read")
       .eq("user_id", user.id)
-      .eq("is_read", false)
       .order("created_at", { ascending: false })
       .limit(20);
-    setRoomNotifs(data || []);
+    const allNotifs = (data || []).map(n => ({ id: n.id, title: n.title, message: n.message, type: n.type, room_id: n.room_id, created_at: n.created_at }));
+    setRoomNotifs(allNotifs);
+    setUnreadNotifCount((data || []).filter(n => !n.is_read).length);
   }, [user]);
 
   useEffect(() => {

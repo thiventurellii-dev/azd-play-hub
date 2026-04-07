@@ -33,17 +33,11 @@ interface BloodScript { id: string; name: string; description: string | null; sl
 interface BloodCharacter { id: string; script_id: string; name: string; name_en: string; team: "good" | "evil"; role_type: string; }
 interface GameTag { id: string; name: string; }
 
-interface ScoringSubcategory { key: string; label: string; type: string; }
-interface ScoringCategory { key: string; label: string; type: string; subcategories?: ScoringSubcategory[]; }
-
-const statusLabels: Record<string, string> = { active: "Ativa", upcoming: "Em breve", finished: "Finalizada" };
 const statusColors: Record<string, string> = {
   active: "bg-green-500/20 text-green-400 border-green-500/30",
   upcoming: "bg-blue-500/20 text-blue-400 border-blue-500/30",
   finished: "bg-muted text-muted-foreground border-border",
 };
-
-const generateKey = (label: string) => label.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/(^_|_$)/g, '');
 
 const Games = () => {
   const { user, isAdmin } = useAuth();

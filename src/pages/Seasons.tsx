@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,12 +14,8 @@ import { Calendar, ChevronRight, Gamepad2, Trophy, Plus, Pencil } from "lucide-r
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotification } from "@/components/NotificationDialog";
-
-interface Season {
-  id: string; name: string; description: string | null; start_date: string; end_date: string;
-  status: string; prize: string | null; prize_1st: number; prize_2nd: number; prize_3rd: number;
-  prize_4th_6th: number; prize_7th_10th: number; type: "boardgame" | "blood";
-}
+import { useSeasonsData, type SeasonItem } from "@/hooks/useSeasonsData";
+import { useQueryClient } from "@tanstack/react-query";
 
 const statusColors: Record<string, string> = {
   active: "bg-green-500/20 text-green-400 border-green-500/30",
@@ -27,23 +23,17 @@ const statusColors: Record<string, string> = {
   finished: "bg-muted text-muted-foreground border-border",
 };
 const statusLabels: Record<string, string> = { active: "Ativa", upcoming: "Em breve", finished: "Finalizada" };
-
-const computeStatus = (start: string, end: string): string => {
-  const now = new Date();
-  if (now < new Date(start + "T00:00:00")) return "upcoming";
-  if (now > new Date(end + "T23:59:59")) return "finished";
-  return "active";
-};
-
 const formatDate = (d: string) => { const [y, m, dd] = d.split("-"); return `${dd}/${m}/${y}`; };
 
 const Seasons = () => {
   const { isAdmin } = useAuth();
   const { notify } = useNotification();
-  const [seasons, setSeasons] = useState<Season[]>([]);
-  const [seasonGames, setSeasonGames] = useState<Record<string, string[]>>({});
-  const [seasonScripts, setSeasonScripts] = useState<Record<string, string[]>>({});
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useSeasonsData();
+
+  const seasons = data?.seasons || [];
+  const seasonGames = data?.seasonGames || {};
+  const seasonScripts = data?.seasonScripts || {};
 
   // Create/Edit dialog
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -58,45 +48,7 @@ const Seasons = () => {
   const [allGames, setAllGames] = useState<{ id: string; name: string }[]>([]);
   const [allScripts, setAllScripts] = useState<{ id: string; name: string }[]>([]);
 
-  const fetchData = async () => {
-    const [seasonsRes, sgRes, sbsRes] = await Promise.all([
-      supabase.from("seasons").select("*").order("start_date", { ascending: true }),
-      supabase.from("season_games").select("season_id, game_id"),
-      supabase.from("season_blood_scripts").select("season_id, script_id"),
-    ]);
-    const seasonsData: Season[] = (seasonsRes.data || []).map((s) => ({
-      ...s, status: computeStatus(s.start_date, s.end_date),
-      prize_1st: s.prize_1st || 0, prize_2nd: s.prize_2nd || 0, prize_3rd: s.prize_3rd || 0,
-      prize_4th_6th: (s as any).prize_4th_6th || 0, prize_7th_10th: (s as any).prize_7th_10th || 0,
-      type: (s as any).type || "boardgame",
-    }));
-    setSeasons(seasonsData);
-
-    const sgData = sgRes.data || [];
-    if (sgData.length > 0) {
-      const gameIds = [...new Set(sgData.map(sg => sg.game_id))];
-      const { data: gamesData } = await supabase.from("games").select("id, name").in("id", gameIds);
-      const gameMap: Record<string, string> = {};
-      for (const g of gamesData || []) gameMap[g.id] = g.name;
-      const map: Record<string, string[]> = {};
-      for (const sg of sgData) { if (!map[sg.season_id]) map[sg.season_id] = []; const n = gameMap[sg.game_id]; if (n) map[sg.season_id].push(n); }
-      setSeasonGames(map);
-    }
-
-    const sbsData = (sbsRes.data || []) as any[];
-    if (sbsData.length > 0) {
-      const scriptIds = [...new Set(sbsData.map(s => s.script_id))];
-      const { data: scriptsData } = await supabase.from("blood_scripts").select("id, name").in("id", scriptIds);
-      const scriptMap: Record<string, string> = {};
-      for (const s of (scriptsData || []) as any[]) scriptMap[s.id] = s.name;
-      const map: Record<string, string[]> = {};
-      for (const sbs of sbsData) { if (!map[sbs.season_id]) map[sbs.season_id] = []; const n = scriptMap[sbs.script_id]; if (n) map[sbs.season_id].push(n); }
-      setSeasonScripts(map);
-    }
-    setLoading(false);
-  };
-
-  useEffect(() => { fetchData(); }, []);
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["seasons-page-data"] });
 
   useEffect(() => {
     supabase.from('games').select('id, name').order('name').then(({ data }) => setAllGames(data || []));
@@ -104,7 +56,7 @@ const Seasons = () => {
   }, []);
 
   const openCreate = () => { setEditId(null); setFormName(''); setFormDesc(''); setFormStart(''); setFormEnd(''); setFormType('boardgame'); setFormGameId(''); setFormScriptId(''); setDialogOpen(true); };
-  const openEdit = async (s: Season) => {
+  const openEdit = async (s: SeasonItem) => {
     setEditId(s.id); setFormName(s.name); setFormDesc(s.description || ''); setFormStart(s.start_date); setFormEnd(s.end_date); setFormType(s.type);
     const { data: sg } = await supabase.from('season_games').select('game_id').eq('season_id', s.id).limit(1);
     setFormGameId(sg?.[0]?.game_id || '');
@@ -126,7 +78,6 @@ const Seasons = () => {
       seasonId = data.id;
       notify('success', 'Season criada!');
     }
-    // Link game for boardgame seasons
     if (seasonId && formType === 'boardgame' && formGameId) {
       await supabase.from('season_games').delete().eq('season_id', seasonId);
       await supabase.from('season_games').insert({ season_id: seasonId, game_id: formGameId });
@@ -136,13 +87,13 @@ const Seasons = () => {
       await supabase.from('season_blood_scripts').insert({ season_id: seasonId, script_id: formScriptId } as any);
     }
     setDialogOpen(false);
-    fetchData();
+    invalidate();
   };
 
   const boardgameSeasons = seasons.filter(s => s.type === "boardgame");
   const bloodSeasons = seasons.filter(s => s.type === "blood");
 
-  const renderPrize = (s: Season) => {
+  const renderPrize = (s: SeasonItem) => {
     const isBlood = s.type === "blood";
     if (isBlood) {
       const total = s.prize_1st * 3 + s.prize_4th_6th * 3 + s.prize_7th_10th * 3;
@@ -172,13 +123,12 @@ const Seasons = () => {
     );
   };
 
-  const renderSeasonCard = (s: Season, i: number) => {
+  const renderSeasonCard = (s: SeasonItem, i: number) => {
     const games = seasonGames[s.id] || [];
     const scripts = seasonScripts[s.id] || [];
     return (
       <motion.div key={s.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
         <Card className="bg-card border-border hover:border-gold/20 transition-colors h-full flex flex-col relative group">
-          {/* Edit button moved to bottom-right, rendered outside the Link */}
           <Link to={`/seasons/${s.id}`} className="flex-1 flex flex-col">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -215,7 +165,7 @@ const Seasons = () => {
     );
   };
 
-  const renderSeasonList = (list: Season[]) =>
+  const renderSeasonList = (list: SeasonItem[]) =>
     list.length === 0 ? (
       <Card className="bg-card border-border"><CardContent className="py-12 text-center text-muted-foreground">Nenhuma season criada ainda.</CardContent></Card>
     ) : (
@@ -232,7 +182,7 @@ const Seasons = () => {
       </div>
       <p className="text-muted-foreground mb-8">Temporadas de competição da comunidade</p>
 
-      {loading ? (
+      {isLoading ? (
         <div className="flex justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-2 border-gold border-t-transparent" /></div>
       ) : (
         <Tabs defaultValue="boardgame" className="space-y-6">
@@ -245,7 +195,6 @@ const Seasons = () => {
         </Tabs>
       )}
 
-      {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader><DialogTitle>{editId ? 'Editar Season' : 'Criar Season'}</DialogTitle></DialogHeader>

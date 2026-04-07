@@ -131,6 +131,10 @@ const Seasons = () => {
       await supabase.from('season_games').delete().eq('season_id', seasonId);
       await supabase.from('season_games').insert({ season_id: seasonId, game_id: formGameId });
     }
+    if (seasonId && formType === 'blood' && formScriptId) {
+      await supabase.from('season_blood_scripts').delete().eq('season_id', seasonId);
+      await supabase.from('season_blood_scripts').insert({ season_id: seasonId, script_id: formScriptId } as any);
+    }
     setDialogOpen(false);
     fetchData();
   };

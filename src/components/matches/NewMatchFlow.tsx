@@ -415,7 +415,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
                 <Select value={gameId} onValueChange={setGameId}>
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
-                    {games.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+                    {games.filter(g => g.slug !== 'blood-on-the-clocktower').map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

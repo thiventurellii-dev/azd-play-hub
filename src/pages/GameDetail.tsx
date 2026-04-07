@@ -29,6 +29,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotification } from "@/components/NotificationDialog";
 import EditMatchDialog from "@/components/matches/EditMatchDialog";
+import { EditActionButton } from "@/components/shared/EditActionButton";
 
 interface GameData {
   id: string;

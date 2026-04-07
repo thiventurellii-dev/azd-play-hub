@@ -915,19 +915,13 @@ const GameDetail = () => {
                         {m.duration_minutes && (
                           <span className="text-xs text-muted-foreground">{m.duration_minutes} min</span>
                         )}
-                        {isAdmin && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
-                            onClick={() => {
-                              setEditMatch(m);
-                              setEditMatchOpen(true);
-                            }}
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </Button>
-                        )}
+                        <EditActionButton
+                          entityType="match"
+                          onClick={() => {
+                            setEditMatch(m);
+                            setEditMatchOpen(true);
+                          }}
+                        />
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">

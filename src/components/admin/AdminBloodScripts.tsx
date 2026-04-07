@@ -50,19 +50,9 @@ const AdminBloodScripts = () => {
   const [charDesc, setCharDesc] = useState('');
   const [charScriptId, setCharScriptId] = useState('');
 
-  // Edit script dialog
+  // Unified Edit script dialog
   const [editScriptOpen, setEditScriptOpen] = useState(false);
-  const [editingScript, setEditingScript] = useState<BloodScript | null>(null);
-  const [editScriptForm, setEditScriptForm] = useState({ name: '', description: '', victory_conditions: [] as string[] });
-  const [newEditCondition, setNewEditCondition] = useState('');
-
-  // Edit character dialog
-  const [editCharOpen, setEditCharOpen] = useState(false);
-  const [editingChar, setEditingChar] = useState<BloodCharacter | null>(null);
-  const [editCharForm, setEditCharForm] = useState({ name: '', name_en: '', team: 'good' as 'good' | 'evil', role_type: 'townsfolk' as BloodCharacter['role_type'], description: '' });
-
-  // Add existing character to script
-  const [addExistingCharId, setAddExistingCharId] = useState<string>('');
+  const [editingScript, setEditingScript] = useState<any>(null);
 
   const fetchData = async () => {
     const [scriptsRes, charsRes] = await Promise.all([

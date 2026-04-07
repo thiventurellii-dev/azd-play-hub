@@ -1,13 +1,11 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  Trophy,
-  Medal,
   Calendar,
   Clock,
   Users,
@@ -19,79 +17,15 @@ import {
   Flag,
 } from "lucide-react";
 import { motion } from "framer-motion";
-
-interface Season {
-  id: string;
-  name: string;
-  description: string | null;
-  start_date: string;
-  end_date: string;
-  status: string;
-  prize: string;
-  type: "boardgame" | "blood";
-  prize_1st: number;
-  prize_2nd: number;
-  prize_3rd: number;
-  prize_4th_6th: number;
-  prize_7th_10th: number;
-}
-
-interface RankingEntry {
-  player_id: string;
-  current_mmr: number;
-  games_played: number;
-  wins: number;
-  player_name: string;
-}
-
-interface BloodRankingEntry {
-  player_id: string;
-  total_points: number;
-  games_played: number;
-  wins_evil: number;
-  wins_good: number;
-  games_as_storyteller: number;
-  player_name: string;
-}
-
-interface MatchRecord {
-  id: string;
-  played_at: string;
-  duration_minutes: number | null;
-  image_url: string | null;
-  first_player_id: string | null;
-  game_name: string;
-  game_id: string;
-  results: {
-    player_name: string;
-    player_id: string;
-    position: number;
-    score: number;
-    mmr_change: number;
-    mmr_before: number;
-    mmr_after: number;
-  }[];
-}
-
-interface BloodMatchRecord {
-  id: string;
-  played_at: string;
-  duration_minutes: number | null;
-  script_name: string;
-  winning_team: string;
-  storyteller_name: string;
-  players: { player_name: string; character_name: string; team: string }[];
-}
-
-interface GameInfo {
-  id: string;
-  name: string;
-  image_url: string | null;
-  rules_url: string | null;
-  video_url: string | null;
-  min_players: number | null;
-  max_players: number | null;
-}
+import { getRankIcon, getBloodPrizeClass, getBloodWinStats } from "@/utils/game-logic";
+import type {
+  SeasonFull,
+  RankingEntry,
+  BloodRankingEntry,
+  MatchRecord,
+  BloodMatchRecord,
+  GameInfo,
+} from "@/types/database";
 
 const statusColors: Record<string, string> = {
   active: "bg-green-500/20 text-green-400 border-green-500/30",
@@ -99,13 +33,6 @@ const statusColors: Record<string, string> = {
   finished: "bg-muted text-muted-foreground border-border",
 };
 const statusLabels: Record<string, string> = { active: "Ativa", upcoming: "Em breve", finished: "Finalizada" };
-
-const getRankIcon = (pos: number) => {
-  if (pos === 0) return <Trophy className="h-5 w-5 text-gold" />;
-  if (pos === 1) return <Medal className="h-5 w-5 text-gray-400" />;
-  if (pos === 2) return <Medal className="h-5 w-5 text-amber-700" />;
-  return <span className="text-sm font-bold text-muted-foreground w-5 text-center">{pos + 1}</span>;
-};
 
 const MatchImage = ({ src }: { src: string }) => {
   const [expanded, setExpanded] = useState(false);
@@ -129,16 +56,10 @@ const MatchImage = ({ src }: { src: string }) => {
   );
 };
 
-const getBloodPrizeClass = (pos: number) => {
-  if (pos <= 2) return "border-gold/30 bg-card";
-  if (pos <= 5) return "border-gray-400/30 bg-card";
-  if (pos <= 9) return "border-amber-700/30 bg-card";
-  return "bg-card";
-};
 
 const SeasonDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const [season, setSeason] = useState<Season | null>(null);
+  const [season, setSeason] = useState<SeasonFull | null>(null);
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
   const [bloodRankings, setBloodRankings] = useState<BloodRankingEntry[]>([]);
   const [matches, setMatches] = useState<MatchRecord[]>([]);
@@ -152,7 +73,7 @@ const SeasonDetail = () => {
     if (!id) return;
     const fetchAll = async () => {
       const { data: sData } = await supabase.from("seasons").select("*").eq("id", id).single();
-      const seasonData: Season | null = sData
+      const seasonData: SeasonFull | null = sData
         ? {
             ...sData,
             prize: (sData as any).prize || "",
@@ -482,9 +403,7 @@ const SeasonDetail = () => {
                   <span className="text-right">Pontos</span>
                 </div>
                 {bloodRankings.map((r, i) => {
-                  const gamesNotSt = r.games_played - r.games_as_storyteller;
-                  const totalWins = r.wins_evil + r.wins_good;
-                  const winPct = gamesNotSt > 0 ? Math.round((totalWins / gamesNotSt) * 100) : 0;
+                  const { winPct } = getBloodWinStats(r);
                   return (
                     <motion.div
                       key={r.player_id}

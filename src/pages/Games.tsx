@@ -111,7 +111,20 @@ const Games = () => {
   const [newMinP, setNewMinP] = useState('');
   const [newMaxP, setNewMaxP] = useState('');
 
-  // (Edit game state removed — now handled by EntityEditButton + GameForm)
+  // Edit game dialog
+  const [editOpen, setEditOpen] = useState(false);
+  const [editGame, setEditGame] = useState<Game | null>(null);
+  const [editName, setEditName] = useState('');
+  const [editImageUrl, setEditImageUrl] = useState('');
+  const [editRulesUrl, setEditRulesUrl] = useState('');
+  const [editVideoUrl, setEditVideoUrl] = useState('');
+  const [editMinP, setEditMinP] = useState('');
+  const [editMaxP, setEditMaxP] = useState('');
+  const [editSlug, setEditSlug] = useState('');
+  const [editFactions, setEditFactions] = useState('');
+  const [editCategories, setEditCategories] = useState<{ key: string; label: string; type: string; subcategories?: { key: string; label: string; type: string }[] }[]>([]);
+  const [editTagIds, setEditTagIds] = useState<string[]>([]);
+  const [newTagName, setNewTagName] = useState('');
 
   const fetchData = async () => {
     const [gamesRes, sgRes, matchesRes, scriptsRes, charsRes, sbsRes, tagsRes, tagLinksRes] = await Promise.all([

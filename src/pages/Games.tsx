@@ -237,8 +237,9 @@ const Games = () => {
   const roleTypeLabels: Record<string, string> = { townsfolk: "Cidadão", outsider: "Forasteiro", minion: "Lacaio", demon: "Demônio" };
 
   const filteredGames = useMemo(() => {
-    if (tagFilter === 'all') return games;
-    return games.filter(g => (gameTagMap[g.id] || []).includes(tagFilter));
+    const nonBotc = games.filter(g => g.slug !== 'blood-on-the-clocktower');
+    if (tagFilter === 'all') return nonBotc;
+    return nonBotc.filter(g => (gameTagMap[g.id] || []).includes(tagFilter));
   }, [games, tagFilter, gameTagMap]);
 
   const handleAddGame = async () => {

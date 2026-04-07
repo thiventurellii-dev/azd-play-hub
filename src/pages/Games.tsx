@@ -581,8 +581,23 @@ const Games = () => {
     setEditScriptOpen(false);
     fetchData();
   };
+  const handleAddScript = async () => {
+    if (!newScriptName.trim()) return notify('error', 'Nome obrigatório');
+    const slug = newScriptSlug.trim() || newScriptName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const { error } = await supabase.from('blood_scripts').insert({
+      name: newScriptName,
+      description: newScriptDesc || null,
+      image_url: newScriptImageUrl || null,
+      slug,
+    } as any);
+    if (error) return notify('error', error.message);
+    notify('success', 'Script adicionado!');
+    setAddScriptOpen(false);
+    setNewScriptName(''); setNewScriptDesc(''); setNewScriptImageUrl(''); setNewScriptSlug('');
+    fetchData();
+  };
 
-  const handleAddSystem = async () => {
+
     if (!newSystemName.trim()) return notify('error', 'Nome obrigatório');
     const { error } = await supabase.from('rpg_systems').insert({
       name: newSystemName, description: newSystemDesc || null,

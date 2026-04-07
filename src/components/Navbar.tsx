@@ -38,6 +38,7 @@ const Navbar = () => {
   const [pendingFriends, setPendingFriends] = useState(0);
   const [friendRequests, setFriendRequests] = useState<{ id: string; user_id: string; name: string; nickname: string | null }[]>([]);
   const [roomNotifs, setRoomNotifs] = useState<{ id: string; title: string; message: string; type: string; room_id: string | null; created_at: string }[]>([]);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const [userNickname, setUserNickname] = useState<string | null>(null);
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
 

@@ -17,7 +17,6 @@ import {
   Flag,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { BoardgameRankingCard, BloodRankingCard, EmptyRanking } from "@/components/shared/RankingCards";
 import { getRankIcon, getBloodPrizeClass, getBloodWinStats } from "@/utils/game-logic";
 import type {
   SeasonFull,

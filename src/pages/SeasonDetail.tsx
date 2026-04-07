@@ -19,79 +19,16 @@ import {
   Flag,
 } from "lucide-react";
 import { motion } from "framer-motion";
-
-interface Season {
-  id: string;
-  name: string;
-  description: string | null;
-  start_date: string;
-  end_date: string;
-  status: string;
-  prize: string;
-  type: "boardgame" | "blood";
-  prize_1st: number;
-  prize_2nd: number;
-  prize_3rd: number;
-  prize_4th_6th: number;
-  prize_7th_10th: number;
-}
-
-interface RankingEntry {
-  player_id: string;
-  current_mmr: number;
-  games_played: number;
-  wins: number;
-  player_name: string;
-}
-
-interface BloodRankingEntry {
-  player_id: string;
-  total_points: number;
-  games_played: number;
-  wins_evil: number;
-  wins_good: number;
-  games_as_storyteller: number;
-  player_name: string;
-}
-
-interface MatchRecord {
-  id: string;
-  played_at: string;
-  duration_minutes: number | null;
-  image_url: string | null;
-  first_player_id: string | null;
-  game_name: string;
-  game_id: string;
-  results: {
-    player_name: string;
-    player_id: string;
-    position: number;
-    score: number;
-    mmr_change: number;
-    mmr_before: number;
-    mmr_after: number;
-  }[];
-}
-
-interface BloodMatchRecord {
-  id: string;
-  played_at: string;
-  duration_minutes: number | null;
-  script_name: string;
-  winning_team: string;
-  storyteller_name: string;
-  players: { player_name: string; character_name: string; team: string }[];
-}
-
-interface GameInfo {
-  id: string;
-  name: string;
-  image_url: string | null;
-  rules_url: string | null;
-  video_url: string | null;
-  min_players: number | null;
-  max_players: number | null;
-}
+import { BoardgameRankingCard, BloodRankingCard, EmptyRanking } from "@/components/shared/RankingCards";
+import { getRankIcon, getBloodPrizeClass, getBloodWinStats } from "@/utils/game-logic";
+import type {
+  SeasonFull,
+  RankingEntry,
+  BloodRankingEntry,
+  MatchRecord,
+  BloodMatchRecord,
+  GameInfo,
+} from "@/types/database";
 
 const statusColors: Record<string, string> = {
   active: "bg-green-500/20 text-green-400 border-green-500/30",
@@ -100,11 +37,26 @@ const statusColors: Record<string, string> = {
 };
 const statusLabels: Record<string, string> = { active: "Ativa", upcoming: "Em breve", finished: "Finalizada" };
 
-const getRankIcon = (pos: number) => {
-  if (pos === 0) return <Trophy className="h-5 w-5 text-gold" />;
-  if (pos === 1) return <Medal className="h-5 w-5 text-gray-400" />;
-  if (pos === 2) return <Medal className="h-5 w-5 text-amber-700" />;
-  return <span className="text-sm font-bold text-muted-foreground w-5 text-center">{pos + 1}</span>;
+const MatchImage = ({ src }: { src: string }) => {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div className="rounded-lg overflow-hidden border border-border">
+      <img
+        src={src}
+        alt="Partida"
+        className={`w-full object-cover cursor-pointer transition-all duration-300 ${expanded ? "max-h-[600px]" : "h-48"}`}
+        onClick={() => setExpanded(!expanded)}
+      />
+      {!expanded && (
+        <button
+          onClick={() => setExpanded(true)}
+          className="w-full py-1.5 text-xs text-muted-foreground hover:text-foreground bg-secondary/50 transition-colors"
+        >
+          Expandir imagem
+        </button>
+      )}
+    </div>
+  );
 };
 
 const MatchImage = ({ src }: { src: string }) => {

@@ -13,11 +13,13 @@ const POSITION_COLORS = ["text-yellow-400", "text-gray-400", "text-amber-600"];
 
 const LoggedOutIndex = () => (
   <div>
-    <Hero subtitle="Mais do que jogar, construímos amizades. Seasons competitivas com premiações, rankings e muita diversão na mesa.">
+    <Hero subtitle="Mais do que jogar, construímos amizades. Jogos casuais, seasons competitivas com premiações, estatísticas e muita diversão na mesa.">
       <motion.div {...fadeUp(0.4)} className="relative mt-8 flex flex-wrap justify-center gap-4">
         <Link to="/register">
           <motion.div {...hoverSpring}>
-            <Button variant="gold" size="lg">Faça parte da comunidade</Button>
+            <Button variant="gold" size="lg">
+              Faça parte da comunidade
+            </Button>
           </motion.div>
         </Link>
       </motion.div>
@@ -36,7 +38,9 @@ const LoggedInIndex = () => {
         <motion.div {...fadeUp(0.4)} className="relative mt-6 flex flex-wrap justify-center gap-4">
           <Link to="/partidas">
             <motion.div {...hoverSpring}>
-              <Button variant="gold" size="lg">Agendar Partida</Button>
+              <Button variant="gold" size="lg">
+                Agendar Partida
+              </Button>
             </motion.div>
           </Link>
         </motion.div>
@@ -46,12 +50,19 @@ const LoggedInIndex = () => {
       <section className="container pb-16">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Link to="/partidas" className="block">
-            <DashboardCard title="Próximas Partidas" icon={<Calendar className="h-4 w-4" />} delay={0.5} loading={loading}>
+            <DashboardCard
+              title="Próximas Partidas"
+              icon={<Calendar className="h-4 w-4" />}
+              delay={0.5}
+              loading={loading}
+            >
               {upcomingRooms.length > 0 ? (
                 <div className="space-y-2">
                   {upcomingRooms.map((r) => (
                     <div key={r.id} className="flex justify-between items-center text-sm">
-                      <span className="truncate">{r.game?.name} — {r.title}</span>
+                      <span className="truncate">
+                        {r.game?.name} — {r.title}
+                      </span>
                       <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
                         {new Date(r.scheduled_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
                       </span>
@@ -91,15 +102,15 @@ const LoggedInIndex = () => {
                 <div className="space-y-2">
                   {recentMatches.map((m) => (
                     <div key={m.id} className="flex justify-between items-center text-sm">
-                      <span className={`truncate ${m.isUserMatch ? "" : "text-muted-foreground"}`}>
-                        {m.game?.name}
-                      </span>
+                      <span className={`truncate ${m.isUserMatch ? "" : "text-muted-foreground"}`}>{m.game?.name}</span>
                       <div className="flex items-center gap-2 ml-2 shrink-0">
                         <span className="text-[10px] text-muted-foreground">
                           {new Date(m.played_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
                         </span>
                         {m.position != null ? (
-                          <span className={`text-xs font-medium ${m.position === 1 ? "text-gold" : "text-muted-foreground"}`}>
+                          <span
+                            className={`text-xs font-medium ${m.position === 1 ? "text-gold" : "text-muted-foreground"}`}
+                          >
                             {m.position === 1 ? "🏆" : `${m.position}º`}
                             {m.score != null ? ` ${m.score}pts` : ""}
                           </span>

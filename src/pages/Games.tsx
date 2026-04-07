@@ -16,6 +16,7 @@ import { ExternalLink, Video, Users, Calendar, Clock, Plus, Pencil, Trash2, Swor
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotification } from "@/components/NotificationDialog";
+import EditBloodScriptDialog from "@/components/blood/EditBloodScriptDialog";
 
 import troubleBrewingImg from "@/assets/trouble-brewing.jpg";
 import badMoonRisingImg from "@/assets/bad-moon-rising.jpg";

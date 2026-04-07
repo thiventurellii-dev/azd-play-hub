@@ -93,6 +93,13 @@ const Games = () => {
   const [editAdvImageUrl, setEditAdvImageUrl] = useState('');
   const [editAdvSystemId, setEditAdvSystemId] = useState('');
 
+  // Add blood script dialog
+  const [addScriptOpen, setAddScriptOpen] = useState(false);
+  const [newScriptName, setNewScriptName] = useState('');
+  const [newScriptDesc, setNewScriptDesc] = useState('');
+  const [newScriptImageUrl, setNewScriptImageUrl] = useState('');
+  const [newScriptSlug, setNewScriptSlug] = useState('');
+
   // Edit blood script dialog
   const [editScriptOpen, setEditScriptOpen] = useState(false);
   const [editScript, setEditScript] = useState<BloodScript | null>(null);
@@ -574,9 +581,24 @@ const Games = () => {
     setEditScriptOpen(false);
     fetchData();
   };
+  const handleAddScript = async () => {
+    if (!newScriptName.trim()) return notify('error', 'Nome obrigatório');
+    const slug = newScriptSlug.trim() || newScriptName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const { error } = await supabase.from('blood_scripts').insert({
+      name: newScriptName,
+      description: newScriptDesc || null,
+      image_url: newScriptImageUrl || null,
+      slug,
+    } as any);
+    if (error) return notify('error', error.message);
+    notify('success', 'Script adicionado!');
+    setAddScriptOpen(false);
+    setNewScriptName(''); setNewScriptDesc(''); setNewScriptImageUrl(''); setNewScriptSlug('');
+    fetchData();
+  };
 
-  const handleAddSystem = async () => {
-    if (!newSystemName.trim()) return notify('error', 'Nome obrigatório');
+
+    const handleAddSystem = async () => {
     const { error } = await supabase.from('rpg_systems').insert({
       name: newSystemName, description: newSystemDesc || null,
       image_url: newSystemImageUrl || null, rules_url: newSystemRulesUrl || null,
@@ -884,7 +906,30 @@ const Games = () => {
             <TabsTrigger value="rpg">⚔️ RPG</TabsTrigger>
           </TabsList>
           <TabsContent value="boardgame">{renderBoardgames()}</TabsContent>
-          <TabsContent value="blood">{renderBloodScripts()}</TabsContent>
+          <TabsContent value="blood">
+            {isAdmin && (
+              <div className="flex justify-end mb-4">
+                <Button variant="gold" onClick={() => setAddScriptOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1" /> Adicionar Script
+                </Button>
+              </div>
+            )}
+            {renderBloodScripts()}
+
+            {/* Add Script Dialog */}
+            <Dialog open={addScriptOpen} onOpenChange={setAddScriptOpen}>
+              <DialogContent>
+                <DialogHeader><DialogTitle>Novo Script</DialogTitle></DialogHeader>
+                <div className="space-y-4">
+                  <div><Label>Nome *</Label><Input value={newScriptName} onChange={e => setNewScriptName(e.target.value)} /></div>
+                  <div><Label>Descrição</Label><Textarea value={newScriptDesc} onChange={e => setNewScriptDesc(e.target.value)} /></div>
+                  <div><Label>URL da Imagem</Label><Input value={newScriptImageUrl} onChange={e => setNewScriptImageUrl(e.target.value)} /></div>
+                  <div><Label>Slug (URL amigável)</Label><Input value={newScriptSlug} onChange={e => setNewScriptSlug(e.target.value)} placeholder="ex: trouble-brewing" /></div>
+                  <Button variant="gold" className="w-full" onClick={handleAddScript}>Salvar</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </TabsContent>
           <TabsContent value="rpg">{renderRpg()}</TabsContent>
         </Tabs>
       )}

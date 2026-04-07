@@ -19,7 +19,6 @@ import {
   Hash,
   ChevronLeft,
   ChevronRight,
-  Pencil,
   Trash2,
   Clock,
 } from "lucide-react";

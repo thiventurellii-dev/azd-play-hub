@@ -1,7 +1,7 @@
 import { useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from './Navbar';
-import { useState, useEffect } from 'react';
+
 
 const PUBLIC_ROUTES = ['/', '/login', '/register', '/complete-profile', '/about'];
 

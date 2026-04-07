@@ -189,8 +189,9 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
   };
 
   const handleSubmit = async () => {
-    if (!gameId || !playedDate || entries.some(e => !e.player_id)) {
-      return notify('error', 'Preencha Jogo, Data e todos os jogadores');
+    const filledEntries = entries.filter(e => e.player_id);
+    if (!gameId || !playedDate || filledEntries.length === 0) {
+      return notify('error', 'Preencha Jogo, Data e pelo menos um jogador');
     }
     setSaving(true);
     try {
@@ -199,10 +200,10 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
       sorted.forEach((ps, i) => { positionMap[ps.player_id] = i + 1; });
 
       if (playerScores.length === 0) {
-        entries.forEach((e, i) => { positionMap[e.player_id] = i + 1; });
+        filledEntries.forEach((e, i) => { positionMap[e.player_id] = i + 1; });
       }
 
-      const playerIds = entries.filter(e => e.player_id).map(e => e.player_id);
+      const playerIds = filledEntries.map(e => e.player_id);
 
       let mmrMap: Record<string, number> = {};
       let gpMap: Record<string, number> = {};
@@ -230,7 +231,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
           }
         }
 
-        const results = entries.map(e => ({ player_id: e.player_id, position: positionMap[e.player_id] || 1 }));
+        const results = filledEntries.map(e => ({ player_id: e.player_id, position: positionMap[e.player_id] || 1 }));
         eloChanges = calculateElo(results, mmrMap);
       }
 
@@ -265,7 +266,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
         .select().single();
       if (matchErr) throw matchErr;
 
-      const matchResults = entries.map(e => {
+      const matchResults = filledEntries.map(e => {
         const pos = positionMap[e.player_id] || 1;
         const ps = playerScores.find(p => p.player_id === e.player_id);
         return {
@@ -301,7 +302,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
       }
 
       if (seasonId) {
-        for (const e of entries) {
+        for (const e of filledEntries) {
           const pos = positionMap[e.player_id] || 1;
           const isWin = pos === 1;
           await supabase.rpc('upsert_mmr_for_match', {
@@ -464,7 +465,19 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
               </div>
             </div>
             <div className="flex justify-end">
-              <Button variant="gold" onClick={() => setStep(2)} disabled={!gameId || !playedDate || (isBotC && bloodScripts.length > 0 && !selectedScriptId)}>
+              <Button variant="gold" onClick={() => {
+                // Pre-fill entries to max_players count
+                const max = selectedGame?.max_players || 10;
+                const currentCount = entries.length;
+                if (currentCount < max) {
+                  const newEntries = [...entries];
+                  for (let i = currentCount; i < max; i++) {
+                    newEntries.push({ player_id: '', seat_position: i + 1, faction: '', is_new_player: false });
+                  }
+                  setEntries(newEntries);
+                }
+                setStep(2);
+              }} disabled={!gameId || !playedDate || (isBotC && bloodScripts.length > 0 && !selectedScriptId)}>
                 Próximo <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
@@ -486,7 +499,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
               return (
                 <div key={e.player_id || `entry-${i}`} className="flex items-center gap-2 flex-wrap border border-border rounded-lg p-3">
                   <div className="flex-1 min-w-[180px] space-y-1">
-                    <Label className="text-xs">Jogador *</Label>
+                    <Label className="text-xs">Jogador</Label>
                     <Popover open={openPopovers[i] || false} onOpenChange={(open) => setOpenPopovers(prev => ({ ...prev, [i]: open }))}>
                       <PopoverTrigger asChild>
                         <Button variant="outline" role="combobox" className="w-full justify-between font-normal">
@@ -561,7 +574,12 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
             )}
             <div className="flex justify-between">
               <Button variant="outline" onClick={() => setStep(1)}><ChevronLeft className="h-4 w-4 mr-1" /> Voltar</Button>
-              <Button variant="gold" onClick={() => setStep(3)} disabled={entries.some(e => !e.player_id) || !playerCountValid()}>
+              <Button variant="gold" onClick={() => {
+                // Filter out empty entries before proceeding
+                const filledEntries = entries.filter(e => e.player_id);
+                if (filledEntries.length > 0) setEntries(filledEntries);
+                setStep(3);
+              }} disabled={!playerCountValid()}>
                 Próximo <ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>

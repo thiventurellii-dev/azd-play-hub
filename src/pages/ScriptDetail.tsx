@@ -272,9 +272,10 @@ const ScriptDetail = () => {
           onOpenChange={setEditMatchOpen}
           match={editMatch}
           matchPlayers={editMatchPlayers}
-          characters={characters}
           allPlayers={allPlayers}
-          profiles={profiles}
+          goodChars={characters.filter((c) => c.team === "good")}
+          evilChars={characters.filter((c) => c.team === "evil")}
+          victoryConditionOptions={script?.victory_conditions || []}
           onSaved={invalidate}
         />
       )}

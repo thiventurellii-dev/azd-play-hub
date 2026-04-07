@@ -12,6 +12,7 @@ import { useNotification } from '@/components/NotificationDialog';
 import { Trash2, UserPlus, Upload, Image, Pencil, Search, ChevronDown, ChevronUp } from 'lucide-react';
 import NewMatchFlow from '@/components/matches/NewMatchFlow';
 import EditMatchDialog from '@/components/matches/EditMatchDialog';
+import { recalculateSeasonGameMmr } from '@/lib/mmrRecalculation';
 
 interface Season { id: string; name: string; }
 interface Game { id: string; name: string; }

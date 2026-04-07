@@ -100,14 +100,9 @@ const Games = () => {
   const [newScriptImageUrl, setNewScriptImageUrl] = useState('');
   const [newScriptSlug, setNewScriptSlug] = useState('');
 
-  // Edit blood script dialog
+  // Unified Edit blood script dialog
   const [editScriptOpen, setEditScriptOpen] = useState(false);
-  const [editScript, setEditScript] = useState<BloodScript | null>(null);
-  const [editScriptName, setEditScriptName] = useState('');
-  const [editScriptDesc, setEditScriptDesc] = useState('');
-  const [editScriptImageUrl, setEditScriptImageUrl] = useState('');
-  const [editScriptVictoryConditions, setEditScriptVictoryConditions] = useState<string[]>([]);
-  const [newScriptCondition, setNewScriptCondition] = useState('');
+  const [editScriptTarget, setEditScriptTarget] = useState<any>(null);
 
   // Tags
   const [allTags, setAllTags] = useState<GameTag[]>([]);

@@ -302,7 +302,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
       }
 
       if (seasonId) {
-        for (const e of entries) {
+        for (const e of filledEntries) {
           const pos = positionMap[e.player_id] || 1;
           const isWin = pos === 1;
           await supabase.rpc('upsert_mmr_for_match', {

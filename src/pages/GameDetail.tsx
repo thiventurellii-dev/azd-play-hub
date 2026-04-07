@@ -19,7 +19,6 @@ import {
   Hash,
   ChevronLeft,
   ChevronRight,
-  Pencil,
   Trash2,
   Clock,
 } from "lucide-react";
@@ -30,6 +29,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotification } from "@/components/NotificationDialog";
 import EditMatchDialog from "@/components/matches/EditMatchDialog";
+import { EditActionButton } from "@/components/shared/EditActionButton";
 
 interface GameData {
   id: string;
@@ -534,15 +534,12 @@ const GameDetail = () => {
                   )}
                 </div>
               </div>
-              {isAdmin && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={openEditDialog}
-                >
-                  <Pencil className="h-4 w-4 mr-1" /> Editar
-                </Button>
-              )}
+              <EditActionButton
+                entityType="boardgame"
+                onClick={openEditDialog}
+                size="sm"
+                label="Editar"
+              />
             </div>
           </div>
         </div>
@@ -918,19 +915,13 @@ const GameDetail = () => {
                         {m.duration_minutes && (
                           <span className="text-xs text-muted-foreground">{m.duration_minutes} min</span>
                         )}
-                        {isAdmin && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
-                            onClick={() => {
-                              setEditMatch(m);
-                              setEditMatchOpen(true);
-                            }}
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </Button>
-                        )}
+                        <EditActionButton
+                          entityType="match"
+                          onClick={() => {
+                            setEditMatch(m);
+                            setEditMatchOpen(true);
+                          }}
+                        />
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2">

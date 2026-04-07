@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Calendar, Users, LogIn, Clock, Share2, ClipboardList, MessageCircle, ChevronDown, ChevronUp, XCircle, Pencil, Trash2, TrendingUp } from "lucide-react";
+import { Calendar, Users, LogIn, Clock, Share2, ClipboardList, MessageCircle, ChevronDown, ChevronUp, XCircle, Trash2, TrendingUp } from "lucide-react";
+import { EditActionButton } from "@/components/shared/EditActionButton";
 import { generateWhatsAppInvite } from "@/lib/matchNotification";
 import { sendRoomNotifications } from "@/lib/roomNotifications";
 import { toast } from "sonner";
@@ -292,9 +293,11 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
             <div className="flex items-center gap-2">
               {canManage && canInteract && (
                 <>
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditOpen(true)} title="Editar sala">
-                    <Pencil className="h-3.5 w-3.5" />
-                  </Button>
+                  <EditActionButton
+                    entityType="match_room"
+                    createdBy={room?.created_by}
+                    onClick={() => setEditOpen(true)}
+                  />
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={handleCancel} disabled={loading} title="Cancelar sala">
                     <XCircle className="h-3.5 w-3.5" />
                   </Button>

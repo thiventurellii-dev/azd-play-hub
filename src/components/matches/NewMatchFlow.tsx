@@ -266,7 +266,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
         .select().single();
       if (matchErr) throw matchErr;
 
-      const matchResults = entries.map(e => {
+      const matchResults = filledEntries.map(e => {
         const pos = positionMap[e.player_id] || 1;
         const ps = playerScores.find(p => p.player_id === e.player_id);
         return {

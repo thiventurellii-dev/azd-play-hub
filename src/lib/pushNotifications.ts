@@ -1,6 +1,6 @@
 import { invokeEdgeFunction } from "@/lib/edgeFunctions";
 
-const VAPID_PUBLIC_KEY = "BOK1LAe7aFKL5t2luaDAdKZAGVFPm9kUhYAAqquUkDpnp8AIXFdA8CoJO1-Aho2FFjIsIMYZBcX9a-p7XfhwqdA";
+const VAPID_PUBLIC_KEY = "BPC7GyQ6ieN_RfsSlzelZ5UhLUiH_Hpqb63DvdFr33ylN6yIL31WUf9z0lg2t5g9l3L4bUoYBgvatyoWNvMHQPQ";
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);

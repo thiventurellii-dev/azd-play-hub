@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabaseExternal";
+import { supabase as cloudSupabase } from "@/integrations/supabase/client";
 
 interface NotifyParams {
   userIds: string[];
@@ -21,15 +22,16 @@ export async function sendRoomNotifications({ userIds, type, title, message, roo
 
   // Also send push notifications via Lovable Cloud edge function
   try {
-    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-    if (projectId) {
-      const pushUrl = `https://${projectId}.supabase.co/functions/v1/send-push`;
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    if (supabaseUrl) {
+      const pushUrl = `${supabaseUrl}/functions/v1/send-push`;
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
       await fetch(pushUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || "",
           ...(token ? { "Authorization": `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ user_ids: userIds, title, message, url: roomId ? `/partidas` : "/" }),

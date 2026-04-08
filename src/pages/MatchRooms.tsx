@@ -107,10 +107,20 @@ const MatchRooms = () => {
 
   useEffect(() => {
     fetchRooms();
+
+    // Realtime subscription
     const channel = supabase.channel("match-rooms-list")
       .on("postgres_changes", { event: "*", schema: "public", table: "match_rooms" }, () => fetchRooms())
+      .on("postgres_changes", { event: "*", schema: "public", table: "match_room_players" }, () => fetchRooms())
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+
+    // Polling fallback every 15s in case realtime isn't enabled
+    const poll = setInterval(fetchRooms, 15000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(poll);
+    };
   }, []);
 
   const games = useMemo(() => {

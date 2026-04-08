@@ -145,9 +145,13 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
 
     channelRef.current = channel;
 
+    // Polling fallback every 10s
+    const poll = setInterval(fetchPlayers, 10000);
+
     return () => {
       supabase.removeChannel(channel);
       channelRef.current = null;
+      clearInterval(poll);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room?.id]);

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseExternal";
 import { useAuth } from "@/contexts/AuthContext";
 import { Calendar, Users, LogIn, Clock, Share2, ClipboardList, MessageCircle, ChevronDown, ChevronUp, XCircle, Trash2, TrendingUp } from "lucide-react";
 import { EditActionButton } from "@/components/shared/EditActionButton";
@@ -55,6 +55,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const [editOpen, setEditOpen] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [avgMmr, setAvgMmr] = useState<number | null>(null);
+  const [hasResult, setHasResult] = useState(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const fetchPlayers = async () => {
@@ -117,7 +118,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
     }
   };
 
-  // Fetch tags
+  // Fetch tags + check if result exists for finished rooms
   useEffect(() => {
     if (!room?.id) return;
     supabase
@@ -129,7 +130,26 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
           setTags(data.map((d: any) => d.room_tags?.name).filter(Boolean));
         }
       });
-  }, [room?.id]);
+
+    // Check if a match result was already registered for this room's game on the scheduled date
+    if (room.status === "finished" && room.game?.id) {
+      const scheduledDate = new Date(room.scheduled_at);
+      const dayStart = new Date(scheduledDate);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(scheduledDate);
+      dayEnd.setHours(23, 59, 59, 999);
+      supabase
+        .from("matches")
+        .select("id")
+        .eq("game_id", room.game.id)
+        .gte("played_at", dayStart.toISOString())
+        .lte("played_at", dayEnd.toISOString())
+        .limit(1)
+        .then(({ data }) => {
+          setHasResult(!!(data && data.length > 0));
+        });
+    }
+  }, [room?.id, room?.status]);
 
   useEffect(() => {
     if (!room?.id) return;
@@ -408,24 +428,35 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
               </Button>
             )}
             {room.status === "finished" && user && (
-              <Button
-                variant="gold"
-                size="sm"
-                className="flex-1 min-h-[44px]"
-                onClick={() => {
-                  navigate("/partidas", {
-                    state: {
-                      prefill: {
-                        gameId: room.game?.id,
-                        date: room.scheduled_at,
-                        playerIds: confirmed.map(p => p.player_id),
+              hasResult ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 min-h-[44px] opacity-60 cursor-default"
+                  disabled
+                >
+                  <ClipboardList className="h-4 w-4 mr-1" /> Resultado Registrado
+                </Button>
+              ) : (
+                <Button
+                  variant="gold"
+                  size="sm"
+                  className="flex-1 min-h-[44px]"
+                  onClick={() => {
+                    navigate("/partidas", {
+                      state: {
+                        prefill: {
+                          gameId: room.game?.id,
+                          date: room.scheduled_at,
+                          playerIds: confirmed.map(p => p.player_id),
+                        }
                       }
-                    }
-                  });
-                }}
-              >
-                <ClipboardList className="h-4 w-4 mr-1" /> Inserir Resultado
-              </Button>
+                    });
+                  }}
+                >
+                  <ClipboardList className="h-4 w-4 mr-1" /> Inserir Resultado
+                </Button>
+              )
             )}
             <Button
               variant="ghost"

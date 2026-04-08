@@ -1,0 +1,1 @@
+ALTER TABLE public.match_results ALTER COLUMN score TYPE numeric USING score::numeric;

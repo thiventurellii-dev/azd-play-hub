@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Trophy } from 'lucide-react';
+import { Trophy, Info } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ScoringSubcategory {
   key: string;
@@ -90,7 +91,7 @@ const ScoringSheet = ({ schema, players, onScoresChange }: Props) => {
   };
 
   const updateSimpleScore = (playerIdx: number, rawValue: string) => {
-    const value = rawValue === '' ? 0 : parseInt(rawValue) || 0;
+    const value = rawValue === '' ? 0 : parseFloat(rawValue) || 0;
     const updated = [...playerScores];
     updated[playerIdx] = { ...updated[playerIdx], total: value };
     setPlayerScores(updated);
@@ -112,7 +113,19 @@ const ScoringSheet = ({ schema, players, onScoresChange }: Props) => {
           <TableHeader>
             <TableRow>
               <TableHead>Jogador</TableHead>
-              <TableHead className="w-[120px]">Pontuação</TableHead>
+              <TableHead className="w-[120px]">
+                <span className="flex items-center gap-1">
+                  Pontuação
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[220px] text-xs">
+                      Em caso de empate, use decimais para o critério de desempate (ex: 10,05)
+                    </TooltipContent>
+                  </Tooltip>
+                </span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -127,6 +140,7 @@ const ScoringSheet = ({ schema, players, onScoresChange }: Props) => {
                 <TableCell>
                   <Input
                     type="number"
+                    step="0.01"
                     value={ps.total === 0 ? '' : ps.total}
                     onChange={e => updateSimpleScore(i, e.target.value)}
                     className="w-[100px]"

@@ -35,6 +35,39 @@ export type Database = {
         }
         Relationships: []
       }
+      account_disable_requests: {
+        Row: {
+          created_at: string
+          id: string
+          reason: string | null
+          requested_by: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          target_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reason?: string | null
+          requested_by: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          target_user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reason?: string | null
+          requested_by?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          target_user_id?: string
+        }
+        Relationships: []
+      }
       achievement_definitions: {
         Row: {
           created_at: string

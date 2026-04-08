@@ -81,9 +81,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+
+      // If this is a password recovery event, don't fully initialize — let AuthCallback handle it
+      if (event === 'PASSWORD_RECOVERY') {
+        setLoading(false);
+        return;
+      }
+
       if (session?.user) {
         setTimeout(() => {
           fetchRole(session.user.id);

@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Separator } from '@/components/ui/separator';
 import { useNotification } from '@/components/NotificationDialog';
-import { Shield, User, Pencil, Search, Lock, Crown, Plus, Check, XCircle, Trash2, CalendarIcon } from 'lucide-react';
+import { Shield, User, Pencil, Search, Lock, Crown, Plus, Check, XCircle, Trash2 } from 'lucide-react';
+import { DatePickerField } from '@/components/ui/date-picker-field';
 import { brazilianStates, citiesByState, pronounsOptions, countryCodes, formatPhone, unformatPhone } from '@/lib/brazil-data';
 interface PlayerWithRole {
   id: string;

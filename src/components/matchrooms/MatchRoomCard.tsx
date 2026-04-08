@@ -82,7 +82,9 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
       .select("id, name, nickname")
       .in("id", ids);
 
-    console.log(`[Room ${room.id}] profiles query:`, { ids, profiles, profilesError });
+    if (profilesError) {
+      console.error("Error fetching profiles for room players:", profilesError);
+    }
 
     if (profilesError) {
       console.error("Error fetching profiles for room players:", profilesError);

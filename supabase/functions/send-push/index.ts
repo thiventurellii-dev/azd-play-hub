@@ -48,10 +48,28 @@ async function createVapidJwt(audience: string, subject: string, privKeyB64: str
   const payload = b64url(enc.encode(JSON.stringify({ aud: audience, exp: now + 86400, sub: subject })));
   const unsigned = `${header}.${payload}`;
 
-  const privKey = b64urlDec(privKeyB64);
-  const sig = p256.sign(new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(unsigned))), privKey, { lowS: true });
-  // sig.toCompactRawBytes() returns 64 bytes r||s
-  return `${unsigned}.${b64url(sig.toCompactRawBytes())}`;
+  // Import private key via Web Crypto API (native Deno support)
+  const pubKeyBytes = b64urlDec(pubKeyB64);
+  const x = b64url(pubKeyBytes.slice(1, 33));
+  const y = b64url(pubKeyBytes.slice(33, 65));
+
+  const cryptoKey = await crypto.subtle.importKey(
+    "jwk",
+    { kty: "EC", crv: "P-256", x, y, d: privKeyB64, ext: true },
+    { name: "ECDSA", namedCurve: "P-256" },
+    false,
+    ["sign"]
+  );
+
+  const signature = new Uint8Array(
+    await crypto.subtle.sign(
+      { name: "ECDSA", hash: "SHA-256" },
+      cryptoKey,
+      enc.encode(unsigned)
+    )
+  );
+
+  return `${unsigned}.${b64url(signature)}`;
 }
 
 // Web Push encryption (RFC 8291 - aesgcm)

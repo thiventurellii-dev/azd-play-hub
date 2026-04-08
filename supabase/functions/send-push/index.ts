@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const VAPID_PUBLIC_KEY = "BB_m3TYKSjGhWA4elVqQv93asd8y2w-Pz4V-KRYPXZdPkQGEq2tDJBcuq8csHEXqiKPWhKsz02KH-GbfPfzCbZg";
+    const VAPID_PUBLIC_KEY = "BBww_Uz90ojQIHFxPYEzWTWylKEdvkyrDBG9k7fGLntBOfY09on0vg-GKHbMstB94TSasDvl4twvxkGbEjJ6wac";
     webpush.setVapidDetails("mailto:admin@azd.com.br", VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
     const uniqueUserIds = [...new Set(user_ids.filter(Boolean))];

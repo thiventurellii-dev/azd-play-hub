@@ -28,7 +28,7 @@ const FriendsList = () => {
     const { data } = await supabase
       .from("friendships")
       .select("id, user_id, friend_id, status")
-      .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
+      .or(`user_id.eq.${targetUserId},friend_id.eq.${targetUserId}`);
 
     if (!data) { setLoading(false); return; }
 

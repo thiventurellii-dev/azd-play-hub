@@ -336,7 +336,10 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
       <div className="grid grid-cols-2 gap-3">
         <div>
           <Label>Data *</Label>
-          <Input type="date" value={scheduledDate} onChange={e => setScheduledDate(e.target.value)} />
+          <div className="relative">
+            <Input type="date" value={scheduledDate} onChange={e => setScheduledDate(e.target.value)} className="pr-10" />
+            <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          </div>
         </div>
         <div>
           <Label>Hora</Label>

@@ -33,9 +33,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_id', userId)
-      .maybeSingle();
-    setRole((data?.role as UserRole) || 'player');
+      .eq('user_id', userId);
+    if (data && data.length > 0) {
+      const roles = data.map((d: any) => d.role as UserRole);
+      if (roles.includes('super_admin')) setRole('super_admin');
+      else if (roles.includes('admin')) setRole('admin');
+      else setRole('player');
+    } else {
+      setRole('player');
+    }
   };
 
   const checkProfileCompleted = async (userId: string) => {

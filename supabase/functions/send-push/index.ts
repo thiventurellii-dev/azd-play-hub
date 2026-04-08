@@ -83,9 +83,10 @@ Deno.serve(async (req) => {
         await webpush.sendNotification(pushSubscription, payload, { TTL: 86400 });
         results.push({ endpoint: sub.endpoint, status: "sent" });
         console.log(`[push] Sent to subscription ${sub.id} (user ${sub.user_id})`);
-      } catch (err) {
-        const statusCode = err?.statusCode || err?.status || 0;
-        const errorBody = err?.body || err?.message || "Unknown push error";
+      } catch (err: unknown) {
+        const pushError = err as { statusCode?: number; status?: number; body?: string; message?: string };
+        const statusCode = pushError.statusCode || pushError.status || 0;
+        const errorBody = pushError.body || pushError.message || "Unknown push error";
 
         if (statusCode === 410 || statusCode === 404) {
           await supabase.from("push_subscriptions").delete().eq("id", sub.id);
@@ -101,9 +102,10 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ sent: results.filter(r => r.status === "sent").length, total: results.length, results }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
-  } catch (error) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Internal push error";
     console.error("[push] send-push error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: message }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

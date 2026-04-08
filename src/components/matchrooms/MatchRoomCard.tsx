@@ -66,6 +66,8 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
       .eq("room_id", room.id)
       .order("position");
 
+    console.log(`[Room ${room.id}] match_room_players query:`, { data, error });
+
     if (error) {
       console.error("Error fetching room players:", error);
       return;
@@ -77,15 +79,21 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
       setPlayers([]);
       return;
     }
-    const { data: profiles } = await supabase
+    const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
       .select("id, name, nickname")
       .in("id", ids);
 
+    console.log(`[Room ${room.id}] profiles query:`, { ids, profiles, profilesError });
+
+    if (profilesError) {
+      console.error("Error fetching profiles for room players:", profilesError);
+    }
+
     const profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
     const mappedPlayers = data.map((p) => ({
       ...p,
-      profile: profileMap.get(p.player_id) as RoomPlayer["profile"],
+      profile: profileMap.get(p.player_id) ?? { name: "Jogador desconhecido", nickname: null },
     }));
     setPlayers(mappedPlayers);
 

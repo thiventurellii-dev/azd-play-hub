@@ -1,50 +1,78 @@
 
 
-# Diagnóstico: Jogadores não aparecem nas Rooms para novos usuários
+# Push Notifications: Migrar para Supabase Externo
 
-## Análise do problema
+## Problema atual
 
-O fluxo de `fetchPlayers` no `MatchRoomCard.tsx` (linhas 61-119) faz duas consultas ao Supabase **externo**:
+Os IDs não batem: `subscribeToPush` salva no Lovable Cloud (com user_id do Lovable Cloud), mas `sendRoomNotifications` envia user_ids do Supabase externo. A edge function busca no Lovable Cloud e não encontra match.
 
-1. `match_room_players` → busca jogadores da sala
-2. `profiles` → busca nome/nickname por `player_id`
+## Solução
 
-Ambas usam o client externo (`supabase` de `@/lib/supabaseExternal`). O `AuthContext` também autentica no Supabase externo, então novos usuários **devem** ter sessão válida.
+Mover toda a lógica de push_subscriptions para o Supabase externo. Isso requer:
 
-## Causa provável
+### 1. Criar tabela `push_subscriptions` no Supabase externo
 
-O problema provavelmente está nas **RLS policies do Supabase externo**, que são independentes das que vemos aqui (essas são do Lovable Cloud/interno). As políticas do banco externo podem:
+Você precisará executar este SQL no dashboard do Supabase externo (`npinawelxdtsrcvzzvvs`):
 
-- Exigir condições diferentes para SELECT em `match_room_players` ou `profiles`
-- Não ter realtime habilitado para `match_room_players`
-- Ter políticas de `profiles` que bloqueiam visualização entre usuários
+```sql
+CREATE TABLE IF NOT EXISTS public.push_subscriptions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  endpoint text NOT NULL,
+  p256dh text NOT NULL,
+  auth text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (user_id, endpoint)
+);
 
-Outra possibilidade: o `fetchPlayers` falha silenciosamente — o `console.error` só é chamado se `error` existir, mas um resultado vazio (sem erro) simplesmente seta `players` como `[]`.
+ALTER TABLE public.push_subscriptions ENABLE ROW LEVEL SECURITY;
 
-## Plano de ação
+CREATE POLICY "Authenticated users can view own push subscriptions"
+ON public.push_subscriptions FOR SELECT TO authenticated
+USING (auth.uid() = user_id);
 
-### 1. Adicionar logs de diagnóstico no `fetchPlayers`
+CREATE POLICY "Authenticated users can insert own push subscriptions"
+ON public.push_subscriptions FOR INSERT TO authenticated
+WITH CHECK (auth.uid() = user_id);
 
-Em `MatchRoomCard.tsx`, adicionar `console.log` temporários para capturar:
-- Resultado bruto de `match_room_players` (data + error)
-- Resultado bruto de `profiles` (data + error)
-- IDs buscados vs IDs encontrados
+CREATE POLICY "Authenticated users can delete own push subscriptions"
+ON public.push_subscriptions FOR DELETE TO authenticated
+USING (auth.uid() = user_id);
 
-Isso vai revelar se o problema é na primeira query (não retorna players) ou na segunda (não retorna profiles).
+-- Policy para a service role poder ler todas (usado pela edge function)
+CREATE POLICY "Service role can read all push subscriptions"
+ON public.push_subscriptions FOR SELECT TO service_role
+USING (true);
 
-### 2. Tratar erro silencioso na query de profiles
+CREATE POLICY "Service role can delete push subscriptions"
+ON public.push_subscriptions FOR DELETE TO service_role
+USING (true);
+```
 
-Atualmente, se a query de `profiles` falha, o código continua sem erro visível. Adicionar tratamento de erro explícito.
+### 2. Alterar `src/lib/pushNotifications.ts`
 
-### 3. Adicionar fallback de exibição
+Trocar o import de `@/integrations/supabase/client` para `@/lib/supabaseExternal`. O `userId` passado já é do Supabase externo (vem do AuthContext que autentica no externo), então os IDs passarão a bater.
 
-Quando um `player_id` não tem profile associado, mostrar "Jogador desconhecido" em vez de nada, para que pelo menos o jogador apareça na lista.
+### 3. Alterar `supabase/functions/send-push/index.ts`
+
+A edge function precisa conectar ao **Supabase externo** para buscar as subscriptions. Trocar de `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` para `EXTERNAL_SUPABASE_URL`/`EXTERNAL_SUPABASE_SERVICE_ROLE_KEY` (que já existem como secrets).
+
+### 4. Verificar `src/pages/Install.tsx`
+
+O `user.id` vem do AuthContext que usa o Supabase externo, então já é o ID correto. Nenhuma mudança necessária neste arquivo.
+
+### 5. Limpar subscriptions antigas do Lovable Cloud
+
+Opcional: deletar os registros existentes na tabela `push_subscriptions` do Lovable Cloud, que têm IDs incorretos.
 
 ## Arquivos a modificar
 
-- `src/components/matchrooms/MatchRoomCard.tsx` — adicionar logs de diagnóstico e fallback de exibição
+| Arquivo | Mudança |
+|---------|---------|
+| `src/lib/pushNotifications.ts` | Trocar import para `supabaseExternal` |
+| `supabase/functions/send-push/index.ts` | Usar `EXTERNAL_SUPABASE_*` secrets |
 
-## Próximo passo
+## Pré-requisito (ação do usuário)
 
-Após implementar os logs, peço que você abra a página de Partidas como um novo usuário e me envie os logs do console. Com essa informação, saberemos exatamente qual query está falhando e poderemos aplicar a correção definitiva (que pode envolver ajustar RLS no Supabase externo via dashboard).
+Criar a tabela `push_subscriptions` no Supabase externo via SQL Editor (conforme SQL acima).
 

@@ -88,7 +88,7 @@ const Games = () => {
 
   return (
     <div className="container py-10">
-      <div className="mb-2"><h1 className="text-3xl font-bold">Jogos</h1></div>
+      <div className="mb-2"><h1 className="text-2xl md:text-3xl font-bold">Jogos</h1></div>
       <p className="text-muted-foreground mb-8">Coleção de jogos da comunidade AzD</p>
 
       {isLoading ? (
@@ -221,7 +221,7 @@ const Games = () => {
                                 </div>
                               )}
                             </CardContent>
-                            <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                            <div className="absolute top-3 right-3 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10">
                               <EntityEditButton entityType="rpg" title="Editar Sistema">
                                 {(onClose) => <RpgSystemForm system={sys} onSuccess={() => { onClose(); invalidate(); }} />}
                               </EntityEditButton>
@@ -262,7 +262,7 @@ const Games = () => {
                                   </div>
                                 </div>
                               </CardContent>
-                              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                              <div className="absolute top-2 right-2 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10">
                                 <EntityEditButton entityType="rpg" title="Editar Aventura">
                                   {(onClose) => <RpgAdventureForm adventure={adv} systems={rpgSystems} onSuccess={() => { onClose(); invalidate(); }} />}
                                 </EntityEditButton>

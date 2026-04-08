@@ -126,7 +126,7 @@ const BloodScriptCard = ({ script, characters, seasons, index, onUpdated }: Bloo
             </div>
           )}
         </CardContent>
-        <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10" onClick={(e) => e.stopPropagation()}>
+        <div className="absolute top-3 right-3 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10" onClick={(e) => e.stopPropagation()}>
           <EntityEditButton entityType="blood_script" title="Editar Script">
             {(onClose) => {
               // We use the EditBloodScriptDialog's form content inline

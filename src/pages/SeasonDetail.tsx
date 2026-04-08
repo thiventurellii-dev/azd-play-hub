@@ -301,7 +301,7 @@ const SeasonDetail = () => {
           ← Voltar para Seasons
         </Link>
         <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-3xl font-bold">{season.name}</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">{season.name}</h1>
           <Badge variant="outline">{isBlood ? "🩸 Blood" : "🎲 Boardgame"}</Badge>
           <Badge className={statusColors[season.status]}>{statusLabels[season.status]}</Badge>
         </div>

@@ -156,7 +156,7 @@ const Seasons = () => {
             </CardContent>
           </Link>
           {isAdmin && (
-            <Button variant="ghost" size="icon" className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEdit(s); }}>
+            <Button variant="ghost" size="icon" className="absolute bottom-3 right-3 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openEdit(s); }}>
               <Pencil className="h-4 w-4" />
             </Button>
           )}
@@ -175,7 +175,7 @@ const Seasons = () => {
   return (
     <div className="container py-10">
       <div className="flex items-center justify-between mb-2">
-        <h1 className="text-3xl font-bold">Seasons</h1>
+        <h1 className="text-2xl md:text-3xl font-bold">Seasons</h1>
         {isAdmin && (
           <Button variant="gold" size="sm" onClick={openCreate}><Plus className="h-4 w-4 mr-1" /> Criar Season</Button>
         )}

@@ -142,7 +142,7 @@ const GameDetail = () => {
             <Link to="/games" className="text-sm text-muted-foreground hover:text-foreground mb-2 inline-flex items-center gap-1"><ArrowLeft className="h-3 w-3" /> Jogos</Link>
             <div className="flex items-end justify-between">
               <div>
-                <h1 className="text-3xl md:text-4xl font-bold">{game.name}</h1>
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">{game.name}</h1>
                 <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground flex-wrap">
                   {(game.min_players || game.max_players) && <span className="flex items-center gap-1"><Users className="h-4 w-4" /> {game.min_players || "?"}–{game.max_players || "?"} jogadores</span>}
                   {(() => { const wd = allMatches.filter((m) => m.duration_minutes); if (wd.length > 0) { const avg = Math.round(wd.reduce((s, m) => s + m.duration_minutes, 0) / wd.length); return <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> ~{avg} min</span>; } return null; })()}

@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Trophy } from 'lucide-react';
+import { Trophy, Info } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface ScoringSubcategory {
   key: string;

@@ -164,8 +164,8 @@ const AdminPlayers = () => {
     }
     if (createForm.password.length < 8) return notify('error', 'Senha deve ter no mínimo 8 caracteres');
 
-    const { data, error } = await supabase.functions.invoke('bulk-create-users', {
-      body: { users: [{ nick: createForm.nickname, email: createForm.email, password: createForm.password }] },
+    const { data, error } = await invokeEdgeFunction('bulk-create-users', {
+      users: [{ nick: createForm.nickname, email: createForm.email, password: createForm.password }],
     });
     if (error) return notify('error', error.message);
 

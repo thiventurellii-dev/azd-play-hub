@@ -48,8 +48,9 @@ async function createVapidJwt(audience: string, subject: string, privKeyB64: str
   const payload = b64url(enc.encode(JSON.stringify({ aud: audience, exp: now + 86400, sub: subject })));
   const unsigned = `${header}.${payload}`;
 
-  const privKey = b64urlDec(privKeyB64);
-  const sig = p256.sign(new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(unsigned))), privKey, { lowS: true });
+  const privKeyBytes = b64urlDec(privKeyB64);
+  const privKeyHex = Array.from(privKeyBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  const sig = p256.sign(new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(unsigned))), privKeyHex, { lowS: true });
   // sig.toCompactRawBytes() returns 64 bytes r||s
   return `${unsigned}.${b64url(sig.toCompactRawBytes())}`;
 }

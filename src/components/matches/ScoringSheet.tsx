@@ -113,7 +113,19 @@ const ScoringSheet = ({ schema, players, onScoresChange }: Props) => {
           <TableHeader>
             <TableRow>
               <TableHead>Jogador</TableHead>
-              <TableHead className="w-[120px]">Pontuação</TableHead>
+              <TableHead className="w-[120px]">
+                <span className="flex items-center gap-1">
+                  Pontuação
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-[220px] text-xs">
+                      Em caso de empate, use decimais para o critério de desempate (ex: 10,05)
+                    </TooltipContent>
+                  </Tooltip>
+                </span>
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

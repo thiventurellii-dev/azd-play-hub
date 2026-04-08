@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Calendar, Gamepad2, Users, MoreHorizontal, Trophy, BarChart3, Lightbulb, Shield, LogOut, FileText, Info, Bell } from "lucide-react";
+import { Home, Calendar, Gamepad2, Users, MoreHorizontal, Trophy, BarChart3, Lightbulb, Shield, LogOut, FileText, Info, Download } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Drawer, DrawerContent, DrawerTrigger, DrawerTitle } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";

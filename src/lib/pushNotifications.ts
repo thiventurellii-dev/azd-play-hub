@@ -27,8 +27,14 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
     const registration = await navigator.serviceWorker.ready;
     console.log("[push] Service worker ready:", registration.scope);
 
+    // Always unsubscribe first to ensure VAPID key matches
     const existingSubscription = await registration.pushManager.getSubscription();
-    const subscription = existingSubscription ?? await registration.pushManager.subscribe({
+    if (existingSubscription) {
+      await existingSubscription.unsubscribe();
+      console.log("[push] Unsubscribed old subscription to refresh VAPID key");
+    }
+
+    const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
     });

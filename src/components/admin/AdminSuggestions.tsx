@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabaseExternal';
 import { Button } from '@/components/ui/button';
 import { Trash2, Check, X, ArrowUpDown, RotateCcw } from 'lucide-react';
 import { useNotification } from '@/components/NotificationDialog';

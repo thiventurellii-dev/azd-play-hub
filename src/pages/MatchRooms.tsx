@@ -154,7 +154,7 @@ const MatchRooms = () => {
         <div className="flex items-center gap-3">
           <Calendar className="h-8 w-8 text-gold" />
           <div>
-            <h1 className="text-3xl font-bold">Partidas</h1>
+            <h1 className="text-2xl md:text-3xl font-bold">Partidas</h1>
             <p className="text-muted-foreground">Agende e entre em salas de partida</p>
           </div>
         </div>

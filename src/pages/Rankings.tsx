@@ -44,7 +44,7 @@ const Rankings = () => {
     <div className="container py-10">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Rankings</h1>
+          <h1 className="text-2xl md:text-3xl font-bold">Rankings</h1>
           <p className="text-muted-foreground mt-1">Classificação por season</p>
         </div>
         {filteredSeasons.length > 0 && (

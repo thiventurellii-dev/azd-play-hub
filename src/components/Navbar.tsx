@@ -318,128 +318,30 @@ const Navbar = () => {
           )}
         </div>
 
-        {/* Mobile toggle */}
-        <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileOpen(!mobileOpen)}>
-          {mobileOpen ? <X /> : <Menu />}
-        </Button>
-      </div>
-
-      {/* Mobile menu */}
-      {mobileOpen && (
-        <div className="md:hidden border-t border-border bg-background p-4 space-y-1 max-h-[calc(100vh-4rem)] overflow-y-auto">
-          <Link to="/about" onClick={closeMobile}>
-            <Button variant="ghost" className="w-full justify-start gap-2">
-              <Info className="h-4 w-4" /> Sobre Nós
+        {/* Mobile: show logo + profile/login only */}
+        <div className="flex md:hidden items-center gap-2">
+          {user ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10"
+              onClick={() => navigate(userNickname ? `/perfil/${userNickname}` : "/profile")}
+            >
+              {userAvatar ? (
+                <img src={userAvatar} alt="" className="h-7 w-7 rounded-full object-cover" />
+              ) : (
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-secondary text-gold font-bold text-xs">
+                  {getInitials()}
+                </div>
+              )}
             </Button>
-          </Link>
-
-          <details className="group">
-            <summary className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground">
-              <Trophy className="h-4 w-4" /> Competitivo
-              <ChevronDown className="h-3 w-3 ml-auto transition-transform group-open:rotate-180" />
-            </summary>
-            <div className="pl-6 space-y-1">
-              <Link to="/seasons" onClick={closeMobile}>
-                <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
-                  Seasons
-                </Button>
-              </Link>
-              <Button variant="ghost" size="sm" className="w-full justify-start gap-2 opacity-50" disabled>
-                Torneios <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full ml-auto">Em breve</span>
-              </Button>
-            </div>
-          </details>
-
-          <Link to="/partidas" onClick={closeMobile}>
-            <Button variant="ghost" className="w-full justify-start gap-2">
-              <Calendar className="h-4 w-4" /> Partidas
-            </Button>
-          </Link>
-
-          <Link to="/players" onClick={closeMobile}>
-            <Button variant="ghost" className="w-full justify-start gap-2">
-              <Users className="h-4 w-4" /> Jogadores
-            </Button>
-          </Link>
-
-          <details className="group">
-            <summary className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground cursor-pointer hover:text-foreground">
-              <LayoutGrid className="h-4 w-4" /> Acervo
-              <ChevronDown className="h-3 w-3 ml-auto transition-transform group-open:rotate-180" />
-            </summary>
-            <div className="pl-6 space-y-1">
-              <Link to="/documentos" onClick={closeMobile}>
-                <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
-                  Documentos
-                </Button>
-              </Link>
-              <Link to="/games" onClick={closeMobile}>
-                <Button variant="ghost" size="sm" className="w-full justify-start gap-2">
-                  Coleção de Jogos
-                </Button>
-              </Link>
-            </div>
-          </details>
-
-          <Link to="/suggestions" onClick={closeMobile}>
-            <Button variant="ghost" className="w-full justify-start gap-2">
-              <Lightbulb className="h-4 w-4" /> Sugestões
-            </Button>
-          </Link>
-
-
-          {isAdmin && (
-            <Link to="/admin" onClick={closeMobile}>
-              <Button variant="ghost" className="w-full justify-start gap-2 text-gold">
-                <Shield className="h-4 w-4" /> Admin
-              </Button>
+          ) : (
+            <Link to="/login">
+              <Button variant="ghost" size="sm">Entrar</Button>
             </Link>
           )}
-
-          <div className="pt-2 border-t border-border space-y-2">
-            {user ? (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  className="flex-1 justify-start gap-2 relative"
-                  onClick={() => { closeMobile(); navigate(userNickname ? `/perfil/${userNickname}` : "/profile"); }}
-                >
-                  {userAvatar ? (
-                    <img src={userAvatar} alt="" className="h-6 w-6 rounded-full object-cover" />
-                  ) : (
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-secondary text-gold font-bold text-xs">
-                      {getInitials()}
-                    </div>
-                  )}
-                  {userNickname || "Meu Perfil"}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-11 w-11 flex-shrink-0"
-                  onClick={() => { closeMobile(); handleSignOut(); }}
-                  title="Sair"
-                >
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              </div>
-            ) : (
-              <>
-                <Link to="/login" onClick={closeMobile}>
-                  <Button variant="ghost" className="w-full">
-                    Entrar
-                  </Button>
-                </Link>
-                <Link to="/register" onClick={closeMobile}>
-                  <Button variant="gold" className="w-full">
-                    Faça parte da comunidade
-                  </Button>
-                </Link>
-              </>
-            )}
-          </div>
         </div>
-      )}
+      </div>
     </nav>
   );
 };

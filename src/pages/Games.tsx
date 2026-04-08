@@ -88,7 +88,7 @@ const Games = () => {
 
   return (
     <div className="container py-10">
-      <div className="mb-2"><h1 className="text-3xl font-bold">Jogos</h1></div>
+      <div className="mb-2"><h1 className="text-2xl md:text-3xl font-bold">Jogos</h1></div>
       <p className="text-muted-foreground mb-8">Coleção de jogos da comunidade AzD</p>
 
       {isLoading ? (

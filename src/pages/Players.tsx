@@ -22,7 +22,7 @@ const Players = () => {
   return (
     <div className="container py-10">
       <div className="mb-2">
-        <h1 className="text-3xl font-bold">Jogadores</h1>
+        <h1 className="text-2xl md:text-3xl font-bold">Jogadores</h1>
       </div>
       <p className="text-muted-foreground mb-4">Membros da comunidade AzD</p>
 

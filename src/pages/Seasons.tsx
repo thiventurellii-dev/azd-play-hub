@@ -175,7 +175,7 @@ const Seasons = () => {
   return (
     <div className="container py-10">
       <div className="flex items-center justify-between mb-2">
-        <h1 className="text-3xl font-bold">Seasons</h1>
+        <h1 className="text-2xl md:text-3xl font-bold">Seasons</h1>
         {isAdmin && (
           <Button variant="gold" size="sm" onClick={openCreate}><Plus className="h-4 w-4 mr-1" /> Criar Season</Button>
         )}

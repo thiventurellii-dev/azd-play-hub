@@ -108,7 +108,7 @@ const BoardgameCard = ({ game, seasons, avgDuration, tags, index, onUpdated }: B
             </div>
           )}
         </CardContent>
-        <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10" onClick={(e) => e.stopPropagation()}>
+        <div className="absolute bottom-3 right-3 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10" onClick={(e) => e.stopPropagation()}>
           <EntityEditButton entityType="boardgame" title="Editar Jogo" widthClass="sm:max-w-2xl">
             {(onClose) => <GameForm game={game} onSuccess={() => { onClose(); onUpdated(); }} />}
           </EntityEditButton>

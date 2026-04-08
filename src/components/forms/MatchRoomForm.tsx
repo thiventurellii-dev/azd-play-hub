@@ -81,8 +81,9 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
   const [gameId, setGameId] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [scheduledDate, setScheduledDate] = useState("");
-  const [scheduledTime, setScheduledTime] = useState("");
+  const now = new Date();
+  const [scheduledDate, setScheduledDate] = useState(isEdit ? "" : now.toISOString().slice(0, 10));
+  const [scheduledTime, setScheduledTime] = useState(isEdit ? "" : now.toTimeString().slice(0, 5));
   const [maxPlayers, setMaxPlayers] = useState("10");
   const [selectedScriptId, setSelectedScriptId] = useState("");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);

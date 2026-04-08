@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseExternal';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { useNotification } from '@/components/NotificationDialog';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { notify } = useNotification();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -17,42 +18,56 @@ const ResetPassword = () => {
   const [validRecoveryLink, setValidRecoveryLink] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const recoveryParams = useMemo(() => {
-    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-    return {
-      type: hashParams.get('type'),
-      accessToken: hashParams.get('access_token'),
-      refreshToken: hashParams.get('refresh_token'),
-    };
-  }, []);
-
   useEffect(() => {
     const initializeRecovery = async () => {
       try {
-        if (recoveryParams.type !== 'recovery' || !recoveryParams.accessToken || !recoveryParams.refreshToken) {
-          setValidRecoveryLink(false);
+        // Check if we arrived via AuthCallback with ?recovery=true (PKCE flow)
+        const isRecoveryParam = searchParams.get('recovery') === 'true';
+
+        // Also check legacy hash-based flow
+        const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+        const hashType = hashParams.get('type');
+        const accessToken = hashParams.get('access_token');
+        const refreshToken = hashParams.get('refresh_token');
+
+        if (isRecoveryParam) {
+          // PKCE flow: session was already set by AuthCallback's exchangeCodeForSession
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            setValidRecoveryLink(true);
+          } else {
+            notify('error', 'Link de recuperação inválido ou expirado.');
+            setValidRecoveryLink(false);
+          }
           return;
         }
 
-        const { error } = await supabase.auth.setSession({
-          access_token: recoveryParams.accessToken,
-          refresh_token: recoveryParams.refreshToken,
-        });
+        // Legacy hash-based flow
+        if (hashType === 'recovery' && accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken,
+          });
 
-        if (error) {
-          notify('error', error.message || 'Link de recuperação inválido ou expirado.');
-          setValidRecoveryLink(false);
+          if (error) {
+            notify('error', error.message || 'Link de recuperação inválido ou expirado.');
+            setValidRecoveryLink(false);
+            return;
+          }
+
+          setValidRecoveryLink(true);
           return;
         }
 
-        setValidRecoveryLink(true);
+        // No valid recovery params found
+        setValidRecoveryLink(false);
       } finally {
         setCheckingLink(false);
       }
     };
 
     initializeRecovery();
-  }, [notify, recoveryParams]);
+  }, [notify, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,7 +86,7 @@ const ResetPassword = () => {
     if (error) return notify('error', error.message || 'Não foi possível redefinir sua senha.');
 
     await supabase.auth.signOut();
-    notify('success', 'Senha redefinida com sucesso!');
+    notify('success', 'Senha redefinida com sucesso! Faça login com a nova senha.');
     navigate('/login');
   };
 

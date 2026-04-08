@@ -263,6 +263,20 @@ const AdminPlayers = () => {
     fetchDisableRequests();
   };
 
+  const handleDeleteAccount = async (player: PlayerWithRole) => {
+    // Delete related data first, then profile
+    await supabase.from('user_roles').delete().eq('user_id', player.id);
+    await supabase.from('friendships').delete().or(`user_id.eq.${player.id},friend_id.eq.${player.id}`);
+    await supabase.from('match_room_players').delete().eq('player_id', player.id);
+    await supabase.from('push_subscriptions').delete().eq('user_id', player.id);
+    await supabase.from('notifications').delete().eq('user_id', player.id);
+    const { error } = await supabase.from('profiles').delete().eq('id', player.id);
+    if (error) return notify('error', error.message);
+    notify('success', `Conta de ${player.nickname || player.name} excluída permanentemente.`);
+    setEditDialogOpen(false);
+    fetchPlayers();
+  };
+
   // Disable requests (super admin)
   const [disableRequests, setDisableRequests] = useState<any[]>([]);
 

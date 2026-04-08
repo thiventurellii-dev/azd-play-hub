@@ -221,7 +221,7 @@ const Games = () => {
                                 </div>
                               )}
                             </CardContent>
-                            <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                            <div className="absolute top-3 right-3 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10">
                               <EntityEditButton entityType="rpg" title="Editar Sistema">
                                 {(onClose) => <RpgSystemForm system={sys} onSuccess={() => { onClose(); invalidate(); }} />}
                               </EntityEditButton>

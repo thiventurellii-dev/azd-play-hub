@@ -37,7 +37,7 @@ const statusColors: Record<string, string> = { pending: 'bg-yellow-500/20 text-y
 
 const AdminPlayers = () => {
   const { notify } = useNotification();
-  const { role: currentRole } = useAuth();
+  const { role: currentRole, user } = useAuth();
   const isSuperAdmin = currentRole === 'super_admin';
   const [players, setPlayers] = useState<PlayerWithRole[]>([]);
   const [search, setSearch] = useState('');
@@ -242,10 +242,86 @@ const AdminPlayers = () => {
     fetchPlayers();
   };
 
+  const handleDisableAccount = async (player: PlayerWithRole) => {
+    const { error } = await supabase.from('profiles').update({ status: 'disabled' } as any).eq('id', player.id);
+    if (error) return notify('error', error.message);
+    notify('success', `Conta de ${player.nickname || player.name} desativada.`);
+    setEditDialogOpen(false);
+    fetchPlayers();
+  };
+
+  const handleRequestDisable = async (player: PlayerWithRole) => {
+    const { error } = await supabase.from('account_disable_requests' as any).insert({
+      target_user_id: player.id,
+      requested_by: user?.id,
+      reason: '',
+      status: 'pending',
+    } as any);
+    if (error) return notify('error', error.message);
+    notify('success', `Solicitação de desativação enviada para aprovação de Super Admin.`);
+    setEditDialogOpen(false);
+    fetchDisableRequests();
+  };
+
+  // Disable requests (super admin)
+  const [disableRequests, setDisableRequests] = useState<any[]>([]);
+
+  const fetchDisableRequests = async () => {
+    const { data } = await supabase.from('account_disable_requests' as any).select('*').eq('status', 'pending');
+    if (data) setDisableRequests(data);
+  };
+
+  const handleApproveDisable = async (req: any) => {
+    await supabase.from('profiles').update({ status: 'disabled' } as any).eq('id', req.target_user_id);
+    await supabase.from('account_disable_requests' as any).update({ status: 'approved', reviewed_by: user?.id, reviewed_at: new Date().toISOString() } as any).eq('id', req.id);
+    notify('success', 'Conta desativada com sucesso.');
+    fetchDisableRequests();
+    fetchPlayers();
+  };
+
+  const handleRejectDisable = async (req: any) => {
+    await supabase.from('account_disable_requests' as any).update({ status: 'rejected', reviewed_by: user?.id, reviewed_at: new Date().toISOString() } as any).eq('id', req.id);
+    notify('success', 'Solicitação de desativação rejeitada.');
+    fetchDisableRequests();
+  };
+
+  useEffect(() => { fetchDisableRequests(); }, []);
+
   const pendingApprovalPlayers = players.filter(p => p.status === 'pending_approval');
 
   return (
     <div className="space-y-6">
+      {/* Pending Disable Requests for Super Admins */}
+      {isSuperAdmin && disableRequests.length > 0 && (
+        <Card className="bg-card border-destructive/30">
+          <CardHeader>
+            <CardTitle className="text-destructive">Solicitações de Desativação ({disableRequests.length})</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {disableRequests.map((req: any) => {
+              const targetPlayer = players.find(p => p.id === req.target_user_id);
+              const requester = players.find(p => p.id === req.requested_by);
+              return (
+                <div key={req.id} className="flex items-center justify-between rounded-lg border border-destructive/20 p-3">
+                  <div>
+                    <p className="font-semibold">{targetPlayer?.nickname || targetPlayer?.name || 'Jogador'}</p>
+                    <p className="text-xs text-muted-foreground">Solicitado por: {requester?.nickname || requester?.name || 'Admin'}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="text-green-400 border-green-500/30 hover:bg-green-500/10" onClick={() => handleApproveDisable(req)}>
+                      <Check className="h-4 w-4 mr-1" /> Aprovar
+                    </Button>
+                    <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => handleRejectDisable(req)}>
+                      <XCircle className="h-4 w-4 mr-1" /> Rejeitar
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Pending Approval Section */}
       {pendingApprovalPlayers.length > 0 && (
         <Card className="bg-card border-orange-500/30">
@@ -442,6 +518,23 @@ const AdminPlayers = () => {
             <Button variant="outline" className="w-full" onClick={() => { setEditDialogOpen(false); openResetPassword(editingPlayer!); }}>
               <Lock className="h-4 w-4 mr-1" /> Resetar Senha
             </Button>
+
+            {editingPlayer && editingPlayer.status !== 'disabled' && (
+              <Button
+                variant="destructive"
+                className="w-full"
+                onClick={() => {
+                  if (isSuperAdmin) {
+                    handleDisableAccount(editingPlayer);
+                  } else {
+                    handleRequestDisable(editingPlayer);
+                  }
+                }}
+              >
+                <XCircle className="h-4 w-4 mr-1" />
+                {isSuperAdmin ? 'Desativar Conta' : 'Solicitar Desativação'}
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>

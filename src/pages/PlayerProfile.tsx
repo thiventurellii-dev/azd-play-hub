@@ -783,7 +783,7 @@ const PlayerProfile = () => {
         </Card>
       )}
 
-      <FriendsList />
+      <FriendsList userId={profile?.id} />
 
       {upcomingRooms.length > 0 && (
         <Card className="bg-card border-border">

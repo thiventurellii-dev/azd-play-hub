@@ -12,7 +12,7 @@ export interface Player {
 }
 
 const fetchPlayers = async (): Promise<Player[]> => {
-  const { data } = await supabase.from("profiles").select("id, name, nickname, city, state, created_at, avatar_url").order("name");
+  const { data } = await supabase.from("profiles").select("id, name, nickname, city, state, created_at, avatar_url, status").neq("status", "disabled").order("name");
   return (data || []).map(p => ({
     id: p.id,
     name: p.name,

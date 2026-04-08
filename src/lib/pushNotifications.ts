@@ -41,15 +41,16 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
 
     const subJson = subscription.toJSON();
     console.log("[push] Persisting subscription for user:", userId, Boolean(subJson.endpoint));
-    const { error } = await supabase.from("push_subscriptions").upsert(
-      {
-        user_id: userId,
-        endpoint: subJson.endpoint!,
-        p256dh: subJson.keys!.p256dh!,
-        auth: subJson.keys!.auth!,
-      },
-      { onConflict: "user_id,endpoint" }
-    );
+
+    // Delete all old subscriptions for this user first
+    await supabase.from("push_subscriptions").delete().eq("user_id", userId);
+
+    const { error } = await supabase.from("push_subscriptions").insert({
+      user_id: userId,
+      endpoint: subJson.endpoint!,
+      p256dh: subJson.keys!.p256dh!,
+      auth: subJson.keys!.auth!,
+    });
 
     if (error) {
       console.error("[push] Error saving push subscription:", error);

@@ -33,7 +33,7 @@ const FriendsList = () => {
     if (!data) { setLoading(false); return; }
 
     // Get all related profile IDs
-    const otherIds = data.map(f => f.user_id === user.id ? f.friend_id : f.user_id);
+    const otherIds = data.map(f => f.user_id === targetUserId ? f.friend_id : f.user_id);
     const { data: profiles } = await supabase
       .from("profiles")
       .select("id, name, nickname")

@@ -10,7 +10,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useNotification } from '@/components/NotificationDialog';
-import { ChevronLeft, ChevronRight, Check, Trash2, UserPlus, Skull, Shield, ChevronsUpDown, CalendarIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Trash2, UserPlus, Skull, Shield, ChevronsUpDown } from 'lucide-react';
+import { DatePickerField } from '@/components/ui/date-picker-field';
 import { submitBloodMatch } from '@/lib/bloodRatings';
 import { cn } from '@/lib/utils';
 

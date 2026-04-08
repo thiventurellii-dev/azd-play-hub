@@ -428,24 +428,35 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
               </Button>
             )}
             {room.status === "finished" && user && (
-              <Button
-                variant="gold"
-                size="sm"
-                className="flex-1 min-h-[44px]"
-                onClick={() => {
-                  navigate("/partidas", {
-                    state: {
-                      prefill: {
-                        gameId: room.game?.id,
-                        date: room.scheduled_at,
-                        playerIds: confirmed.map(p => p.player_id),
+              hasResult ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 min-h-[44px] opacity-60 cursor-default"
+                  disabled
+                >
+                  <ClipboardList className="h-4 w-4 mr-1" /> Resultado Registrado
+                </Button>
+              ) : (
+                <Button
+                  variant="gold"
+                  size="sm"
+                  className="flex-1 min-h-[44px]"
+                  onClick={() => {
+                    navigate("/partidas", {
+                      state: {
+                        prefill: {
+                          gameId: room.game?.id,
+                          date: room.scheduled_at,
+                          playerIds: confirmed.map(p => p.player_id),
+                        }
                       }
-                    }
-                  });
-                }}
-              >
-                <ClipboardList className="h-4 w-4 mr-1" /> Inserir Resultado
-              </Button>
+                    });
+                  }}
+                >
+                  <ClipboardList className="h-4 w-4 mr-1" /> Inserir Resultado
+                </Button>
+              )
             )}
             <Button
               variant="ghost"

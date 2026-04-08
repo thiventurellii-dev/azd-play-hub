@@ -57,9 +57,15 @@
   * {
     @apply border-border;
   }
-  body {
+  html, body {
     @apply bg-background text-foreground font-sans antialiased;
+    overflow-x: hidden;
   }
+}
+
+/* Safe area for bottom nav on notched devices */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* Ghost scrollbar — invisible by default, visible on hover */

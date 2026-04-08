@@ -258,7 +258,37 @@ const Navbar = () => {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent align="end" className="w-80 p-3">
-                  <p className="text-sm font-medium mb-2">Notificações</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-medium">Notificações</p>
+                    {roomNotifs.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs text-destructive hover:text-destructive"
+                        onClick={async () => {
+                          try {
+                            const { error } = await supabase
+                              .from("notifications")
+                              .delete()
+                              .eq("user_id", user!.id);
+                            if (error) {
+                              console.error("Error clearing notifications:", error);
+                              toast.error("Erro ao limpar notificações");
+                              return;
+                            }
+                            setRoomNotifs([]);
+                            setUnreadNotifCount(0);
+                            toast.success("Notificações limpas!");
+                          } catch (err) {
+                            console.error("Clear notifications error:", err);
+                            toast.error("Erro ao limpar notificações");
+                          }
+                        }}
+                      >
+                        Limpar tudo
+                      </Button>
+                    )}
+                  </div>
                   {(friendRequests.length > 0 || roomNotifs.length > 0) ? (
                     <div className="space-y-2 max-h-60 overflow-y-auto">
                       {friendRequests.map(fr => (
@@ -286,10 +316,20 @@ const Navbar = () => {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7 text-muted-foreground hover:text-foreground flex-shrink-0"
+                            className="h-7 w-7 text-destructive hover:text-destructive flex-shrink-0"
                             onClick={async () => {
-                              await supabase.from("notifications").update({ is_read: true }).eq("id", n.id);
-                              fetchRoomNotifs();
+                              try {
+                                const { error } = await supabase.from("notifications").delete().eq("id", n.id);
+                                if (error) {
+                                  console.error("Error deleting notification:", error);
+                                  toast.error("Erro ao excluir notificação");
+                                  return;
+                                }
+                                fetchRoomNotifs();
+                              } catch (err) {
+                                console.error("Delete notification error:", err);
+                                toast.error("Erro ao excluir notificação");
+                              }
                             }}
                           >
                             <XIcon className="h-3.5 w-3.5" />

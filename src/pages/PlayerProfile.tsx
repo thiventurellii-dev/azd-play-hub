@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from "recharts";
-import { Trophy, Gamepad2, ArrowLeft, Calendar, Clock, Award, Pencil, Lock, ChevronLeft, ChevronRight } from "lucide-react";
+import { Trophy, Gamepad2, ArrowLeft, Calendar, Clock, Award, Pencil, Lock, ChevronLeft, ChevronRight, CalendarIcon } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -468,7 +468,7 @@ const PlayerProfile = () => {
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2"><Label>Data de Nascimento *</Label><Input type="date" value={form.birth_date} onChange={(e) => setForm({ ...form, birth_date: e.target.value })} /></div>
+              <div className="space-y-2"><Label>Data de Nascimento *</Label><div className="relative"><Input type="date" value={form.birth_date} onChange={(e) => setForm({ ...form, birth_date: e.target.value })} className="pr-10" /><CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" /></div></div>
               <div className="space-y-2">
                 <Label>Gênero *</Label>
                 <Select value={form.gender} onValueChange={(v) => setForm({ ...form, gender: v })}>

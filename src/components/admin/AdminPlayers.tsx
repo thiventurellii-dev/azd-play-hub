@@ -9,11 +9,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Separator } from '@/components/ui/separator';
 import { useNotification } from '@/components/NotificationDialog';
-import { Shield, User, Pencil, Search, Lock, Crown, Plus, Check, XCircle } from 'lucide-react';
+import { Shield, User, Pencil, Search, Lock, Crown, Plus, Check, XCircle, Trash2, CalendarIcon } from 'lucide-react';
 import { brazilianStates, citiesByState, pronounsOptions, countryCodes, formatPhone, unformatPhone } from '@/lib/brazil-data';
-
 interface PlayerWithRole {
   id: string;
   name: string;
@@ -263,6 +263,20 @@ const AdminPlayers = () => {
     fetchDisableRequests();
   };
 
+  const handleDeleteAccount = async (player: PlayerWithRole) => {
+    // Delete related data first, then profile
+    await supabase.from('user_roles').delete().eq('user_id', player.id);
+    await supabase.from('friendships').delete().or(`user_id.eq.${player.id},friend_id.eq.${player.id}`);
+    await supabase.from('match_room_players').delete().eq('player_id', player.id);
+    await supabase.from('push_subscriptions').delete().eq('user_id', player.id);
+    await supabase.from('notifications').delete().eq('user_id', player.id);
+    const { error } = await supabase.from('profiles').delete().eq('id', player.id);
+    if (error) return notify('error', error.message);
+    notify('success', `Conta de ${player.nickname || player.name} excluída permanentemente.`);
+    setEditDialogOpen(false);
+    fetchPlayers();
+  };
+
   // Disable requests (super admin)
   const [disableRequests, setDisableRequests] = useState<any[]>([]);
 
@@ -453,7 +467,10 @@ const AdminPlayers = () => {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Data de Nascimento</Label>
-                <Input type="date" value={form.birth_date} onChange={e => setForm({ ...form, birth_date: e.target.value })} />
+                <div className="relative">
+                  <Input type="date" value={form.birth_date} onChange={e => setForm({ ...form, birth_date: e.target.value })} className="pr-10" />
+                  <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Gênero</Label>
@@ -534,6 +551,30 @@ const AdminPlayers = () => {
                 <XCircle className="h-4 w-4 mr-1" />
                 {isSuperAdmin ? 'Desativar Conta' : 'Solicitar Desativação'}
               </Button>
+            )}
+
+            {isSuperAdmin && editingPlayer && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" className="w-full border-destructive/50 bg-destructive/10 hover:bg-destructive/20">
+                    <Trash2 className="h-4 w-4 mr-1" /> Excluir Conta Permanentemente
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Excluir conta permanentemente?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Essa ação é irreversível. Todos os dados de <strong>{editingPlayer.nickname || editingPlayer.name}</strong> serão removidos permanentemente, incluindo amizades, notificações e inscrições em salas.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => handleDeleteAccount(editingPlayer)}>
+                      Excluir Permanentemente
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
           </div>
         </DialogContent>

@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, RefreshCw } from 'lucide-react';
+import { Search, RefreshCw, CalendarIcon } from 'lucide-react';
 
 interface LogEntry {
   id: string;
@@ -121,7 +121,7 @@ const AdminLogs = () => {
                 <SelectItem value="delete">Exclusão</SelectItem>
               </SelectContent>
             </Select>
-            <Input type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)} className="w-[160px] h-9" />
+            <div className="relative w-[160px]"><Input type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)} className="pr-10 h-9" /><CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" /></div>
             <Button variant="ghost" size="icon" className="h-9 w-9" onClick={fetchLogs}>
               <RefreshCw className="h-4 w-4" />
             </Button>

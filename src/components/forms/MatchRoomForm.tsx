@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/lib/supabaseExternal";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { X, ChevronLeft, Gamepad2, Skull, Sword } from "lucide-react";
+import { X, ChevronLeft, Gamepad2, Skull, Sword, CalendarIcon } from "lucide-react";
 import { sendMatchNotification } from "@/lib/matchNotification";
 
 /* ── Types ─────────────────────────────────────────── */
@@ -81,8 +81,9 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
   const [gameId, setGameId] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [scheduledDate, setScheduledDate] = useState("");
-  const [scheduledTime, setScheduledTime] = useState("");
+  const now = new Date();
+  const [scheduledDate, setScheduledDate] = useState(isEdit ? "" : now.toISOString().slice(0, 10));
+  const [scheduledTime, setScheduledTime] = useState(isEdit ? "" : now.toTimeString().slice(0, 5));
   const [maxPlayers, setMaxPlayers] = useState("10");
   const [selectedScriptId, setSelectedScriptId] = useState("");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
@@ -335,7 +336,10 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
       <div className="grid grid-cols-2 gap-3">
         <div>
           <Label>Data *</Label>
-          <Input type="date" value={scheduledDate} onChange={e => setScheduledDate(e.target.value)} />
+          <div className="relative">
+            <Input type="date" value={scheduledDate} onChange={e => setScheduledDate(e.target.value)} className="pr-10" />
+            <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          </div>
         </div>
         <div>
           <Label>Hora</Label>

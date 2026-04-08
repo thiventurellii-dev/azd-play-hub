@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { useNotification } from '@/components/NotificationDialog';
-import { Upload, UserPlus, Trash2, ChevronLeft, ChevronRight, Check, ChevronsUpDown } from 'lucide-react';
+import { Upload, UserPlus, Trash2, ChevronLeft, ChevronRight, Check, ChevronsUpDown, CalendarIcon } from 'lucide-react';
 import ScoringSheet from './ScoringSheet';
 import NewMatchBotcFlow from './NewMatchBotcFlow';
 import { Gamepad2, Skull, Sword } from 'lucide-react';
@@ -443,7 +443,10 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
               )}
               <div className="space-y-2">
                 <Label>Data *</Label>
-                <Input type="date" value={playedDate} onChange={e => setPlayedDate(e.target.value)} />
+                <div className="relative">
+                  <Input type="date" value={playedDate} onChange={e => setPlayedDate(e.target.value)} className="pr-10" />
+                  <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label>Hora (opcional)</Label>

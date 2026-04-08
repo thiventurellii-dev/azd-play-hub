@@ -21,7 +21,7 @@ const Register = () => {
   });
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const { } = useAuth();
+  useAuth();
   const navigate = useNavigate();
   const { notify } = useNotification();
 

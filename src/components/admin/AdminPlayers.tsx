@@ -442,6 +442,23 @@ const AdminPlayers = () => {
             <Button variant="outline" className="w-full" onClick={() => { setEditDialogOpen(false); openResetPassword(editingPlayer!); }}>
               <Lock className="h-4 w-4 mr-1" /> Resetar Senha
             </Button>
+
+            {editingPlayer && editingPlayer.status !== 'disabled' && (
+              <Button
+                variant="destructive"
+                className="w-full"
+                onClick={() => {
+                  if (isSuperAdmin) {
+                    handleDisableAccount(editingPlayer);
+                  } else {
+                    handleRequestDisable(editingPlayer);
+                  }
+                }}
+              >
+                <XCircle className="h-4 w-4 mr-1" />
+                {isSuperAdmin ? 'Desativar Conta' : 'Solicitar Desativação'}
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>

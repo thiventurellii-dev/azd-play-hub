@@ -3,7 +3,6 @@ import { supabase } from "@/lib/supabaseExternal";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Users, UserCheck, Clock, UserMinus } from "lucide-react";
 import { toast } from "sonner";
 
@@ -15,16 +14,21 @@ interface Friendship {
   profile: { id: string; name: string; nickname: string | null };
 }
 
-const FriendsList = () => {
+interface FriendsListProps {
+  userId?: string;
+}
+
+const FriendsList = ({ userId }: FriendsListProps) => {
   const { user } = useAuth();
+  const targetUserId = userId || user?.id;
+  const isOwnList = !userId || userId === user?.id;
   const [friends, setFriends] = useState<Friendship[]>([]);
   const [pendingReceived, setPendingReceived] = useState<Friendship[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchFriends = async () => {
-    if (!user) return;
+    if (!targetUserId) return;
 
-    // Get all friendships involving this user
     const { data } = await supabase
       .from("friendships")
       .select("id, user_id, friend_id, status")
@@ -32,7 +36,6 @@ const FriendsList = () => {
 
     if (!data) { setLoading(false); return; }
 
-    // Get all related profile IDs
     const otherIds = data.map(f => f.user_id === targetUserId ? f.friend_id : f.user_id);
     const { data: profiles } = await supabase
       .from("profiles")
@@ -121,7 +124,7 @@ const FriendsList = () => {
         </CardHeader>
         <CardContent>
           {friends.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nenhum amigo ainda. Adicione amigos na página de jogadores!</p>
+            <p className="text-sm text-muted-foreground">Nenhum amigo ainda.</p>
           ) : (
             <div className="space-y-2">
               {friends.map(f => (
@@ -135,9 +138,11 @@ const FriendsList = () => {
                       {f.profile.nickname && <p className="text-xs text-gold">@{f.profile.nickname}</p>}
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => handleRemove(f.id)}>
-                    <UserMinus className="h-3.5 w-3.5 text-muted-foreground" />
-                  </Button>
+                  {isOwnList && (
+                    <Button variant="ghost" size="sm" onClick={() => handleRemove(f.id)}>
+                      <UserMinus className="h-3.5 w-3.5 text-muted-foreground" />
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>

@@ -18,4 +18,13 @@ export async function sendRoomNotifications({ userIds, type, title, message, roo
     room_id: roomId || null,
   }));
   await supabase.from("notifications").insert(rows);
+
+  // Also send push notifications
+  try {
+    await supabase.functions.invoke("send-push", {
+      body: { user_ids: userIds, title, message, url: roomId ? `/partidas` : "/" },
+    });
+  } catch (err) {
+    console.error("Push notification error:", err);
+  }
 }

@@ -56,6 +56,7 @@ const App = () => (
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
                 <Route path="/auth/steam/callback" element={<ProtectedRoute><SteamCallback /></ProtectedRoute>} />
+                <Route path="/instalar" element={<Install />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Layout>

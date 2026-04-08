@@ -93,6 +93,11 @@ const BottomNav = () => {
                   </Button>
                 </Link>
               )}
+              <Link to="/instalar" onClick={() => setDrawerOpen(false)}>
+                <Button variant="ghost" className="w-full justify-start gap-3 h-12 text-base">
+                  <Download className="h-5 w-5" /> Instalar App
+                </Button>
+              </Link>
               <div className="pt-2 border-t border-border">
                 <Button
                   variant="ghost"

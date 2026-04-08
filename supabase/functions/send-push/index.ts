@@ -10,17 +10,18 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    // Connect to EXTERNAL Supabase where push_subscriptions live
+    const externalUrl = Deno.env.get("EXTERNAL_SUPABASE_URL");
+    const externalKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY");
 
-    if (!supabaseUrl || !supabaseKey) {
-      console.error("[push] Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
-      return new Response(JSON.stringify({ error: "Supabase not configured" }), {
+    if (!externalUrl || !externalKey) {
+      console.error("[push] Missing EXTERNAL_SUPABASE_URL or EXTERNAL_SUPABASE_SERVICE_ROLE_KEY");
+      return new Response(JSON.stringify({ error: "External Supabase not configured" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = createClient(externalUrl, externalKey);
 
     const { user_ids, title, message, url } = await req.json();
 
@@ -48,7 +49,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Fetch subscriptions for given users
     const { data: subscriptions, error: subError } = await supabase
       .from("push_subscriptions")
       .select("id, user_id, endpoint, p256dh, auth")

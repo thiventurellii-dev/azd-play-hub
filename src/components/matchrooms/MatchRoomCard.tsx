@@ -118,7 +118,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
     }
   };
 
-  // Fetch tags
+  // Fetch tags + check if result exists for finished rooms
   useEffect(() => {
     if (!room?.id) return;
     supabase
@@ -130,7 +130,26 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
           setTags(data.map((d: any) => d.room_tags?.name).filter(Boolean));
         }
       });
-  }, [room?.id]);
+
+    // Check if a match result was already registered for this room's game on the scheduled date
+    if (room.status === "finished" && room.game?.id) {
+      const scheduledDate = new Date(room.scheduled_at);
+      const dayStart = new Date(scheduledDate);
+      dayStart.setHours(0, 0, 0, 0);
+      const dayEnd = new Date(scheduledDate);
+      dayEnd.setHours(23, 59, 59, 999);
+      supabase
+        .from("matches")
+        .select("id")
+        .eq("game_id", room.game.id)
+        .gte("played_at", dayStart.toISOString())
+        .lte("played_at", dayEnd.toISOString())
+        .limit(1)
+        .then(({ data }) => {
+          setHasResult(!!(data && data.length > 0));
+        });
+    }
+  }, [room?.id, room?.status]);
 
   useEffect(() => {
     if (!room?.id) return;

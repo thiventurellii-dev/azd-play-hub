@@ -37,7 +37,7 @@ const statusColors: Record<string, string> = { pending: 'bg-yellow-500/20 text-y
 
 const AdminPlayers = () => {
   const { notify } = useNotification();
-  const { role: currentRole } = useAuth();
+  const { role: currentRole, user } = useAuth();
   const isSuperAdmin = currentRole === 'super_admin';
   const [players, setPlayers] = useState<PlayerWithRole[]>([]);
   const [search, setSearch] = useState('');

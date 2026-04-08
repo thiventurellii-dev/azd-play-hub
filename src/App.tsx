@@ -25,6 +25,7 @@ import GameDetail from "./pages/GameDetail.tsx";
 import PlayerProfile from "./pages/PlayerProfile.tsx";
 import SteamCallback from "./pages/SteamCallback.tsx";
 import ScriptDetail from "./pages/ScriptDetail.tsx";
+import Install from "./pages/Install.tsx";
 
 const queryClient = new QueryClient();
 

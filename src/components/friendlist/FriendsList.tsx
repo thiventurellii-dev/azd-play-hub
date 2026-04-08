@@ -42,7 +42,7 @@ const FriendsList = () => {
     const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
 
     const enriched = data.map(f => {
-      const otherId = f.user_id === user.id ? f.friend_id : f.user_id;
+      const otherId = f.user_id === targetUserId ? f.friend_id : f.user_id;
       return {
         ...f,
         profile: profileMap.get(otherId) || { id: otherId, name: "Jogador", nickname: null },

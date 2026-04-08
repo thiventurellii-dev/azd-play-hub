@@ -55,6 +55,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const [editOpen, setEditOpen] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [avgMmr, setAvgMmr] = useState<number | null>(null);
+  const [hasResult, setHasResult] = useState(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const fetchPlayers = async () => {

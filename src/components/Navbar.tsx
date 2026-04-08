@@ -101,9 +101,21 @@ const Navbar = () => {
       .on("postgres_changes", { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` }, () => {
         fetchRoomNotifs();
       })
+      .on("postgres_changes", { event: "*", schema: "public", table: "friendships" }, () => {
+        fetchFriendRequests();
+      })
       .subscribe();
 
-    return () => { supabase.removeChannel(notifChannel); };
+    // Polling fallback every 20s
+    const poll = setInterval(() => {
+      fetchRoomNotifs();
+      fetchFriendRequests();
+    }, 20000);
+
+    return () => {
+      supabase.removeChannel(notifChannel);
+      clearInterval(poll);
+    };
   }, [user, fetchFriendRequests, fetchRoomNotifs]);
 
   const handleAcceptFriend = async (id: string) => {

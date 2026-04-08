@@ -62,7 +62,13 @@ const RoomComments = ({ roomId }: Props) => {
       })
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    // Polling fallback every 15s
+    const poll = setInterval(fetchComments, 15000);
+
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(poll);
+    };
   }, [roomId]);
 
   useEffect(() => {

@@ -65,27 +65,39 @@ const AdminPlayers = () => {
   const createCities = useMemo(() => citiesByState[createForm.state] || [], [createForm.state]);
 
   const fetchPlayers = async () => {
-    const { data: profiles } = await supabase.from('profiles').select('*').order('name');
-    const { data: roles } = await supabase.from('user_roles').select('user_id, role');
+    const { data: profiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('id, name, nickname, email, phone, country_code, state, city, birth_date, gender, pronouns, status')
+      .order('name');
+    const { data: roles, error: rolesError } = await supabase.from('user_roles').select('user_id, role');
+
+    if (profilesError || rolesError) {
+      notify('error', profilesError?.message || rolesError?.message || 'Erro ao carregar jogadores');
+      return;
+    }
 
     const roleMap: Record<string, string> = {};
     for (const r of (roles || [])) roleMap[r.user_id] = r.role;
 
-    setPlayers((profiles || []).map(p => ({
-      id: p.id,
-      name: p.name,
-      nickname: p.nickname || '',
-      email: p.email || '',
-      phone: p.phone || '',
-      country_code: p.country_code || '+55',
-      state: p.state || '',
-      city: p.city || '',
-      birth_date: p.birth_date || '',
-      gender: p.gender || '',
-      pronouns: (p as any).pronouns || '',
-      role: roleMap[p.id] || 'player',
-      status: (p as any).status || 'pending',
-    })));
+    setPlayers(
+      (profiles || [])
+        .filter((p) => Boolean(p?.id) && Boolean(p?.name || p?.nickname || p?.email))
+        .map(p => ({
+          id: p.id,
+          name: p.name,
+          nickname: p.nickname || '',
+          email: p.email || '',
+          phone: p.phone || '',
+          country_code: p.country_code || '+55',
+          state: p.state || '',
+          city: p.city || '',
+          birth_date: p.birth_date || '',
+          gender: p.gender || '',
+          pronouns: (p as any).pronouns || '',
+          role: roleMap[p.id] || 'player',
+          status: (p as any).status || 'pending',
+        }))
+    );
   };
 
   useEffect(() => { fetchPlayers(); }, []);
@@ -272,6 +284,7 @@ const AdminPlayers = () => {
     await supabase.from('notifications').delete().eq('user_id', player.id);
     const { error } = await supabase.from('profiles').delete().eq('id', player.id);
     if (error) return notify('error', error.message);
+    setPlayers(prev => prev.filter(p => p.id !== player.id));
     notify('success', `Conta de ${player.nickname || player.name} excluída permanentemente.`);
     setEditDialogOpen(false);
     fetchPlayers();

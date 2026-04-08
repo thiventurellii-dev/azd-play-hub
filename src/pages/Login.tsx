@@ -53,6 +53,11 @@ const Login = () => {
               <Label htmlFor="password">Senha</Label>
               <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required />
             </div>
+              <div className="text-right">
+                <Link to="/forgot-password" className="text-sm text-gold hover:underline">
+                  Esqueci minha senha
+                </Link>
+              </div>
             <Button type="submit" variant="gold" className="w-full" disabled={loading}>
               {loading ? 'Entrando...' : 'Entrar'}
             </Button>

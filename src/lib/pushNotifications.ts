@@ -1,4 +1,4 @@
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseExternal";
 
 const VAPID_PUBLIC_KEY = "BB_m3TYKSjGhWA4elVqQv93asd8y2w-Pz4V-KRYPXZdPkQGEq2tDJBcuq8csHEXqiKPWhKsz02KH-GbfPfzCbZg";
 
@@ -16,20 +16,25 @@ function urlBase64ToUint8Array(base64String: string) {
 export async function subscribeToPush(userId: string): Promise<boolean> {
   try {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-      console.log("Push not supported");
+      console.log("[push] Push not supported on this device/browser");
       return false;
     }
 
     const permission = await Notification.requestPermission();
+    console.log("[push] Notification permission:", permission);
     if (permission !== "granted") return false;
 
     const registration = await navigator.serviceWorker.ready;
-    const subscription = await registration.pushManager.subscribe({
+    console.log("[push] Service worker ready:", registration.scope);
+
+    const existingSubscription = await registration.pushManager.getSubscription();
+    const subscription = existingSubscription ?? await registration.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
     });
 
     const subJson = subscription.toJSON();
+    console.log("[push] Persisting subscription for user:", userId, Boolean(subJson.endpoint));
     const { error } = await supabase.from("push_subscriptions").upsert(
       {
         user_id: userId,
@@ -41,13 +46,14 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
     );
 
     if (error) {
-      console.error("Error saving push subscription:", error);
+      console.error("[push] Error saving push subscription:", error);
       return false;
     }
 
+    console.log("[push] Subscription saved successfully");
     return true;
   } catch (err) {
-    console.error("Push subscription error:", err);
+    console.error("[push] Push subscription error:", err);
     return false;
   }
 }
@@ -66,7 +72,7 @@ export async function unsubscribeFromPush(userId: string): Promise<void> {
         .eq("endpoint", endpoint);
     }
   } catch (err) {
-    console.error("Push unsubscribe error:", err);
+    console.error("[push] Push unsubscribe error:", err);
   }
 }
 

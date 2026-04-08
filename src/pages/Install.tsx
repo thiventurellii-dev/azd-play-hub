@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Download, Smartphone, Apple, Chrome } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -12,13 +12,15 @@ const Install = () => {
   const { user } = useAuth();
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
-  // Listen for beforeinstallprompt
-  if (typeof window !== "undefined") {
-    window.addEventListener("beforeinstallprompt", (e) => {
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
-    });
-  }
+    };
+
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+  }, []);
 
   const handleInstallClick = async () => {
     if (deferredPrompt) {

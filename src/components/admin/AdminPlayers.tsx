@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseExternal';
+import { invokeEdgeFunction } from '@/lib/edgeFunctions';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -135,8 +136,8 @@ const AdminPlayers = () => {
 
     // Update auth email if changed
     if (form.email !== editingPlayer.email) {
-      const { data: emailData, error: emailError } = await supabase.functions.invoke('admin-update-email', {
-        body: { user_id: editingPlayer.id, email: form.email },
+      const { data: emailData, error: emailError } = await invokeEdgeFunction('admin-update-email', {
+        user_id: editingPlayer.id, email: form.email,
       });
       if (emailError || emailData?.error) {
         notify('error', emailData?.error || emailError?.message || 'Erro ao atualizar e-mail de login');
@@ -163,8 +164,8 @@ const AdminPlayers = () => {
     }
     if (createForm.password.length < 8) return notify('error', 'Senha deve ter no mínimo 8 caracteres');
 
-    const { data, error } = await supabase.functions.invoke('bulk-create-users', {
-      body: { users: [{ nick: createForm.nickname, email: createForm.email, password: createForm.password }] },
+    const { data, error } = await invokeEdgeFunction('bulk-create-users', {
+      users: [{ nick: createForm.nickname, email: createForm.email, password: createForm.password }],
     });
     if (error) return notify('error', error.message);
 
@@ -206,8 +207,8 @@ const AdminPlayers = () => {
     if (!/[^A-Za-z0-9]/.test(newPassword)) return notify('error', 'Inclua ao menos um caractere especial');
 
     setResetting(true);
-    const { data, error } = await supabase.functions.invoke('admin-reset-password', {
-      body: { user_id: resetPlayerId, new_password: newPassword },
+    const { data, error } = await invokeEdgeFunction('admin-reset-password', {
+      user_id: resetPlayerId, new_password: newPassword,
     });
     setResetting(false);
     if (error || data?.error) return notify('error', data?.error || error?.message || 'Erro ao resetar senha');

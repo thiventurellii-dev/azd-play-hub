@@ -1,6 +1,6 @@
-import { supabase } from "@/lib/supabaseExternal";
+import { invokeEdgeFunction } from "@/lib/edgeFunctions";
 
-const VAPID_PUBLIC_KEY = "BJ_wguY5c0ILIs2illOXZtifXl7Z8OOxlWQYWbUm9waHVUv88g3klvASFARTJ-w5_dKZoVj2UjKgiiIviBqMBGs";
+const VAPID_PUBLIC_KEY = "BCjqJx5OThfeM42mVRwV6nMM-5GUzvUZwUslKIfXG3QE2AmghavWiT-uRve_uAE2iK6mHW1KCtae_0YqhUHJTt4";
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -40,24 +40,32 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
     });
 
     const subJson = subscription.toJSON();
-    console.log("[push] Persisting subscription for user:", userId, Boolean(subJson.endpoint));
+    console.log("[push] Persisting subscription via edge function for user:", userId, Boolean(subJson.endpoint));
 
-    // Delete all old subscriptions for this user first
-    await supabase.from("push_subscriptions").delete().eq("user_id", userId);
-
-    const { error } = await supabase.from("push_subscriptions").insert({
+    // Save via edge function (uses service_role to bypass RLS)
+    const { data, error } = await invokeEdgeFunction("send-push", {
+      action: "subscribe",
       user_id: userId,
-      endpoint: subJson.endpoint!,
-      p256dh: subJson.keys!.p256dh!,
-      auth: subJson.keys!.auth!,
+      subscription: {
+        endpoint: subJson.endpoint!,
+        keys: {
+          p256dh: subJson.keys!.p256dh!,
+          auth: subJson.keys!.auth!,
+        },
+      },
     });
 
     if (error) {
-      console.error("[push] Error saving push subscription:", error);
+      console.error("[push] Edge function subscribe error:", error);
       return false;
     }
 
-    console.log("[push] Subscription saved successfully");
+    if (!data?.ok) {
+      console.error("[push] Subscribe returned not ok:", data);
+      return false;
+    }
+
+    console.log("[push] Subscription saved successfully via edge function");
     return true;
   } catch (err) {
     console.error("[push] Push subscription error:", err);
@@ -72,11 +80,11 @@ export async function unsubscribeFromPush(userId: string): Promise<void> {
     if (subscription) {
       const endpoint = subscription.endpoint;
       await subscription.unsubscribe();
-      await supabase
-        .from("push_subscriptions")
-        .delete()
-        .eq("user_id", userId)
-        .eq("endpoint", endpoint);
+      await invokeEdgeFunction("send-push", {
+        action: "unsubscribe",
+        user_id: userId,
+        endpoint,
+      });
     }
   } catch (err) {
     console.error("[push] Push unsubscribe error:", err);

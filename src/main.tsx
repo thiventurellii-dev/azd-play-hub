@@ -19,12 +19,15 @@ if (isPreviewHost || isInIframe) {
   navigator.serviceWorker?.getRegistrations().then((registrations) => {
     registrations.forEach((r) => r.unregister());
   });
-}
-
-// Register SW for push notifications (production only)
-if (!isPreviewHost && !isInIframe && "serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/sw.js").catch((err) => {
-    console.warn("SW registration failed:", err);
+} else if ("serviceWorker" in navigator) {
+  // Force update: unregister any old SWs, then register our custom one
+  navigator.serviceWorker.getRegistrations().then(async (registrations) => {
+    // Unregister all existing SWs (cleans up vite-plugin-pwa leftovers)
+    await Promise.all(registrations.map((r) => r.unregister()));
+    // Register fresh SW
+    navigator.serviceWorker.register("/sw.js").catch((err) => {
+      console.warn("SW registration failed:", err);
+    });
   });
 }
 

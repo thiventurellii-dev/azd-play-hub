@@ -1,5 +1,12 @@
 // Service Worker for Push Notifications
-// This file is served from /sw.js
+// Force immediate activation to replace any old (vite-plugin-pwa) SW
+self.addEventListener("install", (event) => {
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
+});
 
 self.addEventListener("push", (event) => {
   const data = event.data?.json() ?? {};

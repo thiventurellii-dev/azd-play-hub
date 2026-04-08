@@ -91,7 +91,7 @@ const ScoringSheet = ({ schema, players, onScoresChange }: Props) => {
   };
 
   const updateSimpleScore = (playerIdx: number, rawValue: string) => {
-    const value = rawValue === '' ? 0 : parseInt(rawValue) || 0;
+    const value = rawValue === '' ? 0 : parseFloat(rawValue) || 0;
     const updated = [...playerScores];
     updated[playerIdx] = { ...updated[playerIdx], total: value };
     setPlayerScores(updated);

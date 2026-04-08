@@ -60,19 +60,11 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
 
   const fetchPlayers = async () => {
     if (!room?.id) return;
-    const { data: sessionData } = await supabase.auth.getSession();
-    console.log(`[Room ${room.id}] session check:`, { 
-      hasSession: !!sessionData?.session, 
-      userId: sessionData?.session?.user?.id,
-      role: sessionData?.session?.user?.role 
-    });
     const { data, error } = await supabase
       .from("match_room_players")
       .select("id, player_id, type, position")
       .eq("room_id", room.id)
       .order("position");
-
-    console.log(`[Room ${room.id}] match_room_players query:`, { data, error });
 
     if (error) {
       console.error("Error fetching room players:", error);

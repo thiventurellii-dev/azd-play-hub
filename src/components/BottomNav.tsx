@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Calendar, Gamepad2, Users, MoreHorizontal, Trophy, BarChart3, Lightbulb, Shield, LogOut, FileText, Info, Bell } from "lucide-react";
+import { Home, Calendar, Gamepad2, Users, MoreHorizontal, Trophy, BarChart3, Lightbulb, Shield, LogOut, FileText, Info, Download } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Drawer, DrawerContent, DrawerTrigger, DrawerTitle } from "@/components/ui/drawer";
 import { Button } from "@/components/ui/button";
@@ -93,6 +93,11 @@ const BottomNav = () => {
                   </Button>
                 </Link>
               )}
+              <Link to="/instalar" onClick={() => setDrawerOpen(false)}>
+                <Button variant="ghost" className="w-full justify-start gap-3 h-12 text-base">
+                  <Download className="h-5 w-5" /> Instalar App
+                </Button>
+              </Link>
               <div className="pt-2 border-t border-border">
                 <Button
                   variant="ghost"

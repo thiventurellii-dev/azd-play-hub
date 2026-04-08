@@ -1,97 +1,84 @@
 
+# Plano: PWA Instalável + Push Notifications
 
-# Plano: Mobile-First + PWA
+## Parte 1 — PWA Instalável
 
-## Resposta sobre tabelas novas
+### 1.1 Gerar ícones PWA
+- Gerar ícones 192x192 e 512x512 com o logo AzD para o manifest.
 
-Novas tabelas continuarão sendo criadas via **migration SQL** pela ferramenta do Lovable (que executa no seu Supabase externo conectado). Você não precisa rodar SQL manualmente — basta descrever a funcionalidade e eu uso a ferramenta de migração, que pede sua aprovação antes de executar. O processo é o mesmo de sempre.
+### 1.2 Atualizar `public/manifest.json`
+- `display: "standalone"`, `theme_color: "#0A0A0A"`, `background_color: "#0A0A0A"`, ícones corretos, `start_url: "/"`.
 
----
+### 1.3 Meta tags em `index.html`
+- `apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style`, `theme-color`, `<link rel="apple-touch-icon">`.
 
-## Escopo da refatoração Mobile-First
+### 1.4 Página `/instalar`
+- Página com instruções visuais para Android e iOS.
+- Botão "Instalar" que aciona o prompt nativo do navegador (evento `beforeinstallprompt`).
+- Link para essa página no BottomNav ou drawer "Mais".
 
-O trabalho está dividido em **5 frentes**. Não há criação de tabelas; é 100% frontend.
-
-### 1. Bottom Navigation Bar (mobile) + Navbar ajustada
-
-**Problema:** O menu mobile atual é um dropdown que empurra conteúdo e não é intuitivo para toque.
-
-**Solução:**
-- Criar `src/components/BottomNav.tsx` — barra fixa inferior visível apenas em `md:hidden`, com 5 ícones: Home, Partidas, Jogos, Jogadores, Perfil/Menu.
-- O último ícone abre um **Drawer** (de baixo para cima) com links secundários (Seasons, Rankings, Sugestões, Admin, Logout).
-- No `Layout.tsx`: renderizar `<BottomNav />` quando logado em mobile; adicionar `pb-16` ao `<main>` em mobile para não cobrir conteúdo.
-- Remover o menu mobile dropdown atual do `Navbar.tsx` (manter apenas desktop).
-
-### 2. Container e overflow global
-
-**Problema:** `container` do Tailwind usa `padding: 2rem` — muito largo em mobile. Possível scroll horizontal.
-
-**Solução:**
-- Em `tailwind.config.ts`, mudar o padding do container para `{ DEFAULT: "1rem", sm: "1.5rem", lg: "2rem" }`.
-- No `Layout.tsx`, adicionar `overflow-x-hidden` no wrapper principal.
-- No `index.css`, adicionar `html, body { overflow-x: hidden; }`.
-
-### 3. Grids responsivos + tipografia fluida
-
-**Problema:** Grids usam `md:grid-cols-2 xl:grid-cols-3` sem `grid-cols-1` explícito. Títulos grandes em mobile.
-
-**Solução — arquivos afetados:**
-- `Games.tsx`: grids já usam `md:grid-cols-2`, OK. Título: `text-2xl md:text-3xl`.
-- `Players.tsx`: grid já tem `sm:grid-cols-2`, OK. Título: `text-2xl md:text-3xl`.
-- `Seasons.tsx`: grid `md:grid-cols-2 lg:grid-cols-3`, OK. Título: `text-2xl md:text-3xl`.
-- `Rankings.tsx`: Título: `text-2xl md:text-3xl`.
-- `MatchRooms.tsx`: verificar grids de cards e ajustar.
-- `Index.tsx`: dashboard grid já tem `sm:grid-cols-2 lg:grid-cols-3`, OK.
-- `Hero.tsx`: título `text-3xl sm:text-4xl md:text-5xl lg:text-7xl`. Logo `h-20 w-20 md:h-32 md:w-32`. Padding responsivo via classes em vez de inline style.
-- `Admin.tsx`: sidebar já usa Sheet em mobile, OK.
-- `PlayerProfile.tsx`, `GameDetail.tsx`, `SeasonDetail.tsx`, `ScriptDetail.tsx`: ajustar títulos e layouts internos.
-
-### 4. Touch-friendly + animações
-
-**Problema:** `hoverSpring` usa `whileHover` que não funciona em touch. Botões pequenos.
-
-**Solução:**
-- Em `src/lib/animations.ts`:
-  - Criar `touchSpring` que usa apenas `whileTap: { scale: 0.97 }` sem `whileHover`.
-  - Exportar um hook `useMotionProps()` que retorna `hoverSpring` em desktop e `touchSpring` em mobile.
-- Nos componentes que usam `hoverSpring` (`Index.tsx`, `BoardgameCard`, etc.): substituir por `useMotionProps()`.
-- Botões e links: garantir `min-h-[44px] min-w-[44px]` nos elementos interativos (Navbar icons, friend buttons, etc.).
-- `EntityEditButton`: no mobile, sempre visível (em vez de `opacity-0 group-hover:opacity-100`).
-
-### 5. PWA — manifest simples (sem service worker)
-
-**Problema:** Usuário quer preparar para PWA.
-
-**Solução (installable sem SW):**
-- O `public/manifest.json` já existe com configuração básica. Ajustar com ícones corretos.
-- No `index.html`, adicionar meta tags mobile: `<meta name="apple-mobile-web-app-capable" content="yes">`, `<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">`, `<meta name="theme-color" content="#0A0A0A">`, `<link rel="manifest" href="/manifest.json">`.
-- **Não** instalar `vite-plugin-pwa` nem service workers (seguindo as diretrizes). Apenas manifest + meta tags para installability.
+### 1.5 Service Worker (via vite-plugin-pwa)
+- Instalar `vite-plugin-pwa`.
+- Configurar com `registerType: "autoUpdate"`, `devOptions: { enabled: false }`.
+- Guard contra iframes e preview hosts no `main.tsx`.
+- `navigateFallbackDenylist: [/^\/~oauth/]`.
 
 ---
 
-## Detalhes técnicos
+## Parte 2 — Push Notifications
 
-```text
-Arquivos criados:
-  src/components/BottomNav.tsx
+### 2.1 Tabela `push_subscriptions`
+- Migração: criar tabela `push_subscriptions` com `user_id`, `endpoint`, `p256dh`, `auth`, `created_at`.
+- RLS: usuários inserem/deletam as próprias subscriptions; admins podem ler todas.
 
-Arquivos editados:
-  tailwind.config.ts         — container padding responsivo
-  src/index.css              — overflow-x: hidden no body
-  src/lib/animations.ts      — touchSpring + useMotionProps hook
-  src/components/Layout.tsx   — BottomNav, pb-16 mobile, overflow-x-hidden
-  src/components/Navbar.tsx   — remover menu mobile (substituído pelo BottomNav)
-  src/components/home/Hero.tsx — tipografia e espaçamento responsivos
-  src/pages/Games.tsx         — título responsivo
-  src/pages/Players.tsx       — título responsivo
-  src/pages/Seasons.tsx       — título responsivo
-  src/pages/Rankings.tsx      — título responsivo
-  src/pages/MatchRooms.tsx    — título responsivo, grid check
-  src/pages/Index.tsx         — useMotionProps
-  src/components/games/BoardgameCard.tsx — edit button visível em touch, useMotionProps
-  src/components/games/BloodScriptCard.tsx — idem
-  index.html                  — meta tags PWA
+### 2.2 Gerar chaves VAPID
+- Gerar par de chaves VAPID (pública + privada).
+- Chave pública vai no frontend como variável `VITE_VAPID_PUBLIC_KEY`.
+- Chave privada vai como secret `VAPID_PRIVATE_KEY` na Edge Function.
+
+### 2.3 Frontend: solicitar permissão + salvar subscription
+- Após login, solicitar permissão de notificação.
+- Usar `PushManager.subscribe()` com a chave VAPID pública.
+- Salvar a subscription na tabela `push_subscriptions`.
+
+### 2.4 Edge Function `send-push-notification`
+- Recebe `user_id` + `title` + `message`.
+- Busca subscriptions do usuário.
+- Envia via Web Push API (usando `web-push` ou chamada HTTP direta ao endpoint).
+
+### 2.5 Service Worker: listener de push
+- No SW (via vite-plugin-pwa injectManifest ou custom), adicionar listener `push` para exibir `self.registration.showNotification(...)`.
+
+### 2.6 Integrar com notificações existentes
+- Nas funções que já criam notificações no banco (`notifications` table), adicionar chamada à Edge Function `send-push-notification` para enviar push real.
+- Locais principais: criação de sala de partida, convite de amizade, comentários em salas.
+
+---
+
+## Arquivos criados/editados
+
+```
+Criados:
+  src/pages/Install.tsx               — página de instalação
+  supabase/functions/send-push/index.ts — Edge Function de push
+  
+Editados:
+  public/manifest.json                 — manifest completo
+  index.html                           — meta tags + apple-touch-icon
+  vite.config.ts                       — vite-plugin-pwa
+  src/main.tsx                         — guard SW + registro push
+  src/App.tsx                          — rota /instalar
+  src/components/BottomNav.tsx         — link para instalar
+  src/lib/roomNotifications.ts         — integrar push
+  src/lib/matchNotification.ts         — integrar push
+
+Migração:
+  push_subscriptions table + RLS
 ```
 
-Nenhuma tabela ou migração necessária.
+## Dependências
+- `vite-plugin-pwa`
 
+## Secrets necessários
+- `VAPID_PRIVATE_KEY` (chave privada VAPID)
+- `VITE_VAPID_PUBLIC_KEY` será hardcoded no frontend (é pública)

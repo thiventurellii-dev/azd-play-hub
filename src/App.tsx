@@ -25,6 +25,7 @@ import GameDetail from "./pages/GameDetail.tsx";
 import PlayerProfile from "./pages/PlayerProfile.tsx";
 import SteamCallback from "./pages/SteamCallback.tsx";
 import ScriptDetail from "./pages/ScriptDetail.tsx";
+import Install from "./pages/Install.tsx";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,7 @@ const App = () => (
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
                 <Route path="/auth/steam/callback" element={<ProtectedRoute><SteamCallback /></ProtectedRoute>} />
+                <Route path="/instalar" element={<Install />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </Layout>

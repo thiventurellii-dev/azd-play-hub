@@ -3,7 +3,7 @@ import { p256 } from "https://esm.sh/@noble/curves@1.4.0/p256?target=deno";
 import { hkdf } from "https://esm.sh/@noble/hashes@1.4.0/hkdf?target=deno";
 import { sha256 } from "https://esm.sh/@noble/hashes@1.4.0/sha256?target=deno";
 
-console.log("[push] v2 - noble/curves loaded");
+console.log("[push] v3 - noble/curves loaded");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/lib/supabaseExternal";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { X, ChevronLeft, Gamepad2, Skull, Sword, CalendarIcon } from "lucide-react";
+import { X, ChevronLeft, Gamepad2, Skull, Sword } from "lucide-react";
+import { DatePickerField } from "@/components/ui/date-picker-field";
 import { sendMatchNotification } from "@/lib/matchNotification";
 
 /* ── Types ─────────────────────────────────────────── */

@@ -10,8 +10,6 @@ import {
   Info,
   Lightbulb,
   Trophy,
-  Lightbulb,
-  Trophy,
   Gamepad2,
   ChevronDown,
   LayoutGrid,

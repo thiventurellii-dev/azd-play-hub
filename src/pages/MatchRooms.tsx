@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { useLocation, useSearchParams } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseExternal";
 import MatchRoomCard from "@/components/matchrooms/MatchRoomCard";
 import CreateRoomDialog from "@/components/matchrooms/CreateRoomDialog";
 import NewMatchFlow from "@/components/matches/NewMatchFlow";

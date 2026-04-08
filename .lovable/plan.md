@@ -1,84 +1,50 @@
 
-# Plano: PWA Instalável + Push Notifications
 
-## Parte 1 — PWA Instalável
+# Diagnóstico: Jogadores não aparecem nas Rooms para novos usuários
 
-### 1.1 Gerar ícones PWA
-- Gerar ícones 192x192 e 512x512 com o logo AzD para o manifest.
+## Análise do problema
 
-### 1.2 Atualizar `public/manifest.json`
-- `display: "standalone"`, `theme_color: "#0A0A0A"`, `background_color: "#0A0A0A"`, ícones corretos, `start_url: "/"`.
+O fluxo de `fetchPlayers` no `MatchRoomCard.tsx` (linhas 61-119) faz duas consultas ao Supabase **externo**:
 
-### 1.3 Meta tags em `index.html`
-- `apple-mobile-web-app-capable`, `apple-mobile-web-app-status-bar-style`, `theme-color`, `<link rel="apple-touch-icon">`.
+1. `match_room_players` → busca jogadores da sala
+2. `profiles` → busca nome/nickname por `player_id`
 
-### 1.4 Página `/instalar`
-- Página com instruções visuais para Android e iOS.
-- Botão "Instalar" que aciona o prompt nativo do navegador (evento `beforeinstallprompt`).
-- Link para essa página no BottomNav ou drawer "Mais".
+Ambas usam o client externo (`supabase` de `@/lib/supabaseExternal`). O `AuthContext` também autentica no Supabase externo, então novos usuários **devem** ter sessão válida.
 
-### 1.5 Service Worker (via vite-plugin-pwa)
-- Instalar `vite-plugin-pwa`.
-- Configurar com `registerType: "autoUpdate"`, `devOptions: { enabled: false }`.
-- Guard contra iframes e preview hosts no `main.tsx`.
-- `navigateFallbackDenylist: [/^\/~oauth/]`.
+## Causa provável
 
----
+O problema provavelmente está nas **RLS policies do Supabase externo**, que são independentes das que vemos aqui (essas são do Lovable Cloud/interno). As políticas do banco externo podem:
 
-## Parte 2 — Push Notifications
+- Exigir condições diferentes para SELECT em `match_room_players` ou `profiles`
+- Não ter realtime habilitado para `match_room_players`
+- Ter políticas de `profiles` que bloqueiam visualização entre usuários
 
-### 2.1 Tabela `push_subscriptions`
-- Migração: criar tabela `push_subscriptions` com `user_id`, `endpoint`, `p256dh`, `auth`, `created_at`.
-- RLS: usuários inserem/deletam as próprias subscriptions; admins podem ler todas.
+Outra possibilidade: o `fetchPlayers` falha silenciosamente — o `console.error` só é chamado se `error` existir, mas um resultado vazio (sem erro) simplesmente seta `players` como `[]`.
 
-### 2.2 Gerar chaves VAPID
-- Gerar par de chaves VAPID (pública + privada).
-- Chave pública vai no frontend como variável `VITE_VAPID_PUBLIC_KEY`.
-- Chave privada vai como secret `VAPID_PRIVATE_KEY` na Edge Function.
+## Plano de ação
 
-### 2.3 Frontend: solicitar permissão + salvar subscription
-- Após login, solicitar permissão de notificação.
-- Usar `PushManager.subscribe()` com a chave VAPID pública.
-- Salvar a subscription na tabela `push_subscriptions`.
+### 1. Adicionar logs de diagnóstico no `fetchPlayers`
 
-### 2.4 Edge Function `send-push-notification`
-- Recebe `user_id` + `title` + `message`.
-- Busca subscriptions do usuário.
-- Envia via Web Push API (usando `web-push` ou chamada HTTP direta ao endpoint).
+Em `MatchRoomCard.tsx`, adicionar `console.log` temporários para capturar:
+- Resultado bruto de `match_room_players` (data + error)
+- Resultado bruto de `profiles` (data + error)
+- IDs buscados vs IDs encontrados
 
-### 2.5 Service Worker: listener de push
-- No SW (via vite-plugin-pwa injectManifest ou custom), adicionar listener `push` para exibir `self.registration.showNotification(...)`.
+Isso vai revelar se o problema é na primeira query (não retorna players) ou na segunda (não retorna profiles).
 
-### 2.6 Integrar com notificações existentes
-- Nas funções que já criam notificações no banco (`notifications` table), adicionar chamada à Edge Function `send-push-notification` para enviar push real.
-- Locais principais: criação de sala de partida, convite de amizade, comentários em salas.
+### 2. Tratar erro silencioso na query de profiles
 
----
+Atualmente, se a query de `profiles` falha, o código continua sem erro visível. Adicionar tratamento de erro explícito.
 
-## Arquivos criados/editados
+### 3. Adicionar fallback de exibição
 
-```
-Criados:
-  src/pages/Install.tsx               — página de instalação
-  supabase/functions/send-push/index.ts — Edge Function de push
-  
-Editados:
-  public/manifest.json                 — manifest completo
-  index.html                           — meta tags + apple-touch-icon
-  vite.config.ts                       — vite-plugin-pwa
-  src/main.tsx                         — guard SW + registro push
-  src/App.tsx                          — rota /instalar
-  src/components/BottomNav.tsx         — link para instalar
-  src/lib/roomNotifications.ts         — integrar push
-  src/lib/matchNotification.ts         — integrar push
+Quando um `player_id` não tem profile associado, mostrar "Jogador desconhecido" em vez de nada, para que pelo menos o jogador apareça na lista.
 
-Migração:
-  push_subscriptions table + RLS
-```
+## Arquivos a modificar
 
-## Dependências
-- `vite-plugin-pwa`
+- `src/components/matchrooms/MatchRoomCard.tsx` — adicionar logs de diagnóstico e fallback de exibição
 
-## Secrets necessários
-- `VAPID_PRIVATE_KEY` (chave privada VAPID)
-- `VITE_VAPID_PUBLIC_KEY` será hardcoded no frontend (é pública)
+## Próximo passo
+
+Após implementar os logs, peço que você abra a página de Partidas como um novo usuário e me envie os logs do console. Com essa informação, saberemos exatamente qual query está falhando e poderemos aplicar a correção definitiva (que pode envolver ajustar RLS no Supabase externo via dashboard).
+

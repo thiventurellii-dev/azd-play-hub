@@ -155,8 +155,8 @@ const Install = () => {
                   Receba alertas de partidas e convites no celular.
                 </p>
               </div>
-              <Button variant="outline" onClick={handleEnablePush} disabled={pushLoading || pushEnabled}>
-                {pushLoading ? "Ativando..." : pushEnabled ? "Ativado" : "Ativar"}
+              <Button variant="outline" onClick={handleEnablePush} disabled={pushLoading}>
+                {pushLoading ? "Ativando..." : pushEnabled ? "Reativar" : "Ativar"}
               </Button>
             </CardContent>
           </Card>

@@ -654,27 +654,11 @@ const AdminSeasons = () => {
               </div>
               <div className="space-y-2">
                 <Label>Início</Label>
-                <div className="relative">
-                  <Input
-                    type="date"
-                    value={editForm.start_date}
-                    onChange={(e) => setEditForm({ ...editForm, start_date: e.target.value })}
-                    className="pr-10"
-                  />
-                  <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                </div>
+                <DatePickerField value={editForm.start_date} onChange={v => setEditForm({ ...editForm, start_date: v })} />
               </div>
               <div className="space-y-2">
                 <Label>Fim</Label>
-                <div className="relative">
-                  <Input
-                    type="date"
-                    value={editForm.end_date}
-                    onChange={(e) => setEditForm({ ...editForm, end_date: e.target.value })}
-                    className="pr-10"
-                  />
-                  <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                </div>
+                <DatePickerField value={editForm.end_date} onChange={v => setEditForm({ ...editForm, end_date: v })} />
               </div>
             </div>
             <div className="space-y-2">

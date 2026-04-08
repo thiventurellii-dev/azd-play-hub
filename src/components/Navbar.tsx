@@ -123,7 +123,7 @@ const Navbar = () => {
     navigate("/");
   };
 
-  const closeMobile = () => setMobileOpen(false);
+
 
   const getInitials = () => {
     const name = userNickname || user?.user_metadata?.name || "?";

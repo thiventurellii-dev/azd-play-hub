@@ -207,8 +207,8 @@ const AdminPlayers = () => {
     if (!/[^A-Za-z0-9]/.test(newPassword)) return notify('error', 'Inclua ao menos um caractere especial');
 
     setResetting(true);
-    const { data, error } = await supabase.functions.invoke('admin-reset-password', {
-      body: { user_id: resetPlayerId, new_password: newPassword },
+    const { data, error } = await invokeEdgeFunction('admin-reset-password', {
+      user_id: resetPlayerId, new_password: newPassword,
     });
     setResetting(false);
     if (error || data?.error) return notify('error', data?.error || error?.message || 'Erro ao resetar senha');

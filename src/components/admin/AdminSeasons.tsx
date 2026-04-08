@@ -411,17 +411,11 @@ const AdminSeasons = () => {
             </div>
             <div className="space-y-2">
               <Label>Início *</Label>
-              <div className="relative">
-                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="pr-10" />
-                <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-              </div>
+              <DatePickerField value={startDate} onChange={setStartDate} placeholder="Data de início" />
             </div>
             <div className="space-y-2">
               <Label>Fim *</Label>
-              <div className="relative">
-                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="pr-10" />
-                <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-              </div>
+              <DatePickerField value={endDate} onChange={setEndDate} placeholder="Data de fim" />
             </div>
           </div>
           <div className="space-y-2">

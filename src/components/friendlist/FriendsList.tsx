@@ -50,7 +50,7 @@ const FriendsList = () => {
     });
 
     setFriends(enriched.filter(f => f.status === "accepted"));
-    setPendingReceived(enriched.filter(f => f.status === "pending" && f.friend_id === user.id));
+    setPendingReceived(isOwnList ? enriched.filter(f => f.status === "pending" && f.friend_id === targetUserId) : []);
     setLoading(false);
   };
 

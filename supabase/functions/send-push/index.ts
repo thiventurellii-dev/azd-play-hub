@@ -154,7 +154,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const VAPID_PUBLIC_KEY = "BDvO-hihQiLKKw-Sow1uKEU8H0Gm3_SbHdJaE5jjJNoKmrCI-Wjln5ZFswF9ohfTu5_yyh2H7-TfN09qT63EF8s";
+    const VAPID_PUBLIC_KEY = "BJ_wguY5c0ILIs2illOXZtifXl7Z8OOxlWQYWbUm9waHVUv88g3klvASFARTJ-w5_dKZoVj2UjKgiiIviBqMBGs";
 
     const uniqueIds = [...new Set(user_ids.filter(Boolean))];
     if (!uniqueIds.length) {

@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
     }
 
     const { step } = await req.json();
-    const EXTERNAL_URL = "https://npinawelxdtsrcvzzvvs.supabase.co";
+    const EXTERNAL_URL = Deno.env.get("EXTERNAL_SUPABASE_URL")!;
     const EXTERNAL_KEY = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY")!;
     const dstAdmin = createClient(EXTERNAL_URL, EXTERNAL_KEY);
 

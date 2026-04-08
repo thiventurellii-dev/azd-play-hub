@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { useNotification } from '@/components/NotificationDialog';
-import { Pencil, Lock, Camera } from 'lucide-react';
+import { Pencil, Lock, Camera, Mail } from 'lucide-react';
 import { brazilianStates, citiesByState, pronounsOptions, countryCodes, formatPhone, unformatPhone } from '@/lib/brazil-data';
 import FriendsList from '@/components/friendlist/FriendsList';
 
@@ -27,6 +27,12 @@ const Profile = () => {
   const [savingPassword, setSavingPassword] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Email change
+  const [changingEmail, setChangingEmail] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [savingEmail, setSavingEmail] = useState(false);
+  const [emailChangeRequested, setEmailChangeRequested] = useState(false);
 
   const cities = citiesByState[form.state] || [];
 
@@ -67,7 +73,6 @@ const Profile = () => {
       birth_date: form.birth_date,
       gender: form.gender,
       pronouns: form.pronouns,
-      email: form.email,
     } as any).eq('id', user.id);
     setSaving(false);
     if (error) return notify('error', error.message);
@@ -92,6 +97,22 @@ const Profile = () => {
     setChangingPassword(false);
     setNewPassword('');
     setConfirmPassword('');
+  };
+
+  const handleChangeEmail = async () => {
+    if (!newEmail) return notify('error', 'Digite o novo e-mail');
+    if (newEmail === (user?.email || form.email)) return notify('error', 'O novo e-mail deve ser diferente do atual');
+
+    setSavingEmail(true);
+    const { error } = await supabase.auth.updateUser(
+      { email: newEmail },
+      { emailRedirectTo: window.location.origin }
+    );
+    setSavingEmail(false);
+    if (error) return notify('error', error.message);
+
+    setEmailChangeRequested(true);
+    notify('success', 'Um link de confirmação foi enviado para o novo e-mail. Verifique sua caixa de entrada.');
   };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -162,7 +183,6 @@ const Profile = () => {
                 </Badge>
               </div>
             </div>
-            {/* Action buttons always visible */}
             <div className="flex flex-col gap-1.5 sm:flex-row sm:gap-2">
               {!editing && (
                 <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
@@ -172,6 +192,11 @@ const Profile = () => {
               {!changingPassword && !editing && (
                 <Button variant="outline" size="sm" onClick={() => setChangingPassword(true)}>
                   <Lock className="h-4 w-4 mr-1" /> Resetar Senha
+                </Button>
+              )}
+              {!changingEmail && !editing && !changingPassword && (
+                <Button variant="outline" size="sm" onClick={() => { setChangingEmail(true); setNewEmail(''); setEmailChangeRequested(false); }}>
+                  <Mail className="h-4 w-4 mr-1" /> Alterar E-mail
                 </Button>
               )}
             </div>
@@ -193,6 +218,7 @@ const Profile = () => {
               <div className="space-y-2">
                 <Label>E-mail</Label>
                 <Input value={form.email} disabled className="opacity-60" />
+                <p className="text-xs text-muted-foreground">Use o botão "Alterar E-mail" para mudar</p>
               </div>
               <div className="space-y-2">
                 <Label>Telefone *</Label>
@@ -275,6 +301,42 @@ const Profile = () => {
               <div><span className="text-muted-foreground">Pronomes:</span> <span className="font-medium">{pronounsLabels[profile?.pronouns] || '—'}</span></div>
               <div><span className="text-muted-foreground">Membro desde:</span> <span className="font-medium">{user?.created_at ? new Date(user.created_at).toLocaleDateString('pt-BR') : '—'}</span></div>
             </div>
+          )}
+
+          {/* Email change section */}
+          {changingEmail && (
+            <>
+              <Separator className="my-6" />
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2"><Mail className="h-4 w-4" /> Alterar E-mail</h3>
+                {emailChangeRequested ? (
+                  <div className="text-center space-y-2">
+                    <p className="text-sm text-muted-foreground">
+                      Um link de confirmação foi enviado para <strong>{newEmail}</strong>. 
+                      Clique no link no e-mail para confirmar a alteração.
+                    </p>
+                    <Button variant="outline" onClick={() => { setChangingEmail(false); setEmailChangeRequested(false); }}>Fechar</Button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <Label>E-mail atual</Label>
+                      <Input value={user?.email || form.email} disabled className="opacity-60" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Novo E-mail</Label>
+                      <Input type="email" value={newEmail} onChange={e => setNewEmail(e.target.value)} placeholder="novo@email.com" />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="gold" onClick={handleChangeEmail} disabled={savingEmail}>
+                        {savingEmail ? 'Enviando...' : 'Enviar confirmação'}
+                      </Button>
+                      <Button variant="outline" onClick={() => setChangingEmail(false)}>Cancelar</Button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </>
           )}
 
           {/* Password change section */}

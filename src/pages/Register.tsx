@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import logo from '@/assets/azd-logo.png';
 import { useNotification } from '@/components/NotificationDialog';
 import { brazilianStates, citiesByState, pronounsOptions, countryCodes, formatPhone, unformatPhone } from '@/lib/brazil-data';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, Mail } from 'lucide-react';
 
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
 
@@ -73,13 +73,17 @@ const Register = () => {
       <div className="flex min-h-screen items-center justify-center p-4">
         <Card className="w-full max-w-md bg-card border-border text-center">
           <CardContent className="pt-10 pb-8 space-y-6">
-            <CheckCircle className="h-16 w-16 mx-auto text-green-500" />
-            <h2 className="text-2xl font-bold">Cadastro Concluído! 🎉</h2>
+            <Mail className="h-16 w-16 mx-auto text-gold" />
+            <h2 className="text-2xl font-bold">Verifique seu e-mail! 📧</h2>
             <p className="text-muted-foreground">
-              Seu cadastro foi enviado com sucesso! Um administrador irá analisar e aprovar seu acesso em breve. Verifique seu e-mail para confirmar a conta.
+              Enviamos um link de confirmação para <strong>{form.email}</strong>. 
+              Abra seu e-mail e clique no link para ativar sua conta antes de fazer login.
             </p>
-            <Button variant="gold" className="w-full" onClick={() => navigate('/')}>
-              Ir para a Home
+            <p className="text-sm text-muted-foreground">
+              Não recebeu? Verifique a pasta de spam ou lixo eletrônico.
+            </p>
+            <Button variant="gold" className="w-full" onClick={() => navigate('/login')}>
+              Ir para o Login
             </Button>
           </CardContent>
         </Card>

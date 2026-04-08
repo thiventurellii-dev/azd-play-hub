@@ -180,17 +180,15 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
 
       if (isEdit && room) {
         // ── UPDATE ──
-        const updatePayload: Record<string, unknown> = {
+        const updatePayload = {
           game_id: finalGameId,
           title,
           description: finalDescription,
           scheduled_at: scheduledAt,
           max_players: parseInt(maxPlayers) || 10,
           season_id: selectedSeasonId || null,
+          ...(isAdminMode && status ? { status: status as "open" | "full" | "in_progress" | "finished" | "cancelled" } : {}),
         };
-        if (isAdminMode && status) {
-          updatePayload.status = status;
-        }
 
         const { error } = await supabase.from("match_rooms").update(updatePayload).eq("id", room.id);
         if (error) throw error;

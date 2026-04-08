@@ -7,11 +7,19 @@ const AuthCallback = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    let recoveryDetected = false;
+
+    // Listen for PASSWORD_RECOVERY event which fires during code exchange for recovery flows
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        recoveryDetected = true;
+      }
+    });
+
     const handleCallback = async () => {
       const params = new URLSearchParams(window.location.search);
       const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
 
-      // PKCE code exchange
       const code = params.get('code');
       const type = params.get('type') || hashParams.get('type');
 
@@ -20,13 +28,18 @@ const AuthCallback = () => {
         if (error) {
           setError(error.message);
           setTimeout(() => navigate('/login'), 3000);
+          subscription.unsubscribe();
           return;
         }
+
+        // Wait a tick for onAuthStateChange to fire with PASSWORD_RECOVERY
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
 
-      // Redirect based on type
-      if (type === 'recovery') {
-        // Pass hash params to reset-password so it can detect recovery mode
+      subscription.unsubscribe();
+
+      // Redirect based on recovery detection or explicit type param
+      if (recoveryDetected || type === 'recovery') {
         navigate('/reset-password?recovery=true', { replace: true });
       } else if (type === 'signup' || type === 'email_change') {
         navigate('/', { replace: true });
@@ -36,6 +49,10 @@ const AuthCallback = () => {
     };
 
     handleCallback();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   if (error) {

@@ -1,5 +1,4 @@
-import { supabase } from "@/lib/supabaseExternal";
-import { supabase as cloudSupabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 
 interface NotifyParams {
   userIds: string[];

@@ -10,7 +10,8 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useNotification } from '@/components/NotificationDialog';
-import { ChevronLeft, ChevronRight, Check, Trash2, UserPlus, Skull, Shield, ChevronsUpDown, CalendarIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Trash2, UserPlus, Skull, Shield, ChevronsUpDown } from 'lucide-react';
+import { DatePickerField } from '@/components/ui/date-picker-field';
 import { submitBloodMatch } from '@/lib/bloodRatings';
 import { cn } from '@/lib/utils';
 
@@ -244,7 +245,7 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
               </div>
             </div>
             <div className="grid gap-4 sm:grid-cols-3">
-              <div className="space-y-2"><Label>Data *</Label><div className="relative"><Input type="date" value={playedDate} onChange={e => setPlayedDate(e.target.value)} className="pr-10" /><CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" /></div></div>
+              <div className="space-y-2"><Label>Data *</Label><DatePickerField value={playedDate} onChange={setPlayedDate} placeholder="Selecione a data" /></div>
               <div className="space-y-2"><Label>Hora *</Label><Input type="time" value={playedTime} onChange={e => setPlayedTime(e.target.value)} /></div>
               <div className="space-y-2"><Label>Duração (min)</Label><Input type="number" value={duration} onChange={e => setDuration(e.target.value)} placeholder="90" /></div>
             </div>

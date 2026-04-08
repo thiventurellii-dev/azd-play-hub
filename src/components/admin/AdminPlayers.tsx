@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Separator } from '@/components/ui/separator';
 import { useNotification } from '@/components/NotificationDialog';
-import { Shield, User, Pencil, Search, Lock, Crown, Plus, Check, XCircle, Trash2, CalendarIcon } from 'lucide-react';
+import { Shield, User, Pencil, Search, Lock, Crown, Plus, Check, XCircle, Trash2 } from 'lucide-react';
+import { DatePickerField } from '@/components/ui/date-picker-field';
 import { brazilianStates, citiesByState, pronounsOptions, countryCodes, formatPhone, unformatPhone } from '@/lib/brazil-data';
 interface PlayerWithRole {
   id: string;
@@ -480,10 +481,7 @@ const AdminPlayers = () => {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Data de Nascimento</Label>
-                <div className="relative">
-                  <Input type="date" value={form.birth_date} onChange={e => setForm({ ...form, birth_date: e.target.value })} className="pr-10" />
-                  <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                </div>
+                <DatePickerField value={form.birth_date} onChange={v => setForm({ ...form, birth_date: v })} placeholder="Selecione a data" />
               </div>
               <div className="space-y-2">
                 <Label>Gênero</Label>

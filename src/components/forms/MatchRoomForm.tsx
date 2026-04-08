@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/lib/supabaseExternal";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { X, ChevronLeft, Gamepad2, Skull, Sword, CalendarIcon } from "lucide-react";
+import { X, ChevronLeft, Gamepad2, Skull, Sword } from "lucide-react";
+import { DatePickerField } from "@/components/ui/date-picker-field";
 import { sendMatchNotification } from "@/lib/matchNotification";
 
 /* ── Types ─────────────────────────────────────────── */
@@ -336,10 +337,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
       <div className="grid grid-cols-2 gap-3">
         <div>
           <Label>Data *</Label>
-          <div className="relative">
-            <Input type="date" value={scheduledDate} onChange={e => setScheduledDate(e.target.value)} className="pr-10" />
-            <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-          </div>
+          <DatePickerField value={scheduledDate} onChange={setScheduledDate} placeholder="Selecione a data" />
         </div>
         <div>
           <Label>Hora</Label>

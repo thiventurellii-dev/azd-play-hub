@@ -10,7 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { logActivity } from '@/lib/activityLog';
 import { recalculateSeasonGameMmr } from '@/lib/mmrRecalculation';
-import { CalendarIcon } from 'lucide-react';
+import { DatePickerField } from '@/components/ui/date-picker-field';
 import { EntitySheet } from '@/components/shared/EntitySheet';
 
 interface MatchData {
@@ -232,10 +232,7 @@ const EditMatchDialog = ({ open, onOpenChange, match, onSaved }: Props) => {
             )}
             <div className="space-y-2">
               <Label>Data</Label>
-              <div className="relative">
-                <Input type="date" value={playedDate} onChange={e => setPlayedDate(e.target.value)} className="pr-10" />
-                <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-              </div>
+              <DatePickerField value={playedDate} onChange={setPlayedDate} />
             </div>
             <div className="space-y-2">
               <Label>Hora</Label>

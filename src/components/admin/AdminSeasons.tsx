@@ -10,7 +10,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useNotification } from "@/components/NotificationDialog";
-import { Plus, Trash2, Gamepad2, ChevronDown, ChevronUp, Trophy, Pencil, CalendarIcon } from "lucide-react";
+import { Plus, Trash2, Gamepad2, ChevronDown, ChevronUp, Trophy, Pencil } from "lucide-react";
+import { DatePickerField } from "@/components/ui/date-picker-field";
 
 interface Season {
   id: string;
@@ -410,17 +411,11 @@ const AdminSeasons = () => {
             </div>
             <div className="space-y-2">
               <Label>Início *</Label>
-              <div className="relative">
-                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="pr-10" />
-                <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-              </div>
+              <DatePickerField value={startDate} onChange={setStartDate} placeholder="Data de início" />
             </div>
             <div className="space-y-2">
               <Label>Fim *</Label>
-              <div className="relative">
-                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="pr-10" />
-                <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-              </div>
+              <DatePickerField value={endDate} onChange={setEndDate} placeholder="Data de fim" />
             </div>
           </div>
           <div className="space-y-2">
@@ -659,27 +654,11 @@ const AdminSeasons = () => {
               </div>
               <div className="space-y-2">
                 <Label>Início</Label>
-                <div className="relative">
-                  <Input
-                    type="date"
-                    value={editForm.start_date}
-                    onChange={(e) => setEditForm({ ...editForm, start_date: e.target.value })}
-                    className="pr-10"
-                  />
-                  <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                </div>
+                <DatePickerField value={editForm.start_date} onChange={v => setEditForm({ ...editForm, start_date: v })} />
               </div>
               <div className="space-y-2">
                 <Label>Fim</Label>
-                <div className="relative">
-                  <Input
-                    type="date"
-                    value={editForm.end_date}
-                    onChange={(e) => setEditForm({ ...editForm, end_date: e.target.value })}
-                    className="pr-10"
-                  />
-                  <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                </div>
+                <DatePickerField value={editForm.end_date} onChange={v => setEditForm({ ...editForm, end_date: v })} />
               </div>
             </div>
             <div className="space-y-2">

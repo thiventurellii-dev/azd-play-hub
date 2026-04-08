@@ -26,7 +26,8 @@ const AuthCallback = () => {
 
       // Redirect based on type
       if (type === 'recovery') {
-        navigate('/reset-password' + window.location.hash, { replace: true });
+        // Pass hash params to reset-password so it can detect recovery mode
+        navigate('/reset-password?recovery=true', { replace: true });
       } else if (type === 'signup' || type === 'email_change') {
         navigate('/', { replace: true });
       } else {

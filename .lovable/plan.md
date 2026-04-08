@@ -1,78 +1,81 @@
-
-
-# Push Notifications: Migrar para Supabase Externo
+# Plano: Reescrever Edge Function `send-push` com `crypto.subtle` nativo
 
 ## Problema atual
 
-Os IDs não batem: `subscribeToPush` salva no Lovable Cloud (com user_id do Lovable Cloud), mas `sendRoomNotifications` envia user_ids do Supabase externo. A edge function busca no Lovable Cloud e não encontra match.
+1. A Edge Function importa `@noble/curves` e `@noble/hashes` que crasham no Deno (`Deno.core.runMicrotasks() is not supported`)
+2. O frontend salva subscriptions diretamente no banco externo via `supabaseExternal` com `anon key`, mas o usuário não tem sessão lá — RLS rejeita silenciosamente
+3. As chaves VAPID podem estar descasadas
 
-## Solução
+## Solução em 3 partes
 
-Mover toda a lógica de push_subscriptions para o Supabase externo. Isso requer:
+### 1. Gerar novo par VAPID via script
 
-### 1. Criar tabela `push_subscriptions` no Supabase externo
+Antes de implementar, rodar um script no sandbox para gerar um par ECDSA P-256 válido em formato base64url. Isso garante 100% que pub/priv são par. A public key vai para o código, a private key será solicitada via `add_secret`.
 
-Você precisará executar este SQL no dashboard do Supabase externo (`npinawelxdtsrcvzzvvs`):
+### 2. Reescrever `supabase/functions/send-push/index.ts`
 
-```sql
-CREATE TABLE IF NOT EXISTS public.push_subscriptions (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  endpoint text NOT NULL,
-  p256dh text NOT NULL,
-  auth text NOT NULL,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (user_id, endpoint)
-);
+Reescrita completa removendo todos os imports de `@noble/*`. Usar exclusivamente:
 
-ALTER TABLE public.push_subscriptions ENABLE ROW LEVEL SECURITY;
+- `crypto.subtle.generateKey` para par efêmero ECDH
+- `crypto.subtle.importKey` (JWK) para VAPID signing
+- `crypto.subtle.sign` (ECDSA P-256 / SHA-256) para JWT
+- `crypto.subtle.deriveKey` / `deriveBits` para ECDH shared secret
+- `crypto.subtle.encrypt` (AES-128-GCM) para payload
+- HKDF via `crypto.subtle.deriveBits` com `HKDF` algorithm
 
-CREATE POLICY "Authenticated users can view own push subscriptions"
-ON public.push_subscriptions FOR SELECT TO authenticated
-USING (auth.uid() = user_id);
+Ações suportadas:
 
-CREATE POLICY "Authenticated users can insert own push subscriptions"
-ON public.push_subscriptions FOR INSERT TO authenticated
-WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Authenticated users can delete own push subscriptions"
-ON public.push_subscriptions FOR DELETE TO authenticated
-USING (auth.uid() = user_id);
+| Action         | Payload esperado                                                          | Operação                                                    |
+| -------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| `subscribe`    | `{ action, user_id, subscription: { endpoint, keys: { p256dh, auth } } }` | DELETE old + INSERT new no banco externo via `service_role` |
+| `unsubscribe`  | `{ action, user_id, endpoint }`                                           | DELETE do banco externo via `service_role`                  |
+| `cleanup`      | `{ action, user_id }`                                                     | DELETE all subs do user                                     |
+| `list`         | `{ action, user_id }`                                                     | SELECT subs para debug                                      |
+| (default/send) | `{ user_ids, title, message, url }`                                       | Busca subs + envia web push                                 |
 
--- Policy para a service role poder ler todas (usado pela edge function)
-CREATE POLICY "Service role can read all push subscriptions"
-ON public.push_subscriptions FOR SELECT TO service_role
-USING (true);
 
-CREATE POLICY "Service role can delete push subscriptions"
-ON public.push_subscriptions FOR DELETE TO service_role
-USING (true);
+O cliente Supabase será criado com `EXTERNAL_SUPABASE_URL` + `EXTERNAL_SUPABASE_SERVICE_ROLE_KEY` para bypass de RLS.
+
+### 3. Atualizar `src/lib/pushNotifications.ts`
+
+- Remover import de `supabaseExternal`
+- `subscribeToPush`: após gerar subscription no browser, chamar a edge function com `action: "subscribe"` enviando o formato exato:
+
+```json
+{
+  "action": "subscribe",
+  "user_id": "...",
+  "subscription": {
+    "endpoint": "...",
+    "keys": { "p256dh": "...", "auth": "..." }
+  }
+}
 ```
 
-### 2. Alterar `src/lib/pushNotifications.ts`
+- `unsubscribeFromPush`: chamar edge function com `action: "unsubscribe"`
+- Manter o `existingSubscription.unsubscribe()` no browser antes de criar nova (já existe)
+- Atualizar `VAPID_PUBLIC_KEY` com a nova chave gerada
 
-Trocar o import de `@/integrations/supabase/client` para `@/lib/supabaseExternal`. O `userId` passado já é do Supabase externo (vem do AuthContext que autentica no externo), então os IDs passarão a bater.
+## Arquivos alterados
 
-### 3. Alterar `supabase/functions/send-push/index.ts`
 
-A edge function precisa conectar ao **Supabase externo** para buscar as subscriptions. Trocar de `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` para `EXTERNAL_SUPABASE_URL`/`EXTERNAL_SUPABASE_SERVICE_ROLE_KEY` (que já existem como secrets).
+| Arquivo                                 | Mudança                                                             |
+| --------------------------------------- | ------------------------------------------------------------------- |
+| `supabase/functions/send-push/index.ts` | Reescrita completa: só `crypto.subtle`, ações subscribe/unsubscribe |
+| `src/lib/pushNotifications.ts`          | Salvar via edge function, nova VAPID public key                     |
 
-### 4. Verificar `src/pages/Install.tsx`
 
-O `user.id` vem do AuthContext que usa o Supabase externo, então já é o ID correto. Nenhuma mudança necessária neste arquivo.
+## Ordem de execução
 
-### 5. Limpar subscriptions antigas do Lovable Cloud
-
-Opcional: deletar os registros existentes na tabela `push_subscriptions` do Lovable Cloud, que têm IDs incorretos.
-
-## Arquivos a modificar
-
-| Arquivo | Mudança |
-|---------|---------|
-| `src/lib/pushNotifications.ts` | Trocar import para `supabaseExternal` |
-| `supabase/functions/send-push/index.ts` | Usar `EXTERNAL_SUPABASE_*` secrets |
-
-## Pré-requisito (ação do usuário)
-
-Criar a tabela `push_subscriptions` no Supabase externo via SQL Editor (conforme SQL acima).
-
+1. Gerar par VAPID via script
+2. Reescrever edge function
+3. Atualizar frontend
+4. Solicitar `VAPID_PRIVATE_KEY` via `add_secret`
+5. Deploy edge function
+6. Publicar + Reativar + Testar  
+  
+  
+**VAPID JWT 'sub':** "Lovable, ao gerar o JWT para o VAPID, lembre-se de incluir a claim sub (pode ser um [mailto:seuemail@exemplo.com](mailto:seuemail@exemplo.com) ou a URL do seu site). Sem isso, o Google/Firebase pode rejeitar a notificação."
+7. **Formato Base64URL:** "Certifique-se de que a VAPID_PUBLIC_KEY no frontend e as chaves no backend usem o formato **Base64URL** (sem = e trocando + por - e / por _), que é o padrão exigido pelo protocolo Web Push."
+8. **Tratamento de erro no Front:** "No pushNotifications.ts, adicione um log detalhado caso a chamada para a Edge Function de subscribe falhe, para sabermos se o erro foi de rede ou de lógica interna."

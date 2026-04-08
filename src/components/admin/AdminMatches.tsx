@@ -304,7 +304,7 @@ const AdminMatches = () => {
                 {seasons.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)} className="w-[180px]" placeholder="Filtrar por data" />
+            <div className="relative w-[180px]"><Input type="date" value={filterDate} onChange={e => setFilterDate(e.target.value)} className="pr-10" placeholder="Filtrar por data" /><CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" /></div>
             {(filterSeason !== 'all' || filterDate) && (
               <Button variant="ghost" size="sm" onClick={() => { setFilterSeason('all'); setFilterDate(''); }}>Limpar</Button>
             )}

@@ -234,8 +234,8 @@ const Seasons = () => {
               </div>
             )}
             <div className="grid gap-4 grid-cols-2">
-              <div className="space-y-2"><Label>Início *</Label><Input type="date" value={formStart} onChange={e => setFormStart(e.target.value)} /></div>
-              <div className="space-y-2"><Label>Fim *</Label><Input type="date" value={formEnd} onChange={e => setFormEnd(e.target.value)} /></div>
+              <div className="space-y-2"><Label>Início *</Label><div className="relative"><Input type="date" value={formStart} onChange={e => setFormStart(e.target.value)} className="pr-10" /><CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" /></div></div>
+              <div className="space-y-2"><Label>Fim *</Label><div className="relative"><Input type="date" value={formEnd} onChange={e => setFormEnd(e.target.value)} className="pr-10" /><CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" /></div></div>
             </div>
             <Button variant="gold" onClick={handleSave}>{editId ? 'Salvar' : 'Criar'}</Button>
           </div>

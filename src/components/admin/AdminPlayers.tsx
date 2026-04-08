@@ -549,6 +549,30 @@ const AdminPlayers = () => {
                 {isSuperAdmin ? 'Desativar Conta' : 'Solicitar Desativação'}
               </Button>
             )}
+
+            {isSuperAdmin && editingPlayer && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" className="w-full border-destructive/50 bg-destructive/10 hover:bg-destructive/20">
+                    <Trash2 className="h-4 w-4 mr-1" /> Excluir Conta Permanentemente
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Excluir conta permanentemente?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Essa ação é irreversível. Todos os dados de <strong>{editingPlayer.nickname || editingPlayer.name}</strong> serão removidos permanentemente, incluindo amizades, notificações e inscrições em salas.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => handleDeleteAccount(editingPlayer)}>
+                      Excluir Permanentemente
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
         </DialogContent>
       </Dialog>

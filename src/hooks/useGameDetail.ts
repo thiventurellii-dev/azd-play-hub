@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseExternal";
 
 const fetchGameDetail = async (slug: string) => {
   const { data } = await supabase.from("games").select("*").eq("slug", slug).maybeSingle();

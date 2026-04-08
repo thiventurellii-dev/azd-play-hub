@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseExternal";
 import { fadeUp, hoverSpring } from "@/lib/animations";
 import { socialButtonsConfig } from "./SocialIcons";
 

@@ -157,7 +157,32 @@ Deno.serve(async (req) => {
     }
 
     const supabase = createClient(externalUrl, externalKey);
-    const { user_ids, title, message, url } = await req.json();
+    const body = await req.json();
+
+    // Cleanup action: delete subscriptions for a user
+    if (body.action === "cleanup") {
+      const { data, error } = await supabase
+        .from("push_subscriptions")
+        .delete()
+        .eq("user_id", body.user_id)
+        .select();
+      return new Response(JSON.stringify({ deleted: data, error: error?.message }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // List action: show subscriptions for debugging
+    if (body.action === "list") {
+      const { data, error } = await supabase
+        .from("push_subscriptions")
+        .select("id, user_id, endpoint, created_at")
+        .eq("user_id", body.user_id);
+      return new Response(JSON.stringify({ subscriptions: data, error: error?.message }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { user_ids, title, message, url } = body;
 
     if (!user_ids || !Array.isArray(user_ids) || !title) {
       return new Response(JSON.stringify({ error: "Missing user_ids or title" }), {

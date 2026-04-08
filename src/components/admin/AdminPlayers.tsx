@@ -242,7 +242,50 @@ const AdminPlayers = () => {
     fetchPlayers();
   };
 
-  const pendingApprovalPlayers = players.filter(p => p.status === 'pending_approval');
+  const handleDisableAccount = async (player: PlayerWithRole) => {
+    const { error } = await supabase.from('profiles').update({ status: 'disabled' } as any).eq('id', player.id);
+    if (error) return notify('error', error.message);
+    notify('success', `Conta de ${player.nickname || player.name} desativada.`);
+    setEditDialogOpen(false);
+    fetchPlayers();
+  };
+
+  const handleRequestDisable = async (player: PlayerWithRole) => {
+    const { error } = await supabase.from('account_disable_requests' as any).insert({
+      target_user_id: player.id,
+      requested_by: user?.id,
+      reason: '',
+      status: 'pending',
+    } as any);
+    if (error) return notify('error', error.message);
+    notify('success', `Solicitação de desativação enviada para aprovação de Super Admin.`);
+    setEditDialogOpen(false);
+    fetchDisableRequests();
+  };
+
+  // Disable requests (super admin)
+  const [disableRequests, setDisableRequests] = useState<any[]>([]);
+
+  const fetchDisableRequests = async () => {
+    const { data } = await supabase.from('account_disable_requests' as any).select('*').eq('status', 'pending');
+    if (data) setDisableRequests(data);
+  };
+
+  const handleApproveDisable = async (req: any) => {
+    await supabase.from('profiles').update({ status: 'disabled' } as any).eq('id', req.target_user_id);
+    await supabase.from('account_disable_requests' as any).update({ status: 'approved', reviewed_by: user?.id, reviewed_at: new Date().toISOString() } as any).eq('id', req.id);
+    notify('success', 'Conta desativada com sucesso.');
+    fetchDisableRequests();
+    fetchPlayers();
+  };
+
+  const handleRejectDisable = async (req: any) => {
+    await supabase.from('account_disable_requests' as any).update({ status: 'rejected', reviewed_by: user?.id, reviewed_at: new Date().toISOString() } as any).eq('id', req.id);
+    notify('success', 'Solicitação de desativação rejeitada.');
+    fetchDisableRequests();
+  };
+
+  useEffect(() => { fetchDisableRequests(); }, []);
 
   return (
     <div className="space-y-6">

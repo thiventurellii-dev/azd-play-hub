@@ -10,11 +10,11 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const supabaseUrl = Deno.env.get("EXTERNAL_SUPABASE_URL");
-    const supabaseKey = Deno.env.get("EXTERNAL_SUPABASE_SERVICE_ROLE_KEY");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!supabaseUrl || !supabaseKey) {
-      console.error("[push] Missing EXTERNAL_SUPABASE_URL or EXTERNAL_SUPABASE_SERVICE_ROLE_KEY");
+      console.error("[push] Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
       return new Response(JSON.stringify({ error: "Supabase not configured" }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

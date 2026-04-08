@@ -4,13 +4,15 @@ import { Download, Smartphone, Apple, Chrome } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
-import { subscribeToPush, isPushSupported } from "@/lib/pushNotifications";
+import { subscribeToPush, isPushSubscribed, isPushSupported } from "@/lib/pushNotifications";
 import { toast } from "sonner";
 import { fadeUp } from "@/lib/animations";
 
 const Install = () => {
   const { user } = useAuth();
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [pushLoading, setPushLoading] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -21,6 +23,26 @@ const Install = () => {
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
     return () => window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkPushStatus = async () => {
+      if (!user || !isPushSupported()) {
+        if (!cancelled) setPushEnabled(false);
+        return;
+      }
+
+      const subscribed = await isPushSubscribed();
+      if (!cancelled) setPushEnabled(subscribed);
+    };
+
+    checkPushStatus();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
 
   const handleInstallClick = async () => {
     if (deferredPrompt) {
@@ -38,11 +60,18 @@ const Install = () => {
       toast.error("Faça login para ativar notificações");
       return;
     }
-    const ok = await subscribeToPush(user.id);
-    if (ok) {
-      toast.success("Notificações push ativadas!");
-    } else {
-      toast.error("Não foi possível ativar notificações push");
+
+    setPushLoading(true);
+    try {
+      const ok = await subscribeToPush(user.id);
+      if (ok) {
+        setPushEnabled(true);
+        toast.success("Notificações push ativadas!");
+      } else {
+        toast.error("Não foi possível ativar notificações push");
+      }
+    } finally {
+      setPushLoading(false);
     }
   };
 
@@ -126,8 +155,8 @@ const Install = () => {
                   Receba alertas de partidas e convites no celular.
                 </p>
               </div>
-              <Button variant="outline" onClick={handleEnablePush}>
-                Ativar
+              <Button variant="outline" onClick={handleEnablePush} disabled={pushLoading || pushEnabled}>
+                {pushLoading ? "Ativando..." : pushEnabled ? "Ativado" : "Ativar"}
               </Button>
             </CardContent>
           </Card>

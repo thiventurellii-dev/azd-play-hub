@@ -287,8 +287,41 @@ const AdminPlayers = () => {
 
   useEffect(() => { fetchDisableRequests(); }, []);
 
+  const pendingApprovalPlayers = players.filter(p => p.status === 'pending_approval');
+
   return (
     <div className="space-y-6">
+      {/* Pending Disable Requests for Super Admins */}
+      {isSuperAdmin && disableRequests.length > 0 && (
+        <Card className="bg-card border-destructive/30">
+          <CardHeader>
+            <CardTitle className="text-destructive">Solicitações de Desativação ({disableRequests.length})</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {disableRequests.map((req: any) => {
+              const targetPlayer = players.find(p => p.id === req.target_user_id);
+              const requester = players.find(p => p.id === req.requested_by);
+              return (
+                <div key={req.id} className="flex items-center justify-between rounded-lg border border-destructive/20 p-3">
+                  <div>
+                    <p className="font-semibold">{targetPlayer?.nickname || targetPlayer?.name || 'Jogador'}</p>
+                    <p className="text-xs text-muted-foreground">Solicitado por: {requester?.nickname || requester?.name || 'Admin'}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="text-green-400 border-green-500/30 hover:bg-green-500/10" onClick={() => handleApproveDisable(req)}>
+                      <Check className="h-4 w-4 mr-1" /> Aprovar
+                    </Button>
+                    <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => handleRejectDisable(req)}>
+                      <XCircle className="h-4 w-4 mr-1" /> Rejeitar
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Pending Approval Section */}
       {pendingApprovalPlayers.length > 0 && (
         <Card className="bg-card border-orange-500/30">

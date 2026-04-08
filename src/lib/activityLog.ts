@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabaseExternal';
 
 export async function logActivity(
   userId: string,

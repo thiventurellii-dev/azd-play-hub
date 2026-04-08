@@ -1,5 +1,5 @@
 import { useQuery, useQueries } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseExternal";
 import type { MatchData, UpcomingRoom, TopPlayer, ActiveSeason } from "@/types/dashboard";
 
 // ---------- helpers ----------

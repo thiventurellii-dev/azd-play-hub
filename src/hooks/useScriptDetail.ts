@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseExternal";
 
 interface BloodScript {
   id: string; name: string; description: string | null; slug: string | null; victory_conditions: string[];

@@ -8,3 +8,6 @@ export const supabaseExternal = createClient(
   EXTERNAL_SUPABASE_URL,
   EXTERNAL_SUPABASE_ANON_KEY
 );
+
+// Re-export as "supabase" so all existing imports work after path change
+export const supabase = supabaseExternal;

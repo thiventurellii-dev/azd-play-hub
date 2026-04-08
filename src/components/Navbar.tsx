@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import logo from "@/assets/azd-logo.png";
 import { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseExternal";
 import { Check, X as XIcon } from "lucide-react";
 
 

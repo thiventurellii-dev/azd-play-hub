@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/lib/supabaseExternal";
 
 interface SeasonLink { season_id: string; season_name: string; status: string; }
 interface GameTag { id: string; name: string; }

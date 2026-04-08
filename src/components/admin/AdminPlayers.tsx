@@ -136,8 +136,8 @@ const AdminPlayers = () => {
 
     // Update auth email if changed
     if (form.email !== editingPlayer.email) {
-      const { data: emailData, error: emailError } = await supabase.functions.invoke('admin-update-email', {
-        body: { user_id: editingPlayer.id, email: form.email },
+      const { data: emailData, error: emailError } = await invokeEdgeFunction('admin-update-email', {
+        user_id: editingPlayer.id, email: form.email,
       });
       if (emailError || emailData?.error) {
         notify('error', emailData?.error || emailError?.message || 'Erro ao atualizar e-mail de login');

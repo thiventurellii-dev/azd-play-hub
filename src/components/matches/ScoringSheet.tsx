@@ -140,6 +140,7 @@ const ScoringSheet = ({ schema, players, onScoresChange }: Props) => {
                 <TableCell>
                   <Input
                     type="number"
+                    step="0.01"
                     value={ps.total === 0 ? '' : ps.total}
                     onChange={e => updateSimpleScore(i, e.target.value)}
                     className="w-[100px]"

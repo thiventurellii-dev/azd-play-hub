@@ -54,7 +54,7 @@ const FriendsList = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchFriends(); }, [user]);
+  useEffect(() => { fetchFriends(); }, [targetUserId]);
 
   const handleAccept = async (id: string) => {
     await supabase.from("friendships").update({ status: "accepted" }).eq("id", id);

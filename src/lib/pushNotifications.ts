@@ -15,23 +15,22 @@ function urlBase64ToUint8Array(base64String: string) {
 
 export async function subscribeToPush(userId: string): Promise<boolean> {
   try {
+    alert("Iniciando subscrição push...\nuser_id recebido: " + userId);
+
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-      console.log("[push] Push not supported on this device/browser");
+      alert("Push não suportado neste navegador");
       return false;
     }
 
     const permission = await Notification.requestPermission();
-    console.log("[push] Notification permission:", permission);
+    alert("Status da permissão: " + permission);
     if (permission !== "granted") return false;
 
     const registration = await navigator.serviceWorker.ready;
-    console.log("[push] Service worker ready:", registration.scope);
 
-    // Always unsubscribe first to ensure VAPID key matches
     const existingSubscription = await registration.pushManager.getSubscription();
     if (existingSubscription) {
       await existingSubscription.unsubscribe();
-      console.log("[push] Unsubscribed old subscription to refresh VAPID key");
     }
 
     const subscription = await registration.pushManager.subscribe({
@@ -40,35 +39,39 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
     });
 
     const subJson = subscription.toJSON();
-    console.log("[push] Persisting subscription via edge function for user:", userId, Boolean(subJson.endpoint));
+    alert("Subscription criada!\nEndpoint: " + (subJson.endpoint || "").substring(0, 60) + "...");
 
-    // Save via edge function (uses service_role to bypass RLS)
-    const { data, error } = await invokeEdgeFunction("send-push", {
-      action: "subscribe",
-      user_id: userId,
-      subscription: {
-        endpoint: subJson.endpoint!,
-        keys: {
-          p256dh: subJson.keys!.p256dh!,
-          auth: subJson.keys!.auth!,
+    try {
+      const { data, error } = await invokeEdgeFunction("send-push", {
+        action: "subscribe",
+        user_id: userId,
+        subscription: {
+          endpoint: subJson.endpoint!,
+          keys: {
+            p256dh: subJson.keys!.p256dh!,
+            auth: subJson.keys!.auth!,
+          },
         },
-      },
-    });
+      });
 
-    if (error) {
-      console.error("[push] Edge function subscribe error:", error);
+      if (error) {
+        alert("Erro na Edge Function: " + JSON.stringify(error));
+        return false;
+      }
+
+      if (!data?.ok) {
+        alert("Edge Function retornou não-ok: " + JSON.stringify(data));
+        return false;
+      }
+
+      alert("✅ Subscription salva com sucesso!");
+      return true;
+    } catch (efError: any) {
+      alert("Erro na Edge Function: " + (efError?.message || String(efError)));
       return false;
     }
-
-    if (!data?.ok) {
-      console.error("[push] Subscribe returned not ok:", data);
-      return false;
-    }
-
-    console.log("[push] Subscription saved successfully via edge function");
-    return true;
-  } catch (err) {
-    console.error("[push] Push subscription error:", err);
+  } catch (err: any) {
+    alert("Erro geral no push: " + (err?.message || String(err)));
     return false;
   }
 }

@@ -59,12 +59,16 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
 
   const fetchPlayers = async () => {
     if (!room?.id) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("match_room_players")
       .select("id, player_id, type, position")
       .eq("room_id", room.id)
       .order("position");
 
+    if (error) {
+      console.error("Error fetching room players:", error);
+      return;
+    }
     if (!data) return;
 
     const ids = data.map((p) => p.player_id);

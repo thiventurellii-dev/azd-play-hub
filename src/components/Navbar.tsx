@@ -26,6 +26,7 @@ import logo from "@/assets/azd-logo.png";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabaseExternal";
 import { Check, X as XIcon } from "lucide-react";
+import { toast } from "sonner";
 
 
 const Navbar = () => {

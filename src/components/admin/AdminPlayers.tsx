@@ -81,7 +81,7 @@ const AdminPlayers = () => {
 
     setPlayers(
       (profiles || [])
-        .filter((p) => Boolean(p?.id) && Boolean(p?.name || p?.nickname || p?.email))
+        .filter((p) => Boolean(p?.id) && Boolean(p?.name || p?.nickname || p?.email) && (p as any).status !== 'disabled')
         .map(p => ({
           id: p.id,
           name: p.name,

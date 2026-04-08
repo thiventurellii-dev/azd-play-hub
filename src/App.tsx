@@ -10,6 +10,7 @@ import Login from "./pages/Login.tsx";
 import ForgotPassword from "./pages/ForgotPassword.tsx";
 import Register from "./pages/Register.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
+import AuthCallback from "./pages/AuthCallback.tsx";
 import CompleteProfile from "./pages/CompleteProfile.tsx";
 import Seasons from "./pages/Seasons.tsx";
 import SeasonDetail from "./pages/SeasonDetail.tsx";
@@ -44,6 +45,7 @@ const App = () => (
                 <Route path="/forgot-password" element={<ForgotPassword />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route path="/complete-profile" element={<CompleteProfile />} />
                 <Route path="/about" element={<AboutUs />} />
                 <Route path="/seasons" element={<ProtectedRoute><Seasons /></ProtectedRoute>} />

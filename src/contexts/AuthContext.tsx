@@ -51,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .eq('id', userId)
       .single();
     if (data) {
-      const status = (data as any).status || 'pending';
+      const status = (data as any).status || 'active';
       setPlayerStatus(status);
 
       // If disabled, sign out
@@ -62,15 +62,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const complete = !!((data as any).nickname && data.name && data.phone && data.state && data.city && data.birth_date && data.gender && (data as any).pronouns);
       
-      // pending = needs to complete profile (admin/script created)
-      // pending_approval = community signup, profile complete, waiting admin approval
-      // active = fully approved
+      // Check if profile fields are complete
+      // pending = admin-created user, needs to fill profile
+      // active = fully active
       if (status === 'pending') {
-        setProfileCompleted(complete); // redirect to complete profile if not complete
-      } else if (status === 'pending_approval') {
-        setProfileCompleted(true); // profile IS complete, just waiting approval
+        setProfileCompleted(complete);
       } else {
-        setProfileCompleted(status === 'active');
+        setProfileCompleted(true);
       }
     }
   };

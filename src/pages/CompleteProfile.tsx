@@ -48,7 +48,7 @@ const CompleteProfile = () => {
     }
     setSaving(true);
 
-    const newStatus = currentStatus === 'pending' ? 'active' : 'pending_approval';
+    const newStatus = 'active';
 
     const { error } = await supabase.from('profiles').update({
       name: form.name,

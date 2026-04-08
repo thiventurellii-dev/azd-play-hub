@@ -42,9 +42,13 @@ const FriendButton = ({ targetUserId, size = "sm" }: Props) => {
       })
       .subscribe();
 
+    // Polling fallback every 20s
+    const poll = setInterval(fetchStatus, 20000);
+
     return () => {
       window.removeEventListener('friendship-changed', handler);
       supabase.removeChannel(channel);
+      clearInterval(poll);
     };
   }, [user, targetUserId]);
 

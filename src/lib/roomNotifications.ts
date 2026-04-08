@@ -19,11 +19,22 @@ export async function sendRoomNotifications({ userIds, type, title, message, roo
   }));
   await supabase.from("notifications").insert(rows);
 
-  // Also send push notifications
+  // Also send push notifications via Lovable Cloud edge function
   try {
-    await supabase.functions.invoke("send-push", {
-      body: { user_ids: userIds, title, message, url: roomId ? `/partidas` : "/" },
-    });
+    const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+    if (projectId) {
+      const pushUrl = `https://${projectId}.supabase.co/functions/v1/send-push`;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      await fetch(pushUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ user_ids: userIds, title, message, url: roomId ? `/partidas` : "/" }),
+      });
+    }
   } catch (err) {
     console.error("Push notification error:", err);
   }

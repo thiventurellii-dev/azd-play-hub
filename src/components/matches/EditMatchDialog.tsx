@@ -10,7 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { logActivity } from '@/lib/activityLog';
 import { recalculateSeasonGameMmr } from '@/lib/mmrRecalculation';
-import { CalendarIcon } from 'lucide-react';
+import { DatePickerField } from '@/components/ui/date-picker-field';
 import { EntitySheet } from '@/components/shared/EntitySheet';
 
 interface MatchData {

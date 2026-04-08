@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useNotification } from "@/components/NotificationDialog";
-import { Plus, Trash2, Gamepad2, ChevronDown, ChevronUp, Trophy, Pencil } from "lucide-react";
+import { Plus, Trash2, Gamepad2, ChevronDown, ChevronUp, Trophy, Pencil, CalendarIcon } from "lucide-react";
 
 interface Season {
   id: string;

@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, RefreshCw } from 'lucide-react';
+import { Search, RefreshCw, CalendarIcon } from 'lucide-react';
 
 interface LogEntry {
   id: string;

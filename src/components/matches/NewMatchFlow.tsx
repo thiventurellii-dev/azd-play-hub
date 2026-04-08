@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { useNotification } from '@/components/NotificationDialog';
-import { Upload, UserPlus, Trash2, ChevronLeft, ChevronRight, Check, ChevronsUpDown } from 'lucide-react';
+import { Upload, UserPlus, Trash2, ChevronLeft, ChevronRight, Check, ChevronsUpDown, CalendarIcon } from 'lucide-react';
 import ScoringSheet from './ScoringSheet';
 import NewMatchBotcFlow from './NewMatchBotcFlow';
 import { Gamepad2, Skull, Sword } from 'lucide-react';

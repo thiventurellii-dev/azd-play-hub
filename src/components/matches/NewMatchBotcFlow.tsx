@@ -22,7 +22,7 @@ interface Player { id: string; name: string; nickname?: string; }
 interface BloodPlayerEntry { player_id: string; character_id: string; team: 'good' | 'evil'; }
 
 interface Props {
-  onComplete?: () => void;
+  onComplete?: (matchId?: string) => void;
 }
 
 const NewMatchBotcFlow = ({ onComplete }: Props) => {
@@ -109,7 +109,7 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
     }
     setSaving(true);
     try {
-      await submitBloodMatch({
+      const createdMatch = await submitBloodMatch({
         seasonId, scriptId,
         playedAt: new Date(`${playedDate}T${playedTime}`).toISOString(),
         durationMinutes: parseInt(duration) || null,
@@ -117,7 +117,7 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
         victoryConditions: selectedVictoryConditions,
       });
       notify('success', 'Partida de Blood registrada!');
-      onComplete?.();
+      onComplete?.((createdMatch as any)?.id);
       setStep(1);
       setEvilPlayers([{ player_id: '', character_id: '', team: 'evil' }]);
       setGoodPlayers([{ player_id: '', character_id: '', team: 'good' }]);

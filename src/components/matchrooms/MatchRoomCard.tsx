@@ -1,12 +1,11 @@
 import { useEffect, useState, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/lib/supabaseExternal";
 import { useAuth } from "@/contexts/AuthContext";
-import { Calendar, Users, LogIn, Clock, Share2, ClipboardList, MessageCircle, XCircle, Trash2, TrendingUp, Gamepad2 } from "lucide-react";
+import { Calendar, Users, LogIn, Clock, Share2, ClipboardList, MessageCircle, XCircle, Trash2, TrendingUp, Gamepad2, Eye } from "lucide-react";
 import { EditActionButton } from "@/components/shared/EditActionButton";
 import { generateWhatsAppInvite } from "@/lib/matchNotification";
 import { sendRoomNotifications } from "@/lib/roomNotifications";
@@ -14,6 +13,11 @@ import { toast } from "sonner";
 import RoomComments from "./RoomComments";
 import EditRoomDialog from "./EditRoomDialog";
 import { invokeEdgeFunction } from "@/lib/edgeFunctions";
+import NewMatchFlow from "@/components/matches/NewMatchFlow";
+import NewMatchBotcFlow from "@/components/matches/NewMatchBotcFlow";
+import MatchResultModal from "@/components/matches/MatchResultModal";
+import { EntitySheet } from "@/components/shared/EntitySheet";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 interface RoomPlayer {
   id: string;
@@ -33,6 +37,8 @@ interface MatchRoom {
   created_by: string;
   season_id?: string | null;
   blood_script_id?: string | null;
+  result_id?: string | null;
+  result_type?: string | null;
   game: { id: string; name: string; image_url: string | null };
 }
 
@@ -51,16 +57,21 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 
 const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const { user, isAdmin } = useAuth();
-  const navigate = useNavigate();
   const [players, setPlayers] = useState<RoomPlayer[]>([]);
   const [loading, setLoading] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [avgMmr, setAvgMmr] = useState<number | null>(null);
-  const [hasResult, setHasResult] = useState(false);
   const [scriptImageUrl, setScriptImageUrl] = useState<string | null>(null);
   const [imgFailed, setImgFailed] = useState(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  // Result modal & inline flow
+  const [resultModalOpen, setResultModalOpen] = useState(false);
+  const [matchFlowOpen, setMatchFlowOpen] = useState(false);
+  const [resultParticipantIds, setResultParticipantIds] = useState<string[]>([]);
+
+  const hasResult = !!room.result_id;
 
   const fetchPlayers = async () => {
     if (!room?.id) return;
@@ -103,15 +114,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
         if (data?.image_url) setScriptImageUrl(data.image_url);
       });
     }
-    if (room.status === "finished" && room.game?.id) {
-      const scheduledDate = new Date(room.scheduled_at);
-      const dayStart = new Date(scheduledDate); dayStart.setHours(0, 0, 0, 0);
-      const dayEnd = new Date(scheduledDate); dayEnd.setHours(23, 59, 59, 999);
-      supabase.from("matches").select("id").eq("game_id", room.game.id).gte("played_at", dayStart.toISOString()).lte("played_at", dayEnd.toISOString()).limit(1).then(({ data }) => {
-        setHasResult(!!(data && data.length > 0));
-      });
-    }
-  }, [room?.id, room?.status, room?.game?.id, room?.scheduled_at, room?.blood_script_id]);
+  }, [room?.id, room?.blood_script_id]);
 
   useEffect(() => {
     if (!room?.id) return;
@@ -123,6 +126,24 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
     return () => { supabase.removeChannel(channel); channelRef.current = null; clearInterval(poll); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [room?.id]);
+
+  // Fetch participant IDs for result permission check
+  useEffect(() => {
+    if (!room.result_id || !room.result_type) return;
+    const fetchParticipants = async () => {
+      if (room.result_type === "boardgame") {
+        const { data } = await supabase.from("match_results").select("player_id").eq("match_id", room.result_id!);
+        setResultParticipantIds((data || []).map((r: any) => r.player_id).filter(Boolean));
+      } else if (room.result_type === "blood") {
+        const { data: match } = await supabase.from("blood_matches").select("storyteller_player_id").eq("id", room.result_id!).maybeSingle();
+        const { data: bPlayers } = await supabase.from("blood_match_players").select("player_id").eq("match_id", room.result_id!);
+        const ids = (bPlayers || []).map((p: any) => p.player_id);
+        if ((match as any)?.storyteller_player_id) ids.push((match as any).storyteller_player_id);
+        setResultParticipantIds(ids);
+      }
+    };
+    fetchParticipants();
+  }, [room.result_id, room.result_type]);
 
   const confirmed = players.filter((p) => p.type === "confirmed");
   const waitlist = players.filter((p) => p.type === "waitlist");
@@ -205,6 +226,15 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
     window.open(link, "_blank");
   };
 
+  const handleResultComplete = async (matchId?: string) => {
+    if (matchId) {
+      const resultType = room.blood_script_id ? 'blood' : 'boardgame';
+      await supabase.from('match_rooms').update({ result_id: matchId, result_type: resultType } as any).eq('id', room.id);
+    }
+    setMatchFlowOpen(false);
+    onUpdate();
+  };
+
   if (!room) return null;
 
   const date = new Date(room.scheduled_at);
@@ -214,27 +244,17 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const displayName = (p: RoomPlayer) => p.profile?.nickname || p.profile?.name || "Jogador";
   const gameImageUrl = room.game?.image_url || scriptImageUrl;
   const showImage = !!gameImageUrl && !imgFailed;
+  const isBotC = !!room.blood_script_id;
 
   return (
     <>
       <div className={`rounded-lg border border-border shadow-sm text-card-foreground flex flex-col overflow-hidden relative ${showImage ? "" : "bg-card"}`}>
-        {/* Game image background — use <img> for onError fallback */}
         {showImage && (
           <div className="absolute inset-0 z-0">
-            <img
-              src={gameImageUrl}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover object-top"
-              onError={() => setImgFailed(true)}
-              loading="lazy"
-            />
-            <div className="absolute inset-0" style={{
-              background: "linear-gradient(to bottom, hsla(0,0%,4%,0.55) 0%, hsla(0,0%,4%,0.82) 40%, hsl(0,0%,4%) 70%)",
-            }} />
+            <img src={gameImageUrl} alt="" className="absolute inset-0 w-full h-full object-cover object-top" onError={() => setImgFailed(true)} loading="lazy" />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, hsla(0,0%,4%,0.55) 0%, hsla(0,0%,4%,0.82) 40%, hsl(0,0%,4%) 70%)" }} />
           </div>
         )}
-
-        {/* Fallback: no image */}
         {!gameImageUrl && (
           <div className="absolute inset-0 z-0 flex items-center justify-center opacity-5">
             <Gamepad2 className="h-32 w-32" />
@@ -278,7 +298,6 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
         </CardHeader>
 
         <CardContent className="flex-1 flex flex-col gap-3 overflow-hidden relative z-10">
-          {/* Date/time/players — white text */}
           <div className="flex items-center gap-4 text-sm text-white flex-shrink-0">
             <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5 text-gold" /> {formattedDate}</span>
             <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5 text-gold" /> {formattedTime}</span>
@@ -331,13 +350,11 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
           {room.status === "finished" && user && (
             <div className="flex-shrink-0">
               {hasResult ? (
-                <Button variant="outline" size="sm" className="w-full min-h-[40px] opacity-60 cursor-default" disabled>
-                  <ClipboardList className="h-4 w-4 mr-1" /> Resultado Registrado
+                <Button variant="outline" size="sm" className="w-full min-h-[40px]" onClick={() => setResultModalOpen(true)}>
+                  <Eye className="h-4 w-4 mr-1" /> Ver Resultados
                 </Button>
               ) : (
-                <Button variant="gold" size="sm" className="w-full min-h-[40px]" onClick={() => {
-                  navigate("/partidas", { state: { prefill: { gameId: room.game?.id, date: room.scheduled_at, playerIds: confirmed.map(p => p.player_id) } } });
-                }}>
+                <Button variant="gold" size="sm" className="w-full min-h-[40px]" onClick={() => setMatchFlowOpen(true)}>
                   <ClipboardList className="h-4 w-4 mr-1" /> Inserir Resultado
                 </Button>
               )}
@@ -357,6 +374,38 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
       </div>
 
       <EditRoomDialog open={editOpen} onOpenChange={setEditOpen} room={room} onSaved={() => { setEditOpen(false); onUpdate(); }} />
+
+      {/* Result modal */}
+      {hasResult && room.result_id && room.result_type && (
+        <MatchResultModal
+          resultId={room.result_id}
+          resultType={room.result_type}
+          open={resultModalOpen}
+          onOpenChange={setResultModalOpen}
+          participantIds={resultParticipantIds}
+        />
+      )}
+
+      {/* Inline match registration flow */}
+      <EntitySheet
+        open={matchFlowOpen}
+        onOpenChange={setMatchFlowOpen}
+        title="Registrar Resultado"
+        description="Registre o resultado desta partida."
+      >
+        <ErrorBoundary>
+          {isBotC ? (
+            <NewMatchBotcFlow onComplete={handleResultComplete} />
+          ) : (
+            <NewMatchFlow
+              prefilledGameId={room.game?.id}
+              prefilledPlayers={confirmed.map(p => p.player_id)}
+              prefilledDate={room.scheduled_at?.slice(0, 10)}
+              onComplete={handleResultComplete}
+            />
+          )}
+        </ErrorBoundary>
+      </EntitySheet>
     </>
   );
 };

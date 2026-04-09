@@ -32,7 +32,7 @@ interface Props {
   prefilledGameId?: string;
   prefilledPlayers?: string[];
   prefilledDate?: string;
-  onComplete?: () => void;
+  onComplete?: (matchId?: string) => void;
 }
 
 const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComplete }: Props) => {
@@ -318,7 +318,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
       }
 
       notify('success', 'Partida registrada com sucesso!');
-      onComplete?.();
+      onComplete?.(match.id);
       setStep(1);
       setEntries([{ player_id: '', seat_position: 1, faction: '', is_new_player: false }]);
       setPlayerScores([]);

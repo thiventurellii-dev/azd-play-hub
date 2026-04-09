@@ -213,7 +213,6 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const status = statusConfig[room.status] || statusConfig.open;
   const displayName = (p: RoomPlayer) => p.profile?.nickname || p.profile?.name || "Jogador";
   const gameImageUrl = room.game?.image_url || scriptImageUrl;
-  const [imgFailed, setImgFailed] = useState(false);
   const showImage = !!gameImageUrl && !imgFailed;
 
   return (

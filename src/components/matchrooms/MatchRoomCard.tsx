@@ -216,7 +216,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
 
   return (
     <>
-      <Card className="flex flex-col overflow-hidden relative">
+      <Card className={`flex flex-col overflow-hidden relative ${gameImageUrl ? "bg-transparent" : ""}`}>
         {/* Game image background */}
         {gameImageUrl && (
           <div

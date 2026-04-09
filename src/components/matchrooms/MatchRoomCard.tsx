@@ -162,21 +162,21 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
 
   // Fetch participant IDs for result permission check
   useEffect(() => {
-    if (!room.result_id || !room.result_type) return;
+    if (!resultId || !resultType) return;
     const fetchParticipants = async () => {
-      if (room.result_type === "boardgame") {
-        const { data } = await supabase.from("match_results").select("player_id").eq("match_id", room.result_id!);
+      if (resultType === "boardgame") {
+        const { data } = await supabase.from("match_results").select("player_id").eq("match_id", resultId);
         setResultParticipantIds((data || []).map((r: any) => r.player_id).filter(Boolean));
-      } else if (room.result_type === "blood") {
-        const { data: match } = await supabase.from("blood_matches").select("storyteller_player_id").eq("id", room.result_id!).maybeSingle();
-        const { data: bPlayers } = await supabase.from("blood_match_players").select("player_id").eq("match_id", room.result_id!);
+      } else if (resultType === "blood") {
+        const { data: match } = await supabase.from("blood_matches").select("storyteller_player_id").eq("id", resultId).maybeSingle();
+        const { data: bPlayers } = await supabase.from("blood_match_players").select("player_id").eq("match_id", resultId);
         const ids = (bPlayers || []).map((p: any) => p.player_id);
         if ((match as any)?.storyteller_player_id) ids.push((match as any).storyteller_player_id);
         setResultParticipantIds(ids);
       }
     };
     fetchParticipants();
-  }, [room.result_id, room.result_type]);
+  }, [resultId, resultType]);
 
   const confirmed = players.filter((p) => p.type === "confirmed");
   const waitlist = players.filter((p) => p.type === "waitlist");
@@ -409,10 +409,10 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
       <EditRoomDialog open={editOpen} onOpenChange={setEditOpen} room={room} onSaved={() => { setEditOpen(false); onUpdate(); }} />
 
       {/* Result modal */}
-      {hasResult && room.result_id && room.result_type && (
+      {hasResult && resultId && resultType && (
         <MatchResultModal
-          resultId={room.result_id}
-          resultType={room.result_type}
+          resultId={resultId}
+          resultType={resultType}
           open={resultModalOpen}
           onOpenChange={setResultModalOpen}
           participantIds={resultParticipantIds}

@@ -35,6 +35,8 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
       return false;
     }
 
+    alert("SW ativo: " + registration.active.state + "\nSW scriptURL: " + registration.active.scriptURL);
+
     const existingSubscription = await registration.pushManager.getSubscription();
     if (existingSubscription) {
       await existingSubscription.unsubscribe();

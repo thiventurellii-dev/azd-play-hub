@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef, type Dispatch, type SetStateAction } from "react";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabaseExternal";
@@ -8,7 +8,7 @@ import NewMatchFlow from "@/components/matches/NewMatchFlow";
 import { Calendar, ClipboardList, Filter, X, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EntitySheet } from "@/components/shared/EntitySheet";
@@ -21,6 +21,7 @@ interface MatchRoom {
   id: string; title: string; description: string | null; scheduled_at: string;
   max_players: number; status: string; created_by: string; season_id?: string | null;
   game: { id: string; name: string; image_url: string | null };
+  tags?: string[];
 }
 
 const MatchRooms = () => {
@@ -42,6 +43,8 @@ const MatchRooms = () => {
   const [gameFilter, setGameFilter] = useState('all');
   const [availabilityFilter, setAvailabilityFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
+  const [typeFilters, setTypeFilters] = useState<string[]>([]);
+  const [experienceFilters, setExperienceFilters] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState("active");
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
@@ -102,11 +105,18 @@ const MatchRooms = () => {
       .in("status", ["open", "full", "in_progress"] as any).lt("scheduled_at", now);
 
     const { data } = await supabase.from("match_rooms")
-      .select("id, title, description, scheduled_at, max_players, status, created_by, season_id, game:games(id, name, image_url)")
+      .select("id, title, description, scheduled_at, max_players, status, created_by, season_id, game:games(id, name, image_url), match_room_tag_links(room_tags(name))")
       .order("scheduled_at", { ascending: true });
 
     if (data) {
-      setRooms(data.map((r: any) => ({ ...r, game: Array.isArray(r.game) ? r.game[0] : r.game })));
+      setRooms(data.map((r: any) => ({
+        ...r,
+        game: Array.isArray(r.game) ? r.game[0] : r.game,
+        tags: (r.match_room_tag_links ?? []).flatMap((link: any) => {
+          const roomTag = Array.isArray(link.room_tags) ? link.room_tags[0] : link.room_tags;
+          return roomTag?.name ? [roomTag.name] : [];
+        }),
+      })));
     }
     setLoading(false);
   };
@@ -133,13 +143,46 @@ const MatchRooms = () => {
     return Array.from(unique.entries()).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
   }, [rooms]);
 
-  const hasActiveFilters = gameFilter !== 'all' || availabilityFilter !== 'all' || dateFilter !== 'all';
+  const normalizeTag = (tag: string) =>
+    tag
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+
+  const roomMatchesExperience = (room: MatchRoom, filter: string) => {
+    const normalizedTags = (room.tags ?? []).map(normalizeTag);
+
+    if (filter === "iniciante") return normalizedTags.some((tag) => tag.includes("iniciante"));
+    if (filter === "experiente") return normalizedTags.some((tag) => tag.includes("experiente"));
+    if (filter === "novatos") return normalizedTags.some((tag) => tag.includes("novato"));
+
+    return false;
+  };
+
+  const hasActiveFilters =
+    gameFilter !== 'all' ||
+    availabilityFilter !== 'all' ||
+    dateFilter !== 'all' ||
+    typeFilters.length > 0 ||
+    experienceFilters.length > 0;
 
   const filterRooms = (list: MatchRoom[]) => {
     return list.filter(r => {
       if (gameFilter !== 'all' && r.game?.id !== gameFilter) return false;
       if (availabilityFilter === 'available' && r.status !== 'open') return false;
       if (availabilityFilter === 'full' && r.status !== 'full') return false;
+      if (typeFilters.length > 0) {
+        const matchesType = typeFilters.some((typeFilter) =>
+          typeFilter === "casual" ? !r.season_id : Boolean(r.season_id)
+        );
+        if (!matchesType) return false;
+      }
+      if (experienceFilters.length > 0) {
+        const matchesExperience = experienceFilters.some((experienceFilter) =>
+          roomMatchesExperience(r, experienceFilter)
+        );
+        if (!matchesExperience) return false;
+      }
       if (dateFilter !== 'all') {
         const d = new Date(r.scheduled_at);
         const now = new Date();
@@ -160,9 +203,40 @@ const MatchRooms = () => {
   const activeRooms = filterRooms(rooms.filter(r => r.status === "open" || r.status === "full" || r.status === "in_progress"));
   const pastRooms = filterRooms(rooms.filter(r => r.status === "finished" || r.status === "cancelled"));
 
-  const clearFilters = () => { setGameFilter('all'); setAvailabilityFilter('all'); setDateFilter('all'); };
+  const toggleArrayFilter = (value: string, setter: Dispatch<SetStateAction<string[]>>) => {
+    setter((current) => current.includes(value) ? current.filter((item) => item !== value) : [...current, value]);
+  };
 
-  const activeFilterCount = [gameFilter !== 'all', availabilityFilter !== 'all', dateFilter !== 'all'].filter(Boolean).length;
+  const clearFilters = () => {
+    setGameFilter('all');
+    setAvailabilityFilter('all');
+    setDateFilter('all');
+    setTypeFilters([]);
+    setExperienceFilters([]);
+  };
+
+  const activeFilterCount =
+    [gameFilter !== 'all', availabilityFilter !== 'all', dateFilter !== 'all'].filter(Boolean).length +
+    typeFilters.length +
+    experienceFilters.length;
+
+  const renderFilterChip = (
+    label: string,
+    value: string,
+    selectedValues: string[],
+    setter: Dispatch<SetStateAction<string[]>>,
+  ) => (
+    <Button
+      key={value}
+      type="button"
+      variant={selectedValues.includes(value) ? "secondary" : "outline"}
+      size="sm"
+      className="h-9 px-3"
+      onClick={() => toggleArrayFilter(value, setter)}
+    >
+      {label}
+    </Button>
+  );
 
   const filterControls = (
     <>
@@ -199,6 +273,21 @@ const MatchRooms = () => {
           </SelectContent>
         </Select>
       </div>
+      <div className="space-y-1 min-w-[220px]">
+        <label className="text-xs font-medium text-muted-foreground">Tipo</label>
+        <div className="flex flex-wrap gap-2">
+          {renderFilterChip("Casual", "casual", typeFilters, setTypeFilters)}
+          {renderFilterChip("Competitivo", "competitive", typeFilters, setTypeFilters)}
+        </div>
+      </div>
+      <div className="space-y-1 min-w-[260px]">
+        <label className="text-xs font-medium text-muted-foreground">Nível</label>
+        <div className="flex flex-wrap gap-2">
+          {renderFilterChip("Iniciante", "iniciante", experienceFilters, setExperienceFilters)}
+          {renderFilterChip("Experiente", "experiente", experienceFilters, setExperienceFilters)}
+          {renderFilterChip("Novatos", "novatos", experienceFilters, setExperienceFilters)}
+        </div>
+      </div>
     </>
   );
 
@@ -217,7 +306,7 @@ const MatchRooms = () => {
 
       {/* Desktop: Filters row with action buttons on the right */}
       {!isMobile && (
-        <div className="flex items-end gap-3 mb-6">
+        <div className="flex flex-wrap items-end gap-3 mb-6">
           <Filter className="h-4 w-4 text-muted-foreground self-center mt-5" />
           {filterControls}
           {hasActiveFilters && (
@@ -407,6 +496,25 @@ const MatchRooms = () => {
                       <SelectItem value="month">Este mês</SelectItem>
                     </SelectContent>
                   </Select>
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="type">
+                <AccordionTrigger className="text-sm py-3">Tipo</AccordionTrigger>
+                <AccordionContent>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {renderFilterChip("Casual", "casual", typeFilters, setTypeFilters)}
+                    {renderFilterChip("Competitivo", "competitive", typeFilters, setTypeFilters)}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="experience">
+                <AccordionTrigger className="text-sm py-3">Nível</AccordionTrigger>
+                <AccordionContent>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {renderFilterChip("Iniciante", "iniciante", experienceFilters, setExperienceFilters)}
+                    {renderFilterChip("Experiente", "experiente", experienceFilters, setExperienceFilters)}
+                    {renderFilterChip("Novatos", "novatos", experienceFilters, setExperienceFilters)}
+                  </div>
                 </AccordionContent>
               </AccordionItem>
             </Accordion>

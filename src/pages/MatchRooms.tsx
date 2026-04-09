@@ -5,12 +5,16 @@ import { supabase } from "@/lib/supabaseExternal";
 import MatchRoomCard from "@/components/matchrooms/MatchRoomCard";
 import CreateRoomDialog from "@/components/matchrooms/CreateRoomDialog";
 import NewMatchFlow from "@/components/matches/NewMatchFlow";
-import { Calendar, ClipboardList, Filter, X } from "lucide-react";
+import { Calendar, ClipboardList, Filter, X, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { EntitySheet } from "@/components/shared/EntitySheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 
 interface MatchRoom {
@@ -21,6 +25,7 @@ interface MatchRoom {
 
 const MatchRooms = () => {
   const location = useLocation();
+  const isMobile = useIsMobile();
   const [searchParams, setSearchParams] = useSearchParams();
   const [rooms, setRooms] = useState<MatchRoom[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,6 +43,7 @@ const MatchRooms = () => {
   const [availabilityFilter, setAvailabilityFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
   const [activeTab, setActiveTab] = useState("active");
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
   useEffect(() => {
     const state = location.state as any;
@@ -108,13 +114,11 @@ const MatchRooms = () => {
   useEffect(() => {
     fetchRooms();
 
-    // Realtime subscription
     const channel = supabase.channel("match-rooms-list")
       .on("postgres_changes", { event: "*", schema: "public", table: "match_rooms" }, () => fetchRooms())
       .on("postgres_changes", { event: "*", schema: "public", table: "match_room_players" }, () => fetchRooms())
       .subscribe();
 
-    // Polling fallback every 15s in case realtime isn't enabled
     const poll = setInterval(fetchRooms, 15000);
 
     return () => {
@@ -158,44 +162,35 @@ const MatchRooms = () => {
 
   const clearFilters = () => { setGameFilter('all'); setAvailabilityFilter('all'); setDateFilter('all'); };
 
-  return (
-    <div className="container py-10">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-        <div className="flex items-center gap-3">
-          <Calendar className="h-8 w-8 text-gold" />
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold">Partidas</h1>
-            <p className="text-muted-foreground">Agende e entre em salas de partida</p>
-          </div>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => { setPrefill(null); setMatchFlowOpen(true); }}>
-            <ClipboardList className="h-4 w-4 mr-1" /> Registrar Resultado
-          </Button>
-          <CreateRoomDialog onCreated={fetchRooms} />
-        </div>
-      </div>
+  const activeFilterCount = [gameFilter !== 'all', availabilityFilter !== 'all', dateFilter !== 'all'].filter(Boolean).length;
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3 mb-6">
-        <Filter className="h-4 w-4 text-muted-foreground" />
+  const filterControls = (
+    <>
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-muted-foreground">Jogo</label>
         <Select value={gameFilter} onValueChange={setGameFilter}>
-          <SelectTrigger className="w-[160px] h-9"><SelectValue placeholder="Jogo" /></SelectTrigger>
+          <SelectTrigger className="w-full h-9"><SelectValue placeholder="Jogo" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os jogos</SelectItem>
             {games.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
           </SelectContent>
         </Select>
+      </div>
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-muted-foreground">Disponibilidade</label>
         <Select value={availabilityFilter} onValueChange={setAvailabilityFilter}>
-          <SelectTrigger className="w-[140px] h-9"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-full h-9"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas</SelectItem>
             <SelectItem value="available">Com vagas</SelectItem>
             <SelectItem value="full">Lotadas</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+      <div className="space-y-1">
+        <label className="text-xs font-medium text-muted-foreground">Data</label>
         <Select value={dateFilter} onValueChange={setDateFilter}>
-          <SelectTrigger className="w-[130px] h-9"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-full h-9"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Qualquer data</SelectItem>
             <SelectItem value="today">Hoje</SelectItem>
@@ -203,12 +198,70 @@ const MatchRooms = () => {
             <SelectItem value="month">Este mês</SelectItem>
           </SelectContent>
         </Select>
-        {hasActiveFilters && (
-          <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1 text-muted-foreground hover:text-foreground">
-            <X className="h-3.5 w-3.5" /> Limpar
-          </Button>
-        )}
       </div>
+    </>
+  );
+
+  return (
+    <div className="container py-6 sm:py-10 px-4">
+      {/* Header */}
+      <div className="flex flex-col gap-4 mb-6 sm:mb-8">
+        <div className="flex items-center gap-3">
+          <Calendar className="h-7 w-7 sm:h-8 sm:w-8 text-gold" />
+          <div>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">Partidas</h1>
+            <p className="text-sm text-muted-foreground">Agende e entre em salas de partida</p>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className="flex-1 sm:flex-none min-h-[44px]"
+            onClick={() => { setPrefill(null); setMatchFlowOpen(true); }}
+          >
+            <ClipboardList className="h-4 w-4 mr-1" /> Registrar Resultado
+          </Button>
+          <CreateRoomDialog onCreated={fetchRooms} />
+        </div>
+      </div>
+
+      {/* Filters — Desktop */}
+      {!isMobile && (
+        <div className="flex flex-wrap items-end gap-3 mb-6">
+          <Filter className="h-4 w-4 text-muted-foreground self-center mt-5" />
+          {filterControls}
+          {hasActiveFilters && (
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1 text-muted-foreground hover:text-foreground self-end mb-0.5">
+              <X className="h-3.5 w-3.5" /> Limpar
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Filters — Mobile button */}
+      {isMobile && (
+        <div className="flex items-center gap-2 mb-4">
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2 min-h-[40px]"
+            onClick={() => setFilterDrawerOpen(true)}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            Filtros
+            {activeFilterCount > 0 && (
+              <span className="ml-1 bg-gold text-primary-foreground rounded-full h-5 w-5 flex items-center justify-center text-[10px] font-bold">
+                {activeFilterCount}
+              </span>
+            )}
+          </Button>
+          {hasActiveFilters && (
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1 text-muted-foreground">
+              <X className="h-3.5 w-3.5" /> Limpar
+            </Button>
+          )}
+        </div>
+      )}
 
       {loading ? (
         <div className="flex justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-2 border-gold border-t-transparent" /></div>
@@ -281,19 +334,87 @@ const MatchRooms = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={matchFlowOpen} onOpenChange={setMatchFlowOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>Registrar Resultado</DialogTitle></DialogHeader>
-          <ErrorBoundary>
-            <NewMatchFlow
-              prefilledGameId={prefill?.gameId}
-              prefilledPlayers={prefill?.playerIds}
-              prefilledDate={prefill?.date?.slice(0, 10)}
-              onComplete={() => { setMatchFlowOpen(false); fetchRooms(); }}
-            />
-          </ErrorBoundary>
-        </DialogContent>
-      </Dialog>
+      {/* Registrar Resultado — EntitySheet */}
+      <EntitySheet
+        open={matchFlowOpen}
+        onOpenChange={setMatchFlowOpen}
+        title="Registrar Resultado"
+        description="Registre o resultado de uma partida jogada."
+        widthClass="sm:max-w-2xl"
+      >
+        <ErrorBoundary>
+          <NewMatchFlow
+            prefilledGameId={prefill?.gameId}
+            prefilledPlayers={prefill?.playerIds}
+            prefilledDate={prefill?.date?.slice(0, 10)}
+            onComplete={() => { setMatchFlowOpen(false); fetchRooms(); }}
+          />
+        </ErrorBoundary>
+      </EntitySheet>
+
+      {/* Mobile Filter Drawer */}
+      <Sheet open={filterDrawerOpen} onOpenChange={setFilterDrawerOpen}>
+        <SheetContent side="right" className="w-[300px] p-0 flex flex-col">
+          <SheetHeader className="px-6 pt-6 pb-4 border-b border-border">
+            <SheetTitle className="flex items-center gap-2">
+              <SlidersHorizontal className="h-5 w-5" /> Filtros
+            </SheetTitle>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto px-6 py-4">
+            <Accordion type="multiple" defaultValue={["game", "availability", "date"]} className="space-y-0">
+              <AccordionItem value="game">
+                <AccordionTrigger className="text-sm py-3">Jogo</AccordionTrigger>
+                <AccordionContent>
+                  <Select value={gameFilter} onValueChange={setGameFilter}>
+                    <SelectTrigger className="w-full h-9"><SelectValue placeholder="Jogo" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todos os jogos</SelectItem>
+                      {games.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="availability">
+                <AccordionTrigger className="text-sm py-3">Disponibilidade</AccordionTrigger>
+                <AccordionContent>
+                  <Select value={availabilityFilter} onValueChange={setAvailabilityFilter}>
+                    <SelectTrigger className="w-full h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas</SelectItem>
+                      <SelectItem value="available">Com vagas</SelectItem>
+                      <SelectItem value="full">Lotadas</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </AccordionContent>
+              </AccordionItem>
+              <AccordionItem value="date">
+                <AccordionTrigger className="text-sm py-3">Data</AccordionTrigger>
+                <AccordionContent>
+                  <Select value={dateFilter} onValueChange={setDateFilter}>
+                    <SelectTrigger className="w-full h-9"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Qualquer data</SelectItem>
+                      <SelectItem value="today">Hoje</SelectItem>
+                      <SelectItem value="week">Esta semana</SelectItem>
+                      <SelectItem value="month">Este mês</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
+          <div className="px-6 py-4 border-t border-border flex gap-2">
+            {hasActiveFilters && (
+              <Button variant="ghost" size="sm" className="flex-1" onClick={() => { clearFilters(); }}>
+                Limpar
+              </Button>
+            )}
+            <Button variant="gold" size="sm" className="flex-1 min-h-[44px]" onClick={() => setFilterDrawerOpen(false)}>
+              Aplicar
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

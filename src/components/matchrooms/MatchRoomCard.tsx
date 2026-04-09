@@ -261,8 +261,13 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
 
   const handleResultComplete = async (matchId?: string) => {
     if (matchId) {
-      const resultType = room.blood_script_id ? 'blood' : 'boardgame';
-      await supabase.from('match_rooms').update({ result_id: matchId, result_type: resultType } as any).eq('id', room.id);
+      const rt = room.blood_script_id ? 'blood' : 'boardgame';
+      // Try to persist to DB (will silently fail if columns don't exist yet)
+      await supabase.from('match_rooms').update({ result_id: matchId, result_type: rt } as any).eq('id', room.id);
+      // Update local state immediately
+      setResultId(matchId);
+      setResultType(rt);
+      setHasResult(true);
     }
     setMatchFlowOpen(false);
     onUpdate();

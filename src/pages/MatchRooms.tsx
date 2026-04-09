@@ -213,21 +213,11 @@ const MatchRooms = () => {
             <p className="text-sm text-muted-foreground">Agende e entre em salas de partida</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            className="flex-1 sm:flex-none min-h-[44px]"
-            onClick={() => { setPrefill(null); setMatchFlowOpen(true); }}
-          >
-            <ClipboardList className="h-4 w-4 mr-1" /> Registrar Resultado
-          </Button>
-          <CreateRoomDialog onCreated={fetchRooms} />
-        </div>
       </div>
 
-      {/* Filters — Desktop */}
+      {/* Desktop: Filters row with action buttons on the right */}
       {!isMobile && (
-        <div className="flex flex-wrap items-end gap-3 mb-6">
+        <div className="flex items-end gap-3 mb-6">
           <Filter className="h-4 w-4 text-muted-foreground self-center mt-5" />
           {filterControls}
           {hasActiveFilters && (
@@ -235,31 +225,15 @@ const MatchRooms = () => {
               <X className="h-3.5 w-3.5" /> Limpar
             </Button>
           )}
-        </div>
-      )}
-
-      {/* Filters — Mobile button */}
-      {isMobile && (
-        <div className="flex items-center gap-2 mb-4">
+          <div className="flex-1" />
           <Button
             variant="outline"
-            size="sm"
-            className="gap-2 min-h-[40px]"
-            onClick={() => setFilterDrawerOpen(true)}
+            className="min-h-[44px] min-w-[180px]"
+            onClick={() => { setPrefill(null); setMatchFlowOpen(true); }}
           >
-            <SlidersHorizontal className="h-4 w-4" />
-            Filtros
-            {activeFilterCount > 0 && (
-              <span className="ml-1 bg-gold text-primary-foreground rounded-full h-5 w-5 flex items-center justify-center text-[10px] font-bold">
-                {activeFilterCount}
-              </span>
-            )}
+            <ClipboardList className="h-4 w-4 mr-1" /> Registrar Resultado
           </Button>
-          {hasActiveFilters && (
-            <Button variant="ghost" size="sm" onClick={clearFilters} className="gap-1 text-muted-foreground">
-              <X className="h-3.5 w-3.5" /> Limpar
-            </Button>
-          )}
+          <CreateRoomDialog onCreated={fetchRooms} />
         </div>
       )}
 
@@ -267,10 +241,48 @@ const MatchRooms = () => {
         <div className="flex justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-2 border-gold border-t-transparent" /></div>
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="bg-secondary mb-6">
-            <TabsTrigger value="active">Abertas ({activeRooms.length})</TabsTrigger>
-            <TabsTrigger value="past">Encerradas ({pastRooms.length})</TabsTrigger>
-          </TabsList>
+          {/* Mobile: Tabs + Filter button on same row */}
+          {isMobile ? (
+            <div className="flex items-center gap-2 mb-4">
+              <TabsList className="bg-secondary flex-1">
+                <TabsTrigger value="active" className="flex-1">Abertas ({activeRooms.length})</TabsTrigger>
+                <TabsTrigger value="past" className="flex-1">Encerradas ({pastRooms.length})</TabsTrigger>
+              </TabsList>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 shrink-0"
+                onClick={() => setFilterDrawerOpen(true)}
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                {activeFilterCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-gold text-primary-foreground rounded-full h-4 w-4 flex items-center justify-center text-[9px] font-bold">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </Button>
+            </div>
+          ) : (
+            <TabsList className="bg-secondary mb-6">
+              <TabsTrigger value="active">Abertas ({activeRooms.length})</TabsTrigger>
+              <TabsTrigger value="past">Encerradas ({pastRooms.length})</TabsTrigger>
+            </TabsList>
+          )}
+
+          {/* Mobile: action buttons */}
+          {isMobile && (
+            <div className="flex gap-2 mb-4">
+              <Button
+                variant="outline"
+                className="flex-1 min-h-[44px] text-sm"
+                onClick={() => { setPrefill(null); setMatchFlowOpen(true); }}
+              >
+                <ClipboardList className="h-4 w-4 mr-1 shrink-0" /> Registrar Resultado
+              </Button>
+              <CreateRoomDialog onCreated={fetchRooms} />
+            </div>
+          )}
+
           <TabsContent value="active">
             {activeRooms.length === 0 ? (
               <div className="text-center py-16 text-muted-foreground">
@@ -281,9 +293,7 @@ const MatchRooms = () => {
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {activeRooms.map(room => (
-                  <div key={room.id}>
-                    <MatchRoomCard room={room} onUpdate={fetchRooms} />
-                  </div>
+                  <MatchRoomCard key={room.id} room={room} onUpdate={fetchRooms} />
                 ))}
               </div>
             )}
@@ -294,9 +304,7 @@ const MatchRooms = () => {
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {pastRooms.map(room => (
-                  <div key={room.id}>
-                    <MatchRoomCard room={room} onUpdate={fetchRooms} />
-                  </div>
+                  <MatchRoomCard key={room.id} room={room} onUpdate={fetchRooms} />
                 ))}
               </div>
             )}

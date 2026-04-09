@@ -80,6 +80,7 @@ const BoardgameResult = ({ resultId }: Props) => {
   if (!data) return <div className="text-center py-8 text-muted-foreground">Resultado não encontrado</div>;
 
   const winner = data.results[0];
+  const hasFactions = data.results.some(r => r.faction);
 
   return (
     <div className="space-y-4">
@@ -101,6 +102,7 @@ const BoardgameResult = ({ resultId }: Props) => {
             <tr className="bg-muted/50">
               <th className="text-left px-3 py-2 font-medium text-muted-foreground">#</th>
               <th className="text-left px-3 py-2 font-medium text-muted-foreground">Jogador</th>
+              {hasFactions && <th className="text-left px-3 py-2 font-medium text-muted-foreground">Facção</th>}
               <th className="text-right px-3 py-2 font-medium text-muted-foreground">Pontos</th>
               <th className="text-right px-3 py-2 font-medium text-muted-foreground">MMR</th>
             </tr>
@@ -112,6 +114,15 @@ const BoardgameResult = ({ resultId }: Props) => {
                 <td className="px-3 py-2">
                   <span className={i === 0 ? "text-gold font-semibold" : ""}>{r.player_name}</span>
                 </td>
+                {hasFactions && (
+                  <td className="px-3 py-2">
+                    {r.faction && (
+                      <Badge variant="outline" className="text-xs border-muted-foreground/30">
+                        {r.faction}
+                      </Badge>
+                    )}
+                  </td>
+                )}
                 <td className="px-3 py-2 text-right">{r.score}</td>
                 <td className="px-3 py-2 text-right">
                   <Badge

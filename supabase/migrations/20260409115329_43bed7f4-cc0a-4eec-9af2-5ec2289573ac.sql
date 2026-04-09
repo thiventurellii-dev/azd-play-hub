@@ -1,0 +1,2 @@
+ALTER TABLE public.notifications DROP CONSTRAINT notifications_room_id_fkey;
+ALTER TABLE public.notifications ADD CONSTRAINT notifications_room_id_fkey FOREIGN KEY (room_id) REFERENCES public.match_rooms(id) ON DELETE CASCADE;

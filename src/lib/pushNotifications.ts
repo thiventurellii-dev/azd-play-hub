@@ -27,6 +27,7 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
     if (permission !== "granted") return false;
 
     const registration = await navigator.serviceWorker.ready;
+    await registration.update();
 
     const existingSubscription = await registration.pushManager.getSubscription();
     if (existingSubscription) {
@@ -35,6 +36,7 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
 
     const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
     alert("Tamanho da chave: " + applicationServerKey.byteLength + " bytes (deve ser 65)");
+    alert("Primeiro byte da chave: " + applicationServerKey[0]);
 
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,

@@ -1,6 +1,7 @@
 import { invokeEdgeFunction } from "@/lib/edgeFunctions";
 
 const VAPID_PUBLIC_KEY = "BAITuvhF4Zt8W_01qOyLgbWdf6LK_9J3e7-3zNBpkrpiJaPLB52rXuJE2OJstrO_Ke35RJPpLo8At9OARus4_pQ";
+const VAPID_PUBLIC_KEY_BYTES = new Uint8Array([4, 2, 19, 186, 248, 69, 225, 155, 124, 91, 253, 53, 168, 236, 139, 129, 181, 157, 127, 162, 202, 255, 210, 119, 123, 191, 183, 204, 208, 105, 146, 186, 98, 37, 163, 203, 7, 157, 171, 94, 226, 68, 216, 226, 108, 182, 179, 191, 41, 237, 249, 68, 147, 233, 46, 143, 0, 183, 211, 128, 70, 235, 56, 254, 148]);
 
 function urlBase64ToUint8Array(base64String: string) {
   const cleaned = base64String.trim().replace(/\s+/g, "").replace(/=+$/g, "");
@@ -36,19 +37,30 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
     }
 
     alert("SW ativo: " + registration.active.state + "\nSW scriptURL: " + registration.active.scriptURL);
+    alert("registration.active existe: " + String(!!registration.active));
 
     const existingSubscription = await registration.pushManager.getSubscription();
     if (existingSubscription) {
       await existingSubscription.unsubscribe();
     }
 
-    const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
-    alert("Tamanho da chave: " + applicationServerKey.byteLength + " bytes (deve ser 65)");
-    alert("Primeiro byte da chave: " + applicationServerKey[0]);
+    try {
+      const sanitySubscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+      });
+      alert("Sanity check sem chave: subscribe funcionou inesperadamente.");
+      await sanitySubscription.unsubscribe();
+    } catch (sanityError: any) {
+      alert("Sanity check sem chave: " + (sanityError?.message || String(sanityError)));
+    }
+
+    alert("VAPID_PUBLIC_KEY intacta: " + VAPID_PUBLIC_KEY);
+    alert("Tamanho da chave hardcoded: " + VAPID_PUBLIC_KEY_BYTES.byteLength + " bytes (deve ser 65)");
+    alert("Primeiro byte da chave hardcoded: " + VAPID_PUBLIC_KEY_BYTES[0]);
 
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey,
+      applicationServerKey: VAPID_PUBLIC_KEY_BYTES,
     });
 
     const subJson = subscription.toJSON();

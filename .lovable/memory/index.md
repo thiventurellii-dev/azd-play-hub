@@ -7,6 +7,7 @@ Community name: Amizade (AzD). Board game ranking with ELO/MMR.
 Lovable Cloud enabled. Roles in user_roles table (admin/player).
 Logo: src/assets/azd-logo.png (white on black, use invert class).
 Public routes: /, /about, /login, /register, /complete-profile. All others protected.
+Uses external Supabase DB — always validate changes against it (see constraints/external-db).
 
 ## Memories
 
@@ -16,3 +17,5 @@ Public routes: /, /about, /login, /register, /complete-profile. All others prote
 - [Blood scoring](mem://features/blood-scoring) — BotC scoring system with recalculation
 - [Match rooms](mem://features/match-rooms) — Salas de partida com realtime, waitlist, WhatsApp invite, webhook placeholder
 - [Navbar structure](mem://features/navbar) — Dropdowns: Competitivo (Seasons, Torneios), Acervo (Regras, Coleção, Materiais), Nossas Redes. Partidas link direto com Calendar icon. Mobile: accordion.
+- [Entity edit pattern](mem://features/entity-edit-pattern) — EditActionButton and EntityEditButton reusable patterns
+- [External DB constraint](mem://constraints/external-db) — Always validate changes against the external Supabase DB, not Lovable Cloud

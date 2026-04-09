@@ -70,8 +70,41 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const [resultModalOpen, setResultModalOpen] = useState(false);
   const [matchFlowOpen, setMatchFlowOpen] = useState(false);
   const [resultParticipantIds, setResultParticipantIds] = useState<string[]>([]);
+  const [resultId, setResultId] = useState<string | null>(room.result_id || null);
+  const [resultType, setResultType] = useState<string | null>(room.result_type || null);
+  const [hasResult, setHasResult] = useState(!!room.result_id);
 
-  const hasResult = !!room.result_id;
+  // Fallback: check for result via date-based query if result_id not set
+  useEffect(() => {
+    if (room.result_id) {
+      setResultId(room.result_id);
+      setResultType(room.result_type || null);
+      setHasResult(true);
+      return;
+    }
+    if (room.status !== "finished" || !room.game?.id) return;
+    const scheduledDate = new Date(room.scheduled_at);
+    const dayStart = new Date(scheduledDate); dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(scheduledDate); dayEnd.setHours(23, 59, 59, 999);
+
+    if (room.blood_script_id) {
+      supabase.from("blood_matches").select("id").gte("played_at", dayStart.toISOString()).lte("played_at", dayEnd.toISOString()).limit(1).then(({ data }) => {
+        if (data && data.length > 0) {
+          setResultId(data[0].id);
+          setResultType("blood");
+          setHasResult(true);
+        }
+      });
+    } else {
+      supabase.from("matches").select("id").eq("game_id", room.game.id).gte("played_at", dayStart.toISOString()).lte("played_at", dayEnd.toISOString()).limit(1).then(({ data }) => {
+        if (data && data.length > 0) {
+          setResultId(data[0].id);
+          setResultType("boardgame");
+          setHasResult(true);
+        }
+      });
+    }
+  }, [room.result_id, room.result_type, room.status, room.game?.id, room.scheduled_at, room.blood_script_id]);
 
   const fetchPlayers = async () => {
     if (!room?.id) return;

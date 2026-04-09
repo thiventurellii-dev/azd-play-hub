@@ -2,14 +2,13 @@
   "name": "Amizade (AzD)",
   "short_name": "AzD",
   "description": "Comunidade de board games Amizade — rankings, partidas e mais.",
-  "id": "/",
+  "id": "/?v=3",
   "start_url": "/",
   "prefer_related_applications": false,
   "display": "standalone",
   "orientation": "portrait",
   "theme_color": "#0A0A0A",
   "background_color": "#0A0A0A",
-  "gcm_sender_id": "103953800507",
   "icons": [
     {
       "src": "/pwa-icon-192.png",

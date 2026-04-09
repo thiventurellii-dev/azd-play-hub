@@ -25,7 +25,7 @@ if (isPreviewHost || isInIframe) {
     // Unregister all existing SWs (cleans up vite-plugin-pwa leftovers)
     await Promise.all(registrations.map((r) => r.unregister()));
     // Register fresh SW
-    navigator.serviceWorker.register("/sw.js?v=2", { scope: "/" }).catch((err) => {
+    navigator.serviceWorker.register("/service-worker-v3.js?v=3", { scope: "/" }).catch((err) => {
       console.warn("SW registration failed:", err);
     });
   });

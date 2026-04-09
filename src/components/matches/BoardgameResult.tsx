@@ -15,6 +15,7 @@ interface ResultRow {
   mmr_before: number;
   mmr_change: number;
   mmr_after: number;
+  faction: string | null;
 }
 
 interface MatchData {

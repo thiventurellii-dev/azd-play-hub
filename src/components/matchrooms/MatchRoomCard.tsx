@@ -59,6 +59,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const [avgMmr, setAvgMmr] = useState<number | null>(null);
   const [hasResult, setHasResult] = useState(false);
   const [scriptImageUrl, setScriptImageUrl] = useState<string | null>(null);
+  const [imgFailed, setImgFailed] = useState(false);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const fetchPlayers = async () => {
@@ -212,20 +213,21 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const status = statusConfig[room.status] || statusConfig.open;
   const displayName = (p: RoomPlayer) => p.profile?.nickname || p.profile?.name || "Jogador";
   const gameImageUrl = room.game?.image_url || scriptImageUrl;
+  const showImage = !!gameImageUrl && !imgFailed;
 
   return (
     <>
-      <div className={`rounded-lg border border-border shadow-sm text-card-foreground flex flex-col overflow-hidden relative ${gameImageUrl ? "" : "bg-card"}`}>
-        {/* Game image background */}
-        {gameImageUrl && (
-          <div
-            className="absolute inset-0 z-0"
-            style={{
-              backgroundImage: `url(${gameImageUrl})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center top",
-            }}
-          >
+      <div className={`rounded-lg border border-border shadow-sm text-card-foreground flex flex-col overflow-hidden relative ${showImage ? "" : "bg-card"}`}>
+        {/* Game image background — use <img> for onError fallback */}
+        {showImage && (
+          <div className="absolute inset-0 z-0">
+            <img
+              src={gameImageUrl}
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover object-top"
+              onError={() => setImgFailed(true)}
+              loading="lazy"
+            />
             <div className="absolute inset-0" style={{
               background: "linear-gradient(to bottom, hsla(0,0%,4%,0.55) 0%, hsla(0,0%,4%,0.82) 40%, hsl(0,0%,4%) 70%)",
             }} />

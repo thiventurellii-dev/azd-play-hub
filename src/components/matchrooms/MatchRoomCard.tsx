@@ -32,6 +32,7 @@ interface MatchRoom {
   status: string;
   created_by: string;
   season_id?: string | null;
+  blood_script_id?: string | null;
   game: { id: string; name: string; image_url: string | null };
 }
 
@@ -57,6 +58,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const [tags, setTags] = useState<string[]>([]);
   const [avgMmr, setAvgMmr] = useState<number | null>(null);
   const [hasResult, setHasResult] = useState(false);
+  const [scriptImageUrl, setScriptImageUrl] = useState<string | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const fetchPlayers = async () => {
@@ -95,6 +97,12 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
     supabase.from("match_room_tag_links").select("tag_id, room_tags(name)").eq("room_id", room.id).then(({ data }) => {
       if (data) setTags(data.map((d: any) => d.room_tags?.name).filter(Boolean));
     });
+    // Fetch script image for BotC rooms
+    if (room.blood_script_id) {
+      supabase.from("blood_scripts").select("image_url").eq("id", room.blood_script_id).maybeSingle().then(({ data }) => {
+        if (data?.image_url) setScriptImageUrl(data.image_url);
+      });
+    }
     if (room.status === "finished" && room.game?.id) {
       const scheduledDate = new Date(room.scheduled_at);
       const dayStart = new Date(scheduledDate); dayStart.setHours(0, 0, 0, 0);
@@ -103,7 +111,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
         setHasResult(!!(data && data.length > 0));
       });
     }
-  }, [room?.id, room?.status, room?.game?.id, room?.scheduled_at]);
+  }, [room?.id, room?.status, room?.game?.id, room?.scheduled_at, room?.blood_script_id]);
 
   useEffect(() => {
     if (!room?.id) return;
@@ -204,7 +212,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const formattedTime = date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   const status = statusConfig[room.status] || statusConfig.open;
   const displayName = (p: RoomPlayer) => p.profile?.nickname || p.profile?.name || "Jogador";
-  const gameImageUrl = room.game?.image_url;
+  const gameImageUrl = room.game?.image_url || scriptImageUrl;
 
   return (
     <>

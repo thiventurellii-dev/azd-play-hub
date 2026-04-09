@@ -70,7 +70,7 @@ const MatchRooms = () => {
 
     Promise.resolve(
       supabase.from("match_rooms")
-        .select("id, title, description, scheduled_at, max_players, status, created_by, season_id, game:games(id, name, image_url)")
+        .select("id, title, description, scheduled_at, max_players, status, created_by, season_id, blood_script_id, result_id, result_type, game:games(id, name, image_url)")
         .eq("id", roomParam)
         .maybeSingle()
     ).then(({ data }) => {

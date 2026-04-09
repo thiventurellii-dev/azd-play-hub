@@ -33,9 +33,12 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
       await existingSubscription.unsubscribe();
     }
 
+    const applicationServerKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+    alert("Tamanho da chave: " + applicationServerKey.byteLength + " bytes (deve ser 65)");
+
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      applicationServerKey,
     });
 
     const subJson = subscription.toJSON();

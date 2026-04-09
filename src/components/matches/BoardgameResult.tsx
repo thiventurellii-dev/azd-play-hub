@@ -42,7 +42,7 @@ const BoardgameResult = ({ resultId }: Props) => {
 
       const { data: results } = await supabase
         .from("match_results")
-        .select("player_id, position, score, mmr_before, mmr_change, mmr_after")
+        .select("player_id, position, score, mmr_before, mmr_change, mmr_after, faction")
         .eq("match_id", resultId)
         .order("position");
 

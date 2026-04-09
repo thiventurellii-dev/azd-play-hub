@@ -8,7 +8,7 @@ import NewMatchFlow from "@/components/matches/NewMatchFlow";
 import { Calendar, ClipboardList, Filter, X, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EntitySheet } from "@/components/shared/EntitySheet";

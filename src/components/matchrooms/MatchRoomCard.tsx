@@ -158,7 +158,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
           setHasResult(!!(data && data.length > 0));
         });
     }
-  }, [room?.id, room?.status]);
+  }, [room?.id, room?.status, room?.game?.id, room?.scheduled_at]);
 
   useEffect(() => {
     if (!room?.id) return;

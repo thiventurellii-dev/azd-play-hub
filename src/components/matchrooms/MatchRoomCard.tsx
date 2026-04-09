@@ -410,9 +410,10 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
             </div>
           )}
 
-          <div className="flex-1 min-h-4" />
+          <div className="flex-1" />
 
-          <div className="mt-3 grid grid-cols-[auto_1fr] gap-2 flex-shrink-0">
+          {/* Bottom-pinned section — always at the same position */}
+          <div className="mt-auto pt-3 grid grid-cols-[auto_1fr] gap-2 flex-shrink-0">
             <Button
               variant="ghost"
               size="sm"
@@ -457,7 +458,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
             )}
           </div>
 
-          <div className="flex gap-2 flex-shrink-0 mt-2">
+          <div className="flex gap-2 flex-shrink-0">
             {canInteract && user && (
               isInRoom ? (
                 <Button variant="outline" size="sm" className="flex-1 min-h-[44px]" onClick={handleLeave} disabled={loading}>

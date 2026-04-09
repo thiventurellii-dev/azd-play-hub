@@ -30,6 +30,11 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
     const registration = await navigator.serviceWorker.ready;
     await registration.update();
 
+    if (!registration.active) {
+      alert("Service Worker ainda não está ativo. Aguarde um segundo.");
+      return false;
+    }
+
     const existingSubscription = await registration.pushManager.getSubscription();
     if (existingSubscription) {
       await existingSubscription.unsubscribe();

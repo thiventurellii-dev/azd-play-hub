@@ -273,16 +273,16 @@ const MatchRooms = () => {
           </SelectContent>
         </Select>
       </div>
-      <div className="space-y-1 min-w-[220px]">
+      <div className="space-y-1">
         <label className="text-xs font-medium text-muted-foreground">Tipo</label>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-1.5">
           {renderFilterChip("Casual", "casual", typeFilters, setTypeFilters)}
           {renderFilterChip("Competitivo", "competitive", typeFilters, setTypeFilters)}
         </div>
       </div>
-      <div className="space-y-1 min-w-[260px]">
+      <div className="space-y-1">
         <label className="text-xs font-medium text-muted-foreground">Nível</label>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-1.5">
           {renderFilterChip("Iniciante", "iniciante", experienceFilters, setExperienceFilters)}
           {renderFilterChip("Experiente", "experiente", experienceFilters, setExperienceFilters)}
           {renderFilterChip("Novatos", "novatos", experienceFilters, setExperienceFilters)}

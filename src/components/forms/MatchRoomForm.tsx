@@ -31,15 +31,10 @@ export interface MatchRoomData {
 }
 
 interface MatchRoomFormProps {
-  /** Pass room data for edit mode; omit for create mode */
   room?: MatchRoomData | null;
-  /** Shows admin-only fields (status change) */
   isAdminMode?: boolean;
-  /** Called after successful save */
   onSuccess?: () => void;
 }
-
-/* ── Shared data query ─────────────────────────────── */
 
 const useFormOptions = (enabled: boolean) =>
   useQuery({
@@ -62,7 +57,35 @@ const useFormOptions = (enabled: boolean) =>
     staleTime: 30_000,
   });
 
-/* ── Component ─────────────────────────────────────── */
+const categoryCards = [
+  {
+    id: "boardgame" as const,
+    label: "Boardgame",
+    description: "Jogos de tabuleiro",
+    icon: Gamepad2,
+    iconColor: "text-gold",
+    borderHover: "hover:border-gold/60",
+    borderActive: "border-gold",
+  },
+  {
+    id: "botc" as const,
+    label: "Blood on the Clocktower",
+    description: "BotC",
+    icon: Skull,
+    iconColor: "text-red-400",
+    borderHover: "hover:border-red-500/60",
+    borderActive: "border-red-500",
+  },
+  {
+    id: "rpg" as const,
+    label: "RPG",
+    description: "Em breve",
+    icon: Sword,
+    iconColor: "text-purple-400",
+    borderHover: "hover:border-purple-500/60",
+    borderActive: "border-purple-500",
+  },
+];
 
 const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormProps) => {
   const { user } = useAuth();
@@ -75,10 +98,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
   const availableTags = useMemo(() => options?.tags ?? [], [options?.tags]);
   const seasons = useMemo(() => options?.seasons ?? [], [options?.seasons]);
 
-  // Category picker (create only)
   const [category, setCategory] = useState<"boardgame" | "botc" | "rpg" | "">("");
-
-  // Form fields
   const [gameId, setGameId] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -91,7 +111,6 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
   const [selectedSeasonId, setSelectedSeasonId] = useState("");
   const [status, setStatus] = useState("");
 
-  // Pre-fill on edit
   useEffect(() => {
     if (!room) return;
     setGameId(room.game?.id ?? "");
@@ -104,7 +123,6 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
     setSelectedSeasonId(room.season_id ?? "");
     setSelectedScriptId(room.blood_script_id ?? "");
     setStatus("");
-    // Determine category from game slug
     const game = games.find(g => g.id === room.game?.id);
     if (game?.slug === "blood-on-the-clocktower") {
       setCategory("botc");
@@ -113,7 +131,6 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
     }
   }, [room, games]);
 
-  // Fetch existing tags for edit
   useEffect(() => {
     if (!room?.id) return;
     supabase
@@ -125,7 +142,6 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
       });
   }, [room?.id]);
 
-  // Auto-set maxPlayers when game changes
   useEffect(() => {
     if (isEdit) return;
     const game = games.find(g => g.id === gameId);
@@ -149,8 +165,6 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
   const toggleTag = (tagId: string) =>
     setSelectedTagIds(prev => prev.includes(tagId) ? prev.filter(id => id !== tagId) : [...prev, tagId]);
 
-  /* ── Mutation ──────────────────────────────────── */
-
   const mutation = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Não autenticado");
@@ -161,7 +175,6 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
 
       let finalGameId = isBotC ? (botcGame?.id ?? "") : gameId;
 
-      // Auto-create BotC game if missing
       if (isBotC && !finalGameId) {
         const { data: newGame } = await supabase.from("games").insert({
           name: "Blood on the Clocktower",
@@ -173,7 +186,6 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
       }
       if (!finalGameId) throw new Error("Jogo não encontrado");
 
-      // Build description with script info for BotC
       let finalDescription = description || null;
       if (isBotC && selectedScriptId && !isEdit) {
         const scriptName = bloodScripts.find(s => s.id === selectedScriptId)?.name;
@@ -181,7 +193,6 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
       }
 
       if (isEdit && room) {
-        // ── UPDATE ──
         const updatePayload = {
           game_id: finalGameId,
           title,
@@ -195,7 +206,6 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
         const { error } = await supabase.from("match_rooms").update(updatePayload).eq("id", room.id);
         if (error) throw error;
 
-        // Sync tags
         await supabase.from("match_room_tag_links").delete().eq("room_id", room.id);
         if (selectedTagIds.length > 0) {
           await supabase.from("match_room_tag_links").insert(
@@ -203,7 +213,6 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
           );
         }
       } else {
-        // ── CREATE ──
         const { data, error } = await supabase
           .from("match_rooms")
           .insert({
@@ -221,14 +230,12 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
           .single();
         if (error) throw error;
 
-        // Save tags
         if (selectedTagIds.length > 0) {
           await supabase.from("match_room_tag_links").insert(
             selectedTagIds.map(tagId => ({ room_id: data.id, tag_id: tagId }))
           );
         }
 
-        // Notification
         const game = games.find(g => g.id === finalGameId);
         sendMatchNotification({
           event: "match_created",
@@ -268,28 +275,30 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
     mutation.mutate();
   };
 
-  /* ── Category picker (create only) ─────────────── */
-
+  /* Category picker (create only) */
   if (!isEdit && !category) {
     return (
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">Escolha a categoria:</p>
         <div className="grid gap-4 sm:grid-cols-3">
-          <button type="button" onClick={() => setCategory("boardgame")} className="p-6 rounded-lg border-2 border-border hover:border-gold/50 text-center transition-all group">
-            <Gamepad2 className="h-10 w-10 mx-auto mb-3 text-gold group-hover:scale-110 transition-transform" />
-            <p className="font-semibold">Boardgame</p>
-            <p className="text-xs text-muted-foreground mt-1">Jogos de tabuleiro</p>
-          </button>
-          <button type="button" onClick={() => { setCategory("botc"); setMaxPlayers("15"); }} className="p-6 rounded-lg border-2 border-border hover:border-red-500/50 text-center transition-all group">
-            <Skull className="h-10 w-10 mx-auto mb-3 text-red-400 group-hover:scale-110 transition-transform" />
-            <p className="font-semibold">Blood on the Clocktower</p>
-            <p className="text-xs text-muted-foreground mt-1">BotC</p>
-          </button>
-          <button type="button" onClick={() => setCategory("rpg")} className="p-6 rounded-lg border-2 border-border hover:border-purple-500/50 text-center transition-all group">
-            <Sword className="h-10 w-10 mx-auto mb-3 text-purple-400 group-hover:scale-110 transition-transform" />
-            <p className="font-semibold">RPG</p>
-            <p className="text-xs text-muted-foreground mt-1">Em breve</p>
-          </button>
+          {categoryCards.map(card => {
+            const Icon = card.icon;
+            return (
+              <button
+                key={card.id}
+                type="button"
+                onClick={() => {
+                  setCategory(card.id);
+                  if (card.id === "botc") setMaxPlayers("15");
+                }}
+                className={`flex flex-col items-center justify-center p-6 rounded-lg border-2 border-border ${card.borderHover} text-center transition-all group aspect-[3/4]`}
+              >
+                <Icon className={`h-12 w-12 mb-3 ${card.iconColor} group-hover:scale-110 transition-transform`} />
+                <p className="font-semibold text-sm">{card.label}</p>
+                <p className="text-xs text-muted-foreground mt-1">{card.description}</p>
+              </button>
+            );
+          })}
         </div>
       </div>
     );
@@ -299,8 +308,6 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
     return <div className="flex justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-gold border-t-transparent" /></div>;
   }
 
-  /* ── Form fields ───────────────────────────────── */
-
   return (
     <div className="space-y-4">
       {!isEdit && (
@@ -309,7 +316,6 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
         </Button>
       )}
 
-      {/* Game or Script selector */}
       {isBotC ? (
         <div>
           <Label>Script *</Label>
@@ -353,7 +359,6 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
         <Input type="number" min="2" value={maxPlayers} onChange={e => setMaxPlayers(e.target.value)} />
       </div>
 
-      {/* Admin-only: status */}
       {isAdminMode && isEdit && (
         <div>
           <Label>Status (Admin)</Label>
@@ -370,7 +375,6 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
         </div>
       )}
 
-      {/* Tags */}
       <div>
         <Label>Tags (nível da sala)</Label>
         <div className="flex flex-wrap gap-2 mt-1">
@@ -395,7 +399,6 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
         </div>
       </div>
 
-      {/* Season */}
       {filteredSeasons.length > 0 && (
         <div>
           <Label>Temporada (competitivo - opcional)</Label>

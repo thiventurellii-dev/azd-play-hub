@@ -4,7 +4,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, Trash2 } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Comment {
   id: string;
@@ -23,7 +22,7 @@ const RoomComments = ({ roomId }: Props) => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const fetchComments = async () => {
     const { data } = await supabase
@@ -71,8 +70,12 @@ const RoomComments = ({ roomId }: Props) => {
     };
   }, [roomId]);
 
+  // Auto-scroll to bottom when comments change
   useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [comments]);
 
   const handleSend = async () => {
@@ -102,18 +105,19 @@ const RoomComments = ({ roomId }: Props) => {
   const formatTime = (d: string) =>
     new Date(d).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
-  // Show last 3 comments
-  const visibleComments = comments.slice(-3);
-
   return (
     <div className="pt-1">
-      {visibleComments.length > 0 ? (
-        <ScrollArea className="max-h-[120px]">
-          <div className="space-y-1.5 pr-2">
-            {comments.length > 3 && (
-              <p className="text-[10px] text-muted-foreground">... {comments.length - 3} comentário(s) anterior(es)</p>
-            )}
-            {visibleComments.map(c => (
+      {comments.length > 0 ? (
+        <div
+          ref={scrollContainerRef}
+          className="max-h-[140px] overflow-y-auto scroll-smooth pr-1"
+          style={{
+            scrollbarWidth: "thin",
+            scrollbarColor: "hsl(var(--muted-foreground) / 0.3) transparent",
+          }}
+        >
+          <div className="space-y-1.5">
+            {comments.map(c => (
               <div key={c.id} className="text-xs group/comment flex items-start gap-1">
                 <div className="flex-1 min-w-0">
                   <span className="font-medium text-gold">
@@ -134,9 +138,8 @@ const RoomComments = ({ roomId }: Props) => {
                 )}
               </div>
             ))}
-            <div ref={scrollRef} />
           </div>
-        </ScrollArea>
+        </div>
       ) : (
         <p className="text-[10px] text-muted-foreground mb-1">Nenhum comentário ainda</p>
       )}

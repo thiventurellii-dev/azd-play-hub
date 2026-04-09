@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { CalendarPlus } from "lucide-react";
 import { EntitySheet } from "@/components/shared/EntitySheet";
 import MatchRoomForm from "@/components/forms/MatchRoomForm";
 
@@ -13,8 +13,8 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
 
   return (
     <>
-      <Button variant="gold" className="min-h-[44px]" onClick={() => setOpen(true)}>
-        <Plus className="h-4 w-4 mr-2" /> Agendar Partida
+      <Button variant="gold" className="flex-1 sm:flex-none min-h-[44px]" onClick={() => setOpen(true)}>
+        <CalendarPlus className="h-4 w-4 mr-1" /> Agendar Partida
       </Button>
       <EntitySheet
         open={open}

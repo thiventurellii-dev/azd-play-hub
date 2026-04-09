@@ -817,6 +817,8 @@ export type Database = {
           game_id: string
           id: string
           max_players: number
+          result_id: string | null
+          result_type: string | null
           scheduled_at: string
           season_id: string | null
           status: Database["public"]["Enums"]["match_room_status"]
@@ -831,6 +833,8 @@ export type Database = {
           game_id: string
           id?: string
           max_players?: number
+          result_id?: string | null
+          result_type?: string | null
           scheduled_at: string
           season_id?: string | null
           status?: Database["public"]["Enums"]["match_room_status"]
@@ -845,6 +849,8 @@ export type Database = {
           game_id?: string
           id?: string
           max_players?: number
+          result_id?: string | null
+          result_type?: string | null
           scheduled_at?: string
           season_id?: string | null
           status?: Database["public"]["Enums"]["match_room_status"]

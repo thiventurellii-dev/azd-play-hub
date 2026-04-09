@@ -228,7 +228,7 @@ const MatchRooms = () => {
           <div className="flex-1" />
           <Button
             variant="outline"
-            className="min-h-[44px] min-w-[180px]"
+            className="min-h-[44px] w-[200px]"
             onClick={() => { setPrefill(null); setMatchFlowOpen(true); }}
           >
             <ClipboardList className="h-4 w-4 mr-1" /> Registrar Resultado
@@ -269,12 +269,12 @@ const MatchRooms = () => {
             </TabsList>
           )}
 
-          {/* Mobile: action buttons */}
+          {/* Mobile: action buttons — same width, respecting card margins */}
           {isMobile && (
-            <div className="flex gap-2 mb-4">
+            <div className="grid grid-cols-2 gap-2 mb-4">
               <Button
                 variant="outline"
-                className="flex-1 min-h-[44px] text-sm"
+                className="min-h-[44px] text-sm w-full"
                 onClick={() => { setPrefill(null); setMatchFlowOpen(true); }}
               >
                 <ClipboardList className="h-4 w-4 mr-1 shrink-0" /> Registrar Resultado

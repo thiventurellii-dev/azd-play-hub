@@ -142,7 +142,7 @@ const RoomComments = ({ roomId, expanded }: Props) => {
         <p className="text-[10px] text-muted-foreground mb-2">Nenhum comentário ainda</p>
       )}
 
-      {expanded && user && (
+      {user && (
         <div className="flex gap-1.5">
           <Input
             value={text}

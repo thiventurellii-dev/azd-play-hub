@@ -1,12 +1,12 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/lib/supabaseExternal";
 import { useAuth } from "@/contexts/AuthContext";
-import { Calendar, Users, LogIn, Clock, Share2, ClipboardList, MessageCircle, XCircle, Trash2, TrendingUp } from "lucide-react";
+import { Calendar, Users, LogIn, Clock, Share2, ClipboardList, MessageCircle, XCircle, Trash2, TrendingUp, Gamepad2 } from "lucide-react";
 import { EditActionButton } from "@/components/shared/EditActionButton";
 import { generateWhatsAppInvite } from "@/lib/matchNotification";
 import { sendRoomNotifications } from "@/lib/roomNotifications";
@@ -97,7 +97,6 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
     supabase.from("match_room_tag_links").select("tag_id, room_tags(name)").eq("room_id", room.id).then(({ data }) => {
       if (data) setTags(data.map((d: any) => d.room_tags?.name).filter(Boolean));
     });
-    // Fetch script image for BotC rooms
     if (room.blood_script_id) {
       supabase.from("blood_scripts").select("image_url").eq("id", room.blood_script_id).maybeSingle().then(({ data }) => {
         if (data?.image_url) setScriptImageUrl(data.image_url);
@@ -216,7 +215,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
 
   return (
     <>
-      <Card className={`flex flex-col overflow-hidden relative ${gameImageUrl ? "bg-transparent" : ""}`}>
+      <div className={`rounded-lg border border-border shadow-sm text-card-foreground flex flex-col overflow-hidden relative ${gameImageUrl ? "" : "bg-card"}`}>
         {/* Game image background */}
         {gameImageUrl && (
           <div
@@ -227,10 +226,16 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
               backgroundPosition: "center top",
             }}
           >
-            {/* Gradient overlay — solid at bottom, semi-transparent at top */}
             <div className="absolute inset-0" style={{
               background: "linear-gradient(to bottom, hsla(0,0%,4%,0.55) 0%, hsla(0,0%,4%,0.82) 40%, hsl(0,0%,4%) 70%)",
             }} />
+          </div>
+        )}
+
+        {/* Fallback: no image */}
+        {!gameImageUrl && (
+          <div className="absolute inset-0 z-0 flex items-center justify-center opacity-5">
+            <Gamepad2 className="h-32 w-32" />
           </div>
         )}
 
@@ -271,10 +276,11 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
         </CardHeader>
 
         <CardContent className="flex-1 flex flex-col gap-3 overflow-hidden relative z-10">
-          <div className="flex items-center gap-4 text-sm text-muted-foreground flex-shrink-0">
+          {/* Date/time/players — white text */}
+          <div className="flex items-center gap-4 text-sm text-white flex-shrink-0">
             <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5 text-gold" /> {formattedDate}</span>
             <span className="flex items-center gap-1"><Clock className="h-3.5 w-3.5 text-gold" /> {formattedTime}</span>
-            <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {confirmed.length}/{room.max_players}</span>
+            <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5 text-gold" /> {confirmed.length}/{room.max_players}</span>
           </div>
 
           {room.description && (
@@ -319,7 +325,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
             )}
           </div>
 
-          {/* Result button — fixed position */}
+          {/* Result button */}
           {room.status === "finished" && user && (
             <div className="flex-shrink-0">
               {hasResult ? (
@@ -346,7 +352,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
             <RoomComments roomId={room.id} />
           </div>
         </CardContent>
-      </Card>
+      </div>
 
       <EditRoomDialog open={editOpen} onOpenChange={setEditOpen} room={room} onSaved={() => { setEditOpen(false); onUpdate(); }} />
     </>

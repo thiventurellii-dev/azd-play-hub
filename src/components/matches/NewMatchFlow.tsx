@@ -336,31 +336,26 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
   // Category selector
   if (!category) {
     return (
-      <Card className="bg-card border-border">
-        <CardHeader>
-          <CardTitle>Registrar Partida</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground mb-4">Escolha a categoria da partida:</p>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <button type="button" onClick={() => setCategory('boardgame')} className="p-6 rounded-lg border-2 border-border hover:border-gold/50 text-center transition-all group">
-              <Gamepad2 className="h-10 w-10 mx-auto mb-3 text-gold group-hover:scale-110 transition-transform" />
-              <p className="font-semibold">Boardgame</p>
-              <p className="text-xs text-muted-foreground mt-1">Jogos de tabuleiro</p>
-            </button>
-            <button type="button" onClick={() => setCategory('botc')} className="p-6 rounded-lg border-2 border-border hover:border-red-500/50 text-center transition-all group">
-              <Skull className="h-10 w-10 mx-auto mb-3 text-red-400 group-hover:scale-110 transition-transform" />
-              <p className="font-semibold">Blood on the Clocktower</p>
-              <p className="text-xs text-muted-foreground mt-1">BotC</p>
-            </button>
-            <button type="button" onClick={() => setCategory('rpg')} className="p-6 rounded-lg border-2 border-border hover:border-purple-500/50 text-center transition-all group">
-              <Sword className="h-10 w-10 mx-auto mb-3 text-purple-400 group-hover:scale-110 transition-transform" />
-              <p className="font-semibold">RPG</p>
-              <p className="text-xs text-muted-foreground mt-1">Em breve</p>
-            </button>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <p className="text-sm text-muted-foreground">Escolha a categoria da partida:</p>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <button type="button" onClick={() => setCategory('boardgame')} className="flex flex-col items-center justify-center p-6 rounded-lg border-2 border-border hover:border-gold/60 text-center transition-all group aspect-[3/4]">
+            <Gamepad2 className="h-12 w-12 mb-3 text-gold group-hover:scale-110 transition-transform" />
+            <p className="font-semibold text-sm">Boardgame</p>
+            <p className="text-xs text-muted-foreground mt-1">Jogos de tabuleiro</p>
+          </button>
+          <button type="button" onClick={() => setCategory('botc')} className="flex flex-col items-center justify-center p-6 rounded-lg border-2 border-border hover:border-red-500/60 text-center transition-all group aspect-[3/4]">
+            <Skull className="h-12 w-12 mb-3 text-red-400 group-hover:scale-110 transition-transform" />
+            <p className="font-semibold text-sm">Blood on the Clocktower</p>
+            <p className="text-xs text-muted-foreground mt-1">BotC</p>
+          </button>
+          <button type="button" onClick={() => setCategory('rpg')} className="flex flex-col items-center justify-center p-6 rounded-lg border-2 border-border hover:border-purple-500/60 text-center transition-all group aspect-[3/4]">
+            <Sword className="h-12 w-12 mb-3 text-purple-400 group-hover:scale-110 transition-transform" />
+            <p className="font-semibold text-sm">RPG</p>
+            <p className="text-xs text-muted-foreground mt-1">Em breve</p>
+          </button>
+        </div>
+      </div>
     );
   }
 

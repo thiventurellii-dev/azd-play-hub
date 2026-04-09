@@ -292,14 +292,11 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const handleDelete = async () => {
     if (!confirm("Tem certeza que deseja excluir esta sala?")) return;
     setLoading(true);
-    // Delete child records first (notifications cascade automatically)
-    await supabase.from("match_room_tag_links").delete().eq("room_id", room.id);
-    await supabase.from("match_room_comments").delete().eq("room_id", room.id);
-    await supabase.from("match_room_players").delete().eq("room_id", room.id);
+    // All child tables have ON DELETE CASCADE, so just delete the room directly
     const { error } = await supabase.from("match_rooms").delete().eq("id", room.id);
     if (error) {
       console.error("Error deleting room:", error);
-      toast.error("Erro ao excluir sala");
+      toast.error("Erro ao excluir sala: " + (error.message || "Erro desconhecido"));
     } else {
       toast.success("Sala excluída");
     }
@@ -415,6 +412,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
 
           <div className="flex-1" />
 
+          {/* Action buttons — always in same position */}
           <div className="flex gap-2 flex-shrink-0">
             {canInteract && user && (
               isInRoom ? (
@@ -439,12 +437,25 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
                 <Share2 className="h-4 w-4" />
               </Button>
             )}
-            {room.status === "finished" && user && (
-              hasResult ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="min-h-[44px] gap-1"
+              onClick={(e) => { e.stopPropagation(); setShowComments(!showComments); }}
+            >
+              <MessageCircle className="h-4 w-4" />
+              {showComments ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            </Button>
+          </div>
+
+          {/* Result button — always at same position below action row */}
+          {room.status === "finished" && user && (
+            <div className="flex-shrink-0">
+              {hasResult ? (
                 <Button
                   variant="outline"
                   size="sm"
-                  className="flex-1 min-h-[44px] opacity-60 cursor-default"
+                  className="w-full min-h-[44px] opacity-60 cursor-default"
                   disabled
                 >
                   <ClipboardList className="h-4 w-4 mr-1" /> Resultado Registrado
@@ -453,7 +464,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
                 <Button
                   variant="gold"
                   size="sm"
-                  className="flex-1 min-h-[44px]"
+                  className="w-full min-h-[44px]"
                   onClick={() => {
                     navigate("/partidas", {
                       state: {
@@ -468,18 +479,9 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
                 >
                   <ClipboardList className="h-4 w-4 mr-1" /> Inserir Resultado
                 </Button>
-              )
-            )}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="min-h-[44px] gap-1"
-              onClick={(e) => { e.stopPropagation(); setShowComments(!showComments); }}
-            >
-              <MessageCircle className="h-4 w-4" />
-              {showComments ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-            </Button>
-          </div>
+              )}
+            </div>
+          )}
         </CardContent>
 
         <div className="px-6 pb-4">

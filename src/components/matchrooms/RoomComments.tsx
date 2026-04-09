@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabaseExternal";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Send, MessageCircle, Trash2 } from "lucide-react";
+import { Send, Trash2 } from "lucide-react";
 
 interface Comment {
   id: string;
@@ -15,9 +15,10 @@ interface Comment {
 
 interface Props {
   roomId: string;
+  expanded: boolean;
 }
 
-const RoomComments = ({ roomId }: Props) => {
+const RoomComments = ({ roomId, expanded }: Props) => {
   const { user, isAdmin } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [text, setText] = useState("");
@@ -62,7 +63,6 @@ const RoomComments = ({ roomId }: Props) => {
       })
       .subscribe();
 
-    // Polling fallback every 15s
     const poll = setInterval(fetchComments, 15000);
 
     return () => {
@@ -72,8 +72,10 @@ const RoomComments = ({ roomId }: Props) => {
   }, [roomId]);
 
   useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [comments]);
+    if (expanded) {
+      scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [comments, expanded]);
 
   const handleSend = async () => {
     if (!user || !text.trim()) return;
@@ -95,7 +97,6 @@ const RoomComments = ({ roomId }: Props) => {
   };
 
   const handleDelete = async (commentId: string) => {
-    // Optimistic delete
     setComments(prev => prev.filter(c => c.id !== commentId));
     await supabase.from("match_room_comments").delete().eq("id", commentId);
   };
@@ -103,16 +104,17 @@ const RoomComments = ({ roomId }: Props) => {
   const formatTime = (d: string) =>
     new Date(d).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
-  return (
-    <div className="border-t border-border pt-3 mt-3">
-      <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
-        <MessageCircle className="h-3 w-3" /> Comentários ({comments.length})
-      </p>
+  const visibleComments = expanded ? comments : comments.slice(-3);
 
-      {comments.length > 0 && (
-        <div className="max-h-60 overflow-y-auto mb-2 pr-1">
+  return (
+    <div className="pt-2">
+      {visibleComments.length > 0 ? (
+        <div className={expanded ? "max-h-60 overflow-y-auto mb-2 pr-1" : "mb-2"}>
           <div className="space-y-1.5 pr-2">
-            {comments.map(c => (
+            {!expanded && comments.length > 3 && (
+              <p className="text-[10px] text-muted-foreground">... {comments.length - 3} comentário(s) anterior(es)</p>
+            )}
+            {visibleComments.map(c => (
               <div key={c.id} className="text-xs group/comment flex items-start gap-1">
                 <div className="flex-1 min-w-0">
                   <span className="font-medium text-gold">
@@ -136,9 +138,11 @@ const RoomComments = ({ roomId }: Props) => {
             <div ref={scrollRef} />
           </div>
         </div>
+      ) : (
+        <p className="text-[10px] text-muted-foreground mb-2">Nenhum comentário ainda</p>
       )}
 
-      {user && (
+      {expanded && user && (
         <div className="flex gap-1.5">
           <Input
             value={text}

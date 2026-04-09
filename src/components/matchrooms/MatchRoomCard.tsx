@@ -51,7 +51,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const navigate = useNavigate();
   const [players, setPlayers] = useState<RoomPlayer[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showComments, setShowComments] = useState(true);
+  const [showComments, setShowComments] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [tags, setTags] = useState<string[]>([]);
   const [avgMmr, setAvgMmr] = useState<number | null>(null);
@@ -356,21 +356,19 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
             </div>
           </div>
 
-          {/* Tags + MMR */}
-          {(tags.length > 0 || avgMmr !== null) && (
-            <div className="flex flex-wrap items-center gap-1.5 mt-2">
-              {tags.map(tag => (
-                <Badge key={tag} variant="outline" className="text-[10px] px-2 py-0 border-gold/30 text-gold/80">
-                  {tag}
-                </Badge>
-              ))}
-              {avgMmr !== null && (
-                <Badge variant="outline" className="text-[10px] px-2 py-0 border-blue-500/40 text-blue-400 gap-1">
-                  <TrendingUp className="h-2.5 w-2.5" /> MMR médio: {avgMmr}
-                </Badge>
-              )}
-            </div>
-          )}
+        {/* Tags + MMR — always reserve space for consistent card height */}
+          <div className="flex flex-wrap items-center gap-1.5 mt-2 min-h-[22px]">
+            {tags.map(tag => (
+              <Badge key={tag} variant="outline" className="text-[10px] px-2 py-0 border-gold/30 text-gold/80">
+                {tag}
+              </Badge>
+            ))}
+            {avgMmr !== null && (
+              <Badge variant="outline" className="text-[10px] px-2 py-0 border-blue-500/40 text-blue-400 gap-1">
+                <TrendingUp className="h-2.5 w-2.5" /> MMR médio: {avgMmr}
+              </Badge>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col gap-3 overflow-hidden">
           <div className="flex items-center gap-4 text-sm text-muted-foreground flex-shrink-0">
@@ -484,11 +482,9 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
           </div>
         </CardContent>
 
-        {showComments && (
-          <div className="border-t border-border px-6 pb-4">
-            <RoomComments roomId={room.id} />
-          </div>
-        )}
+        <div className="px-6 pb-4">
+          <RoomComments roomId={room.id} expanded={showComments} />
+        </div>
       </Card>
 
       <EditRoomDialog

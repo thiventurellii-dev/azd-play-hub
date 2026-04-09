@@ -70,7 +70,7 @@ const MatchRooms = () => {
 
     Promise.resolve(
       supabase.from("match_rooms")
-        .select("id, title, description, scheduled_at, max_players, status, created_by, season_id, blood_script_id, result_id, result_type, game:games(id, name, image_url)")
+        .select("id, title, description, scheduled_at, max_players, status, created_by, season_id, blood_script_id, game:games(id, name, image_url)")
         .eq("id", roomParam)
         .maybeSingle()
     ).then(({ data }) => {
@@ -106,7 +106,7 @@ const MatchRooms = () => {
       .in("status", ["open", "full", "in_progress"] as any).lt("scheduled_at", now);
 
     const { data } = await supabase.from("match_rooms")
-      .select("id, title, description, scheduled_at, max_players, status, created_by, season_id, blood_script_id, result_id, result_type, game:games(id, name, image_url), match_room_tag_links(room_tags(name))")
+      .select("id, title, description, scheduled_at, max_players, status, created_by, season_id, blood_script_id, game:games(id, name, image_url), match_room_tag_links(room_tags(name))")
       .order("scheduled_at", { ascending: true });
 
     if (data) {

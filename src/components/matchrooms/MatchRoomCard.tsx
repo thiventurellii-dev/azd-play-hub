@@ -70,8 +70,41 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const [resultModalOpen, setResultModalOpen] = useState(false);
   const [matchFlowOpen, setMatchFlowOpen] = useState(false);
   const [resultParticipantIds, setResultParticipantIds] = useState<string[]>([]);
+  const [resultId, setResultId] = useState<string | null>(room.result_id || null);
+  const [resultType, setResultType] = useState<string | null>(room.result_type || null);
+  const [hasResult, setHasResult] = useState(!!room.result_id);
 
-  const hasResult = !!room.result_id;
+  // Fallback: check for result via date-based query if result_id not set
+  useEffect(() => {
+    if (room.result_id) {
+      setResultId(room.result_id);
+      setResultType(room.result_type || null);
+      setHasResult(true);
+      return;
+    }
+    if (room.status !== "finished" || !room.game?.id) return;
+    const scheduledDate = new Date(room.scheduled_at);
+    const dayStart = new Date(scheduledDate); dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(scheduledDate); dayEnd.setHours(23, 59, 59, 999);
+
+    if (room.blood_script_id) {
+      supabase.from("blood_matches").select("id").gte("played_at", dayStart.toISOString()).lte("played_at", dayEnd.toISOString()).limit(1).then(({ data }) => {
+        if (data && data.length > 0) {
+          setResultId(data[0].id);
+          setResultType("blood");
+          setHasResult(true);
+        }
+      });
+    } else {
+      supabase.from("matches").select("id").eq("game_id", room.game.id).gte("played_at", dayStart.toISOString()).lte("played_at", dayEnd.toISOString()).limit(1).then(({ data }) => {
+        if (data && data.length > 0) {
+          setResultId(data[0].id);
+          setResultType("boardgame");
+          setHasResult(true);
+        }
+      });
+    }
+  }, [room.result_id, room.result_type, room.status, room.game?.id, room.scheduled_at, room.blood_script_id]);
 
   const fetchPlayers = async () => {
     if (!room?.id) return;
@@ -129,21 +162,21 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
 
   // Fetch participant IDs for result permission check
   useEffect(() => {
-    if (!room.result_id || !room.result_type) return;
+    if (!resultId || !resultType) return;
     const fetchParticipants = async () => {
-      if (room.result_type === "boardgame") {
-        const { data } = await supabase.from("match_results").select("player_id").eq("match_id", room.result_id!);
+      if (resultType === "boardgame") {
+        const { data } = await supabase.from("match_results").select("player_id").eq("match_id", resultId);
         setResultParticipantIds((data || []).map((r: any) => r.player_id).filter(Boolean));
-      } else if (room.result_type === "blood") {
-        const { data: match } = await supabase.from("blood_matches").select("storyteller_player_id").eq("id", room.result_id!).maybeSingle();
-        const { data: bPlayers } = await supabase.from("blood_match_players").select("player_id").eq("match_id", room.result_id!);
+      } else if (resultType === "blood") {
+        const { data: match } = await supabase.from("blood_matches").select("storyteller_player_id").eq("id", resultId).maybeSingle();
+        const { data: bPlayers } = await supabase.from("blood_match_players").select("player_id").eq("match_id", resultId);
         const ids = (bPlayers || []).map((p: any) => p.player_id);
         if ((match as any)?.storyteller_player_id) ids.push((match as any).storyteller_player_id);
         setResultParticipantIds(ids);
       }
     };
     fetchParticipants();
-  }, [room.result_id, room.result_type]);
+  }, [resultId, resultType]);
 
   const confirmed = players.filter((p) => p.type === "confirmed");
   const waitlist = players.filter((p) => p.type === "waitlist");
@@ -228,8 +261,13 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
 
   const handleResultComplete = async (matchId?: string) => {
     if (matchId) {
-      const resultType = room.blood_script_id ? 'blood' : 'boardgame';
-      await supabase.from('match_rooms').update({ result_id: matchId, result_type: resultType } as any).eq('id', room.id);
+      const rt = room.blood_script_id ? 'blood' : 'boardgame';
+      // Try to persist to DB (will silently fail if columns don't exist yet)
+      await supabase.from('match_rooms').update({ result_id: matchId, result_type: rt } as any).eq('id', room.id);
+      // Update local state immediately
+      setResultId(matchId);
+      setResultType(rt);
+      setHasResult(true);
     }
     setMatchFlowOpen(false);
     onUpdate();
@@ -376,10 +414,10 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
       <EditRoomDialog open={editOpen} onOpenChange={setEditOpen} room={room} onSaved={() => { setEditOpen(false); onUpdate(); }} />
 
       {/* Result modal */}
-      {hasResult && room.result_id && room.result_type && (
+      {hasResult && resultId && resultType && (
         <MatchResultModal
-          resultId={room.result_id}
-          resultType={room.result_type}
+          resultId={resultId}
+          resultType={resultType}
           open={resultModalOpen}
           onOpenChange={setResultModalOpen}
           participantIds={resultParticipantIds}

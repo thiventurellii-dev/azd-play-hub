@@ -7,15 +7,6 @@ const AuthCallback = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    let recoveryDetected = false;
-
-    // Listen for PASSWORD_RECOVERY event which fires during code exchange for recovery flows
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        recoveryDetected = true;
-      }
-    });
-
     const handleCallback = async () => {
       const params = new URLSearchParams(window.location.search);
       const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
@@ -23,36 +14,57 @@ const AuthCallback = () => {
       const code = params.get('code');
       const type = params.get('type') || hashParams.get('type');
 
+      // If type=recovery is explicitly in URL, handle it immediately
+      if (type === 'recovery') {
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) {
+            setError(error.message);
+            setTimeout(() => navigate('/login'), 3000);
+            return;
+          }
+        }
+        navigate('/reset-password?recovery=true', { replace: true });
+        return;
+      }
+
       if (code) {
+        // Set up listener BEFORE exchanging code
+        let recoveryDetected = false;
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+          if (event === 'PASSWORD_RECOVERY') {
+            recoveryDetected = true;
+          }
+        });
+
         const { error } = await supabase.auth.exchangeCodeForSession(code);
         if (error) {
+          subscription.unsubscribe();
           setError(error.message);
           setTimeout(() => navigate('/login'), 3000);
-          subscription.unsubscribe();
           return;
         }
 
-        // Wait a tick for onAuthStateChange to fire with PASSWORD_RECOVERY
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        // Wait for auth state change event to fire
+        // Use longer wait with polling for reliability
+        for (let i = 0; i < 10; i++) {
+          if (recoveryDetected) break;
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+
+        subscription.unsubscribe();
+
+        if (recoveryDetected) {
+          navigate('/reset-password?recovery=true', { replace: true });
+          return;
+        }
       }
 
-      subscription.unsubscribe();
-
-      // Redirect based on recovery detection or explicit type param
-      if (recoveryDetected || type === 'recovery') {
-        navigate('/reset-password?recovery=true', { replace: true });
-      } else if (type === 'signup' || type === 'email_change') {
-        navigate('/', { replace: true });
-      } else {
-        navigate('/', { replace: true });
-      }
+      // Default: go to home
+      navigate('/', { replace: true });
     };
 
     handleCallback();
-
-    return () => {
-      subscription.unsubscribe();
-    };
   }, [navigate]);
 
   if (error) {

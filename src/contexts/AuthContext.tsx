@@ -54,7 +54,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const status = (data as any).status || 'active';
       setPlayerStatus(status);
 
-      // If disabled, sign out
       if (status === 'disabled') {
         await supabase.auth.signOut();
         return;
@@ -62,9 +61,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const complete = !!((data as any).nickname && data.name && data.phone && data.state && data.city && data.birth_date && data.gender && (data as any).pronouns);
       
-      // Check if profile fields are complete
-      // pending = admin-created user, needs to fill profile
-      // active = fully active
       if (status === 'pending') {
         setProfileCompleted(complete);
       } else {
@@ -82,14 +78,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-
-      // If this is a password recovery event, don't fully initialize — let AuthCallback handle it
+      // If this is a password recovery event, redirect to reset-password
+      // and DON'T set user state (let AuthCallback handle it)
       if (event === 'PASSWORD_RECOVERY') {
         setLoading(false);
+        // Navigate to reset password if we're not already on auth/callback
+        if (!window.location.pathname.includes('/auth/callback') && !window.location.pathname.includes('/reset-password')) {
+          window.location.href = '/reset-password?recovery=true';
+        }
         return;
       }
+
+      setSession(session);
+      setUser(session?.user ?? null);
 
       if (session?.user) {
         setTimeout(() => {

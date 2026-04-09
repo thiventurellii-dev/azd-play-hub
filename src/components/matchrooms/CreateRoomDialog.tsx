@@ -13,7 +13,7 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
 
   return (
     <>
-      <Button variant="gold" className="min-h-[44px] w-full sm:min-w-[180px]" onClick={() => setOpen(true)}>
+      <Button variant="gold" className="min-h-[44px] w-full sm:w-[200px]" onClick={() => setOpen(true)}>
         <CalendarPlus className="h-4 w-4 mr-1 shrink-0" /> Agendar Partida
       </Button>
       <EntitySheet

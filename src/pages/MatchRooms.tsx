@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef, type Dispatch, type SetStateAction } from "react";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabaseExternal";
@@ -16,7 +16,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 
 interface MatchRoom {
   id: string; title: string; description: string | null; scheduled_at: string;
@@ -204,7 +203,7 @@ const MatchRooms = () => {
   const activeRooms = filterRooms(rooms.filter(r => r.status === "open" || r.status === "full" || r.status === "in_progress"));
   const pastRooms = filterRooms(rooms.filter(r => r.status === "finished" || r.status === "cancelled"));
 
-  const toggleArrayFilter = (value: string, setter: React.Dispatch<React.SetStateAction<string[]>>) => {
+  const toggleArrayFilter = (value: string, setter: Dispatch<SetStateAction<string[]>>) => {
     setter((current) => current.includes(value) ? current.filter((item) => item !== value) : [...current, value]);
   };
 
@@ -225,7 +224,7 @@ const MatchRooms = () => {
     label: string,
     value: string,
     selectedValues: string[],
-    setter: React.Dispatch<React.SetStateAction<string[]>>,
+    setter: Dispatch<SetStateAction<string[]>>,
   ) => (
     <Button
       key={value}

@@ -12,6 +12,7 @@ import { sendRoomNotifications } from "@/lib/roomNotifications";
 import { toast } from "sonner";
 import RoomComments from "./RoomComments";
 import EditRoomDialog from "./EditRoomDialog";
+import { invokeEdgeFunction } from "@/lib/edgeFunctions";
 
 interface RoomPlayer {
   id: string;
@@ -292,8 +293,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const handleDelete = async () => {
     if (!confirm("Tem certeza que deseja excluir esta sala?")) return;
     setLoading(true);
-    // All child tables have ON DELETE CASCADE, so just delete the room directly
-    const { error } = await supabase.from("match_rooms").delete().eq("id", room.id);
+    const { error } = await invokeEdgeFunction("delete-match-room", { roomId: room.id });
     if (error) {
       console.error("Error deleting room:", error);
       toast.error("Erro ao excluir sala: " + (error.message || "Erro desconhecido"));
@@ -410,48 +410,20 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
             </div>
           )}
 
-          <div className="flex-1" />
+          <div className="flex-1 min-h-4" />
 
-          {/* Action buttons — always in same position */}
-          <div className="flex gap-2 flex-shrink-0">
-            {canInteract && user && (
-              isInRoom ? (
-                <Button variant="outline" size="sm" className="flex-1 min-h-[44px]" onClick={handleLeave} disabled={loading}>
-                  Sair
-                </Button>
-              ) : (
-                <Button
-                  variant={isFull ? "outline" : "gold"}
-                  size="sm"
-                  className="flex-1 min-h-[44px]"
-                  onClick={handleJoin}
-                  disabled={loading}
-                >
-                  <LogIn className="h-4 w-4 mr-1" />
-                  {isFull ? "Entrar na Reserva" : "Entrar"}
-                </Button>
-              )
-            )}
-            {canInteract && (
-              <Button variant="ghost" size="sm" className="min-h-[44px]" onClick={handleShare}>
-                <Share2 className="h-4 w-4" />
-              </Button>
-            )}
+          <div className="mt-3 grid grid-cols-[auto_1fr] gap-2 flex-shrink-0">
             <Button
               variant="ghost"
               size="sm"
-              className="min-h-[44px] gap-1"
+              className="min-h-[44px] px-3"
               onClick={(e) => { e.stopPropagation(); setShowComments(!showComments); }}
             >
               <MessageCircle className="h-4 w-4" />
               {showComments ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
             </Button>
-          </div>
-
-          {/* Result button — always at same position below action row */}
-          {room.status === "finished" && user && (
-            <div className="flex-shrink-0">
-              {hasResult ? (
+            {room.status === "finished" && user ? (
+              hasResult ? (
                 <Button
                   variant="outline"
                   size="sm"
@@ -479,9 +451,37 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
                 >
                   <ClipboardList className="h-4 w-4 mr-1" /> Inserir Resultado
                 </Button>
-              )}
-            </div>
-          )}
+              )
+            ) : (
+              <div />
+            )}
+          </div>
+
+          <div className="flex gap-2 flex-shrink-0 mt-2">
+            {canInteract && user && (
+              isInRoom ? (
+                <Button variant="outline" size="sm" className="flex-1 min-h-[44px]" onClick={handleLeave} disabled={loading}>
+                  Sair
+                </Button>
+              ) : (
+                <Button
+                  variant={isFull ? "outline" : "gold"}
+                  size="sm"
+                  className="flex-1 min-h-[44px]"
+                  onClick={handleJoin}
+                  disabled={loading}
+                >
+                  <LogIn className="h-4 w-4 mr-1" />
+                  {isFull ? "Entrar na Reserva" : "Entrar"}
+                </Button>
+              )
+            )}
+            {canInteract && (
+              <Button variant="ghost" size="sm" className="min-h-[44px]" onClick={handleShare}>
+                <Share2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </CardContent>
 
         <div className="px-6 pb-4">

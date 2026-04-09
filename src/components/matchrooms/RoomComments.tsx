@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, Trash2 } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Comment {
   id: string;
@@ -15,10 +16,9 @@ interface Comment {
 
 interface Props {
   roomId: string;
-  expanded: boolean;
 }
 
-const RoomComments = ({ roomId, expanded }: Props) => {
+const RoomComments = ({ roomId }: Props) => {
   const { user, isAdmin } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
   const [text, setText] = useState("");
@@ -72,10 +72,8 @@ const RoomComments = ({ roomId, expanded }: Props) => {
   }, [roomId]);
 
   useEffect(() => {
-    if (expanded) {
-      scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [comments, expanded]);
+    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [comments]);
 
   const handleSend = async () => {
     if (!user || !text.trim()) return;
@@ -104,14 +102,15 @@ const RoomComments = ({ roomId, expanded }: Props) => {
   const formatTime = (d: string) =>
     new Date(d).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 
-  const visibleComments = expanded ? comments : comments.slice(-3);
+  // Show last 3 comments
+  const visibleComments = comments.slice(-3);
 
   return (
-    <div className="pt-2">
+    <div className="pt-1">
       {visibleComments.length > 0 ? (
-        <div className={expanded ? "max-h-60 overflow-y-auto mb-2 pr-1" : "mb-2"}>
+        <ScrollArea className="max-h-[120px]">
           <div className="space-y-1.5 pr-2">
-            {!expanded && comments.length > 3 && (
+            {comments.length > 3 && (
               <p className="text-[10px] text-muted-foreground">... {comments.length - 3} comentário(s) anterior(es)</p>
             )}
             {visibleComments.map(c => (
@@ -137,13 +136,13 @@ const RoomComments = ({ roomId, expanded }: Props) => {
             ))}
             <div ref={scrollRef} />
           </div>
-        </div>
+        </ScrollArea>
       ) : (
-        <p className="text-[10px] text-muted-foreground mb-2">Nenhum comentário ainda</p>
+        <p className="text-[10px] text-muted-foreground mb-1">Nenhum comentário ainda</p>
       )}
 
       {user && (
-        <div className="flex gap-1.5">
+        <div className="flex gap-1.5 mt-2">
           <Input
             value={text}
             onChange={e => setText(e.target.value)}

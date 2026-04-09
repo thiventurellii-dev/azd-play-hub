@@ -275,17 +275,17 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">Escolha a categoria:</p>
         <div className="grid gap-3 grid-cols-3">
-          <button type="button" onClick={() => setCategory("boardgame")} className="p-4 rounded-lg border-2 border-border hover:border-gold/50 text-center transition-all group">
-            <Gamepad2 className="h-8 w-8 mx-auto mb-2 text-gold group-hover:scale-110 transition-transform" />
-            <p className="text-sm font-semibold">Boardgame</p>
+          <button type="button" onClick={() => setCategory("boardgame")} className="p-6 rounded-lg border-2 border-border hover:border-gold/50 text-center transition-all group min-h-[100px] flex flex-col items-center justify-center">
+            <Gamepad2 className="h-10 w-10 mx-auto mb-2 text-gold group-hover:scale-110 transition-transform" />
+            <p className="text-base font-semibold">Boardgame</p>
           </button>
-          <button type="button" onClick={() => { setCategory("botc"); setMaxPlayers("15"); }} className="p-4 rounded-lg border-2 border-border hover:border-red-500/50 text-center transition-all group">
-            <Skull className="h-8 w-8 mx-auto mb-2 text-red-400 group-hover:scale-110 transition-transform" />
-            <p className="text-sm font-semibold">BotC</p>
+          <button type="button" onClick={() => { setCategory("botc"); setMaxPlayers("15"); }} className="p-6 rounded-lg border-2 border-border hover:border-red-500/50 text-center transition-all group min-h-[100px] flex flex-col items-center justify-center">
+            <Skull className="h-10 w-10 mx-auto mb-2 text-red-400 group-hover:scale-110 transition-transform" />
+            <p className="text-base font-semibold">BotC</p>
           </button>
-          <button type="button" onClick={() => setCategory("rpg")} className="p-4 rounded-lg border-2 border-border hover:border-purple-500/50 text-center transition-all group">
-            <Sword className="h-8 w-8 mx-auto mb-2 text-purple-400 group-hover:scale-110 transition-transform" />
-            <p className="text-sm font-semibold">RPG</p>
+          <button type="button" onClick={() => setCategory("rpg")} className="p-6 rounded-lg border-2 border-border hover:border-purple-500/50 text-center transition-all group min-h-[100px] flex flex-col items-center justify-center">
+            <Sword className="h-10 w-10 mx-auto mb-2 text-purple-400 group-hover:scale-110 transition-transform" />
+            <p className="text-base font-semibold">RPG</p>
           </button>
         </div>
       </div>

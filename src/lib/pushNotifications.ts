@@ -51,17 +51,35 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
       alert("Sanity check sem chave: subscribe funcionou inesperadamente.");
       await sanitySubscription.unsubscribe();
     } catch (sanityError: any) {
-      alert("Sanity check sem chave: " + (sanityError?.message || String(sanityError)));
+      alert(
+        "Sanity check sem chave:\n" +
+          JSON.stringify({
+            name: sanityError?.name || null,
+            message: sanityError?.message || String(sanityError),
+          })
+      );
     }
 
     alert("VAPID_PUBLIC_KEY intacta: " + VAPID_PUBLIC_KEY);
     alert("Tamanho da chave hardcoded: " + VAPID_PUBLIC_KEY_BYTES.byteLength + " bytes (deve ser 65)");
     alert("Primeiro byte da chave hardcoded: " + VAPID_PUBLIC_KEY_BYTES[0]);
 
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: VAPID_PUBLIC_KEY_BYTES,
-    });
+    let subscription;
+    try {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: VAPID_PUBLIC_KEY_BYTES,
+      });
+    } catch (subscribeError: any) {
+      alert(
+        "Erro detalhado no subscribe:\n" +
+          JSON.stringify({
+            name: subscribeError?.name || null,
+            message: subscribeError?.message || String(subscribeError),
+          })
+      );
+      throw subscribeError;
+    }
 
     const subJson = subscription.toJSON();
     alert("Subscription criada!\nEndpoint: " + (subJson.endpoint || "").substring(0, 60) + "...");
@@ -96,7 +114,13 @@ export async function subscribeToPush(userId: string): Promise<boolean> {
       return false;
     }
   } catch (err: any) {
-    alert("Erro geral no push: " + (err?.message || String(err)));
+    alert(
+      "Erro geral no push:\n" +
+        JSON.stringify({
+          name: err?.name || null,
+          message: err?.message || String(err),
+        })
+    );
     return false;
   }
 }

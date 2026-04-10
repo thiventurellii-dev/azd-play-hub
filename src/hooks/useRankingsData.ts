@@ -12,13 +12,17 @@ const fetchSeasons = async (): Promise<SeasonBase[]> => {
 const fetchBoardgameRankings = async (seasonId: string): Promise<RankingEntry[]> => {
   const { data } = await supabase
     .from("mmr_ratings")
-    .select("player_id, current_mmr, games_played, wins, profiles(name, nickname)")
+    .select("player_id, current_mmr, games_played, wins")
     .eq("season_id", seasonId)
     .order("current_mmr", { ascending: false });
-  if (!data) return [];
+  if (!data || data.length === 0) return [];
+  const playerIds = data.map((r: any) => r.player_id);
+  const profiles = await fetchPublicProfiles(playerIds);
+  const pMap: Record<string, string> = {};
+  for (const p of profiles) pMap[p.id] = p.nickname || p.name;
   return data.map((r: any) => ({
     ...r,
-    player_name: r.profiles?.nickname || r.profiles?.name || "Unknown",
+    player_name: pMap[r.player_id] || "Unknown",
   }));
 };
 

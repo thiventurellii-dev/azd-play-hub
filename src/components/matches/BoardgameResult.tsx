@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseExternal";
+import { fetchPublicProfiles } from "@/lib/profilesPublic";
 import { Badge } from "@/components/ui/badge";
 import { Trophy, TrendingUp, TrendingDown, Minus } from "lucide-react";
 
@@ -49,12 +50,9 @@ const BoardgameResult = ({ resultId }: Props) => {
       if (!match || !results) { setLoading(false); return; }
 
       const playerIds = results.map((r: any) => r.player_id).filter(Boolean);
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, name, nickname")
-        .in("id", playerIds);
+      const profiles = await fetchPublicProfiles(playerIds);
 
-      const profileMap = new Map(profiles?.map((p: any) => [p.id, p]) || []);
+      const profileMap = new Map(profiles.map((p: any) => [p.id, p]));
       const game = Array.isArray((match as any).game) ? (match as any).game[0] : (match as any).game;
 
       setData({

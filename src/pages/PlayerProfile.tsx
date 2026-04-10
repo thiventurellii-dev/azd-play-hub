@@ -80,8 +80,15 @@ const PlayerProfile = () => {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const { data: prof } = await supabase
-        .from("profiles").select("*").eq("nickname", nickname as string).maybeSingle();
+      // If viewing own profile, query directly (RLS allows). Otherwise use public RPC.
+      const isOwnProfile = user && user.user_metadata?.nickname === nickname;
+      let prof: any = null;
+      if (isOwnProfile) {
+        const { data } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
+        prof = data;
+      } else {
+        prof = await fetchPublicProfileByNickname(nickname as string);
+      }
       if (!prof) { setLoading(false); return; }
       setProfile(prof);
       setForm({
@@ -143,9 +150,9 @@ const PlayerProfile = () => {
           if (myResult?.position === 1) oppMap[r.player_id].wins++;
         }
         const oppIds = Object.keys(oppMap);
-        const { data: oppProfiles } = await supabase.from("profiles").select("id, name, nickname").in("id", oppIds);
+        const oppProfiles = await fetchPublicProfiles(oppIds);
         const oppNameMap: Record<string, string> = {};
-        for (const p of oppProfiles || []) oppNameMap[p.id] = (p as any).nickname || p.name;
+        for (const p of oppProfiles) oppNameMap[p.id] = p.nickname || p.name;
         setOpponents(
           Object.entries(oppMap)
             .map(([pid, s]) => ({ name: oppNameMap[pid] || "?", ...s }))
@@ -225,9 +232,9 @@ const PlayerProfile = () => {
         }
         const partnerIds = Object.keys(partnerMap);
         if (partnerIds.length > 0) {
-          const { data: partnerProfiles } = await supabase.from('profiles').select('id, name, nickname').in('id', partnerIds);
+          const partnerProfiles = await fetchPublicProfiles(partnerIds);
           const pNameMap: Record<string, string> = {};
-          for (const p of partnerProfiles || []) pNameMap[p.id] = (p as any).nickname || p.name;
+          for (const p of partnerProfiles) pNameMap[p.id] = p.nickname || p.name;
           setBotcPartners(
             Object.entries(partnerMap)
               .map(([pid, s]) => ({ name: pNameMap[pid] || '?', ...s }))

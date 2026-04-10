@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/lib/supabaseExternal";
+import { fetchPublicProfiles } from "@/lib/profilesPublic";
 import { useAuth } from "@/contexts/AuthContext";
 import { Calendar, Users, LogIn, Clock, Share2, ClipboardList, MessageCircle, XCircle, Trash2, TrendingUp, Gamepad2, Eye } from "lucide-react";
 import { EditActionButton } from "@/components/shared/EditActionButton";
@@ -119,8 +120,8 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
 
     const ids = data.map((p) => p.player_id);
     if (ids.length === 0) { setPlayers([]); return; }
-    const { data: profiles } = await supabase.from("profiles").select("id, name, nickname").in("id", ids);
-    const profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
+    const profiles = await fetchPublicProfiles(ids);
+    const profileMap = new Map(profiles.map((p) => [p.id, p]));
     setPlayers(data.map((p) => ({ ...p, profile: profileMap.get(p.player_id) ?? { name: "Jogador desconhecido", nickname: null } })));
 
     if (room.season_id) {

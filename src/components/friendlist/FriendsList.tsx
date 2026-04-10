@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabaseExternal";
+import { fetchPublicProfiles } from "@/lib/profilesPublic";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -37,12 +38,9 @@ const FriendsList = ({ userId }: FriendsListProps) => {
     if (!data) { setLoading(false); return; }
 
     const otherIds = data.map(f => f.user_id === targetUserId ? f.friend_id : f.user_id);
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("id, name, nickname")
-      .in("id", otherIds);
+    const profiles = await fetchPublicProfiles(otherIds);
 
-    const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+    const profileMap = new Map(profiles.map(p => [p.id, p]));
 
     const enriched = data.map(f => {
       const otherId = f.user_id === targetUserId ? f.friend_id : f.user_id;

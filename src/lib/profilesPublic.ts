@@ -19,12 +19,28 @@ export interface PublicProfile {
 export async function fetchPublicProfiles(ids?: string[]): Promise<PublicProfile[]> {
   const { data, error } = await supabase.rpc("get_public_profiles", {
     p_ids: ids || null,
+    p_nickname: null,
   } as any);
   if (error) {
     console.error("Error fetching public profiles:", error);
     return [];
   }
   return (data || []) as PublicProfile[];
+}
+
+/**
+ * Fetch a public profile by nickname.
+ */
+export async function fetchPublicProfileByNickname(nickname: string): Promise<PublicProfile | null> {
+  const { data, error } = await supabase.rpc("get_public_profiles", {
+    p_ids: null,
+    p_nickname: nickname,
+  } as any);
+  if (error) {
+    console.error("Error fetching public profile by nickname:", error);
+    return null;
+  }
+  return (data as PublicProfile[])?.[0] || null;
 }
 
 /**

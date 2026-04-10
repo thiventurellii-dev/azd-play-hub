@@ -1389,20 +1389,35 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_public_profiles: {
-        Args: { p_ids?: string[] }
-        Returns: {
-          avatar_url: string
-          city: string
-          created_at: string
-          id: string
-          name: string
-          nickname: string
-          state: string
-          status: string
-          steam_id: string
-        }[]
-      }
+      get_public_profiles:
+        | {
+            Args: { p_ids?: string[] }
+            Returns: {
+              avatar_url: string
+              city: string
+              created_at: string
+              id: string
+              name: string
+              nickname: string
+              state: string
+              status: string
+              steam_id: string
+            }[]
+          }
+        | {
+            Args: { p_ids?: string[]; p_nickname?: string }
+            Returns: {
+              avatar_url: string
+              city: string
+              created_at: string
+              id: string
+              name: string
+              nickname: string
+              state: string
+              status: string
+              steam_id: string
+            }[]
+          }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

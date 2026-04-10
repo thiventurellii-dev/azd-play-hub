@@ -584,13 +584,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "ghost_players_linked_profile_id_fkey"
-            columns: ["linked_profile_id"]
-            isOneToOne: false
-            referencedRelation: "profiles_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       match_edit_proposals: {
@@ -1393,44 +1386,23 @@ export type Database = {
       }
     }
     Views: {
-      profiles_public: {
-        Row: {
-          avatar_url: string | null
-          city: string | null
-          created_at: string | null
-          id: string | null
-          name: string | null
-          nickname: string | null
-          state: string | null
-          status: string | null
-          steam_id: string | null
-        }
-        Insert: {
-          avatar_url?: string | null
-          city?: string | null
-          created_at?: string | null
-          id?: string | null
-          name?: string | null
-          nickname?: string | null
-          state?: string | null
-          status?: string | null
-          steam_id?: string | null
-        }
-        Update: {
-          avatar_url?: string | null
-          city?: string | null
-          created_at?: string | null
-          id?: string | null
-          name?: string | null
-          nickname?: string | null
-          state?: string | null
-          status?: string | null
-          steam_id?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
+      get_public_profiles: {
+        Args: { p_ids?: string[] }
+        Returns: {
+          avatar_url: string
+          city: string
+          created_at: string
+          id: string
+          name: string
+          nickname: string
+          state: string
+          status: string
+          steam_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

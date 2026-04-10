@@ -1,6 +1,5 @@
 import { useQuery, useQueries } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseExternal";
-import { fetchPublicProfiles } from "@/lib/profilesPublic";
 import type { MatchData, UpcomingRoom, TopPlayer, ActiveSeason } from "@/types/dashboard";
 
 // ---------- helpers ----------
@@ -122,8 +121,8 @@ async function fetchTopPlayers(seasonId: string): Promise<TopPlayer[]> {
   if (!ratings?.length) return [];
 
   const pIds = ratings.map((r) => r.player_id);
-  const profiles = await fetchPublicProfiles(pIds);
-  const pMap = new Map(profiles.map((p: any) => [p.id, p.nickname || p.name]));
+  const { data: profiles } = await supabase.from("profiles").select("id, nickname, name").in("id", pIds);
+  const pMap = new Map((profiles || []).map((p: any) => [p.id, p.nickname || p.name]));
 
   return ratings.map((r) => ({ ...r, name: pMap.get(r.player_id) || "?" }));
 }

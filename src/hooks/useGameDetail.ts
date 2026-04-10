@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseExternal";
-import { fetchPublicProfiles } from "@/lib/profilesPublic";
 
 const fetchGameDetail = async (slug: string) => {
   const { data } = await supabase.from("games").select("*").eq("slug", slug).maybeSingle();
@@ -24,9 +23,9 @@ const fetchGameDetail = async (slug: string) => {
 
   const { data: results } = await supabase.from("match_results").select("*").in("match_id", matchIds);
   const playerIds = [...new Set((results || []).map((r) => r.player_id))];
-  const profiles = await fetchPublicProfiles(playerIds as string[]);
+  const { data: profiles } = await supabase.from("profiles").select("id, name, nickname").in("id", playerIds);
   const playerMap: Record<string, string> = {};
-  for (const p of profiles) playerMap[p.id] = p.nickname || p.name;
+  for (const p of profiles || []) playerMap[p.id] = (p as any).nickname || p.name;
 
   return { game, tags, matches: matches || [], results: results || [], playerMap };
 };

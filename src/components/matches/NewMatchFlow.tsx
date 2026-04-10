@@ -1,6 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseExternal';
-import { fetchPublicProfiles } from '@/lib/profilesPublic';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -78,14 +77,14 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
 
   useEffect(() => {
     const fetchBase = async () => {
-      const [s, g] = await Promise.all([
+      const [s, g, p] = await Promise.all([
         supabase.from('seasons').select('id, name, status').eq('type', 'boardgame' as any).neq('status', 'finished').neq('status', 'upcoming').order('start_date', { ascending: false }),
         supabase.from('games').select('id, name, slug, min_players, max_players').order('name'),
+        supabase.from('profiles').select('id, name, nickname').order('name'),
       ]);
-      const profiles = await fetchPublicProfiles();
       setSeasons(s.data || []);
       setGames((g.data || []) as Game[]);
-      setAllPlayers(profiles.map(p => ({ id: p.id, name: p.name, nickname: p.nickname })));
+      setAllPlayers(p.data || []);
     };
     fetchBase();
   }, []);

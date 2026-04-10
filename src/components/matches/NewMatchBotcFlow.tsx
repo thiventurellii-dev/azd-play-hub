@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseExternal';
-import { fetchPublicProfiles } from '@/lib/profilesPublic';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -53,16 +52,16 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
 
   useEffect(() => {
     const fetchBase = async () => {
-      const [s, sc, ch] = await Promise.all([
+      const [s, sc, ch, p] = await Promise.all([
         supabase.from('seasons').select('id, name').eq('type', 'blood' as any).neq('status', 'finished').neq('status', 'upcoming').order('start_date', { ascending: false }),
         supabase.from('blood_scripts').select('id, name, victory_conditions').order('name'),
         supabase.from('blood_characters').select('id, script_id, name, name_en, role_type, team'),
+        supabase.from('profiles').select('id, name, nickname').order('name'),
       ]);
-      const profiles = await fetchPublicProfiles();
       setSeasons((s.data || []) as Season[]);
       setScripts((sc.data || []).map((x: any) => ({ ...x, victory_conditions: Array.isArray(x.victory_conditions) ? x.victory_conditions : [] })) as BloodScript[]);
       setCharacters((ch.data || []) as BloodCharacter[]);
-      setPlayers(profiles.map(p => ({ id: p.id, name: p.name, nickname: p.nickname })) as Player[]);
+      setPlayers((p.data || []) as Player[]);
     };
     fetchBase();
   }, []);

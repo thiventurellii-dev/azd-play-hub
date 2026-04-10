@@ -17,7 +17,7 @@ export async function sendRoomNotifications({ userIds, type, title, message, roo
     message,
     room_id: roomId || null,
   }));
-  await supabase.rpc("insert_notifications", { p_rows: rows } as any);
+  await supabase.from("notifications").insert(rows);
 
   // Also send push notifications via Lovable Cloud edge function
   try {

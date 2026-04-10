@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabaseExternal";
-import { fetchPublicProfiles } from "@/lib/profilesPublic";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,8 +34,12 @@ const RoomComments = ({ roomId }: Props) => {
     if (!data) return;
 
     const userIds = [...new Set(data.map(c => c.user_id))];
-    const profiles = await fetchPublicProfiles(userIds);
-    const profileMap = new Map(profiles.map(p => [p.id, p]));
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, name, nickname")
+      .in("id", userIds);
+
+    const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
     setComments(data.map(c => ({
       ...c,
       profile: profileMap.get(c.user_id) as Comment["profile"],

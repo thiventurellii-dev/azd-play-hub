@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseExternal";
-import { fetchPublicProfiles } from "@/lib/profilesPublic";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Skull } from "lucide-react";
 
@@ -52,8 +51,12 @@ const BotCResult = ({ resultId }: Props) => {
         (match as any).storyteller_player_id,
       ].filter(Boolean);
 
-      const profiles = await fetchPublicProfiles([...new Set(allPlayerIds)]);
-      const profileMap = new Map(profiles.map((p: any) => [p.id, p]));
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, name, nickname")
+        .in("id", [...new Set(allPlayerIds)]);
+
+      const profileMap = new Map(profiles?.map((p: any) => [p.id, p]) || []);
       const script = Array.isArray((match as any).script) ? (match as any).script[0] : (match as any).script;
       const stProfile = profileMap.get((match as any).storyteller_player_id);
 

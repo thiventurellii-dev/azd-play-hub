@@ -25,7 +25,6 @@ import {
 import logo from "@/assets/azd-logo.png";
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabaseExternal";
-import { fetchPublicProfiles } from "@/lib/profilesPublic";
 import { Check, X as XIcon } from "lucide-react";
 import { toast } from "sonner";
 
@@ -57,8 +56,11 @@ const Navbar = () => {
     }
     setPendingFriends(data.length);
     const userIds = data.map(d => d.user_id);
-    const profiles = await fetchPublicProfiles(userIds);
-    const profileMap = new Map(profiles.map(p => [p.id, p]));
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, name, nickname")
+      .in("id", userIds);
+    const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
     setFriendRequests(data.map(d => {
       const p = profileMap.get(d.user_id);
       return { id: d.id, user_id: d.user_id, name: p?.name || '?', nickname: p?.nickname || null };

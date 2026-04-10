@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseExternal";
-import { fetchPublicProfiles } from "@/lib/profilesPublic";
 import type { RankingEntry, BloodRankingEntry, SeasonBase } from "@/types/database";
 
 const fetchSeasons = async (): Promise<SeasonBase[]> => {
@@ -12,17 +11,13 @@ const fetchSeasons = async (): Promise<SeasonBase[]> => {
 const fetchBoardgameRankings = async (seasonId: string): Promise<RankingEntry[]> => {
   const { data } = await supabase
     .from("mmr_ratings")
-    .select("player_id, current_mmr, games_played, wins")
+    .select("player_id, current_mmr, games_played, wins, profiles(name, nickname)")
     .eq("season_id", seasonId)
     .order("current_mmr", { ascending: false });
-  if (!data || data.length === 0) return [];
-  const playerIds = data.map((r: any) => r.player_id);
-  const profiles = await fetchPublicProfiles(playerIds);
-  const pMap: Record<string, string> = {};
-  for (const p of profiles) pMap[p.id] = p.nickname || p.name;
+  if (!data) return [];
   return data.map((r: any) => ({
     ...r,
-    player_name: pMap[r.player_id] || "Unknown",
+    player_name: r.profiles?.nickname || r.profiles?.name || "Unknown",
   }));
 };
 
@@ -34,9 +29,9 @@ const fetchBloodRankings = async (seasonId: string): Promise<BloodRankingEntry[]
     .order("total_points", { ascending: false });
   if (!data || data.length === 0) return [];
   const playerIds = (data as any[]).map((r) => r.player_id);
-  const profiles = await fetchPublicProfiles(playerIds);
+  const { data: profiles } = await supabase.from("profiles").select("id, name, nickname").in("id", playerIds);
   const pMap: Record<string, string> = {};
-  for (const p of profiles) pMap[p.id] = p.nickname || p.name;
+  for (const p of profiles || []) pMap[p.id] = (p as any).nickname || p.name;
   return (data as any[]).map((r) => ({ ...r, player_name: pMap[r.player_id] || "?" }));
 };
 

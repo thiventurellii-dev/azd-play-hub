@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseExternal";
+import { fetchPublicProfiles } from "@/lib/profilesPublic";
 
 interface BloodScript {
   id: string; name: string; description: string | null; slug: string | null; victory_conditions: string[];

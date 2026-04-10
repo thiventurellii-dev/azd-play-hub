@@ -31,7 +31,6 @@ const fetchScriptDetail = async (slug: string) => {
   const [charsRes, matchesRes, playersRes] = await Promise.all([
     supabase.from("blood_characters").select("*").eq("script_id", found.id).order("team, role_type, name"),
     supabase.from("blood_matches").select("*").eq("script_id", found.id).order("played_at", { ascending: false }),
-    supabase.from("profiles").select("id, name, nickname").order("name"),
   ]);
 
   const characters = (charsRes.data || []) as BloodCharacter[];

@@ -584,6 +584,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ghost_players_linked_profile_id_fkey"
+            columns: ["linked_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       match_edit_proposals: {
@@ -1386,7 +1393,42 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      profiles_public: {
+        Row: {
+          avatar_url: string | null
+          city: string | null
+          created_at: string | null
+          id: string | null
+          name: string | null
+          nickname: string | null
+          state: string | null
+          status: string | null
+          steam_id: string | null
+        }
+        Insert: {
+          avatar_url?: string | null
+          city?: string | null
+          created_at?: string | null
+          id?: string | null
+          name?: string | null
+          nickname?: string | null
+          state?: string | null
+          status?: string | null
+          steam_id?: string | null
+        }
+        Update: {
+          avatar_url?: string | null
+          city?: string | null
+          created_at?: string | null
+          id?: string | null
+          name?: string | null
+          nickname?: string | null
+          state?: string | null
+          status?: string | null
+          steam_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
@@ -1396,6 +1438,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      insert_notifications: { Args: { p_rows: Json }; Returns: undefined }
       recalculate_blood_ratings: {
         Args: { p_season_id: string }
         Returns: undefined

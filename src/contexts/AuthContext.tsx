@@ -10,7 +10,6 @@ interface AuthContextType {
   role: UserRole | null;
   loading: boolean;
   profileCompleted: boolean;
-  playerStatus: string;
   signUp: (email: string, password: string, name: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -27,7 +26,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
   const [profileCompleted, setProfileCompleted] = useState(true);
-  const [playerStatus, setPlayerStatus] = useState('active');
 
   const fetchRole = async (userId: string) => {
     const { data } = await supabase
@@ -52,7 +50,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .single();
     if (data) {
       const status = (data as any).status || 'active';
-      setPlayerStatus(status);
 
       if (status === 'disabled') {
         await supabase.auth.signOut();
@@ -100,7 +97,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setRole(null);
         setProfileCompleted(true);
-        setPlayerStatus('active');
       }
       setLoading(false);
     });
@@ -137,7 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, role, loading, profileCompleted, playerStatus, signUp, signIn, signOut, setProfileCompleted, isAdmin: role === 'admin' || role === 'super_admin', refreshProfile }}>
+    <AuthContext.Provider value={{ user, session, role, loading, profileCompleted, signUp, signIn, signOut, setProfileCompleted, isAdmin: role === 'admin' || role === 'super_admin', refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

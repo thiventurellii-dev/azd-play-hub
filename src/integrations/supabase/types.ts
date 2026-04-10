@@ -1389,6 +1389,44 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_ghost_players: {
+        Args: never
+        Returns: {
+          created_at: string
+          display_name: string
+          id: string
+          linked_profile_id: string
+        }[]
+      }
+      get_public_profiles:
+        | {
+            Args: { p_ids?: string[] }
+            Returns: {
+              avatar_url: string
+              city: string
+              created_at: string
+              id: string
+              name: string
+              nickname: string
+              state: string
+              status: string
+              steam_id: string
+            }[]
+          }
+        | {
+            Args: { p_ids?: string[]; p_nickname?: string }
+            Returns: {
+              avatar_url: string
+              city: string
+              created_at: string
+              id: string
+              name: string
+              nickname: string
+              state: string
+              status: string
+              steam_id: string
+            }[]
+          }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1396,6 +1434,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      insert_notifications: { Args: { p_rows: Json }; Returns: undefined }
       recalculate_blood_ratings: {
         Args: { p_season_id: string }
         Returns: undefined

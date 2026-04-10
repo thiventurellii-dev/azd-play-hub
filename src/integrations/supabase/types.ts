@@ -1389,15 +1389,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      get_ghost_players: {
-        Args: never
-        Returns: {
-          created_at: string
-          display_name: string
-          id: string
-          linked_profile_id: string
-        }[]
-      }
       get_public_profiles:
         | {
             Args: { p_ids?: string[] }

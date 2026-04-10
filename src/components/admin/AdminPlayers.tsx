@@ -33,8 +33,8 @@ interface PlayerWithRole {
 
 const emptyForm = { name: '', nickname: '', email: '', phone: '', country_code: '+55', state: '', city: '', birth_date: '', gender: '', pronouns: '', password: '' };
 
-const statusLabels: Record<string, string> = { pending: 'Cadastro Pendente', pending_approval: 'Aguardando Aprovação', active: 'Ativo', disabled: 'Desativado', approved: 'Cadastro Pendente' };
-const statusColors: Record<string, string> = { pending: 'bg-yellow-500/20 text-yellow-400', pending_approval: 'bg-orange-500/20 text-orange-400', active: 'bg-green-500/20 text-green-400', disabled: 'bg-red-500/20 text-red-400', approved: 'bg-yellow-500/20 text-yellow-400' };
+const statusLabels: Record<string, string> = { pending: 'Cadastro Pendente', active: 'Ativo', disabled: 'Desativado' };
+const statusColors: Record<string, string> = { pending: 'bg-yellow-500/20 text-yellow-400', active: 'bg-green-500/20 text-green-400', disabled: 'bg-red-500/20 text-red-400' };
 
 const AdminPlayers = () => {
   const { notify } = useNotification();
@@ -241,20 +241,6 @@ const AdminPlayers = () => {
     return 'Player';
   };
 
-  const handleApprove = async (player: PlayerWithRole) => {
-    const { error } = await supabase.from('profiles').update({ status: 'active' } as any).eq('id', player.id);
-    if (error) return notify('error', error.message);
-    notify('success', `${player.nickname || player.name} aprovado!`);
-    fetchPlayers();
-  };
-
-  const handleReject = async (player: PlayerWithRole) => {
-    const { error } = await supabase.from('profiles').update({ status: 'disabled' } as any).eq('id', player.id);
-    if (error) return notify('error', error.message);
-    notify('success', `${player.nickname || player.name} rejeitado.`);
-    fetchPlayers();
-  };
-
   const handleDisableAccount = async (player: PlayerWithRole) => {
     const { error } = await supabase.from('profiles').update({ status: 'disabled' } as any).eq('id', player.id);
     if (error) return notify('error', error.message);
@@ -315,7 +301,7 @@ const AdminPlayers = () => {
 
   useEffect(() => { fetchDisableRequests(); }, []);
 
-  const pendingApprovalPlayers = players.filter(p => p.status === 'pending_approval');
+  
 
   return (
     <div className="space-y-6">
@@ -350,38 +336,6 @@ const AdminPlayers = () => {
         </Card>
       )}
 
-      {/* Pending Approval Section */}
-      {pendingApprovalPlayers.length > 0 && (
-        <Card className="bg-card border-orange-500/30">
-          <CardHeader>
-            <CardTitle className="text-orange-400">Aguardando Aprovação ({pendingApprovalPlayers.length})</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {pendingApprovalPlayers.map(p => (
-              <div key={p.id} className="flex items-center justify-between rounded-lg border border-orange-500/20 p-3">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-gold font-bold">
-                    {(p.nickname || p.name)?.charAt(0)?.toUpperCase() || '?'}
-                  </div>
-                  <div>
-                    <p className="font-semibold">{p.nickname || p.name}</p>
-                    {p.name && p.nickname && <p className="text-xs text-muted-foreground">{p.name}</p>}
-                    <p className="text-xs text-muted-foreground">{p.email}</p>
-                  </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" className="text-green-400 border-green-500/30 hover:bg-green-500/10" onClick={() => handleApprove(p)}>
-                    <Check className="h-4 w-4 mr-1" /> Aprovar
-                  </Button>
-                  <Button variant="outline" size="sm" className="text-red-400 border-red-500/30 hover:bg-red-500/10" onClick={() => handleReject(p)}>
-                    <XCircle className="h-4 w-4 mr-1" /> Rejeitar
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
 
       <Card className="bg-card border-border">
         <CardHeader>
@@ -530,8 +484,7 @@ const AdminPlayers = () => {
                 <Select value={editStatus} onValueChange={setEditStatus}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                <SelectItem value="pending">Cadastro Pendente</SelectItem>
-                    <SelectItem value="pending_approval">Aguardando Aprovação</SelectItem>
+                    <SelectItem value="pending">Cadastro Pendente</SelectItem>
                     <SelectItem value="active">Ativo</SelectItem>
                     <SelectItem value="disabled">Desativado</SelectItem>
                   </SelectContent>

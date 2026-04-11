@@ -90,7 +90,7 @@ const LoggedInIndex = () => {
                         <span className={`font-medium ${POSITION_COLORS[i] || ""}`}>
                           {i + 1}. {p.name}
                         </span>
-                        <span className="text-xs text-muted-foreground">{p.current_mmr} MMR</span>
+                        <span className="text-xs text-muted-foreground">{Number(p.current_mmr).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} MMR</span>
                       </div>
                     ))}
                   </div>

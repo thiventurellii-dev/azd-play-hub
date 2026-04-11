@@ -59,5 +59,5 @@ export const didBloodPlayerWin = (playerTeam: string, winningTeam: string): bool
  * Formats MMR for display.
  */
 export const formatMmr = (mmr: number): string => {
-  return Number(mmr).toFixed(2);
+  return Number(mmr).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };

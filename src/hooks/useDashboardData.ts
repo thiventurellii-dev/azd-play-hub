@@ -124,7 +124,7 @@ async function fetchTopPlayers(seasonId: string): Promise<TopPlayer[]> {
   const { data: profiles } = await supabase.rpc("get_public_profiles", { p_ids: pIds });
   const pMap = new Map((profiles || []).map((p: any) => [p.id, p.nickname || p.name]));
 
-  return ratings.map((r) => ({ ...r, name: pMap.get(r.player_id) || "?" }));
+  return ratings.map((r) => ({ ...r, name: (pMap.get(r.player_id) || "?") as string }));
 }
 
 // ---------- hook ----------

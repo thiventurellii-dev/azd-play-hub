@@ -112,10 +112,7 @@ const SeasonDetail = () => {
           const allPlayerIds = [
             ...new Set([...storytellerIds, ...((playersRes.data || []) as any[]).map((p) => p.player_id)]),
           ];
-          const { data: profiles } = await supabase
-            .from("profiles")
-            .select("id, name, nickname")
-            .in("id", allPlayerIds);
+          const { data: profiles } = await supabase.rpc("get_public_profiles", { p_ids: allPlayerIds });
           const pMap: Record<string, string> = {};
           for (const p of profiles || []) pMap[p.id] = (p as any).nickname || p.name;
 

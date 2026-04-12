@@ -29,7 +29,7 @@ const fetchBloodRankings = async (seasonId: string): Promise<BloodRankingEntry[]
     .order("total_points", { ascending: false });
   if (!data || data.length === 0) return [];
   const playerIds = (data as any[]).map((r) => r.player_id);
-  const { data: profiles } = await supabase.from("profiles").select("id, name, nickname").in("id", playerIds);
+  const { data: profiles } = await supabase.rpc("get_public_profiles", { p_ids: playerIds });
   const pMap: Record<string, string> = {};
   for (const p of profiles || []) pMap[p.id] = (p as any).nickname || p.name;
   return (data as any[]).map((r) => ({ ...r, player_name: pMap[r.player_id] || "?" }));

@@ -38,13 +38,13 @@ const AdminMatchRooms = () => {
     const roomIds = roomsData.map((r: any) => r.id);
 
     const [{ data: profiles }, { data: playersData }] = await Promise.all([
-      supabase.from("profiles").select("id, name, nickname").in("id", creatorIds),
+      supabase.rpc("get_public_profiles", { p_ids: creatorIds }),
       supabase.from("match_room_players").select("id, room_id, player_id, type").in("room_id", roomIds),
     ]);
 
     const playerIds = [...new Set(playersData?.map((p) => p.player_id) || [])];
     const { data: playerProfiles } = playerIds.length
-      ? await supabase.from("profiles").select("id, name, nickname").in("id", playerIds)
+      ? await supabase.rpc("get_public_profiles", { p_ids: playerIds })
       : { data: [] };
 
     const profileMap = new Map((profiles || []).map((p) => [p.id, p] as const));

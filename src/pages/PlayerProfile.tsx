@@ -142,7 +142,7 @@ const PlayerProfile = () => {
           if (myResult?.position === 1) oppMap[r.player_id].wins++;
         }
         const oppIds = Object.keys(oppMap);
-        const { data: oppProfiles } = await supabase.from("profiles").select("id, name, nickname").in("id", oppIds);
+        const { data: oppProfiles } = await supabase.rpc("get_public_profiles", { p_ids: oppIds });
         const oppNameMap: Record<string, string> = {};
         for (const p of oppProfiles || []) oppNameMap[p.id] = (p as any).nickname || p.name;
         setOpponents(

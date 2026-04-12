@@ -23,7 +23,7 @@ const fetchGameDetail = async (slug: string) => {
 
   const { data: results } = await supabase.from("match_results").select("*").in("match_id", matchIds);
   const playerIds = [...new Set((results || []).map((r) => r.player_id))];
-  const { data: profiles } = await supabase.from("profiles").select("id, name, nickname").in("id", playerIds);
+  const { data: profiles } = await supabase.rpc("get_public_profiles", { p_ids: playerIds });
   const playerMap: Record<string, string> = {};
   for (const p of profiles || []) playerMap[p.id] = (p as any).nickname || p.name;
 

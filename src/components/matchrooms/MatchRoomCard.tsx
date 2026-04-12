@@ -119,7 +119,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
 
     const ids = data.map((p) => p.player_id);
     if (ids.length === 0) { setPlayers([]); return; }
-    const { data: profiles } = await supabase.from("profiles").select("id, name, nickname").in("id", ids);
+    const { data: profiles } = await supabase.rpc("get_public_profiles", { p_ids: ids });
     const profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
     setPlayers(data.map((p) => ({ ...p, profile: profileMap.get(p.player_id) ?? { name: "Jogador desconhecido", nickname: null } })));
 

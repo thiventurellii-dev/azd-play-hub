@@ -30,7 +30,7 @@ const fetchScriptDetail = async (slug: string) => {
   const [charsRes, matchesRes, playersRes] = await Promise.all([
     supabase.from("blood_characters").select("*").eq("script_id", found.id).order("team, role_type, name"),
     supabase.from("blood_matches").select("*").eq("script_id", found.id).order("played_at", { ascending: false }),
-    supabase.from("profiles").select("id, name, nickname").order("name"),
+    supabase.rpc("get_public_profiles"),
   ]);
 
   const characters = (charsRes.data || []) as BloodCharacter[];
@@ -48,7 +48,7 @@ const fetchScriptDetail = async (slug: string) => {
     for (const mp of mpData || []) playerIds.add(mp.player_id);
     for (const m of matches) playerIds.add(m.storyteller_player_id);
     if (playerIds.size > 0) {
-      const { data: profilesData } = await supabase.from("profiles").select("id, nickname, name").in("id", [...playerIds]);
+      const { data: profilesData } = await supabase.rpc("get_public_profiles", { p_ids: [...playerIds] });
       for (const p of profilesData || []) profiles[p.id] = p.nickname || p.name;
     }
   }

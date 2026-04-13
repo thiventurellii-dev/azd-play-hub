@@ -165,7 +165,7 @@ async function fetchSeasonRankings(seasonId: string): Promise<TopPlayer[]> {
 
   const playerIds = Array.from(aggregateMap.keys());
   const { data: profiles } = await supabase.rpc("get_public_profiles", { p_ids: playerIds });
-  const playerNameMap = new Map((profiles || []).map((profile: { id: string; nickname: string | null; name: string }) => [profile.id, profile.nickname || profile.name || "?"]));
+  const playerNameMap = new Map<string, string>((profiles || []).map((profile: { id: string; nickname: string | null; name: string }) => [profile.id, profile.nickname || profile.name || "?"]));
 
   return playerIds
     .map((playerId) => {

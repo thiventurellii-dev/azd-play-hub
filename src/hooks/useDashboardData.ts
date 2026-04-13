@@ -2,7 +2,20 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseExternal";
 import type { MatchData, UpcomingRoom, TopPlayer, ActiveSeason, UserRankPosition } from "@/types/dashboard";
 
-// ---------- helpers ----------
+type JoinedRecord<T> = T | T[] | null;
+
+type SeasonRatingRow = {
+  player_id: string;
+  current_mmr: number;
+  wins: number;
+  games_played: number;
+  game_id: string | null;
+};
+
+function unwrapJoinedRecord<T>(value: JoinedRecord<T>): T | null {
+  if (!value) return null;
+  return Array.isArray(value) ? value[0] ?? null : value;
+}
 
 function formatBoardMatch(
   match: { id: string; played_at: string; game: { name: string } | { name: string }[] | null },
@@ -11,7 +24,7 @@ function formatBoardMatch(
   return {
     id: match.id,
     played_at: match.played_at,
-    game: Array.isArray(match.game) ? match.game[0] : match.game,
+    game: unwrapJoinedRecord(match.game),
     position: userResult?.position ?? null,
     score: userResult?.score ?? null,
     type: "boardgame",
@@ -24,7 +37,8 @@ function formatBloodMatch(
   userPlay: { team: string } | undefined
 ): MatchData {
   const won = userPlay ? userPlay.team === match.winning_team : null;
-  const scriptName = (Array.isArray(match.script) ? match.script[0] : match.script)?.name || "?";
+  const scriptName = unwrapJoinedRecord(match.script)?.name || "?";
+
   return {
     id: `blood-${match.id}`,
     played_at: match.played_at,
@@ -36,8 +50,6 @@ function formatBloodMatch(
   };
 }
 
-// ---------- fetchers ----------
-
 async function fetchUpcomingRooms(userId: string): Promise<UpcomingRoom[]> {
   const { data: playerRooms } = await supabase
     .from("match_room_players")
@@ -46,34 +58,33 @@ async function fetchUpcomingRooms(userId: string): Promise<UpcomingRoom[]> {
 
   if (!playerRooms?.length) return [];
 
-  const roomIds = playerRooms.map((r) => r.room_id);
+  const roomIds = playerRooms.map((room) => room.room_id);
   const { data: rooms } = await supabase
     .from("match_rooms")
     .select("id, title, scheduled_at, status, max_players, game:games(name)")
     .in("id", roomIds)
-    .in("status", ["open", "full"] as any)
+    .in("status", ["open", "full"] as never)
     .gte("scheduled_at", new Date().toISOString())
     .order("scheduled_at")
     .limit(3);
 
   if (!rooms?.length) return [];
 
-  // Fetch confirmed player counts for these rooms
   const { data: playerCounts } = await supabase
     .from("match_room_players")
     .select("room_id")
-    .in("room_id", rooms.map((r: any) => r.id))
-    .eq("type", "confirmed" as any);
+    .in("room_id", rooms.map((room: { id: string }) => room.id))
+    .eq("type", "confirmed" as never);
 
   const countMap: Record<string, number> = {};
-  for (const p of playerCounts || []) {
-    countMap[p.room_id] = (countMap[p.room_id] || 0) + 1;
+  for (const player of playerCounts || []) {
+    countMap[player.room_id] = (countMap[player.room_id] || 0) + 1;
   }
 
-  return (rooms as any[]).map((r) => ({
-    ...r,
-    game: Array.isArray(r.game) ? r.game[0] : r.game,
-    confirmed_count: countMap[r.id] || 0,
+  return (rooms as Array<{ id: string; game: JoinedRecord<{ name: string }> } & Omit<UpcomingRoom, "game" | "confirmed_count">>).map((room) => ({
+    ...room,
+    game: unwrapJoinedRecord(room.game),
+    confirmed_count: countMap[room.id] || 0,
   }));
 }
 
@@ -88,27 +99,27 @@ async function fetchRecentMatches(userId: string): Promise<MatchData[]> {
 
   const [boardResultsRes, bloodPlayersRes] = await Promise.all([
     boardMatches.length > 0
-      ? supabase.from("match_results").select("match_id, position, score, player_id").in("match_id", boardMatches.map((m) => m.id))
-      : Promise.resolve({ data: [] as any[] }),
+      ? supabase.from("match_results").select("match_id, position, score, player_id").in("match_id", boardMatches.map((match) => match.id))
+      : Promise.resolve({ data: [] as Array<{ match_id: string; position: number; score: number | null; player_id: string | null }> }),
     bloodMatches.length > 0
-      ? supabase.from("blood_match_players").select("match_id, team, player_id").in("match_id", bloodMatches.map((m) => m.id))
-      : Promise.resolve({ data: [] as any[] }),
+      ? supabase.from("blood_match_players").select("match_id, team, player_id").in("match_id", bloodMatches.map((match) => match.id))
+      : Promise.resolve({ data: [] as Array<{ match_id: string; team: string; player_id: string }> }),
   ]);
 
-  const all: MatchData[] = [];
+  const allMatches: MatchData[] = [];
 
-  for (const m of boardMatches as any[]) {
-    const userResult = boardResultsRes.data?.find((r: any) => r.match_id === m.id && r.player_id === userId);
-    all.push(formatBoardMatch(m, userResult));
+  for (const match of boardMatches as Array<{ id: string; played_at: string; game: JoinedRecord<{ name: string }> }>) {
+    const userResult = boardResultsRes.data?.find((result) => result.match_id === match.id && result.player_id === userId);
+    allMatches.push(formatBoardMatch(match, userResult));
   }
 
-  for (const m of bloodMatches as any[]) {
-    const userPlay = bloodPlayersRes.data?.find((p: any) => p.match_id === m.id && p.player_id === userId);
-    all.push(formatBloodMatch(m, userPlay));
+  for (const match of bloodMatches as Array<{ id: string; played_at: string; winning_team: string; script: JoinedRecord<{ name: string }> }>) {
+    const userPlay = bloodPlayersRes.data?.find((player) => player.match_id === match.id && player.player_id === userId);
+    allMatches.push(formatBloodMatch(match, userPlay));
   }
 
-  all.sort((a, b) => new Date(b.played_at).getTime() - new Date(a.played_at).getTime());
-  return all.slice(0, 8);
+  allMatches.sort((a, b) => new Date(b.played_at).getTime() - new Date(a.played_at).getTime());
+  return allMatches.slice(0, 8);
 }
 
 async function fetchActiveSeason(): Promise<ActiveSeason | null> {
@@ -125,7 +136,6 @@ async function fetchActiveSeason(): Promise<ActiveSeason | null> {
 
   if (!data) return null;
 
-  // Fetch match count for this season
   const { count } = await supabase
     .from("matches")
     .select("id", { count: "exact", head: true })
@@ -134,61 +144,62 @@ async function fetchActiveSeason(): Promise<ActiveSeason | null> {
   return { ...data, match_count: count || 0 };
 }
 
-async function fetchTopPlayers(seasonId: string): Promise<TopPlayer[]> {
+async function fetchSeasonRankings(seasonId: string): Promise<TopPlayer[]> {
   const { data: ratings } = await supabase
     .from("mmr_ratings")
-    .select("player_id, current_mmr, wins, games_played")
-    .eq("season_id", seasonId)
-    .order("current_mmr", { ascending: false })
-    .limit(5);
+    .select("player_id, current_mmr, wins, games_played, game_id")
+    .eq("season_id", seasonId);
 
   if (!ratings?.length) return [];
 
-  const pIds = ratings.map((r) => r.player_id);
-  const { data: profiles } = await supabase.rpc("get_public_profiles", { p_ids: pIds });
-  const pMap = new Map((profiles || []).map((p: any) => [p.id, p.nickname || p.name]));
+  const aggregateMap = new Map<string, { totalMmr: number; wins: number; gamesPlayed: number; gameCount: number }>();
 
-  return ratings.map((r) => ({ ...r, name: (pMap.get(r.player_id) || "?") as string }));
+  for (const rating of ratings as SeasonRatingRow[]) {
+    const current = aggregateMap.get(rating.player_id) ?? { totalMmr: 0, wins: 0, gamesPlayed: 0, gameCount: 0 };
+    current.totalMmr += Number(rating.current_mmr);
+    current.wins += Number(rating.wins || 0);
+    current.gamesPlayed += Number(rating.games_played || 0);
+    current.gameCount += 1;
+    aggregateMap.set(rating.player_id, current);
+  }
+
+  const playerIds = Array.from(aggregateMap.keys());
+  const { data: profiles } = await supabase.rpc("get_public_profiles", { p_ids: playerIds });
+  const playerNameMap = new Map((profiles || []).map((profile: { id: string; nickname: string | null; name: string }) => [profile.id, profile.nickname || profile.name || "?"]));
+
+  return playerIds
+    .map((playerId) => {
+      const aggregate = aggregateMap.get(playerId)!;
+      return {
+        player_id: playerId,
+        name: playerNameMap.get(playerId) || "?",
+        current_mmr: Number((aggregate.totalMmr / aggregate.gameCount).toFixed(2)),
+        wins: aggregate.wins,
+        games_played: aggregate.gamesPlayed,
+      };
+    })
+    .sort((a, b) => b.current_mmr - a.current_mmr || a.player_id.localeCompare(b.player_id));
 }
 
-async function fetchUserRankPosition(userId: string, seasonId: string): Promise<UserRankPosition | null> {
-  // Get all ratings sorted to determine position
-  const { data: allRatings } = await supabase
-    .from("mmr_ratings")
-    .select("player_id, current_mmr")
-    .eq("season_id", seasonId)
-    .order("current_mmr", { ascending: false });
-
-  if (!allRatings?.length) return null;
-
-  const idx = allRatings.findIndex((r) => r.player_id === userId);
-  if (idx === -1) return null;
-
-  const userRating = allRatings[idx];
-
-  // Get last mmr_change by joining with matches to order by played_at
-  const { data: lastResults } = await supabase
+async function fetchLatestUserSeasonMmrChange(userId: string, seasonId: string): Promise<number | null> {
+  const { data: results } = await supabase
     .from("match_results")
-    .select("mmr_change, match_id, matches!inner(played_at, season_id)")
+    .select("id, mmr_change, matches!inner(played_at, season_id)")
     .eq("player_id", userId)
-    .eq("matches.season_id", seasonId)
-    .order("match_id", { ascending: false })
-    .limit(5);
+    .eq("matches.season_id", seasonId);
 
-  // Pick the one with the latest played_at
-  const lastResult = lastResults?.sort((a: any, b: any) =>
-    new Date(b.matches?.played_at || b.matches?.[0]?.played_at || 0).getTime() -
-    new Date(a.matches?.played_at || a.matches?.[0]?.played_at || 0).getTime()
-  )?.[0] ?? null;
+  if (!results?.length) return null;
 
-  return {
-    position: idx + 1,
-    current_mmr: userRating.current_mmr,
-    mmr_change: lastResult?.mmr_change ?? null,
-  };
+  const latestResult = [...results].sort((a: { id: string; matches: JoinedRecord<{ played_at: string }> }, b: { id: string; matches: JoinedRecord<{ played_at: string }> }) => {
+    const playedAtA = new Date(unwrapJoinedRecord(a.matches)?.played_at || 0).getTime();
+    const playedAtB = new Date(unwrapJoinedRecord(b.matches)?.played_at || 0).getTime();
+
+    if (playedAtB !== playedAtA) return playedAtB - playedAtA;
+    return b.id.localeCompare(a.id);
+  })[0];
+
+  return latestResult?.mmr_change ?? null;
 }
-
-// ---------- hook ----------
 
 export function useDashboardData(userId: string | undefined) {
   const enabled = !!userId;
@@ -214,35 +225,46 @@ export function useDashboardData(userId: string | undefined) {
     staleTime: 5 * 60_000,
   });
 
-  const topPlayersQuery = useQuery({
-    queryKey: ["dashboard", "topPlayers", seasonQuery.data?.id],
-    queryFn: () => fetchTopPlayers(seasonQuery.data!.id),
+  const seasonRankingsQuery = useQuery({
+    queryKey: ["dashboard", "seasonRankings", seasonQuery.data?.id],
+    queryFn: () => fetchSeasonRankings(seasonQuery.data!.id),
     enabled: !!seasonQuery.data?.id,
     staleTime: 60_000,
   });
 
-  const userRankQuery = useQuery({
-    queryKey: ["dashboard", "userRank", userId, seasonQuery.data?.id],
-    queryFn: () => fetchUserRankPosition(userId!, seasonQuery.data!.id),
+  const latestUserResultQuery = useQuery({
+    queryKey: ["dashboard", "latestUserSeasonResult", userId, seasonQuery.data?.id],
+    queryFn: () => fetchLatestUserSeasonMmrChange(userId!, seasonQuery.data!.id),
     enabled: !!userId && !!seasonQuery.data?.id,
     staleTime: 60_000,
   });
 
+  const rankings = seasonRankingsQuery.data ?? [];
+  const userIndex = userId ? rankings.findIndex((entry) => entry.player_id === userId) : -1;
+  const userRank: UserRankPosition | null = userIndex >= 0
+    ? {
+        position: userIndex + 1,
+        current_mmr: rankings[userIndex].current_mmr,
+        mmr_change: latestUserResultQuery.data ?? null,
+      }
+    : null;
+
   const loading = roomsQuery.isLoading || matchesQuery.isLoading || seasonQuery.isLoading ||
-    (!!seasonQuery.data?.id && topPlayersQuery.isLoading);
+    (!!seasonQuery.data?.id && (seasonRankingsQuery.isLoading || latestUserResultQuery.isLoading));
 
   return {
     upcomingRooms: roomsQuery.data ?? [],
     recentMatches: matchesQuery.data ?? [],
     activeSeason: seasonQuery.data ?? null,
-    topPlayers: topPlayersQuery.data ?? [],
-    userRank: userRankQuery.data ?? null,
+    topPlayers: rankings.slice(0, 5),
+    userRank,
     loading,
     errors: {
       rooms: roomsQuery.error,
       matches: matchesQuery.error,
       season: seasonQuery.error,
-      topPlayers: topPlayersQuery.error,
+      rankings: seasonRankingsQuery.error,
+      userRank: latestUserResultQuery.error,
     },
   };
 }

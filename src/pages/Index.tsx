@@ -48,13 +48,20 @@ const LoggedInIndex = () => {
               </Button>
             </motion.div>
           </Link>
+          <Link to="/seasons">
+            <motion.div {...motionProps}>
+              <Button variant="outline" size="lg">
+                Ver Ranking
+              </Button>
+            </motion.div>
+          </Link>
         </motion.div>
         <SocialButtons />
       </Hero>
 
       <section className="container pb-16">
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          <Link to="/partidas" className="block">
+          <Link to="/partidas" className="group block">
             <DashboardCard
               title="Próximas Partidas"
               icon={<Calendar className="h-4 w-4" />}
@@ -75,13 +82,18 @@ const LoggedInIndex = () => {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">Nenhuma partida agendada</p>
+                <div className="flex flex-col items-center gap-2 py-2">
+                  <p className="text-sm text-muted-foreground">Nenhuma partida agendada ainda.</p>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to="/partidas">Criar Sala</Link>
+                  </Button>
+                </div>
               )}
             </DashboardCard>
           </Link>
 
           {activeSeason && (
-            <Link to={`/seasons/${activeSeason.id}`} className="block">
+            <Link to={`/seasons/${activeSeason.id}`} className="group block">
               <DashboardCard title={activeSeason.name} icon={<span>🏆</span>} delay={0.6} loading={loading}>
                 {topPlayers.length > 0 ? (
                   <div className="space-y-1.5">
@@ -95,13 +107,18 @@ const LoggedInIndex = () => {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">Sem dados de ranking</p>
+                  <div className="flex flex-col items-center gap-2 py-2">
+                    <p className="text-sm text-muted-foreground">Nenhuma partida registrada na season.</p>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link to="/seasons">Ver Seasons</Link>
+                    </Button>
+                  </div>
                 )}
               </DashboardCard>
             </Link>
           )}
 
-          <Link to="/games" className="block">
+          <Link to="/games" className="group block">
             <DashboardCard title="Últimas Partidas" icon={<span>🎲</span>} delay={0.7} loading={loading}>
               {recentMatches.length > 0 ? (
                 <div className="space-y-2">
@@ -127,7 +144,12 @@ const LoggedInIndex = () => {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-muted-foreground">Nenhuma partida registrada</p>
+                <div className="flex flex-col items-center gap-2 py-2">
+                  <p className="text-sm text-muted-foreground">Você ainda não jogou nenhuma partida.</p>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to="/games">Explorar Jogos</Link>
+                  </Button>
+                </div>
               )}
             </DashboardCard>
           </Link>

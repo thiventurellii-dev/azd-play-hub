@@ -95,7 +95,7 @@ const LoggedInIndex = () => {
       <section className="container pb-16">
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {/* Card: Minha Posição — order-1 mobile */}
-          <Link to="/seasons" className="group block order-1 sm:order-none">
+          <Link to="/seasons" className="group block order-1 sm:order-none h-full">
             <DashboardCard title="Minha Posição" icon={<span>🏅</span>} delay={0.8} loading={loading}>
               {userRank ? (
                 <div className="space-y-1">
@@ -122,7 +122,7 @@ const LoggedInIndex = () => {
           </Link>
 
           {/* Card: Próximas Partidas — order-2 mobile */}
-          <Link to="/partidas" className="group block order-2 sm:order-none">
+          <Link to="/partidas" className="group block order-2 sm:order-none h-full">
             <DashboardCard
               title="Próximas Partidas"
               icon={<Calendar className="h-4 w-4" />}
@@ -167,7 +167,7 @@ const LoggedInIndex = () => {
           </Link>
 
           {/* Card: Últimas Partidas — order-3 mobile */}
-          <Link to="/games" className="group block order-3 sm:order-none">
+          <Link to="/games" className="group block order-3 sm:order-none h-full">
             <DashboardCard title="Últimas Partidas" icon={<span>🎲</span>} delay={0.7} loading={loading}>
               {recentMatches.length > 0 ? (
                 <div className="space-y-2">
@@ -208,7 +208,7 @@ const LoggedInIndex = () => {
 
           {/* Card: Season/Ranking — order-4 mobile */}
           {activeSeason && (
-            <Link to={`/seasons/${activeSeason.id}`} className="group block order-4 sm:order-none">
+            <Link to={`/seasons/${activeSeason.id}`} className="group block order-4 sm:order-none h-full">
               <DashboardCard title={activeSeason.name} icon={<span>🏆</span>} delay={0.6} loading={loading}>
                 {seasonContext && (
                   <p className="text-xs text-muted-foreground mb-2">{seasonContext}</p>

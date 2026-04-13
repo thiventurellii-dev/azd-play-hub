@@ -166,14 +166,20 @@ async function fetchUserRankPosition(userId: string, seasonId: string): Promise<
 
   const userRating = allRatings[idx];
 
-  // Get last mmr_change
-  const { data: lastResult } = await supabase
+  // Get last mmr_change by joining with matches to order by played_at
+  const { data: lastResults } = await supabase
     .from("match_results")
-    .select("mmr_change")
+    .select("mmr_change, match_id, matches!inner(played_at, season_id)")
     .eq("player_id", userId)
+    .eq("matches.season_id", seasonId)
     .order("match_id", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(5);
+
+  // Pick the one with the latest played_at
+  const lastResult = lastResults?.sort((a: any, b: any) =>
+    new Date(b.matches?.played_at || b.matches?.[0]?.played_at || 0).getTime() -
+    new Date(a.matches?.played_at || a.matches?.[0]?.played_at || 0).getTime()
+  )?.[0] ?? null;
 
   return {
     position: idx + 1,

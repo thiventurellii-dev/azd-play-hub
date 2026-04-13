@@ -23,7 +23,7 @@ export const DashboardCard = ({ title, icon, delay, loading, children }: Dashboa
           <div className="h-4 w-2/3 rounded bg-muted/40 animate-pulse" />
         </div>
       ) : (
-        children
+        <div className="flex-1">{children}</div>
       )}
     </div>
   </motion.div>

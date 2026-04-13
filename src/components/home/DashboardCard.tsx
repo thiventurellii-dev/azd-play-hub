@@ -11,8 +11,8 @@ interface DashboardCardProps {
 }
 
 export const DashboardCard = ({ title, icon, delay, loading, children }: DashboardCardProps) => (
-  <motion.div {...fadeUp(delay)}>
-    <div className="rounded-xl border border-border bg-card p-5 hover:border-gold/40 transition-all cursor-pointer h-full">
+  <motion.div {...fadeUp(delay)} className="h-full">
+    <div className="rounded-xl border border-border bg-card p-5 hover:border-gold/40 transition-all cursor-pointer h-full flex flex-col">
       <h3 className="text-sm font-semibold text-gold mb-3 flex items-center gap-2">
         {icon} {title}
       </h3>
@@ -23,7 +23,7 @@ export const DashboardCard = ({ title, icon, delay, loading, children }: Dashboa
           <div className="h-4 w-2/3 rounded bg-muted/40 animate-pulse" />
         </div>
       ) : (
-        children
+        <div className="flex-1">{children}</div>
       )}
     </div>
   </motion.div>

@@ -1,6 +1,6 @@
-import { useQuery, useQueries } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabaseExternal";
-import type { MatchData, UpcomingRoom, TopPlayer, ActiveSeason } from "@/types/dashboard";
+import type { MatchData, UpcomingRoom, TopPlayer, ActiveSeason, UserRankPosition } from "@/types/dashboard";
 
 // ---------- helpers ----------
 
@@ -49,16 +49,31 @@ async function fetchUpcomingRooms(userId: string): Promise<UpcomingRoom[]> {
   const roomIds = playerRooms.map((r) => r.room_id);
   const { data: rooms } = await supabase
     .from("match_rooms")
-    .select("id, title, scheduled_at, status, game:games(name)")
+    .select("id, title, scheduled_at, status, max_players, game:games(name)")
     .in("id", roomIds)
     .in("status", ["open", "full"] as any)
     .gte("scheduled_at", new Date().toISOString())
     .order("scheduled_at")
     .limit(3);
 
-  return (rooms || []).map((r: any) => ({
+  if (!rooms?.length) return [];
+
+  // Fetch confirmed player counts for these rooms
+  const { data: playerCounts } = await supabase
+    .from("match_room_players")
+    .select("room_id")
+    .in("room_id", rooms.map((r: any) => r.id))
+    .eq("type", "confirmed" as any);
+
+  const countMap: Record<string, number> = {};
+  for (const p of playerCounts || []) {
+    countMap[p.room_id] = (countMap[p.room_id] || 0) + 1;
+  }
+
+  return (rooms as any[]).map((r) => ({
     ...r,
     game: Array.isArray(r.game) ? r.game[0] : r.game,
+    confirmed_count: countMap[r.id] || 0,
   }));
 }
 
@@ -100,14 +115,23 @@ async function fetchActiveSeason(): Promise<ActiveSeason | null> {
   const today = new Date().toISOString().slice(0, 10);
   const { data } = await supabase
     .from("seasons")
-    .select("id, name")
+    .select("id, name, end_date")
     .eq("type", "boardgame")
     .lte("start_date", today)
     .gte("end_date", today)
     .order("start_date", { ascending: false })
     .limit(1)
     .maybeSingle();
-  return data;
+
+  if (!data) return null;
+
+  // Fetch match count for this season
+  const { count } = await supabase
+    .from("matches")
+    .select("id", { count: "exact", head: true })
+    .eq("season_id", data.id);
+
+  return { ...data, match_count: count || 0 };
 }
 
 async function fetchTopPlayers(seasonId: string): Promise<TopPlayer[]> {
@@ -125,6 +149,37 @@ async function fetchTopPlayers(seasonId: string): Promise<TopPlayer[]> {
   const pMap = new Map((profiles || []).map((p: any) => [p.id, p.nickname || p.name]));
 
   return ratings.map((r) => ({ ...r, name: (pMap.get(r.player_id) || "?") as string }));
+}
+
+async function fetchUserRankPosition(userId: string, seasonId: string): Promise<UserRankPosition | null> {
+  // Get all ratings sorted to determine position
+  const { data: allRatings } = await supabase
+    .from("mmr_ratings")
+    .select("player_id, current_mmr")
+    .eq("season_id", seasonId)
+    .order("current_mmr", { ascending: false });
+
+  if (!allRatings?.length) return null;
+
+  const idx = allRatings.findIndex((r) => r.player_id === userId);
+  if (idx === -1) return null;
+
+  const userRating = allRatings[idx];
+
+  // Get last mmr_change
+  const { data: lastResult } = await supabase
+    .from("match_results")
+    .select("mmr_change")
+    .eq("player_id", userId)
+    .order("match_id", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return {
+    position: idx + 1,
+    current_mmr: userRating.current_mmr,
+    mmr_change: lastResult?.mmr_change ?? null,
+  };
 }
 
 // ---------- hook ----------
@@ -160,6 +215,13 @@ export function useDashboardData(userId: string | undefined) {
     staleTime: 60_000,
   });
 
+  const userRankQuery = useQuery({
+    queryKey: ["dashboard", "userRank", userId, seasonQuery.data?.id],
+    queryFn: () => fetchUserRankPosition(userId!, seasonQuery.data!.id),
+    enabled: !!userId && !!seasonQuery.data?.id,
+    staleTime: 60_000,
+  });
+
   const loading = roomsQuery.isLoading || matchesQuery.isLoading || seasonQuery.isLoading ||
     (!!seasonQuery.data?.id && topPlayersQuery.isLoading);
 
@@ -168,6 +230,7 @@ export function useDashboardData(userId: string | undefined) {
     recentMatches: matchesQuery.data ?? [],
     activeSeason: seasonQuery.data ?? null,
     topPlayers: topPlayersQuery.data ?? [],
+    userRank: userRankQuery.data ?? null,
     loading,
     errors: {
       rooms: roomsQuery.error,

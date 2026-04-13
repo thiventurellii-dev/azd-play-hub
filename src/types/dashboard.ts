@@ -13,6 +13,8 @@ export interface UpcomingRoom {
   title: string;
   scheduled_at: string;
   status: string;
+  max_players: number;
+  confirmed_count: number;
   game: { name: string } | null;
 }
 
@@ -27,6 +29,14 @@ export interface TopPlayer {
 export interface ActiveSeason {
   id: string;
   name: string;
+  end_date: string;
+  match_count: number;
+}
+
+export interface UserRankPosition {
+  position: number;
+  current_mmr: number;
+  mmr_change: number | null;
 }
 
 export interface SocialLink {

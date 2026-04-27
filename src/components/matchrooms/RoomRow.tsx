@@ -104,6 +104,7 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
   const [avgMmr, setAvgMmr] = useState<number | null>(null);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [commentCount, setCommentCount] = useState(0);
+  const [scriptImageUrl, setScriptImageUrl] = useState<string | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const [resultModalOpen, setResultModalOpen] = useState(false);

@@ -351,7 +351,7 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
       )}>
         <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 p-3 sm:p-4">
           <div className="flex gap-3 lg:flex-shrink-0">
-            <GameThumb game={room.game} size={64} />
+            <GameThumb game={room.game} imageUrl={scriptImageUrl} size={64} />
             <div className="flex-1 min-w-0 lg:w-64 lg:flex-shrink-0">
               <div className="flex items-center gap-2 mb-0.5">
                 <h3 className="font-bold text-sm leading-tight truncate">{room.title}</h3>

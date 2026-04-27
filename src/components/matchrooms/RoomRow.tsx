@@ -115,6 +115,12 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
   const [hasResult, setHasResult] = useState(!!room.result_id);
 
   useEffect(() => {
+    if (!room.blood_script_id) { setScriptImageUrl(null); return; }
+    supabase.from("blood_scripts").select("image_url").eq("id", room.blood_script_id).maybeSingle()
+      .then(({ data }) => setScriptImageUrl((data as any)?.image_url ?? null));
+  }, [room.blood_script_id]);
+
+  useEffect(() => {
     if (room.result_id) {
       setResultId(room.result_id);
       setResultType(room.result_type || null);

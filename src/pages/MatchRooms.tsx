@@ -157,16 +157,28 @@ const MatchRooms = () => {
       });
   }, [user?.id]);
 
-  // Favorite game = most-played game in the last 90 days for current user
+  // Manual favorites (preferred) — fall back to inferred most-played game
   useEffect(() => {
-    if (!user?.id) { setFavoriteGame(null); return; }
+    if (!user?.id) { setFavoriteGameIds(new Set()); return; }
+    supabase.from("user_favorites")
+      .select("entity_id")
+      .eq("user_id", user.id)
+      .eq("entity_type", "game")
+      .then(({ data }) => {
+        setFavoriteGameIds(new Set((data || []).map((r: any) => r.entity_id as string)));
+      });
+  }, [user?.id]);
+
+  // Inferred favorite (fallback) = most-played game in the last 90 days
+  useEffect(() => {
+    if (!user?.id) { setInferredGame(null); return; }
     const since = new Date(); since.setDate(since.getDate() - 90);
     supabase.from("match_results")
       .select("match_id, matches!inner(game_id, played_at, games!inner(id, name))")
       .eq("player_id", user.id)
       .gte("matches.played_at", since.toISOString())
       .then(({ data }) => {
-        if (!data || data.length === 0) { setFavoriteGame(null); return; }
+        if (!data || data.length === 0) { setInferredGame(null); return; }
         const counts = new Map<string, { name: string; count: number }>();
         data.forEach((r: any) => {
           const m = Array.isArray(r.matches) ? r.matches[0] : r.matches;
@@ -178,9 +190,16 @@ const MatchRooms = () => {
         });
         let topId: string | null = null; let topCount = 0; let topName = "";
         counts.forEach((v, k) => { if (v.count > topCount) { topId = k; topCount = v.count; topName = v.name; } });
-        setFavoriteGame(topId ? { id: topId, name: topName } : null);
+        setInferredGame(topId ? { id: topId, name: topName } : null);
       });
   }, [user?.id]);
+
+  // Effective favorite game id set (manual wins; otherwise inferred)
+  const effectiveFavIds = useMemo(() => {
+    if (favoriteGameIds.size > 0) return favoriteGameIds;
+    if (inferredGame) return new Set([inferredGame.id]);
+    return new Set<string>();
+  }, [favoriteGameIds, inferredGame]);
 
   const games = useMemo(() => {
     const unique = new Map<string, string>();

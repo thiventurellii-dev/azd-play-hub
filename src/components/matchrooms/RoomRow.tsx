@@ -66,17 +66,18 @@ const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   cancelled: { label: "Cancelada", cls: "border-destructive/30 text-destructive bg-destructive/10" },
 };
 
-function GameThumb({ game, size = 72 }: { game: MatchRoom["game"]; size?: number }) {
+function GameThumb({ game, imageUrl, size = 72 }: { game: MatchRoom["game"]; imageUrl?: string | null; size?: number }) {
   const [failed, setFailed] = useState(false);
-  if (game?.image_url && !failed) {
+  const src = imageUrl || game?.image_url;
+  if (src && !failed) {
     return (
       <div
         className="rounded-md overflow-hidden flex-shrink-0 border border-border bg-surface"
         style={{ width: size, height: size }}
       >
         <img
-          src={game.image_url}
-          alt={game.name}
+          src={src}
+          alt={game?.name || ""}
           className="w-full h-full object-cover object-top"
           loading="lazy"
           onError={() => setFailed(true)}

@@ -160,13 +160,20 @@ const MatchRooms = () => {
 
   // Manual favorites (preferred) — fall back to inferred most-played game
   useEffect(() => {
-    if (!user?.id) { setFavoriteGameIds(new Set()); return; }
+    if (!user?.id) { setFavoriteGameIds(new Set()); setFavoriteScriptIds(new Set()); return; }
     supabase.from("user_favorites")
-      .select("entity_id")
+      .select("entity_type, entity_id")
       .eq("user_id", user.id)
-      .eq("entity_type", "game")
+      .in("entity_type", ["game", "blood_script"])
       .then(({ data }) => {
-        setFavoriteGameIds(new Set((data || []).map((r: any) => r.entity_id as string)));
+        const games = new Set<string>();
+        const scripts = new Set<string>();
+        (data || []).forEach((r: any) => {
+          if (r.entity_type === "game") games.add(r.entity_id);
+          else if (r.entity_type === "blood_script") scripts.add(r.entity_id);
+        });
+        setFavoriteGameIds(games);
+        setFavoriteScriptIds(scripts);
       });
   }, [user?.id]);
 

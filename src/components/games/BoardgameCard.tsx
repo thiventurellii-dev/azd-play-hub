@@ -5,6 +5,7 @@ import { Users, Clock, ExternalLink, Video, Calendar } from "lucide-react";
 import { motion } from "framer-motion";
 import { EntityEditButton } from "@/components/shared/EntityEditButton";
 import GameForm, { type GameFormData } from "@/components/forms/GameForm";
+import { FavoriteButton } from "@/components/shared/FavoriteButton";
 
 interface SeasonLink {
   season_id: string;

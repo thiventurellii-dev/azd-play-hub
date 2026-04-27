@@ -6,6 +6,7 @@ import { Users, Calendar } from "lucide-react";
 import { motion } from "framer-motion";
 import { EntityEditButton } from "@/components/shared/EntityEditButton";
 import EditBloodScriptDialog from "@/components/blood/EditBloodScriptDialog";
+import { FavoriteButton } from "@/components/shared/FavoriteButton";
 import { useState } from "react";
 
 interface BloodScript {

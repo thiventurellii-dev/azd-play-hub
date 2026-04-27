@@ -40,9 +40,10 @@ const MatchRooms = () => {
   // Selected calendar day
   const [selectedDate, setSelectedDate] = useState<Date>(() => dayStart(new Date()));
 
-  // Friends + favorite games
+  // Friends + favorite games/scripts
   const [friendIds, setFriendIds] = useState<Set<string>>(new Set());
   const [favoriteGameIds, setFavoriteGameIds] = useState<Set<string>>(new Set());
+  const [favoriteScriptIds, setFavoriteScriptIds] = useState<Set<string>>(new Set());
   const [inferredGame, setInferredGame] = useState<{ id: string; name: string } | null>(null);
 
   // Deep link
@@ -159,13 +160,20 @@ const MatchRooms = () => {
 
   // Manual favorites (preferred) — fall back to inferred most-played game
   useEffect(() => {
-    if (!user?.id) { setFavoriteGameIds(new Set()); return; }
+    if (!user?.id) { setFavoriteGameIds(new Set()); setFavoriteScriptIds(new Set()); return; }
     supabase.from("user_favorites")
-      .select("entity_id")
+      .select("entity_type, entity_id")
       .eq("user_id", user.id)
-      .eq("entity_type", "game")
+      .in("entity_type", ["game", "blood_script"])
       .then(({ data }) => {
-        setFavoriteGameIds(new Set((data || []).map((r: any) => r.entity_id as string)));
+        const games = new Set<string>();
+        const scripts = new Set<string>();
+        (data || []).forEach((r: any) => {
+          if (r.entity_type === "game") games.add(r.entity_id);
+          else if (r.entity_type === "blood_script") scripts.add(r.entity_id);
+        });
+        setFavoriteGameIds(games);
+        setFavoriteScriptIds(scripts);
       });
   }, [user?.id]);
 
@@ -194,12 +202,15 @@ const MatchRooms = () => {
       });
   }, [user?.id]);
 
-  // Effective favorite game id set (manual wins; otherwise inferred)
+  // Has any manual favorite (game OR script)
+  const hasManualFavorites = favoriteGameIds.size > 0 || favoriteScriptIds.size > 0;
+
+  // Effective favorite game id set (used only when no manual favorites — fallback)
   const effectiveFavIds = useMemo(() => {
-    if (favoriteGameIds.size > 0) return favoriteGameIds;
+    if (hasManualFavorites) return favoriteGameIds;
     if (inferredGame) return new Set([inferredGame.id]);
     return new Set<string>();
-  }, [favoriteGameIds, inferredGame]);
+  }, [hasManualFavorites, favoriteGameIds, inferredGame]);
 
   const games = useMemo(() => {
     const unique = new Map<string, string>();
@@ -241,20 +252,24 @@ const MatchRooms = () => {
   }, [rooms, selectedDate, gameFilter, typeFilters, experienceFilters]);
 
   const favRooms = useMemo(() => {
-    if (effectiveFavIds.size === 0 || gameFilter !== "all") return [];
+    if (gameFilter !== "all") return [];
+    if (effectiveFavIds.size === 0 && favoriteScriptIds.size === 0) return [];
     const today = dayStart(new Date());
+    const dayRoomIds = new Set(dayRooms.map(r => r.id));
     return rooms
-      .filter(r =>
-        r.game?.id && effectiveFavIds.has(r.game.id) &&
-        !isSameDay(new Date(r.scheduled_at), selectedDate) &&
-        new Date(r.scheduled_at) >= today &&
-        (r.status === "open" || r.status === "full")
-      )
+      .filter(r => {
+        const matchGame = r.game?.id ? effectiveFavIds.has(r.game.id) : false;
+        const matchScript = r.blood_script_id ? favoriteScriptIds.has(r.blood_script_id) : false;
+        if (!matchGame && !matchScript) return false;
+        if (dayRoomIds.has(r.id)) return false; // already shown in the day
+        if (new Date(r.scheduled_at) < today) return false;
+        return r.status === "open" || r.status === "full";
+      })
       .filter(passesTagFilters)
       .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
-      .slice(0, 5);
+      .slice(0, 8);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rooms, effectiveFavIds, selectedDate, gameFilter, typeFilters, experienceFilters]);
+  }, [rooms, dayRooms, effectiveFavIds, favoriteScriptIds, selectedDate, gameFilter, typeFilters, experienceFilters]);
 
   const toggleArrayFilter = (value: string, setter: Dispatch<SetStateAction<string[]>>) => {
     setter(cur => cur.includes(value) ? cur.filter(i => i !== value) : [...cur, value]);
@@ -421,7 +436,7 @@ const MatchRooms = () => {
               <div className="flex items-center gap-2.5 mb-3">
                 <Star className="h-3.5 w-3.5 text-gold fill-gold" />
                 <span className="text-xs font-bold text-muted-foreground tracking-wide">
-                  {favoriteGameIds.size > 0 ? "Suas salas favoritas" : `Outras salas — ${inferredGame?.name ?? ""}`}
+                  {hasManualFavorites ? "Suas salas favoritas" : `Outras salas — ${inferredGame?.name ?? ""}`}
                 </span>
                 <div className="flex-1 h-px bg-border/60" />
                 <span className="text-xs text-muted-foreground/70">

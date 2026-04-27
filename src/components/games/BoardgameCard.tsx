@@ -5,6 +5,7 @@ import { Users, Clock, ExternalLink, Video, Calendar } from "lucide-react";
 import { motion } from "framer-motion";
 import { EntityEditButton } from "@/components/shared/EntityEditButton";
 import GameForm, { type GameFormData } from "@/components/forms/GameForm";
+import { FavoriteButton } from "@/components/shared/FavoriteButton";
 
 interface SeasonLink {
   season_id: string;
@@ -33,6 +34,9 @@ const BoardgameCard = ({ game, seasons, avgDuration, tags, index, onUpdated }: B
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
       <Card className="bg-card border-border hover:border-gold/20 transition-colors h-full flex flex-col relative group">
+        <div className="absolute top-3 left-3 z-10">
+          <FavoriteButton entityType="game" entityId={game.id} size="sm" />
+        </div>
         <CardContent
           className="py-5 space-y-4 flex-1 flex flex-col cursor-pointer"
           onClick={() => (game.slug ? navigate(`/jogos/${game.slug}`) : undefined)}

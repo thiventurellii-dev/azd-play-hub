@@ -40,9 +40,10 @@ const MatchRooms = () => {
   // Selected calendar day
   const [selectedDate, setSelectedDate] = useState<Date>(() => dayStart(new Date()));
 
-  // Friends + favorite game
+  // Friends + favorite games
   const [friendIds, setFriendIds] = useState<Set<string>>(new Set());
-  const [favoriteGame, setFavoriteGame] = useState<{ id: string; name: string } | null>(null);
+  const [favoriteGameIds, setFavoriteGameIds] = useState<Set<string>>(new Set());
+  const [inferredGame, setInferredGame] = useState<{ id: string; name: string } | null>(null);
 
   // Deep link
   const [deepLinkOpen, setDeepLinkOpen] = useState(false);
@@ -156,16 +157,28 @@ const MatchRooms = () => {
       });
   }, [user?.id]);
 
-  // Favorite game = most-played game in the last 90 days for current user
+  // Manual favorites (preferred) — fall back to inferred most-played game
   useEffect(() => {
-    if (!user?.id) { setFavoriteGame(null); return; }
+    if (!user?.id) { setFavoriteGameIds(new Set()); return; }
+    supabase.from("user_favorites")
+      .select("entity_id")
+      .eq("user_id", user.id)
+      .eq("entity_type", "game")
+      .then(({ data }) => {
+        setFavoriteGameIds(new Set((data || []).map((r: any) => r.entity_id as string)));
+      });
+  }, [user?.id]);
+
+  // Inferred favorite (fallback) = most-played game in the last 90 days
+  useEffect(() => {
+    if (!user?.id) { setInferredGame(null); return; }
     const since = new Date(); since.setDate(since.getDate() - 90);
     supabase.from("match_results")
       .select("match_id, matches!inner(game_id, played_at, games!inner(id, name))")
       .eq("player_id", user.id)
       .gte("matches.played_at", since.toISOString())
       .then(({ data }) => {
-        if (!data || data.length === 0) { setFavoriteGame(null); return; }
+        if (!data || data.length === 0) { setInferredGame(null); return; }
         const counts = new Map<string, { name: string; count: number }>();
         data.forEach((r: any) => {
           const m = Array.isArray(r.matches) ? r.matches[0] : r.matches;
@@ -177,9 +190,16 @@ const MatchRooms = () => {
         });
         let topId: string | null = null; let topCount = 0; let topName = "";
         counts.forEach((v, k) => { if (v.count > topCount) { topId = k; topCount = v.count; topName = v.name; } });
-        setFavoriteGame(topId ? { id: topId, name: topName } : null);
+        setInferredGame(topId ? { id: topId, name: topName } : null);
       });
   }, [user?.id]);
+
+  // Effective favorite game id set (manual wins; otherwise inferred)
+  const effectiveFavIds = useMemo(() => {
+    if (favoriteGameIds.size > 0) return favoriteGameIds;
+    if (inferredGame) return new Set([inferredGame.id]);
+    return new Set<string>();
+  }, [favoriteGameIds, inferredGame]);
 
   const games = useMemo(() => {
     const unique = new Map<string, string>();
@@ -221,11 +241,11 @@ const MatchRooms = () => {
   }, [rooms, selectedDate, gameFilter, typeFilters, experienceFilters]);
 
   const favRooms = useMemo(() => {
-    if (!favoriteGame || gameFilter !== "all") return [];
+    if (effectiveFavIds.size === 0 || gameFilter !== "all") return [];
     const today = dayStart(new Date());
     return rooms
       .filter(r =>
-        r.game?.id === favoriteGame.id &&
+        r.game?.id && effectiveFavIds.has(r.game.id) &&
         !isSameDay(new Date(r.scheduled_at), selectedDate) &&
         new Date(r.scheduled_at) >= today &&
         (r.status === "open" || r.status === "full")
@@ -234,7 +254,7 @@ const MatchRooms = () => {
       .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
       .slice(0, 5);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rooms, favoriteGame, selectedDate, gameFilter, typeFilters, experienceFilters]);
+  }, [rooms, effectiveFavIds, selectedDate, gameFilter, typeFilters, experienceFilters]);
 
   const toggleArrayFilter = (value: string, setter: Dispatch<SetStateAction<string[]>>) => {
     setter(cur => cur.includes(value) ? cur.filter(i => i !== value) : [...cur, value]);
@@ -401,7 +421,7 @@ const MatchRooms = () => {
               <div className="flex items-center gap-2.5 mb-3">
                 <Star className="h-3.5 w-3.5 text-gold fill-gold" />
                 <span className="text-xs font-bold text-muted-foreground tracking-wide">
-                  Outras salas — {favoriteGame?.name}
+                  {favoriteGameIds.size > 0 ? "Suas salas favoritas" : `Outras salas — ${inferredGame?.name ?? ""}`}
                 </span>
                 <div className="flex-1 h-px bg-border/60" />
                 <span className="text-xs text-muted-foreground/70">

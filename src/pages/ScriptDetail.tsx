@@ -12,6 +12,7 @@ import BloodScriptForm from "@/components/forms/BloodScriptForm";
 import BloodMatchEditDialog from "@/components/games/BloodMatchEditDialog";
 import { useScriptDetail } from "@/hooks/useScriptDetail";
 import { useQueryClient } from "@tanstack/react-query";
+import { FavoriteButton } from "@/components/shared/FavoriteButton";
 
 const roleTypeLabels: Record<string, string> = { townsfolk: "Aldeões", outsider: "Forasteiros", minion: "Lacaios", demon: "Demônios" };
 const roleOrder = ["townsfolk", "outsider", "minion", "demon"] as const;
@@ -95,8 +96,9 @@ const ScriptDetail = () => {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-4">
         {script.image_url && <div className="flex justify-center"><img src={script.image_url} alt={script.name} className="h-48 w-auto max-w-full rounded-xl object-contain" /></div>}
         <div>
-          <div className="flex items-center justify-center gap-2">
+          <div className="flex items-center justify-center gap-2 flex-wrap">
             <h1 className="text-2xl font-bold">{script.name}</h1>
+            <FavoriteButton entityType="blood_script" entityId={script.id} size="md" />
             <EntityEditButton entityType="blood_script" title="Editar Script">
               {(onClose) => (
                 <BloodScriptForm

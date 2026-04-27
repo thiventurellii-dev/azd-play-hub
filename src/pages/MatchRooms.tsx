@@ -241,11 +241,11 @@ const MatchRooms = () => {
   }, [rooms, selectedDate, gameFilter, typeFilters, experienceFilters]);
 
   const favRooms = useMemo(() => {
-    if (!favoriteGame || gameFilter !== "all") return [];
+    if (effectiveFavIds.size === 0 || gameFilter !== "all") return [];
     const today = dayStart(new Date());
     return rooms
       .filter(r =>
-        r.game?.id === favoriteGame.id &&
+        r.game?.id && effectiveFavIds.has(r.game.id) &&
         !isSameDay(new Date(r.scheduled_at), selectedDate) &&
         new Date(r.scheduled_at) >= today &&
         (r.status === "open" || r.status === "full")
@@ -254,7 +254,7 @@ const MatchRooms = () => {
       .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
       .slice(0, 5);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rooms, favoriteGame, selectedDate, gameFilter, typeFilters, experienceFilters]);
+  }, [rooms, effectiveFavIds, selectedDate, gameFilter, typeFilters, experienceFilters]);
 
   const toggleArrayFilter = (value: string, setter: Dispatch<SetStateAction<string[]>>) => {
     setter(cur => cur.includes(value) ? cur.filter(i => i !== value) : [...cur, value]);

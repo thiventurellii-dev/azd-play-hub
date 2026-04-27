@@ -202,12 +202,15 @@ const MatchRooms = () => {
       });
   }, [user?.id]);
 
-  // Effective favorite game id set (manual wins; otherwise inferred)
+  // Has any manual favorite (game OR script)
+  const hasManualFavorites = favoriteGameIds.size > 0 || favoriteScriptIds.size > 0;
+
+  // Effective favorite game id set (used only when no manual favorites — fallback)
   const effectiveFavIds = useMemo(() => {
-    if (favoriteGameIds.size > 0) return favoriteGameIds;
+    if (hasManualFavorites) return favoriteGameIds;
     if (inferredGame) return new Set([inferredGame.id]);
     return new Set<string>();
-  }, [favoriteGameIds, inferredGame]);
+  }, [hasManualFavorites, favoriteGameIds, inferredGame]);
 
   const games = useMemo(() => {
     const unique = new Map<string, string>();

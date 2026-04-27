@@ -12,6 +12,7 @@ import BloodScriptForm from "@/components/forms/BloodScriptForm";
 import BloodMatchEditDialog from "@/components/games/BloodMatchEditDialog";
 import { useScriptDetail } from "@/hooks/useScriptDetail";
 import { useQueryClient } from "@tanstack/react-query";
+import { FavoriteButton } from "@/components/shared/FavoriteButton";
 
 const roleTypeLabels: Record<string, string> = { townsfolk: "Aldeões", outsider: "Forasteiros", minion: "Lacaios", demon: "Demônios" };
 const roleOrder = ["townsfolk", "outsider", "minion", "demon"] as const;

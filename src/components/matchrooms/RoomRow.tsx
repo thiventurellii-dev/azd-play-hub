@@ -66,17 +66,18 @@ const STATUS_LABEL: Record<string, { label: string; cls: string }> = {
   cancelled: { label: "Cancelada", cls: "border-destructive/30 text-destructive bg-destructive/10" },
 };
 
-function GameThumb({ game, size = 72 }: { game: MatchRoom["game"]; size?: number }) {
+function GameThumb({ game, imageUrl, size = 72 }: { game: MatchRoom["game"]; imageUrl?: string | null; size?: number }) {
   const [failed, setFailed] = useState(false);
-  if (game?.image_url && !failed) {
+  const src = imageUrl || game?.image_url;
+  if (src && !failed) {
     return (
       <div
         className="rounded-md overflow-hidden flex-shrink-0 border border-border bg-surface"
         style={{ width: size, height: size }}
       >
         <img
-          src={game.image_url}
-          alt={game.name}
+          src={src}
+          alt={game?.name || ""}
           className="w-full h-full object-cover object-top"
           loading="lazy"
           onError={() => setFailed(true)}
@@ -103,6 +104,7 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
   const [avgMmr, setAvgMmr] = useState<number | null>(null);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [commentCount, setCommentCount] = useState(0);
+  const [scriptImageUrl, setScriptImageUrl] = useState<string | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const [resultModalOpen, setResultModalOpen] = useState(false);
@@ -111,6 +113,12 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
   const [resultId, setResultId] = useState<string | null>(room.result_id || null);
   const [resultType, setResultType] = useState<string | null>(room.result_type || null);
   const [hasResult, setHasResult] = useState(!!room.result_id);
+
+  useEffect(() => {
+    if (!room.blood_script_id) { setScriptImageUrl(null); return; }
+    supabase.from("blood_scripts").select("image_url").eq("id", room.blood_script_id).maybeSingle()
+      .then(({ data }) => setScriptImageUrl((data as any)?.image_url ?? null));
+  }, [room.blood_script_id]);
 
   useEffect(() => {
     if (room.result_id) {
@@ -343,7 +351,7 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
       )}>
         <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 p-3 sm:p-4">
           <div className="flex gap-3 lg:flex-shrink-0">
-            <GameThumb game={room.game} size={64} />
+            <GameThumb game={room.game} imageUrl={scriptImageUrl} size={64} />
             <div className="flex-1 min-w-0 lg:w-64 lg:flex-shrink-0">
               <div className="flex items-center gap-2 mb-0.5">
                 <h3 className="font-bold text-sm leading-tight truncate">{room.title}</h3>

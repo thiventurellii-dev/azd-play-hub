@@ -402,7 +402,8 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
               )}
             </div>
           </div>
-          <div className="flex-1 min-w-0">
+          <div className="hidden lg:block w-px self-stretch bg-border/60" aria-hidden="true" />
+          <div className="flex-1 min-w-0 lg:pl-1">
             {confirmed.length > 0 && (
               <div className="mb-2">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 mb-1">

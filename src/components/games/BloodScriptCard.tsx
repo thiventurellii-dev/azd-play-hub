@@ -56,6 +56,9 @@ const BloodScriptCard = ({ script, characters, seasons, index, onUpdated }: Bloo
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
       <Card className={`bg-card border-border hover:border-gold/20 transition-all ${expanded ? "" : "h-[280px] overflow-hidden"} flex flex-col relative group cursor-pointer`}>
+        <div className="absolute top-3 left-3 z-10">
+          <FavoriteButton entityType="blood_script" entityId={script.id} size="sm" />
+        </div>
         <CardContent className="py-5 space-y-3 flex-1 flex flex-col">
           <div className="flex items-start gap-4" onClick={() => navigate(`/scripts/${scriptSlug}`)}>
             {script.image_url ? (

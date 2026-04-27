@@ -533,7 +533,7 @@ const MatchRooms = () => {
               <div className="flex items-center gap-2.5 mb-3">
                 <Star className="h-3.5 w-3.5 text-gold fill-gold" />
                 <span className="text-xs font-bold text-muted-foreground tracking-wide">
-                  {hasManualFavorites ? "Suas salas de Jogos favoritos" : `Outras salas — ${inferredGame?.name ?? ""}`}
+                  {hasManualFavorites ? "Salas de Jogos Favoritos" : `Outras salas — ${inferredGame?.name ?? ""}`}
                 </span>
                 <div className="flex-1 h-px bg-border/60" />
                 <span className="text-xs text-muted-foreground/70">

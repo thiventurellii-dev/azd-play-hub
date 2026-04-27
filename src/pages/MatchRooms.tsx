@@ -40,9 +40,10 @@ const MatchRooms = () => {
   // Selected calendar day
   const [selectedDate, setSelectedDate] = useState<Date>(() => dayStart(new Date()));
 
-  // Friends + favorite games
+  // Friends + favorite games/scripts
   const [friendIds, setFriendIds] = useState<Set<string>>(new Set());
   const [favoriteGameIds, setFavoriteGameIds] = useState<Set<string>>(new Set());
+  const [favoriteScriptIds, setFavoriteScriptIds] = useState<Set<string>>(new Set());
   const [inferredGame, setInferredGame] = useState<{ id: string; name: string } | null>(null);
 
   // Deep link

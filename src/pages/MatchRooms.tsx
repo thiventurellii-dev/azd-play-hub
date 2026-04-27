@@ -20,10 +20,35 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const isSameDay = (a: Date, b: Date) => a.toDateString() === b.toDateString();
-const dayStart = (d: Date) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
+const dayStart = (d: Date) => {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+};
 
-const MONTHS_LONG = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
-const WEEKDAYS_LONG = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
+const MONTHS_LONG = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
+const WEEKDAYS_LONG = [
+  "Domingo",
+  "Segunda-feira",
+  "Terça-feira",
+  "Quarta-feira",
+  "Quinta-feira",
+  "Sexta-feira",
+  "Sábado",
+];
 const fmtDateLong = (d: Date) => `${WEEKDAYS_LONG[d.getDay()]}, ${d.getDate()} de ${MONTHS_LONG[d.getMonth()]}`;
 
 const MatchRooms = () => {
@@ -79,24 +104,33 @@ const MatchRooms = () => {
     setDeepLinkLoading(true);
 
     Promise.resolve(
-      supabase.from("match_rooms")
-        .select("id, title, description, scheduled_at, max_players, status, created_by, season_id, blood_script_id, game:games(id, name, image_url)")
-        .eq("id", roomParam).maybeSingle()
-    ).then(({ data }) => {
-      if (data) {
-        const room = { ...data, game: Array.isArray((data as any).game) ? (data as any).game[0] : (data as any).game };
-        setDeepLinkRoom(room);
-      } else {
-        toast.error("Sala não encontrada");
+      supabase
+        .from("match_rooms")
+        .select(
+          "id, title, description, scheduled_at, max_players, status, created_by, season_id, blood_script_id, game:games(id, name, image_url)",
+        )
+        .eq("id", roomParam)
+        .maybeSingle(),
+    )
+      .then(({ data }) => {
+        if (data) {
+          const room = {
+            ...data,
+            game: Array.isArray((data as any).game) ? (data as any).game[0] : (data as any).game,
+          };
+          setDeepLinkRoom(room);
+        } else {
+          toast.error("Sala não encontrada");
+          setDeepLinkOpen(false);
+          setSearchParams({}, { replace: true });
+        }
+        setDeepLinkLoading(false);
+      })
+      .catch(() => {
+        toast.error("Erro ao carregar sala");
+        setDeepLinkLoading(false);
         setDeepLinkOpen(false);
-        setSearchParams({}, { replace: true });
-      }
-      setDeepLinkLoading(false);
-    }).catch(() => {
-      toast.error("Erro ao carregar sala");
-      setDeepLinkLoading(false);
-      setDeepLinkOpen(false);
-    });
+      });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -111,40 +145,56 @@ const MatchRooms = () => {
 
   const fetchRooms = async () => {
     const now = new Date().toISOString();
-    await supabase.from("match_rooms").update({ status: "finished" as any })
-      .in("status", ["open", "full", "in_progress"] as any).lt("scheduled_at", now);
+    await supabase
+      .from("match_rooms")
+      .update({ status: "finished" as any })
+      .in("status", ["open", "full", "in_progress"] as any)
+      .lt("scheduled_at", now);
 
-    const { data } = await supabase.from("match_rooms")
-      .select("id, title, description, scheduled_at, max_players, status, created_by, season_id, blood_script_id, result_id, result_type, game:games(id, name, image_url), match_room_tag_links(room_tags(name))")
+    const { data } = await supabase
+      .from("match_rooms")
+      .select(
+        "id, title, description, scheduled_at, max_players, status, created_by, season_id, blood_script_id, result_id, result_type, game:games(id, name, image_url), match_room_tag_links(room_tags(name))",
+      )
       .order("scheduled_at", { ascending: true });
 
     if (data) {
-      setRooms(data.map((r: any) => ({
-        ...r,
-        game: Array.isArray(r.game) ? r.game[0] : r.game,
-        tags: (r.match_room_tag_links ?? []).flatMap((link: any) => {
-          const roomTag = Array.isArray(link.room_tags) ? link.room_tags[0] : link.room_tags;
-          return roomTag?.name ? [roomTag.name] : [];
-        }),
-      })));
+      setRooms(
+        data.map((r: any) => ({
+          ...r,
+          game: Array.isArray(r.game) ? r.game[0] : r.game,
+          tags: (r.match_room_tag_links ?? []).flatMap((link: any) => {
+            const roomTag = Array.isArray(link.room_tags) ? link.room_tags[0] : link.room_tags;
+            return roomTag?.name ? [roomTag.name] : [];
+          }),
+        })),
+      );
     }
     setLoading(false);
   };
 
   useEffect(() => {
     fetchRooms();
-    const channel = supabase.channel("match-rooms-list")
+    const channel = supabase
+      .channel("match-rooms-list")
       .on("postgres_changes", { event: "*", schema: "public", table: "match_rooms" }, () => fetchRooms())
       .on("postgres_changes", { event: "*", schema: "public", table: "match_room_players" }, () => fetchRooms())
       .subscribe();
     const poll = setInterval(fetchRooms, 15000);
-    return () => { supabase.removeChannel(channel); clearInterval(poll); };
+    return () => {
+      supabase.removeChannel(channel);
+      clearInterval(poll);
+    };
   }, []);
 
   // Friends list (accepted) — for chip highlighting
   useEffect(() => {
-    if (!user?.id) { setFriendIds(new Set()); return; }
-    supabase.from("friendships")
+    if (!user?.id) {
+      setFriendIds(new Set());
+      return;
+    }
+    supabase
+      .from("friendships")
       .select("user_id, friend_id, status")
       .eq("status", "accepted")
       .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`)
@@ -160,8 +210,13 @@ const MatchRooms = () => {
 
   // Manual favorites (preferred) — fall back to inferred most-played game
   useEffect(() => {
-    if (!user?.id) { setFavoriteGameIds(new Set()); setFavoriteScriptIds(new Set()); return; }
-    supabase.from("user_favorites")
+    if (!user?.id) {
+      setFavoriteGameIds(new Set());
+      setFavoriteScriptIds(new Set());
+      return;
+    }
+    supabase
+      .from("user_favorites")
       .select("entity_type, entity_id")
       .eq("user_id", user.id)
       .in("entity_type", ["game", "blood_script"])
@@ -179,14 +234,22 @@ const MatchRooms = () => {
 
   // Inferred favorite (fallback) = most-played game in the last 90 days
   useEffect(() => {
-    if (!user?.id) { setInferredGame(null); return; }
-    const since = new Date(); since.setDate(since.getDate() - 90);
-    supabase.from("match_results")
+    if (!user?.id) {
+      setInferredGame(null);
+      return;
+    }
+    const since = new Date();
+    since.setDate(since.getDate() - 90);
+    supabase
+      .from("match_results")
       .select("match_id, matches!inner(game_id, played_at, games!inner(id, name))")
       .eq("player_id", user.id)
       .gte("matches.played_at", since.toISOString())
       .then(({ data }) => {
-        if (!data || data.length === 0) { setInferredGame(null); return; }
+        if (!data || data.length === 0) {
+          setInferredGame(null);
+          return;
+        }
         const counts = new Map<string, { name: string; count: number }>();
         data.forEach((r: any) => {
           const m = Array.isArray(r.matches) ? r.matches[0] : r.matches;
@@ -196,8 +259,16 @@ const MatchRooms = () => {
           cur.count += 1;
           counts.set(g.id, cur);
         });
-        let topId: string | null = null; let topCount = 0; let topName = "";
-        counts.forEach((v, k) => { if (v.count > topCount) { topId = k; topCount = v.count; topName = v.name; } });
+        let topId: string | null = null;
+        let topCount = 0;
+        let topName = "";
+        counts.forEach((v, k) => {
+          if (v.count > topCount) {
+            topId = k;
+            topCount = v.count;
+            topName = v.name;
+          }
+        });
         setInferredGame(topId ? { id: topId, name: topName } : null);
       });
   }, [user?.id]);
@@ -214,28 +285,36 @@ const MatchRooms = () => {
 
   const games = useMemo(() => {
     const unique = new Map<string, string>();
-    rooms.forEach(r => { if (r.game) unique.set(r.game.id, r.game.name); });
-    return Array.from(unique.entries()).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+    rooms.forEach((r) => {
+      if (r.game) unique.set(r.game.id, r.game.name);
+    });
+    return Array.from(unique.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [rooms]);
 
-  const normalizeTag = (tag: string) => tag.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const normalizeTag = (tag: string) =>
+    tag
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
 
   const roomMatchesExperience = (room: MatchRoom, filter: string) => {
     const tags = (room.tags ?? []).map(normalizeTag);
-    if (filter === "iniciante") return tags.some(t => t.includes("iniciante"));
-    if (filter === "experiente") return tags.some(t => t.includes("experiente"));
-    if (filter === "novatos") return tags.some(t => t.includes("novato"));
+    if (filter === "iniciante") return tags.some((t) => t.includes("iniciante"));
+    if (filter === "experiente") return tags.some((t) => t.includes("experiente"));
+    if (filter === "novatos") return tags.some((t) => t.includes("novato"));
     return false;
   };
 
   const passesTagFilters = (r: MatchRoom) => {
     if (gameFilter !== "all" && r.game?.id !== gameFilter) return false;
     if (typeFilters.length > 0) {
-      const ok = typeFilters.some(f => f === "casual" ? !r.season_id : Boolean(r.season_id));
+      const ok = typeFilters.some((f) => (f === "casual" ? !r.season_id : Boolean(r.season_id)));
       if (!ok) return false;
     }
     if (experienceFilters.length > 0) {
-      const ok = experienceFilters.some(f => roomMatchesExperience(r, f));
+      const ok = experienceFilters.some((f) => roomMatchesExperience(r, f));
       if (!ok) return false;
     }
     return true;
@@ -245,7 +324,7 @@ const MatchRooms = () => {
 
   const dayRooms = useMemo(() => {
     return rooms
-      .filter(r => isSameDay(new Date(r.scheduled_at), selectedDate))
+      .filter((r) => isSameDay(new Date(r.scheduled_at), selectedDate))
       .filter(passesTagFilters)
       .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -255,9 +334,9 @@ const MatchRooms = () => {
     if (gameFilter !== "all") return [];
     if (effectiveFavIds.size === 0 && favoriteScriptIds.size === 0) return [];
     const today = dayStart(new Date());
-    const dayRoomIds = new Set(dayRooms.map(r => r.id));
+    const dayRoomIds = new Set(dayRooms.map((r) => r.id));
     return rooms
-      .filter(r => {
+      .filter((r) => {
         const matchGame = r.game?.id ? effectiveFavIds.has(r.game.id) : false;
         const matchScript = r.blood_script_id ? favoriteScriptIds.has(r.blood_script_id) : false;
         if (!matchGame && !matchScript) return false;
@@ -272,15 +351,16 @@ const MatchRooms = () => {
   }, [rooms, dayRooms, effectiveFavIds, favoriteScriptIds, selectedDate, gameFilter, typeFilters, experienceFilters]);
 
   const toggleArrayFilter = (value: string, setter: Dispatch<SetStateAction<string[]>>) => {
-    setter(cur => cur.includes(value) ? cur.filter(i => i !== value) : [...cur, value]);
+    setter((cur) => (cur.includes(value) ? cur.filter((i) => i !== value) : [...cur, value]));
   };
 
   const clearFilters = () => {
-    setGameFilter("all"); setTypeFilters([]); setExperienceFilters([]);
+    setGameFilter("all");
+    setTypeFilters([]);
+    setExperienceFilters([]);
   };
 
-  const activeFilterCount =
-    (gameFilter !== "all" ? 1 : 0) + typeFilters.length + experienceFilters.length;
+  const activeFilterCount = (gameFilter !== "all" ? 1 : 0) + typeFilters.length + experienceFilters.length;
 
   const renderChip = (label: string, value: string, list: string[], setter: Dispatch<SetStateAction<string[]>>) => (
     <Button
@@ -300,12 +380,18 @@ const MatchRooms = () => {
       <div className="flex items-center gap-1.5">
         <Gamepad2 className="h-3.5 w-3.5 text-muted-foreground" />
         <Select value={gameFilter} onValueChange={setGameFilter}>
-          <SelectTrigger className={cn("h-8 w-auto min-w-[160px] text-xs", gameFilter !== "all" && "text-gold border-gold/40")}>
+          <SelectTrigger
+            className={cn("h-8 w-auto min-w-[160px] text-xs", gameFilter !== "all" && "text-gold border-gold/40")}
+          >
             <SelectValue placeholder="Todos os jogos" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os jogos</SelectItem>
-            {games.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+            {games.map((g) => (
+              <SelectItem key={g.id} value={g.id}>
+                {g.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -318,7 +404,12 @@ const MatchRooms = () => {
         {renderChip("Novatos", "novatos", experienceFilters, setExperienceFilters)}
       </div>
       {hasActiveFilters && (
-        <Button variant="ghost" size="sm" className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground gap-1" onClick={clearFilters}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
+          onClick={clearFilters}
+        >
           <X className="h-3 w-3" /> Limpar
         </Button>
       )}
@@ -341,7 +432,15 @@ const MatchRooms = () => {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="h-9 flex-1 sm:flex-initial" onClick={() => { setPrefill(null); setMatchFlowOpen(true); }}>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 flex-1 sm:flex-initial"
+            onClick={() => {
+              setPrefill(null);
+              setMatchFlowOpen(true);
+            }}
+          >
             <ClipboardList className="h-4 w-4 mr-1.5" /> Registrar Resultado
           </Button>
           <CreateRoomDialog onCreated={fetchRooms} />
@@ -397,9 +496,7 @@ const MatchRooms = () => {
           {/* Selected day header */}
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <h2 className="text-sm font-bold text-muted-foreground capitalize">
-                {fmtDateLong(selectedDate)}
-              </h2>
+              <h2 className="text-sm font-bold text-muted-foreground capitalize">{fmtDateLong(selectedDate)}</h2>
               {isToday && (
                 <span className="text-[10px] font-bold bg-gold text-gold-foreground px-2 py-0.5 rounded-full tracking-wider">
                   HOJE
@@ -424,7 +521,7 @@ const MatchRooms = () => {
             </div>
           ) : (
             <div className="flex flex-col gap-2.5">
-              {dayRooms.map(room => (
+              {dayRooms.map((room) => (
                 <RoomRow key={room.id} room={room} onUpdate={fetchRooms} friendIds={friendIds} />
               ))}
             </div>
@@ -436,7 +533,7 @@ const MatchRooms = () => {
               <div className="flex items-center gap-2.5 mb-3">
                 <Star className="h-3.5 w-3.5 text-gold fill-gold" />
                 <span className="text-xs font-bold text-muted-foreground tracking-wide">
-                  {hasManualFavorites ? "Suas salas favoritas" : `Outras salas — ${inferredGame?.name ?? ""}`}
+                  {hasManualFavorites ? "Suas salas de Jogos favoritos" : `Outras salas — ${inferredGame?.name ?? ""}`}
                 </span>
                 <div className="flex-1 h-px bg-border/60" />
                 <span className="text-xs text-muted-foreground/70">
@@ -444,7 +541,7 @@ const MatchRooms = () => {
                 </span>
               </div>
               <div className="flex flex-col gap-2.5">
-                {favRooms.map(room => (
+                {favRooms.map((room) => (
                   <RoomRow key={room.id} room={room} onUpdate={fetchRooms} friendIds={friendIds} />
                 ))}
               </div>
@@ -477,10 +574,16 @@ const MatchRooms = () => {
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">Jogo</label>
               <Select value={gameFilter} onValueChange={setGameFilter}>
-                <SelectTrigger className="w-full h-10"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="w-full h-10">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os jogos</SelectItem>
-                  {games.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+                  {games.map((g) => (
+                    <SelectItem key={g.id} value={g.id}>
+                      {g.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -536,7 +639,10 @@ const MatchRooms = () => {
             prefilledGameId={prefill?.gameId}
             prefilledPlayers={prefill?.players}
             prefilledDate={prefill?.date}
-            onComplete={() => { setMatchFlowOpen(false); fetchRooms(); }}
+            onComplete={() => {
+              setMatchFlowOpen(false);
+              fetchRooms();
+            }}
           />
         </ErrorBoundary>
       </EntitySheet>

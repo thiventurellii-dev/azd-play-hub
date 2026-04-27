@@ -16,6 +16,7 @@ import GameStatsCarousel from "@/components/games/GameStatsCarousel";
 import GameMatchHistory from "@/components/games/GameMatchHistory";
 import { useGameDetail } from "@/hooks/useGameDetail";
 import { useQueryClient } from "@tanstack/react-query";
+import { FavoriteButton } from "@/components/shared/FavoriteButton";
 
 const GameDetail = () => {
   const { slug } = useParams();

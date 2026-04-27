@@ -252,20 +252,24 @@ const MatchRooms = () => {
   }, [rooms, selectedDate, gameFilter, typeFilters, experienceFilters]);
 
   const favRooms = useMemo(() => {
-    if (effectiveFavIds.size === 0 || gameFilter !== "all") return [];
+    if (gameFilter !== "all") return [];
+    if (effectiveFavIds.size === 0 && favoriteScriptIds.size === 0) return [];
     const today = dayStart(new Date());
+    const dayRoomIds = new Set(dayRooms.map(r => r.id));
     return rooms
-      .filter(r =>
-        r.game?.id && effectiveFavIds.has(r.game.id) &&
-        !isSameDay(new Date(r.scheduled_at), selectedDate) &&
-        new Date(r.scheduled_at) >= today &&
-        (r.status === "open" || r.status === "full")
-      )
+      .filter(r => {
+        const matchGame = r.game?.id ? effectiveFavIds.has(r.game.id) : false;
+        const matchScript = r.blood_script_id ? favoriteScriptIds.has(r.blood_script_id) : false;
+        if (!matchGame && !matchScript) return false;
+        if (dayRoomIds.has(r.id)) return false; // already shown in the day
+        if (new Date(r.scheduled_at) < today) return false;
+        return r.status === "open" || r.status === "full";
+      })
       .filter(passesTagFilters)
       .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())
-      .slice(0, 5);
+      .slice(0, 8);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rooms, effectiveFavIds, selectedDate, gameFilter, typeFilters, experienceFilters]);
+  }, [rooms, dayRooms, effectiveFavIds, favoriteScriptIds, selectedDate, gameFilter, typeFilters, experienceFilters]);
 
   const toggleArrayFilter = (value: string, setter: Dispatch<SetStateAction<string[]>>) => {
     setter(cur => cur.includes(value) ? cur.filter(i => i !== value) : [...cur, value]);

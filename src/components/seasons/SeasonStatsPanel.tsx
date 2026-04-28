@@ -486,7 +486,7 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
                                 return (
                                   <div key={ci} className="h-8 rounded-sm border border-border/40"
                                     style={{ backgroundColor: count === 0 ? "hsl(var(--secondary) / 0.3)" : `hsl(38 100% 50% / ${0.15 + intensity * 0.85})` }}
-                                    title={`${DAY_LABELS[ci]} ${ri * 6}h–${(ri + 1) * 6}h: ${count} partidas`}
+                                    title={`${DAY_LABELS[ci]} ${["0h–12h", "12h–18h", "18h–21h", "21h–24h"][ri]}: ${count} partidas`}
                                   />
                                 );
                               })}

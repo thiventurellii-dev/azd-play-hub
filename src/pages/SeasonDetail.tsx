@@ -149,6 +149,7 @@ const SeasonDetail = () => {
               id: m.id, played_at: m.played_at, duration_minutes: m.duration_minutes,
               script_name: scriptMap[m.script_id] || "?", winning_team: m.winning_team,
               storyteller_name: pMap[m.storyteller_player_id] || "?",
+              platform: m.platform || null,
               players: ((playersRes.data || []) as any[])
                 .filter((p) => p.match_id === m.id)
                 .map((p) => ({ player_name: pMap[p.player_id] || "?", character_name: charMap[p.character_id] || "?", team: p.team })),

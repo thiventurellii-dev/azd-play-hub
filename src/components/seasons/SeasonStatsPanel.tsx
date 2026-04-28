@@ -306,7 +306,7 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                       <p className="text-xl font-bold leading-none">{positionStats.total}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">partidas</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">vitórias</p>
                     </div>
                   </div>
                 );

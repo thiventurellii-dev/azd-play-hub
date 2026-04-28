@@ -339,7 +339,7 @@ const SeasonDetail = () => {
       }
     }
     return deltas;
-  }, [isBlood, rankings, filteredMatches]);
+  }, [season, rankings, filteredMatches]);
 
 
   // Computed stats

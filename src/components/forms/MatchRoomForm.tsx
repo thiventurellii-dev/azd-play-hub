@@ -37,9 +37,8 @@ const PLATFORM_OPTIONS = [
   "Presencial",
   "Tabletop Simulator",
   "BoardGame Arena",
-  "Board Game Arena",
   "Discord",
-  "Online",
+  "Outro Online",
 ];
 
 interface MatchRoomFormProps {

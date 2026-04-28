@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/lib/supabaseExternal";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,9 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Calendar, Clock, Users, ExternalLink, Video, Award, ChevronDown, ChevronUp,
-  Flag, Share2, UserPlus, Gamepad2, TrendingUp, Trophy, Shield, FileText,
+  Flag, Share2, UserPlus, Gamepad2, TrendingUp, Trophy, Shield, FileText, Info, Upload, Download,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { getRankIcon, getBloodPrizeClass, getBloodWinStats } from "@/utils/game-logic";
@@ -16,6 +18,7 @@ import type {
   SeasonFull, RankingEntry, BloodRankingEntry, MatchRecord, BloodMatchRecord, GameInfo,
 } from "@/types/database";
 import { useNotification } from "@/components/NotificationDialog";
+import { useAuth } from "@/contexts/AuthContext";
 import { SeasonStatsPanel } from "@/components/seasons/SeasonStatsPanel";
 
 const statusColors: Record<string, string> = {

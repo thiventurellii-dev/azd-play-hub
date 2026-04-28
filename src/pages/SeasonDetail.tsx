@@ -731,12 +731,26 @@ const SeasonDetail = () => {
                   <Card className="bg-card border-border"><CardContent className="py-12 text-center text-muted-foreground">Nenhum ranking disponível ainda.</CardContent></Card>
                 ) : (
                   <div className="overflow-x-auto">
-                    <div className="grid grid-cols-[40px_1fr_80px_80px_80px_120px_90px] gap-2 px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <div className="grid grid-cols-[40px_1fr_80px_80px_80px_140px_90px] gap-2 px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       <span>#</span><span>Jogador</span>
                       <span className="text-center">Partidas</span>
                       <span className="text-center">Vitórias</span>
                       <span className="text-center">Win Rate</span>
-                      <span className="text-center">Variação</span>
+                      <span className="text-center flex items-center justify-center gap-1">
+                        Variação
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button type="button" aria-label="O que é Variação?" className="flex-shrink-0">
+                                <Info className="h-3 w-3 opacity-70 hover:opacity-100" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-[260px] text-xs normal-case font-normal">
+                              Mudança de posição no ranking após a última partida da temporada. Verde = subiu, vermelho = desceu.
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </span>
                       <span className="text-right">MMR</span>
                     </div>
                     {rankings.map((r, i) => {

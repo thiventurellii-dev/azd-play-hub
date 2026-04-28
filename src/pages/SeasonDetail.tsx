@@ -306,6 +306,42 @@ const SeasonDetail = () => {
 
   const filteredMatches = selectedGameId === "all" ? matches : matches.filter((m) => m.game_id === selectedGameId);
 
+  // Position delta: compares current ranking vs ranking right before the last match (of selected game)
+  const positionDeltas = useMemo<Record<string, number>>(() => {
+    if (isBlood || rankings.length === 0 || filteredMatches.length === 0) return {};
+    // Most recent match (filteredMatches sorted desc by played_at from query)
+    const lastMatch = [...filteredMatches].sort((a, b) => b.played_at.localeCompare(a.played_at))[0];
+    if (!lastMatch) return {};
+    // Current ranking order (already sorted by current_mmr desc on rankings state)
+    const currentSorted = [...rankings].sort((a, b) => Number(b.current_mmr) - Number(a.current_mmr));
+    const currentPos: Record<string, number> = {};
+    currentSorted.forEach((r, i) => { currentPos[r.player_id] = i + 1; });
+
+    // Reconstruct previous MMR: for each player in last match, use mmr_before; others keep current_mmr
+    const prevMmrMap: Record<string, number> = {};
+    const lastParticipants = new Set<string>();
+    for (const r of lastMatch.results) {
+      if (r.player_id) {
+        prevMmrMap[r.player_id] = Number(r.mmr_before);
+        lastParticipants.add(r.player_id);
+      }
+    }
+    const prevSorted = [...rankings]
+      .map((r) => ({ id: r.player_id, mmr: prevMmrMap[r.player_id] ?? Number(r.current_mmr) }))
+      .sort((a, b) => b.mmr - a.mmr);
+    const prevPos: Record<string, number> = {};
+    prevSorted.forEach((r, i) => { prevPos[r.id] = i + 1; });
+
+    const deltas: Record<string, number> = {};
+    for (const pid of lastParticipants) {
+      if (prevPos[pid] && currentPos[pid]) {
+        deltas[pid] = prevPos[pid] - currentPos[pid]; // positive = subiu
+      }
+    }
+    return deltas;
+  }, [isBlood, rankings, filteredMatches]);
+
+
   // Computed stats
   const isBlood = season?.type === "blood";
   const liveStatus = season ? computeStatus(season.start_date, season.end_date) : "upcoming";

@@ -226,46 +226,8 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
     <div className="space-y-4">
       <h3 className="text-base font-semibold">Estatísticas da temporada</h3>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* Factions */}
-        {showFactions && (
-          <Card className="bg-card border-border">
-            <CardContent className="py-4 space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-semibold">{isBlood ? "Estatística de Times" : "Estatística de Facções"}</p>
-                <Select value={factionSort} onValueChange={(v) => setFactionSort(v as "games" | "winrate")}>
-                  <SelectTrigger className="h-7 w-[150px] text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="games">Mais jogos</SelectItem>
-                    <SelectItem value="winrate">Maior winrate</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {factions.length === 0 ? (
-                <p className="text-xs text-muted-foreground">Sem dados ainda.</p>
-              ) : (
-                <div className="space-y-2">
-                  {factions.map((f) => (
-                    <div key={f.name}>
-                      <div className="flex items-center justify-between text-xs mb-1">
-                        <span className="truncate">{f.name}</span>
-                        <span className="text-muted-foreground">
-                          {factionSort === "winrate" ? `${f.winRate}% (${f.count})` : `${f.pct}% (${f.count})`}
-                        </span>
-                      </div>
-                      <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
-                        <div className={`h-full ${f.color}`} style={{ width: `${factionSort === "winrate" ? f.winRate : f.pct}%` }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
+      {/* Row 1: Top 3 boards (vitórias / win rate) + posição na mesa */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card className="bg-card border-border">
           <CardContent className="py-4 flex flex-col gap-2 h-full">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Mais vitórias</p>
@@ -298,15 +260,15 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
 
         {positionStats && (
           <Card className="bg-card border-border">
-            <CardContent className="py-4 space-y-3">
+            <CardContent className="py-4 space-y-3 h-full">
               <div>
                 <p className="text-sm font-semibold">Vitórias por posição na mesa</p>
                 <p className="text-xs text-muted-foreground">Em qual assento mais se ganha</p>
               </div>
               <div className="flex items-center gap-4">
                 {(() => {
-                  const size = 120;
-                  const stroke = 22;
+                  const size = 110;
+                  const stroke = 20;
                   const r = (size - stroke) / 2;
                   const c = 2 * Math.PI * r;
                   let offset = 0;
@@ -336,17 +298,17 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
                         })}
                       </svg>
                       <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <p className="text-xl font-bold leading-none">{positionStats.total}</p>
+                        <p className="text-lg font-bold leading-none">{positionStats.total}</p>
                         <p className="text-[10px] text-muted-foreground mt-0.5">vitórias</p>
                       </div>
                     </div>
                   );
                 })()}
-                <div className="flex-1 space-y-1.5 min-w-0">
+                <div className="flex-1 space-y-1 min-w-0">
                   {positionStats.slices.map((s) => (
-                    <div key={s.position} className="flex items-center gap-2 text-xs">
+                    <div key={s.position} className="flex items-center gap-1.5 text-xs">
                       <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
-                      <span className="text-muted-foreground flex-shrink-0">{s.position}ª posição</span>
+                      <span className="text-muted-foreground flex-shrink-0">{s.position}ª</span>
                       <span className="ml-auto font-semibold text-foreground">{s.pct}%</span>
                       <span className="text-muted-foreground">({s.count})</span>
                     </div>
@@ -356,8 +318,49 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
             </CardContent>
           </Card>
         )}
+      </div>
 
-        {/* Duration histogram */}
+      {/* Row 2: Facções (largura total quando presente) */}
+      {showFactions && (
+        <Card className="bg-card border-border">
+          <CardContent className="py-4 space-y-3">
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-semibold">{isBlood ? "Estatística de Times" : "Estatística de Facções"}</p>
+              <Select value={factionSort} onValueChange={(v) => setFactionSort(v as "games" | "winrate")}>
+                <SelectTrigger className="h-7 w-[150px] text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="games">Mais jogos</SelectItem>
+                  <SelectItem value="winrate">Maior winrate</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {factions.length === 0 ? (
+              <p className="text-xs text-muted-foreground">Sem dados ainda.</p>
+            ) : (
+              <div className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
+                {factions.map((f) => (
+                  <div key={f.name}>
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="truncate">{f.name}</span>
+                      <span className="text-muted-foreground">
+                        {factionSort === "winrate" ? `${f.winRate}% (${f.count})` : `${f.pct}% (${f.count})`}
+                      </span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+                      <div className={`h-full ${f.color}`} style={{ width: `${factionSort === "winrate" ? f.winRate : f.pct}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Row 3: Duração + Heatmap lado a lado em telas largas */}
+      <div className="grid gap-4 lg:grid-cols-2">
         {durationStats && (
           <Card className="bg-card border-border">
             <CardContent className="py-4 space-y-3">
@@ -370,17 +373,15 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
                 <span className="text-2xl font-bold">{durationStats.avg} min</span>
                 <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">± {durationStats.std} min</span>
               </div>
-              <div className="flex items-end gap-1 h-24 mt-2">
+              <div className="flex items-end gap-2 h-32 mt-2 pb-5 relative">
                 {durationStats.buckets.map((b) => (
-                  <div key={b.label} className="flex-1 flex flex-col items-center gap-1">
-                    <span className="text-[10px] text-muted-foreground">{b.pct}%</span>
-                    <div className="w-full bg-secondary/40 rounded-sm relative" style={{ height: "70%" }}>
-                      <div
-                        className="absolute bottom-0 left-0 right-0 bg-gold rounded-sm transition-all"
-                        style={{ height: `${b.height}%` }}
-                      />
-                    </div>
-                    <span className="text-[10px] text-muted-foreground">{b.label}</span>
+                  <div key={b.label} className="flex-1 flex flex-col items-center justify-end h-full relative">
+                    <span className="text-[10px] text-muted-foreground mb-1">{b.pct}%</span>
+                    <div
+                      className="w-full bg-gold rounded-t-sm transition-all min-h-[2px]"
+                      style={{ height: `${b.height}%` }}
+                    />
+                    <span className="absolute -bottom-5 text-[10px] text-muted-foreground">{b.label}</span>
                   </div>
                 ))}
               </div>
@@ -388,19 +389,18 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
           </Card>
         )}
 
-        {/* Heatmap */}
         {heatmap && (
-          <Card className="bg-card border-border md:col-span-2">
+          <Card className="bg-card border-border">
             <CardContent className="py-4 space-y-3">
               <div>
                 <p className="text-sm font-semibold">Mapa de calor</p>
                 <p className="text-xs text-muted-foreground">Dias da semana e horários mais jogados</p>
               </div>
               <div className="flex gap-2">
-                <div className="flex flex-col justify-around text-[10px] text-muted-foreground py-1">
+                <div className="flex flex-col justify-around text-[10px] text-muted-foreground py-4 w-6">
                   {["0h", "6h", "12h", "18h"].map((h) => <span key={h}>{h}</span>)}
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-muted-foreground mb-1">
                     {DAY_LABELS.map((d) => <span key={d}>{d}</span>)}
                   </div>
@@ -412,9 +412,9 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
                           return (
                             <div
                               key={ci}
-                              className="aspect-square rounded-sm border border-border/40"
+                              className="h-6 rounded-sm border border-border/40"
                               style={{
-                                backgroundColor: count === 0 ? "hsl(var(--secondary) / 0.3)" : `hsl(var(--gold-hsl, 38 100% 50%) / ${0.15 + intensity * 0.85})`,
+                                backgroundColor: count === 0 ? "hsl(var(--secondary) / 0.3)" : `hsl(38 100% 50% / ${0.15 + intensity * 0.85})`,
                               }}
                               title={`${DAY_LABELS[ci]} ${ri * 6}h–${(ri + 1) * 6}h: ${count} partidas`}
                             />
@@ -430,6 +430,7 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
         )}
       </div>
 
+      {/* Row 4: Outras estatísticas */}
       <div>
         <p className="text-sm font-semibold mb-2">Outras estatísticas</p>
         <div className="grid grid-cols-2 gap-2">

@@ -204,9 +204,6 @@ const Navbar = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={() => navigate("/documentos")}>
-                <FileText className="h-4 w-4 mr-2" /> Documentos
-              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate("/games")}>
                 <Gamepad2 className="h-4 w-4 mr-2" /> Coleção de Jogos
               </DropdownMenuItem>

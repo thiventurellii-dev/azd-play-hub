@@ -183,6 +183,9 @@ const SeasonDetail = () => {
           gamesData = gData || [];
         }
         setGames(gamesData);
+        const fmap: Record<string, any> = {};
+        for (const g of gamesData) fmap[g.id] = (g as any).factions;
+        setGameFactionsMap(fmap);
         const items = gamesData.map((g) => ({ name: g.name, image_url: g.image_url }));
         setLinkedItems(items);
         setCoverFallback(items.find((i) => i.image_url)?.image_url || null);
@@ -209,7 +212,12 @@ const SeasonDetail = () => {
           const playerIds = [...new Set((resRes.data || []).map((r) => r.player_id))];
           const { data: profiles } = await supabase.rpc("get_public_profiles", { p_ids: playerIds });
           const pMap: Record<string, string> = {};
-          for (const p of profiles || []) pMap[p.id] = (p as any).nickname || p.name;
+          const aMap: Record<string, string | null> = {};
+          for (const p of profiles || []) {
+            pMap[p.id] = (p as any).nickname || p.name;
+            aMap[p.id] = (p as any).avatar_url || null;
+          }
+          setAvatarMap((prev) => ({ ...prev, ...aMap }));
 
           setMatches(
             mData.map((m) => ({

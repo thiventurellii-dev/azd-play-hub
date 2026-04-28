@@ -69,13 +69,13 @@ const CommunityDetail = () => {
 
         {/* Hero */}
         <Card className="bg-card border-border overflow-hidden">
-          <div className="relative h-40 bg-gradient-to-br from-secondary to-background">
+          <div className="relative h-48 md:h-56 bg-gradient-to-br from-secondary to-background">
             {community.cover_url && (
               <img src={community.cover_url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-50" />
             )}
           </div>
           <CardContent className="pt-0 pb-5">
-            <div className="flex flex-col md:flex-row md:items-end gap-4 -mt-12">
+            <div className="flex flex-col md:flex-row md:items-end gap-4 -mt-10 md:-mt-12 relative">
               {community.logo_url ? (
                 <img
                   src={community.logo_url}

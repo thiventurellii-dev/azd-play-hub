@@ -264,7 +264,8 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
           duration_minutes: parseInt(duration) || null,
           played_at: playedAt,
           image_url: imageUrl, first_player_id: null,
-        })
+          platform: platform || null,
+        } as any)
         .select().single();
       if (matchErr) throw matchErr;
 

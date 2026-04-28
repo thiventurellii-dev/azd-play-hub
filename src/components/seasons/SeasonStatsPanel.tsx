@@ -124,7 +124,7 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
           longest = { duration: m.duration_minutes || 0, label: m.script_name };
         }
       }
-      return { winStreak: null, longest, maxScore: null, minScore: null };
+      return { winStreak: null, longest, maxScore: null, minScore: null, avgWinScore: null as number | null };
     }
     let longest = { duration: 0, label: "" };
     for (const m of matches) {
@@ -134,14 +134,18 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
     }
     let maxScore = { value: 0, name: "—" };
     let minScore: { value: number; name: string } | null = null;
+    const winScores: number[] = [];
     for (const m of matches) {
       const winner = m.results.find((r) => r.position === 1);
       if (winner) {
-        if ((winner.score || 0) > maxScore.value) maxScore = { value: winner.score, name: winner.player_name };
-        if (minScore === null || (winner.score || 0) < minScore.value) minScore = { value: winner.score || 0, name: winner.player_name };
+        const v = winner.score || 0;
+        winScores.push(v);
+        if (v > maxScore.value) maxScore = { value: v, name: winner.player_name };
+        if (minScore === null || v < minScore.value) minScore = { value: v, name: winner.player_name };
       }
     }
-    return { winStreak: null, longest, maxScore, minScore };
+    const avgWinScore = winScores.length > 0 ? Math.round(winScores.reduce((a, b) => a + b, 0) / winScores.length) : null;
+    return { winStreak: null, longest, maxScore, minScore, avgWinScore };
   }, [isBlood, matches, bloodMatches]);
 
   // Platform stats

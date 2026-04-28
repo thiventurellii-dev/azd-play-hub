@@ -21,6 +21,10 @@ const CommunityDetail = () => {
   const { data: seasons = [] } = useCommunitySeasons(community?.id);
   const { state: membership } = useCommunityMembership(community?.id, community?.join_policy);
 
+  useEffect(() => {
+    if (community) document.title = `${community.name} | Comunidades`;
+  }, [community]);
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-20">
@@ -42,10 +46,6 @@ const CommunityDetail = () => {
   const canModerate =
     isMember && (membership.role === "leader" || membership.role === "moderator");
   const featuredMembers = community.members.slice(0, 5);
-
-  useEffect(() => {
-    if (community) document.title = `${community.name} | Comunidades`;
-  }, [community]);
 
   return (
     <>

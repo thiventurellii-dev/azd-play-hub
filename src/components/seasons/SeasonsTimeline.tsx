@@ -265,19 +265,29 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
                     const endPct = Math.min(100, ((sEnd - rangeStart.getTime()) / totalMs) * 100);
                     const widthPct = Math.max(1, endPct - startPct);
                     const participates = participatedIds.has(s.id);
-                    const color = colorFor(s, idx);
+                    const rgb = colorFor(s, idx);
+                    const isFinished = s.status === "finished";
+                    const isFuture = new Date(s.start_date) > today;
 
                     const barStyle: React.CSSProperties = {
                       left: `${startPct}%`,
                       width: `${widthPct}%`,
                     };
-                    if (participates) {
-                      barStyle.backgroundColor = color;
+
+                    if (isFinished) {
+                      // Flat, low contrast
+                      barStyle.background = rgba(rgb, 0.45);
+                    } else if (participates) {
+                      // Active + participating: full gradient + glow
+                      barStyle.background = `linear-gradient(90deg, ${rgba(rgb, 0.2)} 0%, ${rgba(rgb, 0.6)} 40%, ${rgba(rgb, 1)} 100%)`;
+                      if (!isFuture) {
+                        barStyle.boxShadow = `0 0 12px ${rgba(rgb, 0.35)}, 0 0 24px ${rgba(rgb, 0.2)}`;
+                      }
                     } else {
-                      // Hatched/striped pattern with transparent fill
+                      // Not participating: hatched, no glow
                       barStyle.backgroundColor = "transparent";
-                      barStyle.backgroundImage = `repeating-linear-gradient(135deg, ${color} 0 2px, transparent 2px 7px)`;
-                      barStyle.border = `1.5px solid ${color}`;
+                      barStyle.backgroundImage = `repeating-linear-gradient(135deg, ${rgba(rgb, 0.9)} 0 2px, transparent 2px 7px)`;
+                      barStyle.border = `1.5px solid ${rgba(rgb, 0.9)}`;
                     }
 
                     return (
@@ -287,10 +297,7 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
                       >
                         <Link
                           to={`/seasons/${s.id}`}
-                          className={cn(
-                            "absolute top-1/2 -translate-y-1/2 h-4 rounded-full transition-all hover:brightness-110",
-                            participates ? "shadow-[0_0_12px_rgba(255,255,255,0.15)]" : ""
-                          )}
+                          className="absolute top-1/2 -translate-y-1/2 h-4 rounded-full transition-all hover:brightness-110"
                           style={barStyle}
                           title={`${s.name} — ${s.start_date} → ${s.end_date}`}
                         />

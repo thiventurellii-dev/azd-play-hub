@@ -1,0 +1,1 @@
+ALTER TABLE public.seasons ADD COLUMN IF NOT EXISTS cover_url text;

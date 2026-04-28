@@ -1,160 +1,121 @@
-# Sistema de Comunidades — Plano de Implementação
+# Redesign das Seasons
 
 ## Visão geral
 
-Comunidades são hubs/clãs que agrupam jogadores em torno de jogos, torneios e discussões. Toda partida, sala, torneio e discussão poderá (opcionalmente) pertencer a uma comunidade, possibilitando rankings internos, partidas exclusivas e identidade visual própria. Implementação faseada — começamos com o **núcleo (listagem + página da comunidade + membros + partidas vinculadas)** e deixamos torneios/discussões/mídia como fases seguintes.
+Reformular `Seasons.tsx` (lista) e `SeasonDetail.tsx` (detalhe) seguindo os mockups, mantendo toda a lógica atual (boardgame/blood, criar/editar admin, MMR).
 
-## Como integra com o que já existe
+---
 
+## 1. Migration: capa da season
 
-| Sistema atual               | Integração                                                                                                                                                 | &nbsp; | &nbsp; |
-| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ------ |
-| `match_rooms`               | Coluna opcional `community_id`. Salas podem ser "exclusivas da comunidade" (só membros entram) ou abertas.                                                 | &nbsp; | &nbsp; |
-| `matches` / `blood_matches` | Coluna opcional `community_id` (preenchida quando a sala que originou a partida tinha comunidade). Permite calcular "partidas realizadas pela comunidade". | &nbsp; | &nbsp; |
-| &nbsp;                      | &nbsp;                                                                                                                                                     | &nbsp; | &nbsp; |
-| `profiles`                  | Inalterado. Vínculo via tabela de membros.                                                                                                                 | &nbsp; | &nbsp; |
-| `seasons`                   | Coluna opcional `community_id` para torneios/temporadas internas (fase 2).                                                                                 | &nbsp; | &nbsp; |
-| `user_favorites`            | Reaproveitado: adicionamos `community` ao enum para permitir favoritar comunidades (estrela já vista nos mockups).                                         | &nbsp; | &nbsp; |
-| Sidebar / BottomNav         | Novo item "Comunidades" no nav principal e no drawer mobile.                                                                                               | &nbsp; | &nbsp; |
+Adicionar uma única coluna:
+- `seasons.cover_url text NULL`
 
+Helper de UI: se `cover_url` vazio, cair para `games.image_url` do primeiro `season_games` (boardgame) ou `blood_scripts.image_url` do primeiro `season_blood_scripts` (blood). Já temos esses dados em `useSeasonsData`.
 
-## Arquitetura de dados (Supabase externo `npinawelxdtsrcvzzvvs`)
+Atualizar `Seasons.tsx` (form Criar/Editar) para incluir um campo "Imagem de capa (URL)" opcional.
 
-### Novas tabelas
+---
 
-`**communities**`
+## 2. `Seasons.tsx` — página de lista
 
-- `id` uuid pk
-- `slug` text unique
-- `name` text
-- `tagline` text — frase curta ("Jogar, competir e evoluir juntos")
-- `description` text
-- `logo_url` text — escudo/ícone
-- `cover_url` text — banner do header
-- `country` text default `'BR'`
-- `language` text default `'pt-BR'`
-- `visibility` enum `public|private|invite_only`
-- `join_policy` enum `open|approval|invite_only`
-- `community_type` enum `boardgame|botc|rpg|mixed`
-- `created_by` uuid
-- `created_at`, `updated_at`
+Estrutura nova (top-down):
 
-`**community_members**`
+1. **Header** — título "Seasons", subtítulo "Competições oficiais da comunidade", botão "Criar Season" (admin) à direita, botão secundário "Entenda como funciona" (abre dialog curto explicando MMR/ranking — copy curta).
+2. **Tabs `Abertas` / `Encerradas`** com contagem (`active+upcoming` vs `finished`).
+3. **Calendário das Seasons** (novo componente `SeasonsTimeline.tsx`):
+   - Visualizações: `Semana` / `Mês` / `Trimestre` (default Trimestre), com nav `‹ Hoje ›`.
+   - Renderiza barras horizontais por season usando `start_date`/`end_date`, posicionadas via cálculo de % no range visível.
+   - Linha "Hoje" tracejada vertical.
+   - **Cor da barra**: cinza (`muted`) se o usuário logado **não tem partida** na season; senão cor por status (gold=ativa, purple=em breve, green=em andamento curto/intertemporada, blue=futura, gray=encerrada — usar paleta do mockup mas mapeada aos tokens).
+   - Participação calculada uma vez via query: união de `match_results.player_id = user.id JOIN matches ON season_id` e `blood_match_players.player_id = user.id JOIN blood_matches ON season_id` → `Set<seasonId>`. Exposto por novo hook `useUserSeasonParticipation()`.
+   - Legenda na base com bolinhas das cores.
+4. **Seasons Ativas (N)** — grid 3 colunas de cards grandes com capa à esquerda (80–110px), nome + badge de status, jogo/script vinculado, datas, premiação total e contagem de participantes (count distinct de `mmr_ratings.player_id`/`blood_mmr_ratings.player_id` por season — adicionar ao `useSeasonsData`). Card todo clicável.
+5. **Seasons Encerradas** — **collapsible** (`@/components/ui/collapsible`), fechado por padrão, mostrando linhas compactas (uma por season) com: ícone, nome, badge "Finalizada", jogo, datas, campeão (1º colocado do ranking — pegar do `mmr_ratings`/`blood_mmr_ratings` ordenado), premiação total. Clicável → detalhe.
 
-- `id`, `community_id`, `user_id`
-- `role` enum `leader|moderator|member`
-- `status` enum `active|pending|banned`
-- `xp` integer default 0 — alimenta "Membros em destaque" / Ranking interno
-- `joined_at`
+Manter o dialog Criar/Editar atual + adicionar campo `cover_url`.
 
-`**community_join_requests**` (quando `join_policy='approval'`)
+---
 
-- `id`, `community_id`, `user_id`, `message`, `status (pending|approved|rejected)`, `reviewed_by`, timestamps
+## 3. `SeasonDetail.tsx` — página de detalhe
 
-`**community_tags**` + `**community_tag_links**`
+Layout em duas colunas (desktop ≥ lg): **sidebar esquerda 280px** + **conteúdo direita**. No mobile vira coluna única.
 
-- Tags livres ("Estratégia", "Casual", "Competitivo") exibidas nos cards.
+### Header (topo, full-width)
+- Link "← Voltar para Seasons".
+- Linha 1: nome grande, badge tipo (Boardgame/Blood), badge status.
+- Linha 2: ícone do jogo/script + nome do jogo/script vinculado.
+- Linha 3: datas + "(N dias restantes)" se ativa, badge "Temporada oficial", badge "Ranking público".
+- Botões à direita: **Compartilhar** (copia URL atual via `navigator.clipboard`, toast) e **Convidar jogadores** (botão visual; onClick mostra toast "Em breve" — placeholder).
 
-`**community_games**`
+### Sidebar esquerda
+- Capa (imagem grande arredondada, usa `cover_url` ou fallback).
+- Card "Premiação Total" com R$ X total e mini-cards 1º/2º/3º (boardgame) ou 1º-3º/4º-6º/7º-10º (blood).
+- Bloco "Sistema de pontuação: MMR Global / Formato: Competitivo / Partidas válidas: Jogos ranqueados / Critério de desempate: Maior win rate, depois MMR" (estático por enquanto, copy fixa).
+- Botão "Regulamento da temporada" → link externo (placeholder `#` por enquanto, ou rota `/rules`).
 
-- `community_id`, `game_id` — "Jogos principais" para o filtro da listagem.
+### KPIs (4 cards no topo do conteúdo)
+1. **Participantes** — `count(distinct player_id)` em `mmr_ratings`/`blood_mmr_ratings` da season. Link "Ver todos" abre tab Ranking.
+2. **Partidas realizadas** — `count(matches)` ou `count(blood_matches)`. Link "Ver partidas" abre tab Partidas.
+3. **Win Rate médio** — média de `wins/games_played` entre rankings com `games_played > 0`.
+4. **MMR médio** — média de `current_mmr` (boardgame) ou `total_points` (blood).
 
-`**community_discussions**` (fase 2 — incluído no schema, UI fica para depois)
+### Tabs (substituir Tabs atual)
+`Ranking` | `Partidas` | `Estatísticas` | `Jogos` (boardgame só) | `Histórico`
 
-- `id`, `community_id`, `author_id`, `title`, `body`, `game_id?`, `tags[]`, `views`, timestamps
+- **Ranking** (default): tabela atual à esquerda + painel "Estatísticas da temporada" à direita (ver abaixo). Em mobile, painel vira card abaixo.
+- **Partidas**: lista atual já existente.
+- **Estatísticas**: tela cheia com tudo do painel + gráficos maiores.
+- **Jogos**: tab atual (só boardgame).
+- **Histórico**: feed cronológico simples (últimas 20 partidas em ordem reversa, formato similar a "Últimas partidas").
 
-`**community_discussion_replies**` (fase 2)
+### Painel "Estatísticas da temporada" (lateral direita do Ranking)
 
-- `id`, `discussion_id`, `author_id`, `body`, timestamps
+Computado client-side a partir das matches já carregadas:
 
-### Alterações em tabelas existentes
+a. **Facções mais jogadas** (boardgame): agrupa `match_results.faction` (não-nulo) por season → barras horizontais com % e contagem. Top 5. Para Blood: usa `blood_match_players` agrupado por `team` (Mal/Bem/Storyteller).
+b. **Jogadores com mais vitórias**: top 3 por `wins` (avatar + nick + número).
+c. **Maior win rate**: top 3 por `wins/games_played` (mínimo 3 partidas).
+d. **Outras estatísticas** (4 mini-cards):
+   - Maior sequência de vitórias: itera matches por jogador em ordem cronológica, calcula maior streak de `position=1`.
+   - Maior sequência de derrotas: idem, streak sem `position=1` (com pelo menos 1 partida).
+   - Partida mais longa: `max(duration_minutes)` + nomes dos 2 primeiros colocados.
+   - Maior pontuação: `max(score)` em `match_results` + nick do jogador.
 
-- `match_rooms`: adicionar `community_id uuid null` + `community_only bool default false`.
-- `matches`, `blood_matches`: adicionar `community_id uuid null` (preenchido por trigger ao fechar a sala).
-- `seasons`: adicionar `community_id uuid null` (torneios internos vs. globais).
-- `user_favorites`: estender enum `favorite_entity_type` com `'community'`.
+### "Últimas partidas" (abaixo do Ranking)
 
-### RLS (resumo)
+Card resumo das 5 mais recentes: data/hora · jogador A vs jogador B (1º colocado vs 2º) · resultado verde/vermelho · variação de MMR. Link "Ver todas" abre tab Partidas.
 
-- `communities`: SELECT público para `visibility='public'`; demais somente para membros ativos. UPDATE/DELETE só para `leader` (verificado via função `has_community_role(user, community, role)` SECURITY DEFINER, mesmo padrão do `has_role` para evitar recursão).
-- `community_members`: SELECT membros ativos da própria comunidade; INSERT pelo próprio usuário (com `status='pending'` quando `join_policy='approval'`); UPDATE/DELETE de outros membros só por leader/moderator.
-- `community_join_requests`: leader/moderator gerenciam; usuário vê as próprias.
-- `match_rooms` com `community_only=true`: SELECT/INSERT exigem ser membro ativo.
+---
 
-### Função e view auxiliares
+## Estrutura técnica
 
-- `has_community_role(_user uuid, _community uuid, _role text)` SECURITY DEFINER.
-- `community_stats` view: agrega contagem de membros, partidas, torneios e ranking geral por comunidade (consumida pela home e pelo card lateral "Comunidades populares").
-
-## Frontend
-
-### Rotas novas (App.tsx)
-
-- `/comunidades` → `Communities.tsx` (listagem — primeira imagem)
-- `/comunidades/:slug` → `CommunityDetail.tsx` (página da comunidade — segunda imagem)
-- `/comunidades/nova` → criação (modal/page) para usuários autenticados
-
-### Componentes novos
-
-```
-src/pages/
-  Communities.tsx
-  CommunityDetail.tsx
-src/components/communities/
-  CommunityCard.tsx              — usado em "destaque" e "todas as comunidades"
-  CommunityListRow.tsx           — variação enxuta da listagem
-  CommunityHero.tsx              — header com logo, cover, tags, botão editar
-  CommunityStatsRow.tsx          — 4 caixas (Membros, Partidas, Torneios, Ranking)
-  CommunityTabs.tsx              — Visão geral | Membros | Partidas | Torneios | Discussões | Mídia
-  CommunityUpcomingMatches.tsx   — reaproveita MatchRoomCard filtrado por community_id
-  CommunityActiveTournaments.tsx — fase 2 (placeholder no fase 1)
-  CommunityAboutCard.tsx         — descrição + regras principais
-  CommunityFeaturedMembers.tsx   — top 5 por XP com badge "Líder"
-  CommunityRecentActivity.tsx    — feed (joins, partidas criadas, etc.)
-  CommunityFiltersSidebar.tsx    — busca + jogos + idioma + tipo
-  CreateCommunityDialog.tsx
-  JoinCommunityButton.tsx        — comportamento depende de join_policy
-src/hooks/
-  useCommunities.ts              — listagem + filtros + paginação
-  useCommunityDetail.ts          — fetch agregado da comunidade + stats
-  useCommunityMembership.ts      — estado do usuário (membro? pendente? leader?)
+```text
+src/
+  pages/
+    Seasons.tsx                  (refatorado)
+    SeasonDetail.tsx             (refatorado, dividido em subcomponentes)
+  components/seasons/
+    SeasonsTimeline.tsx          (novo)
+    SeasonCardLarge.tsx          (novo, ativas)
+    SeasonRowFinished.tsx        (novo, collapsible)
+    SeasonHeader.tsx             (novo)
+    SeasonSidebar.tsx            (novo)
+    SeasonKpis.tsx               (novo)
+    SeasonStatsPanel.tsx         (novo)
+    SeasonRecentMatches.tsx      (novo)
+  hooks/
+    useSeasonsData.ts            (estende: cover_url, participants_count, champion_name)
+    useUserSeasonParticipation.ts (novo)
+    useSeasonStats.ts            (novo, computa KPIs e stats agregados)
 ```
 
-### Reaproveitamentos
+Tokens: usar `text-gold`, `bg-card`, `border-border`, `text-muted-foreground`. Cores extras (purple/green/blue/red) vêm do tailwind padrão mas com opacidade `/20` `/30` no estilo do projeto.
 
-- `FavoriteButton` já cobrirá `entity_type='community'` (estrela ao lado do nome — visível nos mocks).
-- `MatchRoomCard` (já existe) usado em "Próximas partidas" da comunidade.
-- `EntityEditButton` / `EntitySheet` para o botão "Editar comunidade" (padrão das outras entidades).
-- `RankingCards` para o bloco de membros em destaque.
+---
 
-### Navegação
+## Fora do escopo
 
-- Adicionar "Comunidades" ao `BottomNav` (substituindo provavelmente "Jogadores" no slot principal — confirmar) e ao drawer "Mais".
-- Adicionar entrada na `Navbar` desktop.
-
-## Fases sugeridas
-
-**Fase 1 — Núcleo (escopo deste plano para implementar agora)**
-
-- Migração SQL completa (tabelas, enums, RLS, função, view, alterações em `match_rooms`/`matches`/`blood_matches`/`seasons`/`user_favorites`).
-- Páginas `/comunidades` e `/comunidades/:slug` com: hero, stats, tabs **Visão geral + Membros + Partidas**.
-- Criação de comunidade, ingresso (open/approval), edição pelo líder.
-- Vínculo opcional ao criar `match_rooms` (campo "Comunidade" no `CreateRoomDialog`).
-- Filtro de comunidades + favoritar comunidade.
-
-**Fase 2 — depois de validar fase 1**
-
-- Aba Torneios (seasons internas) + Discussões + Mídia.
-- Feed de "Atividade recente" e "Membros em destaque" com XP automatizado por triggers.
-- Convites diretos, banimento, transferência de liderança.
-
-## Pontos para confirmar antes de implementar
-
-1. **Escopo da fase 1**: confirmo apenas Núcleo (Visão geral / Membros / Partidas), deixando Torneios/Discussões/Mídia como placeholders "Em breve" nas tabs? [Sim]
-2. **Slot no BottomNav mobile**: substituir "Jogadores" por "Comunidades", ou manter ambos (Comunidades vai para o drawer "Mais")? [Sim]
-3. **Vínculo de partidas**: ao criar uma sala dentro de uma comunidade, ela deve ser **sempre exclusiva** dos membros, ou o criador escolhe entre "exclusiva" vs. "aberta a todos com a tag da comunidade"? [Criador Escolhe]
-4. **Múltiplas comunidades por usuário**: usuário pode pertencer a várias (recomendado) — confirmar. [Sim]  
-  
-O sistema de XP vai ser Global e não atrelado especificamente a comunidade. Depois vamos pensar em um sistema para integrar isto.
-
-Após sua aprovação e respostas, sigo com a migração SQL no banco externo + implementação da fase 1.
+- Implementar de fato o "Convidar jogadores" (fica como toast "Em breve").
+- Edição inline de regulamento (link estático).
+- Drag/zoom real na timeline (usaremos botões Semana/Mês/Trimestre + ‹/›).

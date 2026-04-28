@@ -1,38 +1,36 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/lib/supabaseExternal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
-  Calendar,
-  Clock,
-  Users,
-  ExternalLink,
-  Video,
-  Award,
-  ChevronDown,
-  ChevronUp,
-  Flag,
+  Calendar, Clock, Users, ExternalLink, Video, Award, ChevronDown, ChevronUp,
+  Flag, Share2, UserPlus, Gamepad2, TrendingUp, Trophy, Shield, FileText,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { getRankIcon, getBloodPrizeClass, getBloodWinStats } from "@/utils/game-logic";
 import type {
-  SeasonFull,
-  RankingEntry,
-  BloodRankingEntry,
-  MatchRecord,
-  BloodMatchRecord,
-  GameInfo,
+  SeasonFull, RankingEntry, BloodRankingEntry, MatchRecord, BloodMatchRecord, GameInfo,
 } from "@/types/database";
+import { useNotification } from "@/components/NotificationDialog";
+import { SeasonStatsPanel } from "@/components/seasons/SeasonStatsPanel";
 
 const statusColors: Record<string, string> = {
   active: "bg-green-500/20 text-green-400 border-green-500/30",
-  upcoming: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+  upcoming: "bg-purple-500/20 text-purple-400 border-purple-500/30",
   finished: "bg-muted text-muted-foreground border-border",
 };
 const statusLabels: Record<string, string> = { active: "Ativa", upcoming: "Em breve", finished: "Finalizada" };
+
+const computeStatus = (start: string, end: string): string => {
+  const now = new Date();
+  if (now < new Date(start + "T00:00:00")) return "upcoming";
+  if (now > new Date(end + "T23:59:59")) return "finished";
+  return "active";
+};
 
 const MatchImage = ({ src }: { src: string }) => {
   const [expanded, setExpanded] = useState(false);
@@ -56,10 +54,12 @@ const MatchImage = ({ src }: { src: string }) => {
   );
 };
 
-
 const SeasonDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const [season, setSeason] = useState<SeasonFull | null>(null);
+  const { notify } = useNotification();
+  const [season, setSeason] = useState<(SeasonFull & { cover_url: string | null; start_date: string; end_date: string }) | null>(null);
+  const [coverFallback, setCoverFallback] = useState<string | null>(null);
+  const [linkedItems, setLinkedItems] = useState<{ name: string; image_url: string | null }[]>([]);
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
   const [bloodRankings, setBloodRankings] = useState<BloodRankingEntry[]>([]);
   const [matches, setMatches] = useState<MatchRecord[]>([]);
@@ -68,12 +68,13 @@ const SeasonDetail = () => {
   const [loading, setLoading] = useState(true);
   const [selectedGameId, setSelectedGameId] = useState<string>("all");
   const [expandedMatch, setExpandedMatch] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("ranking");
 
   useEffect(() => {
     if (!id) return;
     const fetchAll = async () => {
       const { data: sData } = await supabase.from("seasons").select("*").eq("id", id).single();
-      const seasonData: SeasonFull | null = sData
+      const seasonData: any = sData
         ? {
             ...sData,
             prize: (sData as any).prize || "",
@@ -83,72 +84,65 @@ const SeasonDetail = () => {
             prize_3rd: sData.prize_3rd || 0,
             prize_4th_6th: (sData as any).prize_4th_6th || 0,
             prize_7th_10th: (sData as any).prize_7th_10th || 0,
+            cover_url: (sData as any).cover_url || null,
           }
         : null;
       setSeason(seasonData);
 
       if (seasonData?.type === "blood") {
+        const { data: sbsData } = await supabase.from("season_blood_scripts").select("script_id").eq("season_id", id);
+        const scriptIds = (sbsData || []).map((x: any) => x.script_id);
+        if (scriptIds.length > 0) {
+          const { data: scriptsData } = await supabase.from("blood_scripts").select("id, name, image_url").in("id", scriptIds);
+          const items = ((scriptsData || []) as any[]).map((s) => ({ name: s.name, image_url: s.image_url }));
+          setLinkedItems(items);
+          setCoverFallback(items.find((i) => i.image_url)?.image_url || null);
+        }
+
         // Blood matches
         const { data: bmData } = await supabase
-          .from("blood_matches")
-          .select("*")
-          .eq("season_id", id)
-          .order("played_at", { ascending: false })
-          .limit(50);
+          .from("blood_matches").select("*").eq("season_id", id)
+          .order("played_at", { ascending: false }).limit(50);
 
         if (bmData && bmData.length > 0) {
-          const scriptIds = [...new Set((bmData as any[]).map((m) => m.script_id))];
+          const scriptIds2 = [...new Set((bmData as any[]).map((m) => m.script_id))];
           const matchIds = (bmData as any[]).map((m) => m.id);
           const storytellerIds = [...new Set((bmData as any[]).map((m) => m.storyteller_player_id))];
 
           const [scriptsRes, playersRes] = await Promise.all([
-            supabase.from("blood_scripts").select("id, name").in("id", scriptIds),
+            supabase.from("blood_scripts").select("id, name").in("id", scriptIds2),
             supabase.from("blood_match_players").select("*").in("match_id", matchIds),
           ]);
 
           const scriptMap: Record<string, string> = {};
           for (const s of (scriptsRes.data || []) as any[]) scriptMap[s.id] = s.name;
 
-          const allPlayerIds = [
-            ...new Set([...storytellerIds, ...((playersRes.data || []) as any[]).map((p) => p.player_id)]),
-          ];
+          const allPlayerIds = [...new Set([...storytellerIds, ...((playersRes.data || []) as any[]).map((p) => p.player_id)])];
           const { data: profiles } = await supabase.rpc("get_public_profiles", { p_ids: allPlayerIds });
           const pMap: Record<string, string> = {};
           for (const p of profiles || []) pMap[p.id] = (p as any).nickname || p.name;
 
           const charIds = [...new Set(((playersRes.data || []) as any[]).map((p) => p.character_id))];
-          const { data: charsData } =
-            charIds.length > 0
-              ? await supabase.from("blood_characters").select("id, name").in("id", charIds)
-              : { data: [] };
+          const { data: charsData } = charIds.length > 0
+            ? await supabase.from("blood_characters").select("id, name").in("id", charIds)
+            : { data: [] };
           const charMap: Record<string, string> = {};
           for (const c of (charsData || []) as any[]) charMap[c.id] = c.name;
 
           setBloodMatches(
             (bmData as any[]).map((m) => ({
-              id: m.id,
-              played_at: m.played_at,
-              duration_minutes: m.duration_minutes,
-              script_name: scriptMap[m.script_id] || "?",
-              winning_team: m.winning_team,
+              id: m.id, played_at: m.played_at, duration_minutes: m.duration_minutes,
+              script_name: scriptMap[m.script_id] || "?", winning_team: m.winning_team,
               storyteller_name: pMap[m.storyteller_player_id] || "?",
               players: ((playersRes.data || []) as any[])
                 .filter((p) => p.match_id === m.id)
-                .map((p) => ({
-                  player_name: pMap[p.player_id] || "?",
-                  character_name: charMap[p.character_id] || "?",
-                  team: p.team,
-                })),
+                .map((p) => ({ player_name: pMap[p.player_id] || "?", character_name: charMap[p.character_id] || "?", team: p.team })),
             })),
           );
         }
 
-        // Blood rankings
         const { data: brData } = await supabase
-          .from("blood_mmr_ratings")
-          .select("*")
-          .eq("season_id", id)
-          .order("total_points", { ascending: false });
+          .from("blood_mmr_ratings").select("*").eq("season_id", id).order("total_points", { ascending: false });
 
         if (brData && brData.length > 0) {
           const playerIds = (brData as any[]).map((r) => r.player_id);
@@ -158,7 +152,6 @@ const SeasonDetail = () => {
           setBloodRankings((brData as any[]).map((r) => ({ ...r, player_name: pMap[r.player_id] || "?" })));
         }
       } else {
-        // Boardgame season - existing logic
         const { data: sgData } = await supabase.from("season_games").select("game_id").eq("season_id", id);
         const gameIds = (sgData || []).map((sg) => sg.game_id);
         let gamesData: GameInfo[] = [];
@@ -167,6 +160,9 @@ const SeasonDetail = () => {
           gamesData = gData || [];
         }
         setGames(gamesData);
+        const items = gamesData.map((g) => ({ name: g.name, image_url: g.image_url }));
+        setLinkedItems(items);
+        setCoverFallback(items.find((i) => i.image_url)?.image_url || null);
 
         const { data: mData } = await supabase
           .from("matches")
@@ -181,7 +177,7 @@ const SeasonDetail = () => {
           const [resRes, gamesRes] = await Promise.all([
             supabase
               .from("match_results")
-              .select("match_id, player_id, position, score, mmr_change, mmr_before, mmr_after")
+              .select("match_id, player_id, position, score, mmr_change, mmr_before, mmr_after, faction")
               .in("match_id", matchIds),
             supabase.from("games").select("id, name").in("id", gameIdsMatch),
           ]);
@@ -194,25 +190,18 @@ const SeasonDetail = () => {
 
           setMatches(
             mData.map((m) => ({
-              id: m.id,
-              played_at: m.played_at,
-              duration_minutes: m.duration_minutes,
-              image_url: m.image_url,
-              first_player_id: (m as any).first_player_id || null,
-              game_name: gameMap[m.game_id] || "?",
-              game_id: m.game_id,
+              id: m.id, played_at: m.played_at, duration_minutes: m.duration_minutes,
+              image_url: m.image_url, first_player_id: (m as any).first_player_id || null,
+              game_name: gameMap[m.game_id] || "?", game_id: m.game_id,
               results: (resRes.data || [])
                 .filter((r) => r.match_id === m.id)
                 .sort((a, b) => a.position - b.position)
-                .map((r) => ({
-                  player_name: pMap[r.player_id] || "?",
-                  player_id: r.player_id,
-                  position: r.position,
-                  score: r.score || 0,
-                  mmr_change: r.mmr_change || 0,
-                  mmr_before: r.mmr_before || 1000,
-                  mmr_after: r.mmr_after || 1000,
-                })),
+                .map((r: any) => ({
+                  player_name: pMap[r.player_id] || "?", player_id: r.player_id,
+                  position: r.position, score: r.score || 0,
+                  mmr_change: r.mmr_change || 0, mmr_before: r.mmr_before || 1000, mmr_after: r.mmr_after || 1000,
+                  faction: r.faction || null,
+                })) as any,
             })),
           );
         }
@@ -222,7 +211,6 @@ const SeasonDetail = () => {
     fetchAll();
   }, [id]);
 
-  // Fetch boardgame rankings when game filter changes
   useEffect(() => {
     if (!id || !season || season.type === "blood") return;
     const fetchRankings = async () => {
@@ -254,8 +242,7 @@ const SeasonDetail = () => {
             .map((pid) => ({
               player_id: pid,
               current_mmr: parseFloat((agg[pid].mmr / gameCount[pid]).toFixed(2)),
-              games_played: agg[pid].gp,
-              wins: agg[pid].wins,
+              games_played: agg[pid].gp, wins: agg[pid].wins,
               player_name: pMap[pid] || "Unknown",
             }))
             .sort((a, b) => b.current_mmr - a.current_mmr);
@@ -276,6 +263,41 @@ const SeasonDetail = () => {
 
   const filteredMatches = selectedGameId === "all" ? matches : matches.filter((m) => m.game_id === selectedGameId);
 
+  // Computed stats
+  const isBlood = season?.type === "blood";
+  const liveStatus = season ? computeStatus(season.start_date, season.end_date) : "upcoming";
+
+  const kpis = useMemo(() => {
+    if (!season) return { participants: 0, matchesCount: 0, winRate: 0, avgMmr: 0 };
+    if (isBlood) {
+      const participants = bloodRankings.length;
+      const matchesCount = bloodMatches.length;
+      const totalGames = bloodRankings.reduce((s, r) => s + (r.games_played - r.games_as_storyteller), 0);
+      const totalWins = bloodRankings.reduce((s, r) => s + r.wins_evil + r.wins_good, 0);
+      const winRate = totalGames > 0 ? Math.round((totalWins / totalGames) * 100) : 0;
+      const avgMmr = participants > 0
+        ? Math.round(bloodRankings.reduce((s, r) => s + r.total_points, 0) / participants)
+        : 0;
+      return { participants, matchesCount, winRate, avgMmr };
+    }
+    const participants = rankings.length;
+    const matchesCount = matches.length;
+    const ratings = rankings.filter((r) => r.games_played > 0);
+    const winRate = ratings.length > 0
+      ? Math.round((ratings.reduce((s, r) => s + r.wins / r.games_played, 0) / ratings.length) * 100)
+      : 0;
+    const avgMmr = participants > 0
+      ? Math.round(rankings.reduce((s, r) => s + Number(r.current_mmr), 0) / participants)
+      : 0;
+    return { participants, matchesCount, winRate, avgMmr };
+  }, [season, isBlood, rankings, bloodRankings, matches, bloodMatches]);
+
+  const daysRemaining = useMemo(() => {
+    if (!season || liveStatus !== "active") return null;
+    const ms = new Date(season.end_date + "T23:59:59").getTime() - Date.now();
+    return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));
+  }, [season, liveStatus]);
+
   if (loading) {
     return (
       <div className="container py-10 flex justify-center">
@@ -283,327 +305,359 @@ const SeasonDetail = () => {
       </div>
     );
   }
-
   if (!season) {
     return <div className="container py-10 text-center text-muted-foreground">Season não encontrada.</div>;
   }
 
-  const isBlood = season.type === "blood";
+  const cover = season.cover_url || coverFallback;
+  const totalPrize = isBlood
+    ? (season.prize_1st || 0) * 3 + (season.prize_4th_6th || 0) * 3 + (season.prize_7th_10th || 0) * 3
+    : (season.prize_1st || 0) + (season.prize_2nd || 0) + (season.prize_3rd || 0);
+
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      notify("success", "Link copiado!");
+    } catch {
+      notify("error", "Não foi possível copiar o link.");
+    }
+  };
+  const handleInvite = () => notify("info", "Convite de jogadores em breve!");
 
   return (
-    <div className="container py-10">
+    <div className="container py-8 space-y-6">
+      <Link to="/seasons" className="text-sm text-muted-foreground hover:text-foreground inline-block">
+        ← Voltar para Seasons
+      </Link>
+
       {/* Header */}
-      <div className="mb-8">
-        <Link to="/seasons" className="text-sm text-muted-foreground hover:text-foreground mb-2 inline-block">
-          ← Voltar para Seasons
-        </Link>
-        <div className="flex items-center gap-3 flex-wrap">
-          <h1 className="text-2xl md:text-3xl font-bold">{season.name}</h1>
-          <Badge variant="outline">{isBlood ? "🩸 Blood" : "🎲 Boardgame"}</Badge>
-          <Badge className={statusColors[season.status]}>{statusLabels[season.status]}</Badge>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="space-y-1.5 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-2xl md:text-3xl font-bold">{season.name}</h1>
+            <Badge variant="outline" className="gap-1">
+              <Gamepad2 className="h-3 w-3" /> {isBlood ? "Blood" : "Boardgame"}
+            </Badge>
+            <Badge className={statusColors[liveStatus]}>{statusLabels[liveStatus]}</Badge>
+          </div>
+          {linkedItems.length > 0 && (
+            <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+              <span>{isBlood ? "🩸" : "🎲"}</span>{linkedItems.map((i) => i.name).join(", ")}
+            </p>
+          )}
+          <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+            <span className="flex items-center gap-1">
+              <Calendar className="h-3.5 w-3.5" />
+              {new Date(season.start_date + "T00:00:00").toLocaleDateString("pt-BR")} —{" "}
+              {new Date(season.end_date + "T00:00:00").toLocaleDateString("pt-BR")}
+              {daysRemaining !== null && <span className="ml-1">({daysRemaining} dias restantes)</span>}
+            </span>
+            <span className="flex items-center gap-1"><Trophy className="h-3.5 w-3.5" /> Temporada oficial</span>
+            <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> Ranking público</span>
+          </div>
         </div>
-        {season.description && <p className="text-muted-foreground mt-2">{season.description}</p>}
-        <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2 flex-wrap">
-          <span className="flex items-center gap-1">
-            <Calendar className="h-4 w-4" />
-            {new Date(season.start_date).toLocaleDateString("pt-BR")} —{" "}
-            {new Date(season.end_date).toLocaleDateString("pt-BR")}
-          </span>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="gap-1.5" onClick={handleShare}>
+            <Share2 className="h-4 w-4" /> Compartilhar
+          </Button>
+          <Button variant="gold" size="sm" className="gap-1.5" onClick={handleInvite}>
+            <UserPlus className="h-4 w-4" /> Convidar jogadores
+          </Button>
         </div>
-        {(() => {
-          const isBlood = season.type === "blood";
-          if (isBlood) {
-            const total =
-              (season.prize_1st || 0) * 3 + (season.prize_4th_6th || 0) * 3 + (season.prize_7th_10th || 0) * 3;
-            if (total <= 0 && !season.prize) return null;
-            return (
-              <div className="mt-3 p-3 rounded-lg border border-gold/30 bg-gold/5">
-                <div className="flex items-center gap-2 text-gold text-sm font-medium mb-1">
-                  <Award className="h-4 w-4" /> Premiação — R$ {total}
-                </div>
-                <div className="flex gap-4 text-sm flex-wrap">
-                  {season.prize_1st > 0 && (
-                    <span>
-                      🥇 1º-3º: <strong>R$ {season.prize_1st} cada</strong>
-                    </span>
-                  )}
-                  {season.prize_4th_6th > 0 && (
-                    <span>
-                      🥈 4º-6º: <strong>R$ {season.prize_4th_6th} cada</strong>
-                    </span>
-                  )}
-                  {season.prize_7th_10th > 0 && (
-                    <span>
-                      🥉 7º-10º: <strong>R$ {season.prize_7th_10th} cada</strong>
-                    </span>
-                  )}
-                </div>
-                {season.prize && <p className="text-sm mt-1">{season.prize}</p>}
-              </div>
-            );
-          }
-          const total = (season.prize_1st || 0) + (season.prize_2nd || 0) + (season.prize_3rd || 0);
-          if (total <= 0 && !season.prize) return null;
-          return (
-            <div className="mt-3 p-3 rounded-lg border border-gold/30 bg-gold/5">
-              <div className="flex items-center gap-2 text-gold text-sm font-medium mb-1">
-                <Award className="h-4 w-4" /> Premiação — R$ {total}
-              </div>
-              <div className="flex gap-4 text-sm flex-wrap">
-                {season.prize_1st > 0 && (
-                  <span>
-                    🥇 1º: <strong>R$ {season.prize_1st}</strong>
-                  </span>
-                )}
-                {season.prize_2nd > 0 && (
-                  <span>
-                    🥈 2º: <strong>R$ {season.prize_2nd}</strong>
-                  </span>
-                )}
-                {season.prize_3rd > 0 && (
-                  <span>
-                    🥉 3º: <strong>R$ {season.prize_3rd}</strong>
-                  </span>
-                )}
-              </div>
-              {season.prize && <p className="text-sm mt-1">{season.prize}</p>}
-            </div>
-          );
-        })()}
       </div>
 
-      {isBlood ? (
-        /* BLOOD SEASON */
-        <Tabs defaultValue="ranking" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="ranking">Ranking</TabsTrigger>
-            <TabsTrigger value="matches">Partidas</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="ranking">
-            {bloodRankings.length === 0 ? (
-              <Card className="bg-card border-border">
-                <CardContent className="py-12 text-center text-muted-foreground">
-                  Nenhum ranking disponível ainda.
-                </CardContent>
-              </Card>
+      {/* Two-column layout */}
+      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+        {/* Sidebar */}
+        <aside className="space-y-4">
+          {/* Cover */}
+          <div className="aspect-[3/4] rounded-lg overflow-hidden bg-secondary/40 border border-border">
+            {cover ? (
+              <img src={cover} alt={season.name} className="w-full h-full object-cover" />
             ) : (
-              <div className="overflow-x-auto">
-                <div className="grid grid-cols-[40px_1fr_80px_80px_80px_80px_80px_80px] gap-2 px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  <span>#</span>
-                  <span>Jogador</span>
-                  <span className="text-center">Partidas</span>
-                  <span className="text-center">V. Mal</span>
-                  <span className="text-center">V. Bem</span>
-                  <span className="text-center">% Vitórias</span>
-                  <span className="text-center">Narrador</span>
-                  <span className="text-right">Pontos</span>
-                </div>
-                {bloodRankings.map((r, i) => {
-                  const { winPct } = getBloodWinStats(r);
-                  return (
-                    <motion.div
-                      key={r.player_id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.05 }}
-                    >
-                      <div
-                        className={`grid grid-cols-[40px_1fr_80px_80px_80px_80px_80px_80px] gap-2 items-center px-4 py-3 rounded-lg border border-border hover:border-gold/20 transition-colors ${getBloodPrizeClass(i)}`}
-                      >
-                        <div className="flex items-center justify-center">{getRankIcon(i)}</div>
-                        <p className="font-semibold truncate">{r.player_name}</p>
-                        <p className="text-center text-sm">{r.games_played}</p>
-                        <p className="text-center text-sm text-red-400">{r.wins_evil}</p>
-                        <p className="text-center text-sm text-blue-400">{r.wins_good}</p>
-                        <p className="text-center text-sm">{winPct}%</p>
-                        <p className="text-center text-sm text-muted-foreground">{r.games_as_storyteller}</p>
-                        <p className="text-right text-lg font-bold text-gold">{r.total_points}</p>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
+              <div className="w-full h-full flex items-center justify-center text-6xl">{isBlood ? "🩸" : "🎲"}</div>
             )}
-          </TabsContent>
-
-          <TabsContent value="matches">
-            {bloodMatches.length === 0 ? (
-              <Card className="bg-card border-border">
-                <CardContent className="py-12 text-center text-muted-foreground">
-                  Nenhuma partida registrada.
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-3">
-                {bloodMatches.map((m) => {
-                  const isExpanded = expandedMatch === m.id;
-                  return (
-                    <Card
-                      key={m.id}
-                      className="bg-card border-border hover:border-gold/20 transition-colors cursor-pointer"
-                      onClick={() => setExpandedMatch(isExpanded ? null : m.id)}
-                    >
-                      <CardContent className="py-4 space-y-3">
-                        <div className="flex items-center justify-between flex-wrap gap-2">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Badge variant="outline">{m.script_name}</Badge>
-                            <Badge
-                              className={
-                                m.winning_team === "evil"
-                                  ? "bg-red-500/20 text-red-400 border-red-500/30"
-                                  : "bg-blue-500/20 text-blue-400 border-blue-500/30"
-                              }
-                            >
-                              {m.winning_team === "evil" ? "💀 Mal" : "🛡️ Bem"}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">Narrador: {m.storyteller_name}</span>
-                            {m.duration_minutes && (
-                              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                <Clock className="h-3 w-3" /> {m.duration_minutes} min
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(m.played_at).toLocaleString("pt-BR", {
-                                dateStyle: "short",
-                                timeStyle: "short",
-                              })}
-                            </span>
-                            {isExpanded ? (
-                              <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                            )}
-                          </div>
-                        </div>
-                        {isExpanded && (
-                          <div className="space-y-2 pt-2 border-t border-border" onClick={(e) => e.stopPropagation()}>
-                            <div className="flex items-center gap-2 text-sm p-2 rounded bg-gold/10">
-                              <span className="text-gold">📖</span>
-                              <span className="font-medium text-gold">Narrador: {m.storyteller_name}</span>
-                            </div>
-                            {m.players
-                              .filter((p: any) => p.team === "evil")
-                              .map((p: any, i: number) => (
-                                <div
-                                  key={`evil-${i}`}
-                                  className="flex items-center gap-2 text-sm p-2 rounded bg-red-500/10"
-                                >
-                                  <span className="text-red-400">💀</span>
-                                  <span className="font-medium">{p.player_name}</span>
-                                  <span className="text-muted-foreground">— {p.character_name}</span>
-                                </div>
-                              ))}
-                            {m.players
-                              .filter((p: any) => p.team === "good")
-                              .map((p: any, i: number) => (
-                                <div
-                                  key={`good-${i}`}
-                                  className="flex items-center gap-2 text-sm p-2 rounded bg-blue-500/10"
-                                >
-                                  <span className="text-blue-400">🛡️</span>
-                                  <span className="font-medium">{p.player_name}</span>
-                                  <span className="text-muted-foreground">— {p.character_name}</span>
-                                </div>
-                              ))}
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
-      ) : (
-        /* BOARDGAME SEASON */
-        <>
-          <div className="mb-6">
-            <Select value={selectedGameId} onValueChange={setSelectedGameId}>
-              <SelectTrigger className="w-[250px]">
-                <SelectValue placeholder="Filtrar por jogo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os jogos (média)</SelectItem>
-                {games.map((g) => (
-                  <SelectItem key={g.id} value={g.id}>
-                    {g.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
-          <Tabs defaultValue="ranking" className="space-y-6">
+          {/* Prize card */}
+          {totalPrize > 0 && (
+            <Card className="bg-card border-gold/30">
+              <CardContent className="py-4 text-center space-y-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Premiação Total</p>
+                  <p className="text-2xl font-bold text-gold flex items-center justify-center gap-1.5 mt-1">
+                    <Trophy className="h-5 w-5" /> R$ {totalPrize}
+                  </p>
+                </div>
+                {!isBlood ? (
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[
+                      { label: "1º lugar", val: season.prize_1st },
+                      { label: "2º lugar", val: season.prize_2nd },
+                      { label: "3º lugar", val: season.prize_3rd },
+                    ].map((p) => (
+                      <div key={p.label} className="rounded-md border border-border bg-secondary/30 py-2">
+                        <p className="text-[10px] text-muted-foreground">{p.label}</p>
+                        <p className="text-xs font-bold text-gold">R$ {p.val || 0}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {[
+                      { label: "1º-3º", val: season.prize_1st },
+                      { label: "4º-6º", val: season.prize_4th_6th },
+                      { label: "7º-10º", val: season.prize_7th_10th },
+                    ].map((p) => (
+                      <div key={p.label} className="rounded-md border border-border bg-secondary/30 py-2">
+                        <p className="text-[10px] text-muted-foreground">{p.label}</p>
+                        <p className="text-xs font-bold text-gold">R$ {p.val || 0} cada</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Format info */}
+          <Card className="bg-card border-border">
+            <CardContent className="py-4 space-y-3 text-sm">
+              {[
+                { icon: Award, label: "Sistema de pontuação", val: isBlood ? "Pontos Blood" : "MMR Global" },
+                { icon: Shield, label: "Formato", val: "Competitivo" },
+                { icon: Gamepad2, label: "Partidas válidas", val: "Jogos ranqueados" },
+                { icon: TrendingUp, label: "Critério de desempate", val: "Maior win rate, depois MMR" },
+              ].map((it) => (
+                <div key={it.label} className="flex items-start gap-2">
+                  <it.icon className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-[11px] text-muted-foreground">{it.label}</p>
+                    <p className="text-sm font-medium truncate">{it.val}</p>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Button variant="outline" className="w-full gap-1.5" asChild>
+            <Link to="/rules"><FileText className="h-4 w-4" /> Regulamento da temporada</Link>
+          </Button>
+        </aside>
+
+        {/* Main content */}
+        <main className="space-y-6 min-w-0">
+          {/* KPIs */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <Card className="bg-card border-border">
+              <CardContent className="py-4">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                  <Users className="h-4 w-4" /> Participantes
+                </div>
+                <p className="text-2xl font-bold text-gold">{kpis.participants}</p>
+                <button onClick={() => setActiveTab("ranking")} className="text-[11px] text-muted-foreground hover:text-gold transition-colors">
+                  Ver todos →
+                </button>
+              </CardContent>
+            </Card>
+            <Card className="bg-card border-border">
+              <CardContent className="py-4">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                  <Gamepad2 className="h-4 w-4" /> Partidas realizadas
+                </div>
+                <p className="text-2xl font-bold text-gold">{kpis.matchesCount}</p>
+                <button onClick={() => setActiveTab("matches")} className="text-[11px] text-muted-foreground hover:text-gold transition-colors">
+                  Ver partidas →
+                </button>
+              </CardContent>
+            </Card>
+            <Card className="bg-card border-border">
+              <CardContent className="py-4">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                  <TrendingUp className="h-4 w-4" /> Win Rate médio
+                </div>
+                <p className="text-2xl font-bold text-gold">{kpis.winRate}%</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-card border-border">
+              <CardContent className="py-4">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+                  <TrendingUp className="h-4 w-4" /> {isBlood ? "Pontos médios" : "MMR médio"}
+                </div>
+                <p className="text-2xl font-bold text-gold">{kpis.avgMmr}</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <TabsList>
               <TabsTrigger value="ranking">Ranking</TabsTrigger>
               <TabsTrigger value="matches">Partidas</TabsTrigger>
-              <TabsTrigger value="games">Jogos</TabsTrigger>
+              <TabsTrigger value="stats">Estatísticas</TabsTrigger>
+              {!isBlood && <TabsTrigger value="games">Jogos</TabsTrigger>}
             </TabsList>
 
-            <TabsContent value="ranking">
-              {rankings.length === 0 ? (
-                <Card className="bg-card border-border">
-                  <CardContent className="py-12 text-center text-muted-foreground">
-                    Nenhum ranking disponível ainda.
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="overflow-x-auto">
-                  <div className="grid grid-cols-[40px_1fr_80px_80px_80px_80px] gap-2 px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                    <span>#</span>
-                    <span>Jogador</span>
-                    <span className="text-center">Partidas</span>
-                    <span className="text-center">Vitórias</span>
-                    <span className="text-center">Win Rate</span>
-                    <span className="text-right">MMR</span>
-                  </div>
-                  {rankings.map((r, i) => (
-                    <motion.div
-                      key={r.player_id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.05 }}
-                    >
-                      <div
-                        className={`grid grid-cols-[40px_1fr_80px_80px_80px_80px] gap-2 items-center px-4 py-3 rounded-lg border border-border hover:border-gold/20 transition-colors ${i < 3 ? "border-gold/30 bg-card" : "bg-card"}`}
-                      >
-                        <div className="flex items-center justify-center">{getRankIcon(i)}</div>
-                        <p className="font-semibold truncate">{r.player_name}</p>
-                        <p className="text-center text-sm">{r.games_played}</p>
-                        <p className="text-center text-sm">{r.wins}</p>
-                        <p className="text-center text-sm">
-                          {r.games_played > 0 ? Math.round((r.wins / r.games_played) * 100) : 0}%
-                        </p>
-                        <p className="text-right text-lg font-bold text-gold">{Number(r.current_mmr).toFixed(2)}</p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
+            <TabsContent value="ranking" className="space-y-4">
+              {!isBlood && (
+                <Select value={selectedGameId} onValueChange={setSelectedGameId}>
+                  <SelectTrigger className="w-[250px]">
+                    <SelectValue placeholder="Filtrar por jogo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os jogos (média)</SelectItem>
+                    {games.map((g) => (
+                      <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               )}
+
+              <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
+                <div className="min-w-0">
+                  {isBlood ? (
+                    bloodRankings.length === 0 ? (
+                      <Card className="bg-card border-border"><CardContent className="py-12 text-center text-muted-foreground">Nenhum ranking disponível ainda.</CardContent></Card>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <div className="grid grid-cols-[40px_1fr_70px_70px_70px_70px_70px_80px] gap-2 px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          <span>#</span><span>Jogador</span>
+                          <span className="text-center">Partidas</span>
+                          <span className="text-center">V. Mal</span>
+                          <span className="text-center">V. Bem</span>
+                          <span className="text-center">% Vit.</span>
+                          <span className="text-center">Narr.</span>
+                          <span className="text-right">Pontos</span>
+                        </div>
+                        {bloodRankings.map((r, i) => {
+                          const { winPct } = getBloodWinStats(r);
+                          return (
+                            <motion.div key={r.player_id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}>
+                              <div className={`grid grid-cols-[40px_1fr_70px_70px_70px_70px_70px_80px] gap-2 items-center px-4 py-3 rounded-lg border border-border hover:border-gold/20 transition-colors ${getBloodPrizeClass(i)}`}>
+                                <div className="flex items-center justify-center">{getRankIcon(i)}</div>
+                                <p className="font-semibold truncate">{r.player_name}</p>
+                                <p className="text-center text-sm">{r.games_played}</p>
+                                <p className="text-center text-sm text-red-400">{r.wins_evil}</p>
+                                <p className="text-center text-sm text-blue-400">{r.wins_good}</p>
+                                <p className="text-center text-sm">{winPct}%</p>
+                                <p className="text-center text-sm text-muted-foreground">{r.games_as_storyteller}</p>
+                                <p className="text-right text-lg font-bold text-gold">{r.total_points}</p>
+                              </div>
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+                    )
+                  ) : rankings.length === 0 ? (
+                    <Card className="bg-card border-border"><CardContent className="py-12 text-center text-muted-foreground">Nenhum ranking disponível ainda.</CardContent></Card>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <div className="grid grid-cols-[40px_1fr_80px_80px_80px_90px] gap-2 px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        <span>#</span><span>Jogador</span>
+                        <span className="text-center">Partidas</span>
+                        <span className="text-center">Vitórias</span>
+                        <span className="text-center">Win Rate</span>
+                        <span className="text-right">MMR</span>
+                      </div>
+                      {rankings.map((r, i) => (
+                        <motion.div key={r.player_id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}>
+                          <div className={`grid grid-cols-[40px_1fr_80px_80px_80px_90px] gap-2 items-center px-4 py-3 rounded-lg border border-border hover:border-gold/20 transition-colors ${i < 3 ? "border-gold/30" : ""}`}>
+                            <div className="flex items-center justify-center">{getRankIcon(i)}</div>
+                            <p className="font-semibold truncate">{r.player_name}</p>
+                            <p className="text-center text-sm">{r.games_played}</p>
+                            <p className="text-center text-sm">{r.wins}</p>
+                            <p className="text-center text-sm">
+                              {r.games_played > 0 ? Math.round((r.wins / r.games_played) * 100) : 0}%
+                            </p>
+                            <p className="text-right text-lg font-bold text-gold">{Number(r.current_mmr).toFixed(2)}</p>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Side stats panel — visible only on xl+ */}
+                <div className="hidden xl:block">
+                  <SeasonStatsPanel
+                    isBlood={!!isBlood}
+                    matches={matches}
+                    bloodMatches={bloodMatches}
+                    rankings={rankings}
+                    bloodRankings={bloodRankings}
+                  />
+                </div>
+              </div>
             </TabsContent>
 
             <TabsContent value="matches">
-              {filteredMatches.length === 0 ? (
-                <Card className="bg-card border-border">
-                  <CardContent className="py-12 text-center text-muted-foreground">
-                    Nenhuma partida registrada.
-                  </CardContent>
-                </Card>
+              {isBlood ? (
+                bloodMatches.length === 0 ? (
+                  <Card className="bg-card border-border"><CardContent className="py-12 text-center text-muted-foreground">Nenhuma partida registrada.</CardContent></Card>
+                ) : (
+                  <div className="space-y-3">
+                    {bloodMatches.map((m) => {
+                      const isExpanded = expandedMatch === m.id;
+                      return (
+                        <Card key={m.id} className="bg-card border-border hover:border-gold/20 transition-colors cursor-pointer"
+                          onClick={() => setExpandedMatch(isExpanded ? null : m.id)}>
+                          <CardContent className="py-4 space-y-3">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Badge variant="outline">{m.script_name}</Badge>
+                                <Badge className={m.winning_team === "evil" ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-blue-500/20 text-blue-400 border-blue-500/30"}>
+                                  {m.winning_team === "evil" ? "💀 Mal" : "🛡️ Bem"}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">Narrador: {m.storyteller_name}</span>
+                                {m.duration_minutes && (
+                                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                    <Clock className="h-3 w-3" /> {m.duration_minutes} min
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground">{new Date(m.played_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</span>
+                                {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                              </div>
+                            </div>
+                            {isExpanded && (
+                              <div className="space-y-2 pt-2 border-t border-border" onClick={(e) => e.stopPropagation()}>
+                                <div className="flex items-center gap-2 text-sm p-2 rounded bg-gold/10">
+                                  <span className="text-gold">📖</span>
+                                  <span className="font-medium text-gold">Narrador: {m.storyteller_name}</span>
+                                </div>
+                                {m.players.filter((p: any) => p.team === "evil").map((p: any, i: number) => (
+                                  <div key={`evil-${i}`} className="flex items-center gap-2 text-sm p-2 rounded bg-red-500/10">
+                                    <span className="text-red-400">💀</span>
+                                    <span className="font-medium">{p.player_name}</span>
+                                    <span className="text-muted-foreground">— {p.character_name}</span>
+                                  </div>
+                                ))}
+                                {m.players.filter((p: any) => p.team === "good").map((p: any, i: number) => (
+                                  <div key={`good-${i}`} className="flex items-center gap-2 text-sm p-2 rounded bg-blue-500/10">
+                                    <span className="text-blue-400">🛡️</span>
+                                    <span className="font-medium">{p.player_name}</span>
+                                    <span className="text-muted-foreground">— {p.character_name}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                )
+              ) : filteredMatches.length === 0 ? (
+                <Card className="bg-card border-border"><CardContent className="py-12 text-center text-muted-foreground">Nenhuma partida registrada.</CardContent></Card>
               ) : (
                 <div className="space-y-3">
                   {filteredMatches.map((m) => {
                     const isExpanded = expandedMatch === m.id;
                     const winner = m.results.find((r) => r.position === 1);
                     return (
-                      <Card
-                        key={m.id}
-                        className="bg-card border-border hover:border-gold/20 transition-colors cursor-pointer"
-                        onClick={() => setExpandedMatch(isExpanded ? null : m.id)}
-                      >
+                      <Card key={m.id} className="bg-card border-border hover:border-gold/20 transition-colors cursor-pointer"
+                        onClick={() => setExpandedMatch(isExpanded ? null : m.id)}>
                         <CardContent className="py-4 space-y-3">
                           <div className="flex items-center justify-between flex-wrap gap-2">
                             <div className="flex items-center gap-2 flex-wrap">
@@ -616,17 +670,8 @@ const SeasonDetail = () => {
                               )}
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground">
-                                {new Date(m.played_at).toLocaleString("pt-BR", {
-                                  dateStyle: "short",
-                                  timeStyle: "short",
-                                })}
-                              </span>
-                              {isExpanded ? (
-                                <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                              ) : (
-                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                              )}
+                              <span className="text-xs text-muted-foreground">{new Date(m.played_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</span>
+                              {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
                             </div>
                           </div>
                           {isExpanded && (
@@ -634,28 +679,15 @@ const SeasonDetail = () => {
                               {m.image_url && <MatchImage src={m.image_url} />}
                               <div className="space-y-2">
                                 {m.results.map((r, i) => (
-                                  <div
-                                    key={i}
-                                    className="flex items-center gap-3 text-sm p-2 rounded-lg bg-secondary/30"
-                                  >
-                                    <Badge
-                                      variant={r.position === 1 ? "default" : "secondary"}
-                                      className={`w-8 justify-center ${r.position === 1 ? "bg-gold text-black" : ""}`}
-                                    >
-                                      {r.position}º
-                                    </Badge>
+                                  <div key={i} className="flex items-center gap-3 text-sm p-2 rounded-lg bg-secondary/30">
+                                    <Badge variant={r.position === 1 ? "default" : "secondary"} className={`w-8 justify-center ${r.position === 1 ? "bg-gold text-black" : ""}`}>{r.position}º</Badge>
                                     <span className="flex-1 font-medium flex items-center gap-1">
                                       {r.player_name}
-                                      {r.player_id === m.first_player_id && (
-                                        <Flag className="h-3.5 w-3.5 text-gold ml-1" />
-                                      )}
+                                      {r.player_id === m.first_player_id && <Flag className="h-3.5 w-3.5 text-gold ml-1" />}
                                     </span>
                                     <span className="text-muted-foreground">{r.score} pts</span>
-                                    <span
-                                      className={`text-xs font-medium ${r.mmr_change >= 0 ? "text-green-500" : "text-red-500"}`}
-                                    >
-                                      {r.mmr_change >= 0 ? "+" : ""}
-                                      {r.mmr_change} MMR
+                                    <span className={`text-xs font-medium ${r.mmr_change >= 0 ? "text-green-500" : "text-red-500"}`}>
+                                      {r.mmr_change >= 0 ? "+" : ""}{r.mmr_change} MMR
                                     </span>
                                   </div>
                                 ))}
@@ -670,60 +702,62 @@ const SeasonDetail = () => {
               )}
             </TabsContent>
 
-            <TabsContent value="games">
-              {games.length === 0 ? (
-                <Card className="bg-card border-border">
-                  <CardContent className="py-12 text-center text-muted-foreground">
-                    Nenhum jogo vinculado a esta season.
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {games.map((g) => (
-                    <Card key={g.id} className="bg-card border-border hover:border-gold/20 transition-colors">
-                      <CardContent className="py-4 space-y-3">
-                        <div className="flex items-center gap-3">
-                          {g.image_url ? (
-                            <img src={g.image_url} alt={g.name} className="h-12 w-12 rounded object-cover" />
-                          ) : (
-                            <div className="h-12 w-12 rounded bg-secondary flex items-center justify-center text-gold font-bold text-lg">
-                              {g.name.charAt(0)}
+            <TabsContent value="stats">
+              <SeasonStatsPanel
+                isBlood={!!isBlood}
+                matches={matches}
+                bloodMatches={bloodMatches}
+                rankings={rankings}
+                bloodRankings={bloodRankings}
+              />
+            </TabsContent>
+
+            {!isBlood && (
+              <TabsContent value="games">
+                {games.length === 0 ? (
+                  <Card className="bg-card border-border"><CardContent className="py-12 text-center text-muted-foreground">Nenhum jogo vinculado a esta season.</CardContent></Card>
+                ) : (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {games.map((g) => (
+                      <Card key={g.id} className="bg-card border-border hover:border-gold/20 transition-colors">
+                        <CardContent className="py-4 space-y-3">
+                          <div className="flex items-center gap-3">
+                            {g.image_url ? (
+                              <img src={g.image_url} alt={g.name} className="h-12 w-12 rounded object-cover" />
+                            ) : (
+                              <div className="h-12 w-12 rounded bg-secondary flex items-center justify-center text-gold font-bold text-lg">{g.name.charAt(0)}</div>
+                            )}
+                            <div>
+                              <p className="font-semibold">{g.name}</p>
+                              {(g.min_players || g.max_players) && (
+                                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                  <Users className="h-3 w-3" /> {g.min_players || "?"}–{g.max_players || "?"} jogadores
+                                </p>
+                              )}
                             </div>
-                          )}
-                          <div>
-                            <p className="font-semibold">{g.name}</p>
-                            {(g.min_players || g.max_players) && (
-                              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                <Users className="h-3 w-3" /> {g.min_players || "?"}–{g.max_players || "?"} jogadores
-                              </p>
+                          </div>
+                          <div className="flex gap-2 flex-wrap">
+                            {g.rules_url && (
+                              <a href={g.rules_url} target="_blank" rel="noopener noreferrer">
+                                <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1"><ExternalLink className="h-3 w-3" /> Regras</Badge>
+                              </a>
+                            )}
+                            {g.video_url && (
+                              <a href={g.video_url} target="_blank" rel="noopener noreferrer">
+                                <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1"><Video className="h-3 w-3" /> Vídeo</Badge>
+                              </a>
                             )}
                           </div>
-                        </div>
-                        <div className="flex gap-2 flex-wrap">
-                          {g.rules_url && (
-                            <a href={g.rules_url} target="_blank" rel="noopener noreferrer">
-                              <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1">
-                                <ExternalLink className="h-3 w-3" /> Regras
-                              </Badge>
-                            </a>
-                          )}
-                          {g.video_url && (
-                            <a href={g.video_url} target="_blank" rel="noopener noreferrer">
-                              <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1">
-                                <Video className="h-3 w-3" /> Vídeo
-                              </Badge>
-                            </a>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </TabsContent>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+            )}
           </Tabs>
-        </>
-      )}
+        </main>
+      </div>
     </div>
   );
 };

@@ -24,6 +24,7 @@ import { FavoriteButton } from "@/components/shared/FavoriteButton";
 import { SeasonStatsPanel } from "@/components/seasons/SeasonStatsPanel";
 import { GamePersonalStatsPanel } from "@/components/games/GamePersonalStatsPanel";
 import { EditActionButton } from "@/components/shared/EditActionButton";
+import { DateBlock } from "@/components/shared/DateBlock";
 import EditMatchDialog from "@/components/matches/EditMatchDialog";
 import type { MatchRecord } from "@/types/database";
 

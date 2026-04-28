@@ -17,7 +17,7 @@ interface Props {
 
 interface FactionStat { name: string; count: number; wins: number; pct: number; winRate: number; color: string }
 
-const FACTION_COLORS = ["bg-gold", "bg-blue-500", "bg-purple-500", "bg-emerald-500", "bg-pink-500", "bg-orange-500"];
+const FACTION_COLORS = ["bg-gold", "bg-blue-500", "bg-purple-500", "bg-emerald-500", "bg-pink-500", "bg-orange-500", "bg-cyan-500", "bg-red-500", "bg-yellow-500", "bg-indigo-500"];
 
 const PlayerLine = ({ rank, name, avatar_url, value, suffix = "" }: { rank: number; name: string; avatar_url?: string | null; value: number | string; suffix?: string }) => (
   <div className="flex items-center justify-between text-sm gap-2 min-w-0">
@@ -77,7 +77,7 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
       color: "",
     }));
     arr.sort((a, b) => factionSort === "winrate" ? b.winRate - a.winRate : b.count - a.count);
-    return arr.slice(0, 5).map((f, i) => ({ ...f, color: FACTION_COLORS[i % FACTION_COLORS.length] }));
+    return arr.slice(0, 10).map((f, i) => ({ ...f, color: FACTION_COLORS[i % FACTION_COLORS.length] }));
   }, [isBlood, matches, bloodMatches, factionSort]);
 
   const showFactions = hasFactions && (isBlood || factions.length > 0);
@@ -317,18 +317,49 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
                     <p className="text-sm font-semibold">Local / Plataforma</p>
                     <p className="text-xs text-muted-foreground">Onde as partidas aconteceram</p>
                   </div>
-                  <div className="space-y-2">
-                    {platformStats.items.map((p) => (
-                      <div key={p.name}>
-                        <div className="flex items-center justify-between text-xs mb-1">
-                          <span className="truncate">{p.name}</span>
-                          <span className="text-muted-foreground">{p.pct}% ({p.count})</span>
+                  <div className="flex items-center gap-4 flex-row-reverse">
+                    {(() => {
+                      const size = 110;
+                      const stroke = 20;
+                      const r = (size - stroke) / 2;
+                      const c = 2 * Math.PI * r;
+                      let offset = 0;
+                      const PLAT_HSL = ["hsl(var(--gold))", "hsl(217 91% 60%)", "hsl(280 70% 60%)", "hsl(160 71% 45%)", "hsl(330 70% 60%)", "hsl(20 80% 55%)", "hsl(180 60% 50%)", "hsl(0 72% 55%)"];
+                      return (
+                        <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
+                          <svg width={size} height={size} className="-rotate-90">
+                            <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="hsl(var(--secondary))" strokeWidth={stroke} />
+                            {platformStats.items.map((s, i) => {
+                              if (s.count === 0) return null;
+                              const len = (s.count / platformStats.total) * c;
+                              const dasharray = `${len} ${c - len}`;
+                              const dashoffset = -offset;
+                              offset += len;
+                              return (
+                                <circle key={s.name} cx={size / 2} cy={size / 2} r={r} fill="none" stroke={PLAT_HSL[i % PLAT_HSL.length]} strokeWidth={stroke} strokeDasharray={dasharray} strokeDashoffset={dashoffset} />
+                              );
+                            })}
+                          </svg>
+                          <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <p className="text-lg font-bold leading-none">{platformStats.total}</p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">partidas</p>
+                          </div>
                         </div>
-                        <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
-                          <div className={`h-full ${p.color}`} style={{ width: `${p.pct}%` }} />
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })()}
+                    <div className="flex-1 space-y-1 min-w-0">
+                      {platformStats.items.map((p, i) => {
+                        const PLAT_HSL = ["hsl(var(--gold))", "hsl(217 91% 60%)", "hsl(280 70% 60%)", "hsl(160 71% 45%)", "hsl(330 70% 60%)", "hsl(20 80% 55%)", "hsl(180 60% 50%)", "hsl(0 72% 55%)"];
+                        return (
+                          <div key={p.name} className="flex items-center gap-1.5 text-xs">
+                            <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: PLAT_HSL[i % PLAT_HSL.length] }} />
+                            <span className="text-muted-foreground truncate">{p.name}</span>
+                            <span className="ml-auto font-semibold text-foreground">{p.pct}%</span>
+                            <span className="text-muted-foreground">({p.count})</span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -339,7 +370,7 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
                 <CardContent className="py-4 space-y-3 h-full">
                   <div>
                     <p className="text-sm font-semibold">Vitórias por posição na mesa</p>
-                    <p className="text-xs text-muted-foreground">Em qual assento mais se ganha</p>
+                    <p className="text-xs text-muted-foreground">% de vitórias por assento</p>
                   </div>
                   <div className="flex items-center gap-4">
                     {(() => {
@@ -372,11 +403,11 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
                     })()}
                     <div className="flex-1 space-y-1 min-w-0">
                       {positionStats.slices.map((s) => (
-                        <div key={s.position} className="flex items-center gap-1.5 text-xs">
+                        <div key={s.position} className="flex items-center gap-1.5 text-xs" title={`${s.count} vitórias em ${s.played} partidas no assento ${s.position}`}>
                           <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
-                          <span className="text-muted-foreground flex-shrink-0">{s.position}ª</span>
-                          <span className="ml-auto font-semibold text-foreground">{s.pct}%</span>
-                          <span className="text-muted-foreground">({s.count})</span>
+                          <span className="text-muted-foreground flex-shrink-0">{s.position}ª assento</span>
+                          <span className="ml-auto font-semibold text-foreground">{s.count} vit</span>
+                          <span className="text-muted-foreground">({s.pct}%)</span>
                         </div>
                       ))}
                     </div>
@@ -429,33 +460,35 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
 
             {heatmap && (
               <Card className="bg-card border-border">
-                <CardContent className="py-4 space-y-3">
+                <CardContent className="py-4 space-y-3 h-full flex flex-col">
                   <div>
                     <p className="text-sm font-semibold">Mapa de calor</p>
                     <p className="text-xs text-muted-foreground">Dias da semana e horários mais jogados</p>
                   </div>
-                  <div className="flex gap-2">
-                    <div className="flex flex-col justify-around text-[10px] text-muted-foreground py-4 w-6">
-                      {["0h", "6h", "12h", "18h"].map((h) => <span key={h}>{h}</span>)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-muted-foreground mb-1">
-                        {DAY_LABELS.map((d) => <span key={d}>{d}</span>)}
+                  <div className="flex-1 flex items-center justify-center">
+                    <div className="flex gap-2 w-full max-w-[420px]">
+                      <div className="flex flex-col justify-around text-[10px] text-muted-foreground py-4 w-6">
+                        {["0h", "6h", "12h", "18h"].map((h) => <span key={h}>{h}</span>)}
                       </div>
-                      <div className="grid grid-rows-4 gap-1">
-                        {heatmap.grid.map((row, ri) => (
-                          <div key={ri} className="grid grid-cols-7 gap-1">
-                            {row.map((count, ci) => {
-                              const intensity = heatmap.max > 0 ? count / heatmap.max : 0;
-                              return (
-                                <div key={ci} className="h-6 rounded-sm border border-border/40"
-                                  style={{ backgroundColor: count === 0 ? "hsl(var(--secondary) / 0.3)" : `hsl(38 100% 50% / ${0.15 + intensity * 0.85})` }}
-                                  title={`${DAY_LABELS[ci]} ${ri * 6}h–${(ri + 1) * 6}h: ${count} partidas`}
-                                />
-                              );
-                            })}
-                          </div>
-                        ))}
+                      <div className="flex-1 min-w-0">
+                        <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-muted-foreground mb-1">
+                          {DAY_LABELS.map((d) => <span key={d}>{d}</span>)}
+                        </div>
+                        <div className="grid grid-rows-4 gap-1">
+                          {heatmap.grid.map((row, ri) => (
+                            <div key={ri} className="grid grid-cols-7 gap-1">
+                              {row.map((count, ci) => {
+                                const intensity = heatmap.max > 0 ? count / heatmap.max : 0;
+                                return (
+                                  <div key={ci} className="h-8 rounded-sm border border-border/40"
+                                    style={{ backgroundColor: count === 0 ? "hsl(var(--secondary) / 0.3)" : `hsl(38 100% 50% / ${0.15 + intensity * 0.85})` }}
+                                    title={`${DAY_LABELS[ci]} ${ri * 6}h–${(ri + 1) * 6}h: ${count} partidas`}
+                                  />
+                                );
+                              })}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>

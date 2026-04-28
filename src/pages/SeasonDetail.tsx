@@ -308,7 +308,7 @@ const SeasonDetail = () => {
 
   // Position delta: compares current ranking vs ranking right before the last match (of selected game)
   const positionDeltas = useMemo<Record<string, number>>(() => {
-    if (isBlood || rankings.length === 0 || filteredMatches.length === 0) return {};
+    if (season?.type === "blood" || rankings.length === 0 || filteredMatches.length === 0) return {};
     // Most recent match (filteredMatches sorted desc by played_at from query)
     const lastMatch = [...filteredMatches].sort((a, b) => b.played_at.localeCompare(a.played_at))[0];
     if (!lastMatch) return {};

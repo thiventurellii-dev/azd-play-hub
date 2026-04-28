@@ -229,7 +229,7 @@ const SeasonDetail = () => {
                 .sort((a, b) => a.position - b.position)
                 .map((r: any) => ({
                   player_name: pMap[r.player_id] || "?", player_id: r.player_id,
-                  position: r.position, score: r.score || 0,
+                  position: r.position, seat_position: r.seat_position ?? null, score: r.score || 0,
                   mmr_change: r.mmr_change || 0, mmr_before: r.mmr_before || 1000, mmr_after: r.mmr_after || 1000,
                   faction: r.faction || null,
                 })) as any,

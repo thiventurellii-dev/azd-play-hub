@@ -205,6 +205,55 @@ const CommunityDetail = () => {
                     )}
                   </CardContent>
                 </Card>
+
+                <Card className="bg-card border-border">
+                  <CardContent className="py-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold flex items-center gap-2">
+                        <MessageSquare className="h-4 w-4 text-gold" />
+                        Discussões recentes
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const trigger = document.querySelector<HTMLElement>('[role="tab"][value="discussions"]');
+                          trigger?.click();
+                        }}
+                        className="text-xs text-gold hover:underline"
+                      >
+                        Ver todas
+                      </button>
+                    </div>
+                    {recentTopics.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Nenhuma discussão ainda.</p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {recentTopics.slice(0, 5).map((t) => (
+                          <li key={t.id}>
+                            <Link
+                              to={`/comunidades/${community.slug}/topicos/${t.id}`}
+                              className="block rounded-lg border border-border p-3 hover:border-gold/30 transition-colors"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="font-medium text-sm truncate">
+                                  {t.pinned && <span className="text-gold mr-1">📌</span>}
+                                  {t.title}
+                                </p>
+                                <span className="text-[11px] text-muted-foreground shrink-0">
+                                  {t.comments_count ?? 0} 💬
+                                </span>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1 truncate">
+                                {t.author?.nickname || t.author?.name || "—"} •{" "}
+                                {formatDistanceToNow(new Date(t.created_at), { locale: ptBR, addSuffix: true })}
+                              </p>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
 
               <div className="space-y-4">

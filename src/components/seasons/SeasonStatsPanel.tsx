@@ -84,20 +84,20 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
 
   const showFactions = hasFactions && (isBlood || factions.length > 0);
 
-  // Top winners (3)
+  // Top winners (10)
   const topWinners = useMemo(() => {
     if (isBlood) {
       return [...bloodRankings]
         .sort((a, b) => (b.wins_evil + b.wins_good) - (a.wins_evil + a.wins_good))
-        .slice(0, 3)
+        .slice(0, 10)
         .map((r) => ({ player_id: r.player_id, name: r.player_name, avatar_url: r.avatar_url, value: r.wins_evil + r.wins_good }));
     }
     return [...rankings]
-      .sort((a, b) => b.wins - a.wins).slice(0, 3)
+      .sort((a, b) => b.wins - a.wins).slice(0, 10)
       .map((r) => ({ player_id: r.player_id, name: r.player_name, avatar_url: r.avatar_url, value: r.wins }));
   }, [isBlood, rankings, bloodRankings]);
 
-  // Top win rate (3)
+  // Top win rate (10)
   const topWinRate = useMemo(() => {
     if (isBlood) {
       return [...bloodRankings]
@@ -107,12 +107,12 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
           const pct = games > 0 ? Math.round(((r.wins_evil + r.wins_good) / games) * 100) : 0;
           return { player_id: r.player_id, name: r.player_name, avatar_url: r.avatar_url, value: pct };
         })
-        .sort((a, b) => b.value - a.value).slice(0, 3);
+        .sort((a, b) => b.value - a.value).slice(0, 10);
     }
     return [...rankings]
       .filter((r) => r.games_played >= 3)
       .map((r) => ({ player_id: r.player_id, name: r.player_name, avatar_url: r.avatar_url, value: Math.round((r.wins / r.games_played) * 100) }))
-      .sort((a, b) => b.value - a.value).slice(0, 3);
+      .sort((a, b) => b.value - a.value).slice(0, 10);
   }, [isBlood, rankings, bloodRankings]);
 
   // Streaks + longest match + max/min winning score

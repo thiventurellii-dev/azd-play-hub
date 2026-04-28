@@ -472,7 +472,7 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
                   <div className="flex-1 flex items-center justify-center">
                     <div className="flex gap-2 w-full max-w-[420px]">
                       <div className="flex flex-col justify-around text-[10px] text-muted-foreground py-4 w-6">
-                        {["0h", "6h", "12h", "18h"].map((h) => <span key={h}>{h}</span>)}
+                        {["0-12h", "12-18h", "18-21h", "21-24h"].map((h) => <span key={h}>{h}</span>)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-muted-foreground mb-1">

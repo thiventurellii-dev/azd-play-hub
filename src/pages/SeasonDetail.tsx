@@ -309,6 +309,13 @@ const SeasonDetail = () => {
   const isBlood = season?.type === "blood";
   const liveStatus = season ? computeStatus(season.start_date, season.end_date) : "upcoming";
 
+  const hasFactions = useMemo(() => {
+    if (isBlood) return true;
+    const hasArr = (f: any) => Array.isArray(f) && f.length > 0;
+    if (selectedGameId !== "all") return hasArr(gameFactionsMap[selectedGameId]);
+    return Object.values(gameFactionsMap).some(hasArr);
+  }, [isBlood, selectedGameId, gameFactionsMap]);
+
   const kpis = useMemo(() => {
     if (!season) return { participants: 0, matchesCount: 0, winRate: 0, avgMmr: 0 };
     if (isBlood) {

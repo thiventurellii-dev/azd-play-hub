@@ -79,25 +79,25 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
       color: "",
     }));
     arr.sort((a, b) => factionSort === "winrate" ? b.winRate - a.winRate : b.count - a.count);
-    return arr.slice(0, 10).map((f, i) => ({ ...f, color: FACTION_COLORS[i % FACTION_COLORS.length] }));
+    return arr.slice(0, 15).map((f, i) => ({ ...f, color: FACTION_COLORS[i % FACTION_COLORS.length] }));
   }, [isBlood, matches, bloodMatches, factionSort]);
 
   const showFactions = hasFactions && (isBlood || factions.length > 0);
 
-  // Top winners (3)
+  // Top winners (10)
   const topWinners = useMemo(() => {
     if (isBlood) {
       return [...bloodRankings]
         .sort((a, b) => (b.wins_evil + b.wins_good) - (a.wins_evil + a.wins_good))
-        .slice(0, 3)
+        .slice(0, 10)
         .map((r) => ({ player_id: r.player_id, name: r.player_name, avatar_url: r.avatar_url, value: r.wins_evil + r.wins_good }));
     }
     return [...rankings]
-      .sort((a, b) => b.wins - a.wins).slice(0, 3)
+      .sort((a, b) => b.wins - a.wins).slice(0, 10)
       .map((r) => ({ player_id: r.player_id, name: r.player_name, avatar_url: r.avatar_url, value: r.wins }));
   }, [isBlood, rankings, bloodRankings]);
 
-  // Top win rate (3)
+  // Top win rate (10)
   const topWinRate = useMemo(() => {
     if (isBlood) {
       return [...bloodRankings]
@@ -107,12 +107,12 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
           const pct = games > 0 ? Math.round(((r.wins_evil + r.wins_good) / games) * 100) : 0;
           return { player_id: r.player_id, name: r.player_name, avatar_url: r.avatar_url, value: pct };
         })
-        .sort((a, b) => b.value - a.value).slice(0, 3);
+        .sort((a, b) => b.value - a.value).slice(0, 10);
     }
     return [...rankings]
       .filter((r) => r.games_played >= 3)
       .map((r) => ({ player_id: r.player_id, name: r.player_name, avatar_url: r.avatar_url, value: Math.round((r.wins / r.games_played) * 100) }))
-      .sort((a, b) => b.value - a.value).slice(0, 3);
+      .sort((a, b) => b.value - a.value).slice(0, 10);
   }, [isBlood, rankings, bloodRankings]);
 
   // Streaks + longest match + max/min winning score
@@ -124,7 +124,7 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
           longest = { duration: m.duration_minutes || 0, label: m.script_name };
         }
       }
-      return { winStreak: null, longest, maxScore: null, minScore: null };
+      return { winStreak: null, longest, maxScore: null, minScore: null, avgWinScore: null as number | null };
     }
     let longest = { duration: 0, label: "" };
     for (const m of matches) {
@@ -134,14 +134,18 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
     }
     let maxScore = { value: 0, name: "—" };
     let minScore: { value: number; name: string } | null = null;
+    const winScores: number[] = [];
     for (const m of matches) {
       const winner = m.results.find((r) => r.position === 1);
       if (winner) {
-        if ((winner.score || 0) > maxScore.value) maxScore = { value: winner.score, name: winner.player_name };
-        if (minScore === null || (winner.score || 0) < minScore.value) minScore = { value: winner.score || 0, name: winner.player_name };
+        const v = winner.score || 0;
+        winScores.push(v);
+        if (v > maxScore.value) maxScore = { value: v, name: winner.player_name };
+        if (minScore === null || v < minScore.value) minScore = { value: v, name: winner.player_name };
       }
     }
-    return { winStreak: null, longest, maxScore, minScore };
+    const avgWinScore = winScores.length > 0 ? Math.round(winScores.reduce((a, b) => a + b, 0) / winScores.length) : null;
+    return { winStreak: null, longest, maxScore, minScore, avgWinScore };
   }, [isBlood, matches, bloodMatches]);
 
   // Platform stats
@@ -294,6 +298,12 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
                       <p className="text-[11px] text-muted-foreground truncate mt-1">{otherStats.minScore?.name ?? "—"}</p>
                     </div>
                   </div>
+                  {otherStats.avgWinScore !== null && (
+                    <div className="text-center border-t border-border pt-3 mt-1">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Pontuação média de vitória</p>
+                      <p className="text-2xl font-bold text-gold leading-none">{otherStats.avgWinScore}</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ) : null}
@@ -357,11 +367,11 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
                       {platformStats.items.map((p, i) => {
                         const PLAT_HSL = ["hsl(var(--gold))", "hsl(217 91% 60%)", "hsl(280 70% 60%)", "hsl(160 71% 45%)", "hsl(330 70% 60%)", "hsl(20 80% 55%)", "hsl(180 60% 50%)", "hsl(0 72% 55%)"];
                         return (
-                          <div key={p.name} className="flex items-center gap-1.5 text-xs">
+                          <div key={p.name} className="flex items-center gap-1.5 text-xs tabular-nums">
                             <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: PLAT_HSL[i % PLAT_HSL.length] }} />
                             <span className="text-muted-foreground truncate">{p.name}</span>
-                            <span className="ml-auto font-semibold text-foreground">{p.pct}%</span>
-                            <span className="text-muted-foreground">({p.count})</span>
+                            <span className="ml-auto font-semibold text-foreground text-right w-10">{p.pct}%</span>
+                            <span className="text-muted-foreground text-right w-10">({p.count})</span>
                           </div>
                         );
                       })}
@@ -409,11 +419,11 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
                     })()}
                     <div className="flex-1 space-y-1 min-w-0">
                       {positionStats.slices.map((s) => (
-                        <div key={s.position} className="flex items-center gap-1.5 text-xs" title={`${s.count} vitórias em ${s.played} partidas no assento ${s.position}`}>
+                        <div key={s.position} className="flex items-center gap-1.5 text-xs tabular-nums" title={`${s.count} vitórias em ${s.played} partidas no assento ${s.position}`}>
                           <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
                           <span className="text-muted-foreground flex-shrink-0">{s.position}ª assento</span>
-                          <span className="ml-auto font-semibold text-foreground">{s.count} vit</span>
-                          <span className="text-muted-foreground">({s.pct}%)</span>
+                          <span className="ml-auto font-semibold text-foreground text-right w-12">{s.count} vit</span>
+                          <span className="text-muted-foreground text-right w-10">({s.pct}%)</span>
                         </div>
                       ))}
                     </div>

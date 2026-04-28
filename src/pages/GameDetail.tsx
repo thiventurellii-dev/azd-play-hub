@@ -11,7 +11,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import {
   ExternalLink, Video, ArrowLeft, Users, Clock, Trash2, Hash,
-  Trophy, ChevronDown, ChevronUp, Flag,
+  Trophy, ChevronDown, ChevronUp, Flag, Calendar,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
@@ -24,35 +24,9 @@ import { FavoriteButton } from "@/components/shared/FavoriteButton";
 import { SeasonStatsPanel } from "@/components/seasons/SeasonStatsPanel";
 import { GamePersonalStatsPanel } from "@/components/games/GamePersonalStatsPanel";
 import { EditActionButton } from "@/components/shared/EditActionButton";
+import { DateBlock } from "@/components/shared/DateBlock";
 import EditMatchDialog from "@/components/matches/EditMatchDialog";
 import type { MatchRecord } from "@/types/database";
-
-const HighlightCard = ({ title, items, suffix = "" }: { title: string; items: { id: string; name: string; avatar_url?: string | null; value: number | string }[]; suffix?: string }) => (
-  <Card className="bg-card border-border">
-    <CardContent className="py-4 space-y-2">
-      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
-      {items.length === 0 ? (
-        <p className="text-xs text-muted-foreground">—</p>
-      ) : (
-        <div className="space-y-1.5">
-          {items.map((it, i) => (
-            <div key={it.id || i} className="flex items-center justify-between gap-2 text-sm min-w-0">
-              <div className="flex items-center gap-2 min-w-0 flex-1">
-                <span className="text-muted-foreground text-xs w-3 flex-shrink-0">{i + 1}</span>
-                <Avatar className="h-5 w-5 flex-shrink-0">
-                  {it.avatar_url && <AvatarImage src={it.avatar_url} alt={it.name} />}
-                  <AvatarFallback className="text-[9px] bg-secondary">{it.name.charAt(0).toUpperCase()}</AvatarFallback>
-                </Avatar>
-                <span className="truncate min-w-0">{it.name}</span>
-              </div>
-              <span className="font-bold text-gold flex-shrink-0">{it.value}{suffix}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </CardContent>
-  </Card>
-);
 
 const GameDetail = () => {
   const { slug } = useParams();
@@ -310,19 +284,50 @@ const GameDetail = () => {
 
           {/* OVERVIEW */}
           <TabsContent value="overview" className="mt-6 space-y-6">
-            {/* Destaques */}
-            <div className="space-y-3">
-              <div>
-                <h3 className="text-base font-semibold">Destaques</h3>
-                <p className="text-xs text-muted-foreground">Jogadores que mais se destacaram neste jogo</p>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <HighlightCard title="Mais vitórias" items={highlights.mostWins} />
-                <HighlightCard title="Maior win rate" items={highlights.topWinRate} suffix="%" />
-                <HighlightCard title="Mais partidas" items={highlights.mostGames} />
-                <HighlightCard title="Maior sequência de vitórias" items={highlights.longestStreak} />
-              </div>
-            </div>
+            {/* KPI banner — métricas que NÃO se repetem em "Estatísticas do jogo" */}
+            {totalMatches > 0 && (() => {
+              const uniquePlayersCount = Object.keys(pMap).length;
+              const longestStreakValue = highlights.longestStreak[0]?.value ?? 0;
+              const longestStreakName = highlights.longestStreak[0]?.name ?? "—";
+              const lastDate = [...allMatches].sort((a, b) => b.played_at.localeCompare(a.played_at))[0]?.played_at;
+              const lastLabel = lastDate ? new Date(lastDate).toLocaleDateString("pt-BR", { month: "short", year: "numeric" }) : "—";
+              return (
+                <Card className="bg-card border-border">
+                  <CardContent className="py-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 divide-y md:divide-y-0 md:divide-x divide-border">
+                      <div className="flex items-center gap-3 px-2">
+                        <Trophy className="h-7 w-7 text-gold flex-shrink-0" />
+                        <div>
+                          <p className="text-xl font-bold leading-none tabular-nums">{totalMatches}</p>
+                          <p className="text-xs text-muted-foreground mt-1">Total de Partidas</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 px-2 pt-4 md:pt-0">
+                        <Users className="h-7 w-7 text-gold flex-shrink-0" />
+                        <div>
+                          <p className="text-xl font-bold leading-none tabular-nums">{uniquePlayersCount}</p>
+                          <p className="text-xs text-muted-foreground mt-1">Jogadores únicos</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 px-2 pt-4 md:pt-0">
+                        <span className="text-2xl flex-shrink-0">🔥</span>
+                        <div className="min-w-0">
+                          <p className="text-xl font-bold leading-none tabular-nums">{longestStreakValue}</p>
+                          <p className="text-xs text-muted-foreground mt-1 truncate">Maior sequência {longestStreakValue > 0 ? `· ${longestStreakName}` : ""}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 px-2 pt-4 md:pt-0">
+                        <Calendar className="h-7 w-7 text-gold flex-shrink-0" />
+                        <div>
+                          <p className="text-xl font-bold leading-none capitalize">{lastLabel}</p>
+                          <p className="text-xs text-muted-foreground mt-1">Última partida</p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })()}
 
             {/* Estatísticas detalhadas (reaproveita SeasonStatsPanel) */}
             {statsMatches.length > 0 && (
@@ -411,32 +416,35 @@ const GameDetail = () => {
                     <Card key={m.id} className="bg-card border-border hover:border-gold/20 transition-colors cursor-pointer"
                       onClick={() => setExpandedMatch(isExpanded ? null : m.id)}>
                       <CardContent className="py-4 space-y-3">
-                        <div className="flex items-center justify-between flex-wrap gap-2">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Badge variant="outline">{game.name}</Badge>
-                            {isCompetitive ? (
-                              <Badge variant="outline" className="text-xs border-gold/40 text-gold">Competitiva</Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-xs">Casual</Badge>
-                            )}
-                            {winner && <span className="text-sm font-medium text-gold flex items-center gap-1"><Trophy className="h-3.5 w-3.5" /> {winner.player_name}</span>}
-                            {m.duration_minutes && (
-                              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                <Clock className="h-3 w-3" /> {m.duration_minutes} min
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                            <span className="text-xs text-muted-foreground">{new Date(m.played_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</span>
-                            <EditActionButton entityType="match" onClick={() => { setEditMatch(m); setEditMatchOpen(true); }} />
-                            <button
-                              type="button"
-                              className="text-muted-foreground"
-                              onClick={() => setExpandedMatch(isExpanded ? null : m.id)}
-                              aria-label={isExpanded ? "Recolher" : "Expandir"}
-                            >
-                              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                            </button>
+                        <div className="flex items-center gap-3">
+                          <DateBlock date={m.played_at} />
+                          <div className="flex-1 min-w-0 flex items-center justify-between flex-wrap gap-2">
+                            <div className="flex items-center gap-2 flex-wrap min-w-0">
+                              <Badge variant="outline">{game.name}</Badge>
+                              {isCompetitive ? (
+                                <Badge variant="outline" className="text-xs border-gold/40 text-gold">Competitiva</Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-xs">Casual</Badge>
+                              )}
+                              {winner && <span className="text-sm font-medium text-gold flex items-center gap-1"><Trophy className="h-3.5 w-3.5" /> {winner.player_name}</span>}
+                              {m.duration_minutes && (
+                                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                  <Clock className="h-3 w-3" /> {m.duration_minutes} min
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                              <span className="text-[11px] text-muted-foreground tabular-nums">{new Date(m.played_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
+                              <EditActionButton entityType="match" onClick={() => { setEditMatch(m); setEditMatchOpen(true); }} />
+                              <button
+                                type="button"
+                                className="text-muted-foreground"
+                                onClick={() => setExpandedMatch(isExpanded ? null : m.id)}
+                                aria-label={isExpanded ? "Recolher" : "Expandir"}
+                              >
+                                {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                              </button>
+                            </div>
                           </div>
                         </div>
                         {isExpanded && (

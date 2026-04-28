@@ -367,11 +367,11 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
                       {platformStats.items.map((p, i) => {
                         const PLAT_HSL = ["hsl(var(--gold))", "hsl(217 91% 60%)", "hsl(280 70% 60%)", "hsl(160 71% 45%)", "hsl(330 70% 60%)", "hsl(20 80% 55%)", "hsl(180 60% 50%)", "hsl(0 72% 55%)"];
                         return (
-                          <div key={p.name} className="flex items-center gap-1.5 text-xs">
+                          <div key={p.name} className="flex items-center gap-1.5 text-xs tabular-nums">
                             <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: PLAT_HSL[i % PLAT_HSL.length] }} />
                             <span className="text-muted-foreground truncate">{p.name}</span>
-                            <span className="ml-auto font-semibold text-foreground">{p.pct}%</span>
-                            <span className="text-muted-foreground">({p.count})</span>
+                            <span className="ml-auto font-semibold text-foreground text-right w-10">{p.pct}%</span>
+                            <span className="text-muted-foreground text-right w-10">({p.count})</span>
                           </div>
                         );
                       })}

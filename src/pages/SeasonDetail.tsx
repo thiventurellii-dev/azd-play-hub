@@ -21,6 +21,7 @@ import type {
 import { useNotification } from "@/components/NotificationDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { SeasonStatsPanel } from "@/components/seasons/SeasonStatsPanel";
+import { DateBlock } from "@/components/shared/DateBlock";
 
 const statusColors: Record<string, string> = {
   active: "bg-green-500/20 text-green-400 border-green-500/30",

@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trophy, TrendingUp, Hash, Flame, Armchair, Swords } from "lucide-react";
+import { Trophy, TrendingUp, Hash, Flame, Armchair, Swords, Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface MatchLite { id: string; played_at: string; }
@@ -22,13 +22,29 @@ interface Props {
   avatarMap: Record<string, string | null>;
 }
 
-const KpiCard = ({ icon: Icon, value, label, sub }: { icon: any; value: string | number; label: string; sub?: string }) => (
-  <Card className="bg-card border-border">
-    <CardContent className="pt-5 pb-5 text-center">
-      <Icon className="h-7 w-7 mx-auto text-gold mb-1.5" />
-      <p className="text-2xl font-bold leading-none">{value}</p>
-      <p className="text-xs text-muted-foreground mt-1">{label}</p>
-      {sub && <p className="text-[11px] text-muted-foreground mt-0.5">{sub}</p>}
+// ============== sub-components ==============
+
+const StatCard = ({
+  icon: Icon,
+  iconNode,
+  value,
+  label,
+  sub,
+  highlight = false,
+}: {
+  icon?: any;
+  iconNode?: React.ReactNode;
+  value: string | number;
+  label: string;
+  sub?: string;
+  highlight?: boolean;
+}) => (
+  <Card className={`bg-card border-border ${highlight ? "ring-1 ring-gold/30" : ""}`}>
+    <CardContent className="py-5 flex flex-col items-center justify-center text-center gap-1.5 h-full">
+      {iconNode ? iconNode : Icon && <Icon className="h-6 w-6 text-gold" />}
+      <p className="text-3xl font-bold leading-none tabular-nums">{value}</p>
+      <p className="text-xs text-muted-foreground">{label}</p>
+      {sub && <p className="text-[11px] text-muted-foreground/80">{sub}</p>}
     </CardContent>
   </Card>
 );
@@ -37,8 +53,8 @@ const KpiCard = ({ icon: Icon, value, label, sub }: { icon: any; value: string |
 const WinRateDonut = ({ wins, losses }: { wins: number; losses: number }) => {
   const total = wins + losses;
   const pct = total > 0 ? wins / total : 0;
-  const size = 180;
-  const stroke = 16;
+  const size = 120;
+  const stroke = 12;
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const dash = c * pct;
@@ -59,14 +75,14 @@ const WinRateDonut = ({ wins, losses }: { wins: number; losses: number }) => {
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-3xl font-bold text-gold leading-none">{Math.round(pct * 100)}%</span>
-        <span className="text-[11px] uppercase tracking-wider text-muted-foreground mt-1">Win rate</span>
+        <span className="text-2xl font-bold text-gold leading-none">{Math.round(pct * 100)}%</span>
+        <span className="text-[9px] uppercase tracking-wider text-muted-foreground mt-1">Win rate</span>
       </div>
     </div>
   );
 };
 
-// Faction pills as a colorful tile grid with mini-donut
+// Faction tile with mini-donut
 const FactionTile = ({ name, games, wins, winPct, color }: { name: string; games: number; wins: number; winPct: number; color: string }) => {
   const r = 18;
   const c = 2 * Math.PI * r;
@@ -89,35 +105,33 @@ const FactionTile = ({ name, games, wins, winPct, color }: { name: string; games
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-[10px] font-bold">{winPct}%</span>
+          <span className="text-[10px] font-bold tabular-nums">{winPct}%</span>
         </div>
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium truncate">{name}</p>
-        <p className="text-[11px] text-muted-foreground">{wins}/{games} {games === 1 ? "partida" : "partidas"}</p>
+        <p className="text-[11px] text-muted-foreground tabular-nums">{wins}/{games} {games === 1 ? "partida" : "partidas"}</p>
       </div>
     </div>
   );
 };
 
-// Seat layout: round table with seats positioned around it
+// Round table with seats around it
 const SeatTable = ({ seats }: { seats: { seat: number; games: number; wins: number; winPct: number }[] }) => {
   if (seats.length === 0) return null;
   const max = Math.max(...seats.map((s) => s.seat));
-  const tableSize = 220;
+  const tableSize = 200;
   const seatSize = 54;
   const radius = tableSize / 2 - 4;
   return (
     <div className="flex flex-col items-center gap-2">
       <div className="relative" style={{ width: tableSize + seatSize, height: tableSize + seatSize }}>
-        {/* Table */}
         <div
           className="absolute rounded-full border-2 border-gold/30 bg-gradient-to-br from-secondary/40 to-secondary/10 flex items-center justify-center"
           style={{ width: tableSize, height: tableSize, left: seatSize / 2, top: seatSize / 2 }}
         >
           <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Mesa</span>
         </div>
-        {/* Seats */}
         {seats.map((s, i) => {
           const angle = (i / seats.length) * 2 * Math.PI - Math.PI / 2;
           const cx = (tableSize + seatSize) / 2 + radius * Math.cos(angle) - seatSize / 2;
@@ -127,7 +141,7 @@ const SeatTable = ({ seats }: { seats: { seat: number; games: number; wins: numb
           return (
             <div
               key={s.seat}
-              className="absolute rounded-full border border-gold/40 flex flex-col items-center justify-center text-center shadow-md"
+              className="absolute rounded-full border border-gold/40 flex flex-col items-center justify-center text-center shadow-md tabular-nums"
               style={{ width: seatSize, height: seatSize, left: cx, top: cy, background: bg }}
               title={`Assento ${s.seat}: ${s.wins}/${s.games} (${s.winPct}%)`}
             >
@@ -153,6 +167,8 @@ const FACTION_COLORS = [
   "hsl(190 90% 50%)",
   "hsl(0 84% 60%)",
 ];
+
+// ============== main panel ==============
 
 export const GamePersonalStatsPanel = ({ matches, results, playerMap, avatarMap }: Props) => {
   const { user } = useAuth();
@@ -252,8 +268,35 @@ export const GamePersonalStatsPanel = ({ matches, results, playerMap, avatarMap 
       pct: games > 0 ? Math.round((count / games) * 100) : 0,
     }));
 
-    return { games, wins, losses, winPct, avgScore, bestScore, bestStreak, currentStreak, factions, seats, positions };
-  }, [playerId, results, matches]);
+    // Top opponents (most-played-with players, excluding self)
+    const oppCount: Record<string, { games: number; wins: number; losses: number }> = {};
+    const myMatchIds = new Set(myResults.map((r) => r.match_id));
+    for (const r of results) {
+      if (!myMatchIds.has(r.match_id)) continue;
+      if (r.player_id === playerId) continue;
+      if (!oppCount[r.player_id]) oppCount[r.player_id] = { games: 0, wins: 0, losses: 0 };
+      oppCount[r.player_id].games++;
+      // I beat them if my position < their position in same match
+      const myRow = myResults.find((mr) => mr.match_id === r.match_id);
+      if (myRow && myRow.position < r.position) oppCount[r.player_id].wins++;
+      else if (myRow && myRow.position > r.position) oppCount[r.player_id].losses++;
+    }
+    const topOpponents = Object.entries(oppCount)
+      .map(([pid, s]) => ({
+        id: pid,
+        name: playerMap[pid] || "?",
+        avatar_url: avatarMap[pid] || null,
+        ...s,
+        winPct: s.games > 0 ? Math.round((s.wins / s.games) * 100) : 0,
+      }))
+      .sort((a, b) => b.games - a.games)
+      .slice(0, 8);
+
+    return { games, wins, losses, winPct, avgScore, bestScore, bestStreak, currentStreak, factions, seats, positions, topOpponents };
+  }, [playerId, results, matches, playerMap, avatarMap]);
+
+  // Selected player display data
+  const selectedPlayer = availablePlayers.find((p) => p.id === playerId);
 
   return (
     <div className="space-y-4">
@@ -264,7 +307,17 @@ export const GamePersonalStatsPanel = ({ matches, results, playerMap, avatarMap 
             <span className="text-xs text-muted-foreground">Jogador:</span>
             <Select value={playerId} onValueChange={setSelectedId}>
               <SelectTrigger className="w-[220px] h-9">
-                <SelectValue placeholder="Selecione..." />
+                <SelectValue placeholder="Selecione...">
+                  {selectedPlayer && (
+                    <span className="inline-flex items-center gap-2">
+                      <Avatar className="h-5 w-5">
+                        {selectedPlayer.avatar_url && <AvatarImage src={selectedPlayer.avatar_url} alt={selectedPlayer.name} />}
+                        <AvatarFallback className="text-[9px] bg-secondary">{selectedPlayer.name.charAt(0).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      {selectedPlayer.name}
+                    </span>
+                  )}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {availablePlayers.map((p) => (
@@ -296,47 +349,45 @@ export const GamePersonalStatsPanel = ({ matches, results, playerMap, avatarMap 
         </Card>
       ) : (
         <div className="space-y-4">
-          {/* Hero row: donut + KPI cards */}
-          <div className="grid gap-4 lg:grid-cols-[auto_1fr]">
-            <Card className="bg-card border-border">
-              <CardContent className="py-6 flex flex-col items-center gap-3">
+          {/* HERO ROW: 5 KPIs in a single line, donut as the "big" card */}
+          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5">
+            {/* Donut card */}
+            <Card className="bg-card border-border ring-1 ring-gold/30">
+              <CardContent className="py-5 flex flex-col items-center justify-center gap-2 h-full">
                 <WinRateDonut wins={stats.wins} losses={stats.losses} />
-                <div className="flex gap-4 text-xs">
-                  <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-gold" /> {stats.wins} vitórias</span>
-                  <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-secondary" /> {stats.losses} derrotas</span>
+                <div className="flex gap-3 text-[11px]">
+                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-gold" /> {stats.wins} vit</span>
+                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-secondary" /> {stats.losses} der</span>
                 </div>
               </CardContent>
             </Card>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <KpiCard icon={Hash} value={stats.games} label="Partidas" />
-              <KpiCard icon={TrendingUp} value={stats.avgScore} label="Pontuação média" sub={`Recorde: ${stats.bestScore}`} />
-              <KpiCard icon={Flame} value={stats.bestStreak} label="Maior sequência" sub={stats.currentStreak > 0 ? `Atual: ${stats.currentStreak}` : "Atual: 0"} />
-              <KpiCard icon={Trophy} value={stats.wins} label="Vitórias" sub={`${stats.winPct}% win rate`} />
-            </div>
+            <StatCard icon={Hash} value={stats.games} label="Partidas" />
+            <StatCard icon={TrendingUp} value={stats.avgScore} label="Pontuação média" sub={`Recorde: ${stats.bestScore}`} />
+            <StatCard icon={Flame} value={stats.bestStreak} label="Maior sequência" sub={`Atual: ${stats.currentStreak}`} />
+            <StatCard icon={Trophy} value={stats.wins} label="Vitórias" sub={`${stats.winPct}% win rate`} />
           </div>
 
-          {/* Position distribution as colored bars */}
+          {/* Position distribution as elegant horizontal bars */}
           <Card className="bg-card border-border">
-            <CardContent className="py-4 space-y-3">
+            <CardContent className="py-5 space-y-4">
               <div>
                 <p className="text-sm font-semibold">Distribuição de posições</p>
                 <p className="text-xs text-muted-foreground">Em quantas partidas terminou em cada lugar</p>
               </div>
-              <div className="flex items-end gap-2 h-32">
+              <div className="grid grid-cols-4 gap-3">
                 {stats.positions.map((p, i) => {
-                  const max = Math.max(...stats.positions.map((x) => x.count), 1);
-                  const h = (p.count / max) * 100;
                   const colors = ["hsl(var(--gold))", "hsl(217 91% 60%)", "hsl(25 95% 55%)", "hsl(var(--muted-foreground))"];
                   return (
-                    <div key={p.label} className="flex-1 flex flex-col items-center gap-1.5">
-                      <span className="text-xs font-bold">{p.count}</span>
-                      <div
-                        className="w-full rounded-t-md transition-all"
-                        style={{ height: `${Math.max(h, 4)}%`, background: colors[i] }}
-                      />
-                      <span className="text-[11px] text-muted-foreground">{p.label}</span>
-                      <span className="text-[10px] text-muted-foreground/70">{p.pct}%</span>
+                    <div key={p.label} className="rounded-lg border border-border bg-secondary/20 p-3 flex flex-col items-center text-center gap-2">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-bold tabular-nums">{p.count}</span>
+                        <span className="text-[10px] text-muted-foreground tabular-nums">/ {stats.games}</span>
+                      </div>
+                      <p className="text-xs font-semibold" style={{ color: colors[i] }}>{p.label}</p>
+                      <div className="w-full h-1.5 rounded-full bg-secondary overflow-hidden">
+                        <div className="h-full rounded-full transition-all" style={{ width: `${p.pct}%`, background: colors[i] }} />
+                      </div>
+                      <p className="text-[10px] text-muted-foreground tabular-nums">{p.pct}%</p>
                     </div>
                   );
                 })}
@@ -344,12 +395,54 @@ export const GamePersonalStatsPanel = ({ matches, results, playerMap, avatarMap 
             </CardContent>
           </Card>
 
-          {/* Factions + Seats grid */}
+          {/* Top opponents — players you faced the most */}
+          {stats.topOpponents.length > 0 && (
+            <Card className="bg-card border-border">
+              <CardContent className="py-5 space-y-4">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-gold" />
+                  <div>
+                    <p className="text-sm font-semibold">Jogadores Principais</p>
+                    <p className="text-xs text-muted-foreground">Com quem mais jogou este jogo</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {(() => {
+                    const max = Math.max(...stats.topOpponents.map((o) => o.games), 1);
+                    return stats.topOpponents.map((o) => {
+                      const pct = (o.games / max) * 100;
+                      return (
+                        <div key={o.id} className="flex items-center gap-3 text-sm">
+                          <Avatar className="h-7 w-7 flex-shrink-0">
+                            {o.avatar_url && <AvatarImage src={o.avatar_url} alt={o.name} />}
+                            <AvatarFallback className="text-[10px] bg-secondary">{o.name.charAt(0).toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <span className="font-medium truncate">{o.name}</span>
+                              <span className="text-xs text-muted-foreground tabular-nums flex-shrink-0">
+                                <span className="font-semibold text-foreground">{o.games}</span> partidas · {o.wins}V · {o.losses}D · <span className="text-gold font-semibold">{o.winPct}%</span>
+                              </span>
+                            </div>
+                            <div className="h-2 rounded-full bg-secondary overflow-hidden">
+                              <div className="h-full rounded-full bg-gradient-to-r from-gold/80 to-gold transition-all" style={{ width: `${pct}%` }} />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Factions + Seats */}
           {(stats.factions.length > 0 || stats.seats.length > 0) && (
             <div className="grid gap-4 lg:grid-cols-2">
               {stats.factions.length > 0 && (
                 <Card className="bg-card border-border">
-                  <CardContent className="py-4 space-y-3">
+                  <CardContent className="py-5 space-y-3">
                     <div className="flex items-center gap-2">
                       <Swords className="h-4 w-4 text-gold" />
                       <div>
@@ -368,7 +461,7 @@ export const GamePersonalStatsPanel = ({ matches, results, playerMap, avatarMap 
 
               {stats.seats.length > 0 && (
                 <Card className="bg-card border-border">
-                  <CardContent className="py-4 space-y-3">
+                  <CardContent className="py-5 space-y-3 h-full">
                     <div className="flex items-center gap-2">
                       <Armchair className="h-4 w-4 text-gold" />
                       <div>

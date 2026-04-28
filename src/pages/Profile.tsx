@@ -13,10 +13,13 @@ import { useNotification } from '@/components/NotificationDialog';
 import { Pencil, Lock, Camera, Mail } from 'lucide-react';
 import { brazilianStates, citiesByState, pronounsOptions, countryCodes, formatPhone, unformatPhone } from '@/lib/brazil-data';
 import FriendsList from '@/components/friendlist/FriendsList';
+import XpBadge from '@/components/shared/XpBadge';
+import { useProfileCompletion } from '@/hooks/useProfileCompletion';
 
 const Profile = () => {
   const { user, role } = useAuth();
   const { notify } = useNotification();
+  useProfileCompletion();
   const [editing, setEditing] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const [form, setForm] = useState({ name: '', nickname: '', phone: '', country_code: '+55', state: '', city: '', birth_date: '', gender: '', pronouns: '', email: '' });
@@ -178,9 +181,15 @@ const Profile = () => {
               <div>
                 <CardTitle>{profile?.name || 'Sem nome'}</CardTitle>
                 {profile?.nickname && <p className="text-sm text-muted-foreground">@{profile.nickname}</p>}
-                <Badge className="mt-1" variant={role === 'admin' ? 'default' : 'secondary'}>
-                  {role === 'admin' ? 'Admin' : 'Player'}
-                </Badge>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  <Badge variant={role === 'admin' ? 'default' : 'secondary'}>
+                    {role === 'admin' ? 'Admin' : 'Player'}
+                  </Badge>
+                  <XpBadge userId={user?.id} variant="compact" />
+                </div>
+                <div className="mt-3 max-w-[260px]">
+                  <XpBadge userId={user?.id} variant="full" />
+                </div>
               </div>
             </div>
             <div className="flex flex-col gap-1.5 sm:flex-row sm:gap-2">

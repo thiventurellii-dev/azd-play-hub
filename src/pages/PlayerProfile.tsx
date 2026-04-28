@@ -27,6 +27,7 @@ import {
 } from "@/lib/brazil-data";
 import { Camera } from "lucide-react";
 import { useRef } from "react";
+import XpBadge from "@/components/shared/XpBadge";
 
 const CHART_COLORS = [
   "hsl(43, 100%, 50%)",
@@ -408,13 +409,17 @@ const PlayerProfile = () => {
                 )}
               </div>
               {profile.nickname && <p className="text-gold">@{profile.nickname}</p>}
-              <div className="flex items-center gap-2 justify-center sm:justify-start mt-2">
+              <div className="flex items-center gap-2 justify-center sm:justify-start mt-2 flex-wrap">
                 <Badge variant={role === "admin" ? "default" : "secondary"}>
                   {role === "admin" ? "Admin" : "Player"}
                 </Badge>
+                <XpBadge userId={profile.id} variant="compact" />
                 <span className="text-xs text-muted-foreground">
                   Desde {new Date(profile.created_at).toLocaleDateString("pt-BR")}
                 </span>
+              </div>
+              <div className="mt-3 max-w-[260px] mx-auto sm:mx-0">
+                <XpBadge userId={profile.id} variant="full" />
               </div>
             </div>
             <div className="flex items-center gap-2 flex-wrap justify-center">

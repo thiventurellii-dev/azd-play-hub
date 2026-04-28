@@ -665,7 +665,13 @@ const SeasonDetail = () => {
                             <motion.div key={r.player_id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}>
                               <div className={`grid grid-cols-[40px_1fr_70px_70px_70px_70px_70px_80px] gap-2 items-center px-4 py-3 rounded-lg border border-border hover:border-gold/20 transition-colors ${getBloodPrizeClass(i)}`}>
                                 <div className="flex items-center justify-center">{getRankIcon(i)}</div>
-                                <p className="font-semibold truncate">{r.player_name}</p>
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <Avatar className="h-6 w-6 flex-shrink-0">
+                                    {r.avatar_url && <AvatarImage src={r.avatar_url} alt={r.player_name} />}
+                                    <AvatarFallback className="text-[10px] bg-secondary">{r.player_name.charAt(0).toUpperCase()}</AvatarFallback>
+                                  </Avatar>
+                                  <p className="font-semibold truncate">{r.player_name}</p>
+                                </div>
                                 <p className="text-center text-sm">{r.games_played}</p>
                                 <p className="text-center text-sm text-red-400">{r.wins_evil}</p>
                                 <p className="text-center text-sm text-blue-400">{r.wins_good}</p>

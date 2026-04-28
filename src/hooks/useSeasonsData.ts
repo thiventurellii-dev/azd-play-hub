@@ -17,6 +17,8 @@ export interface SeasonItem {
   effective_cover_url: string | null;
   participants_count: number;
   champion_name: string | null;
+  champion_id: string | null;
+  champion_avatar_url: string | null;
 }
 
 const fetchSeasonsData = async () => {
@@ -88,9 +90,13 @@ const fetchSeasonsData = async () => {
   const championIds = Object.values(championBySeason).filter(Boolean).map((c) => c!.player_id);
   const uniqueChampionIds = [...new Set(championIds)];
   const championNames: Record<string, string> = {};
+  const championAvatars: Record<string, string | null> = {};
   if (uniqueChampionIds.length > 0) {
     const { data: profiles } = await supabase.rpc("get_public_profiles", { p_ids: uniqueChampionIds });
-    for (const p of (profiles || []) as any[]) championNames[p.id] = p.nickname || p.name || "?";
+    for (const p of (profiles || []) as any[]) {
+      championNames[p.id] = p.nickname || p.name || "?";
+      championAvatars[p.id] = p.avatar_url || null;
+    }
   }
 
   const seasons: SeasonItem[] = ((seasonsRes.data || []) as any[]).map((s) => {
@@ -106,6 +112,8 @@ const fetchSeasonsData = async () => {
       effective_cover_url: s.cover_url || fallbackImg || null,
       participants_count: participantsBySeason[s.id]?.size || 0,
       champion_name: champ ? championNames[champ.player_id] || null : null,
+      champion_id: champ?.player_id || null,
+      champion_avatar_url: champ ? championAvatars[champ.player_id] || null : null,
     };
   });
 

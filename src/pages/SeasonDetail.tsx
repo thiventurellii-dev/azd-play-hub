@@ -824,7 +824,11 @@ const SeasonDetail = () => {
                                 {m.results.map((r, i) => (
                                   <div key={i} className="flex items-center gap-3 text-sm p-2 rounded-lg bg-secondary/30">
                                     <Badge variant={r.position === 1 ? "default" : "secondary"} className={`w-8 justify-center ${r.position === 1 ? "bg-gold text-black" : ""}`}>{r.position}º</Badge>
-                                    <span className="flex-1 font-medium flex items-center gap-1">
+                                    <Avatar className="h-5 w-5 flex-shrink-0">
+                                      {avatarMap[r.player_id] && <AvatarImage src={avatarMap[r.player_id] || undefined} alt={r.player_name} />}
+                                      <AvatarFallback className="text-[9px] bg-secondary">{r.player_name.charAt(0).toUpperCase()}</AvatarFallback>
+                                    </Avatar>
+                                    <span className="flex-1 font-medium flex items-center gap-1 min-w-0 truncate">
                                       {r.player_name}
                                       {r.player_id === m.first_player_id && <Flag className="h-3.5 w-3.5 text-gold ml-1" />}
                                     </span>

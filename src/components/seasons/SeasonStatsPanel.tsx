@@ -153,19 +153,24 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
     return { winStreak, longest, maxScore };
   }, [isBlood, matches, bloodMatches]);
 
-  // Position distribution (non-Blood only)
+  // First-player finishing position distribution (non-Blood only)
+  // Mede: quando alguém começa a partida (1ª posição na mesa), em que colocação final terminou?
   const positionStats = useMemo(() => {
     if (isBlood) return null;
     const counts: Record<number, number> = {};
     let total = 0;
     let maxPos = 0;
     for (const m of matches) {
+      if (!m.first_player_id) continue;
+      const firstResult = m.results.find((r) => r.player_id === m.first_player_id);
+      if (!firstResult || typeof firstResult.position !== "number" || firstResult.position <= 0) continue;
+      const pos = firstResult.position;
+      counts[pos] = (counts[pos] || 0) + 1;
+      if (pos > maxPos) maxPos = pos;
+      total++;
+      // Track table size to know how many positions to display
       for (const r of m.results) {
-        if (typeof r.position === "number" && r.position > 0) {
-          counts[r.position] = (counts[r.position] || 0) + 1;
-          if (r.position > maxPos) maxPos = r.position;
-          total++;
-        }
+        if (typeof r.position === "number" && r.position > maxPos) maxPos = r.position;
       }
     }
     if (total === 0) return null;

@@ -396,6 +396,17 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
         <Input type="number" min="2" value={maxPlayers} onChange={e => setMaxPlayers(e.target.value)} />
       </div>
 
+      <div>
+        <Label>Local / Plataforma</Label>
+        <Select value={platform || "none"} onValueChange={v => setPlatform(v === "none" ? "" : v)}>
+          <SelectTrigger><SelectValue placeholder="Onde será jogado?" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">Não especificado</SelectItem>
+            {PLATFORM_OPTIONS.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+
       {isAdminMode && isEdit && (
         <div>
           <Label>Status (Admin)</Label>

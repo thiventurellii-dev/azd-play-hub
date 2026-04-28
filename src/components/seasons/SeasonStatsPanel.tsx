@@ -196,7 +196,7 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
         </Card>
       )}
 
-      <div className="grid gap-3 sm:grid-cols-2 items-stretch">
+      <div className="grid gap-3 grid-cols-1 items-stretch">
         <Card className="bg-card border-border">
           <CardContent className="py-4 flex flex-col gap-2 h-full">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Mais vitórias</p>

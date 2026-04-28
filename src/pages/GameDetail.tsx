@@ -311,19 +311,50 @@ const GameDetail = () => {
 
           {/* OVERVIEW */}
           <TabsContent value="overview" className="mt-6 space-y-6">
-            {/* Destaques */}
-            <div className="space-y-3">
-              <div>
-                <h3 className="text-base font-semibold">Destaques</h3>
-                <p className="text-xs text-muted-foreground">Jogadores que mais se destacaram neste jogo</p>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <HighlightCard title="Mais vitórias" items={highlights.mostWins} />
-                <HighlightCard title="Maior win rate" items={highlights.topWinRate} suffix="%" />
-                <HighlightCard title="Mais partidas" items={highlights.mostGames} />
-                <HighlightCard title="Maior sequência de vitórias" items={highlights.longestStreak} />
-              </div>
-            </div>
+            {/* KPI banner — métricas que NÃO se repetem em "Estatísticas do jogo" */}
+            {totalMatches > 0 && (() => {
+              const uniquePlayersCount = Object.keys(pMap).length;
+              const longestStreakValue = highlights.longestStreak[0]?.value ?? 0;
+              const longestStreakName = highlights.longestStreak[0]?.name ?? "—";
+              const lastDate = [...allMatches].sort((a, b) => b.played_at.localeCompare(a.played_at))[0]?.played_at;
+              const lastLabel = lastDate ? new Date(lastDate).toLocaleDateString("pt-BR", { month: "short", year: "numeric" }) : "—";
+              return (
+                <Card className="bg-card border-border">
+                  <CardContent className="py-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 divide-y md:divide-y-0 md:divide-x divide-border">
+                      <div className="flex items-center gap-3 px-2">
+                        <Trophy className="h-7 w-7 text-gold flex-shrink-0" />
+                        <div>
+                          <p className="text-xl font-bold leading-none tabular-nums">{totalMatches}</p>
+                          <p className="text-xs text-muted-foreground mt-1">Total de Partidas</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 px-2 pt-4 md:pt-0">
+                        <Users className="h-7 w-7 text-gold flex-shrink-0" />
+                        <div>
+                          <p className="text-xl font-bold leading-none tabular-nums">{uniquePlayersCount}</p>
+                          <p className="text-xs text-muted-foreground mt-1">Jogadores únicos</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 px-2 pt-4 md:pt-0">
+                        <span className="text-2xl flex-shrink-0">🔥</span>
+                        <div className="min-w-0">
+                          <p className="text-xl font-bold leading-none tabular-nums">{longestStreakValue}</p>
+                          <p className="text-xs text-muted-foreground mt-1 truncate">Maior sequência {longestStreakValue > 0 ? `· ${longestStreakName}` : ""}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 px-2 pt-4 md:pt-0">
+                        <Calendar className="h-7 w-7 text-gold flex-shrink-0" />
+                        <div>
+                          <p className="text-xl font-bold leading-none capitalize">{lastLabel}</p>
+                          <p className="text-xs text-muted-foreground mt-1">Última partida</p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })()}
 
             {/* Estatísticas detalhadas (reaproveita SeasonStatsPanel) */}
             {statsMatches.length > 0 && (

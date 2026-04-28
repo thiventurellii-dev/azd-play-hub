@@ -220,6 +220,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
           season_id: selectedSeasonId || null,
           community_id: selectedCommunityId || null,
           community_only: !!selectedCommunityId && communityOnly,
+          room_type: category || 'boardgame',
           ...(isAdminMode && status ? { status: status as "open" | "full" | "in_progress" | "finished" | "cancelled" } : {}),
         };
 
@@ -247,6 +248,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
             season_id: selectedSeasonId || null,
             community_id: selectedCommunityId || null,
             community_only: !!selectedCommunityId && communityOnly,
+            room_type: category || 'boardgame',
           } as any)
           .select()
           .single();

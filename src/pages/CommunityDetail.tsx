@@ -334,6 +334,7 @@ const CommunityDetail = () => {
           </TabsContent>
         </Tabs>
       </div>
+      <EditCommunityDialog community={community} open={editOpen} onOpenChange={setEditOpen} />
     </>
   );
 };

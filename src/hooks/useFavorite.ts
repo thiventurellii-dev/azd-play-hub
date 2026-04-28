@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabaseExternal";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
-export type FavoriteEntityType = "game" | "blood_script" | "rpg_adventure";
+export type FavoriteEntityType = "game" | "blood_script" | "rpg_adventure" | "community";
 
 const cache = new Map<string, boolean>();
 const listeners = new Map<string, Set<(v: boolean) => void>>();
@@ -22,7 +22,6 @@ export function useFavorite(entityType: FavoriteEntityType, entityId?: string | 
   const [isFavorite, setIsFavorite] = useState<boolean>(key ? cache.get(key) ?? false : false);
   const [loading, setLoading] = useState(false);
 
-  // Subscribe to cache changes
   useEffect(() => {
     if (!key) return;
     const set = listeners.get(key) ?? new Set();
@@ -34,7 +33,6 @@ export function useFavorite(entityType: FavoriteEntityType, entityId?: string | 
     };
   }, [key]);
 
-  // Fetch initial state
   useEffect(() => {
     if (!user?.id || !entityId) return;
     if (cache.has(key!)) {
@@ -59,7 +57,7 @@ export function useFavorite(entityType: FavoriteEntityType, entityId?: string | 
     if (!entityId || !key) return;
     setLoading(true);
     const next = !isFavorite;
-    notify(key, next); // optimistic
+    notify(key, next);
     if (next) {
       const { error } = await supabase
         .from("user_favorites")

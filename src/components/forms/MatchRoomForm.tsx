@@ -27,6 +27,8 @@ export interface MatchRoomData {
   max_players: number;
   season_id?: string | null;
   blood_script_id?: string | null;
+  community_id?: string | null;
+  community_only?: boolean;
   game: { id: string; name: string; image_url: string | null };
 }
 
@@ -36,21 +38,32 @@ interface MatchRoomFormProps {
   onSuccess?: () => void;
 }
 
-const useFormOptions = (enabled: boolean) =>
+const useFormOptions = (enabled: boolean, userId?: string) =>
   useQuery({
-    queryKey: ["match-room-form-options"],
+    queryKey: ["match-room-form-options", userId],
     queryFn: async () => {
-      const [gamesRes, scriptsRes, tagsRes, seasonsRes] = await Promise.all([
+      const sb: any = supabase;
+      const [gamesRes, scriptsRes, tagsRes, seasonsRes, communitiesRes] = await Promise.all([
         supabase.from("games").select("id, name, slug, max_players").order("name"),
         supabase.from("blood_scripts").select("id, name").order("name"),
         supabase.from("room_tags").select("id, name").order("name"),
         supabase.from("seasons").select("id, name, status, type").in("status", ["active", "upcoming"]).order("name"),
+        userId
+          ? sb
+              .from("community_members")
+              .select("community_id, communities(id, name, slug)")
+              .eq("user_id", userId)
+              .eq("status", "active")
+          : Promise.resolve({ data: [] }),
       ]);
       return {
         games: (gamesRes.data ?? []) as Game[],
         scripts: (scriptsRes.data ?? []) as BloodScript[],
         tags: (tagsRes.data ?? []) as RoomTag[],
         seasons: (seasonsRes.data ?? []) as Season[],
+        communities: ((communitiesRes.data ?? []) as any[])
+          .map((r) => r.communities)
+          .filter(Boolean) as { id: string; name: string; slug: string }[],
       };
     },
     enabled,
@@ -92,11 +105,12 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
   const queryClient = useQueryClient();
   const isEdit = !!room;
 
-  const { data: options, isLoading: optionsLoading } = useFormOptions(true);
+  const { data: options, isLoading: optionsLoading } = useFormOptions(true, user?.id);
   const games = useMemo(() => options?.games ?? [], [options?.games]);
   const bloodScripts = useMemo(() => options?.scripts ?? [], [options?.scripts]);
   const availableTags = useMemo(() => options?.tags ?? [], [options?.tags]);
   const seasons = useMemo(() => options?.seasons ?? [], [options?.seasons]);
+  const userCommunities = useMemo(() => options?.communities ?? [], [options?.communities]);
 
   const [category, setCategory] = useState<"boardgame" | "botc" | "rpg" | "">("");
   const [gameId, setGameId] = useState("");
@@ -109,6 +123,8 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
   const [selectedScriptId, setSelectedScriptId] = useState("");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [selectedSeasonId, setSelectedSeasonId] = useState("");
+  const [selectedCommunityId, setSelectedCommunityId] = useState("");
+  const [communityOnly, setCommunityOnly] = useState(false);
   const [status, setStatus] = useState("");
 
   useEffect(() => {
@@ -122,6 +138,8 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
     setMaxPlayers(String(room.max_players ?? 10));
     setSelectedSeasonId(room.season_id ?? "");
     setSelectedScriptId(room.blood_script_id ?? "");
+    setSelectedCommunityId(room.community_id ?? "");
+    setCommunityOnly(!!room.community_only);
     setStatus("");
     const game = games.find(g => g.id === room.game?.id);
     if (game?.slug === "blood-on-the-clocktower") {
@@ -193,13 +211,15 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
       }
 
       if (isEdit && room) {
-        const updatePayload = {
+        const updatePayload: any = {
           game_id: finalGameId,
           title,
           description: finalDescription,
           scheduled_at: scheduledAt,
           max_players: parseInt(maxPlayers) || 10,
           season_id: selectedSeasonId || null,
+          community_id: selectedCommunityId || null,
+          community_only: !!selectedCommunityId && communityOnly,
           ...(isAdminMode && status ? { status: status as "open" | "full" | "in_progress" | "finished" | "cancelled" } : {}),
         };
 
@@ -225,7 +245,9 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
             status: "open",
             blood_script_id: isBotC ? selectedScriptId : null,
             season_id: selectedSeasonId || null,
-          })
+            community_id: selectedCommunityId || null,
+            community_only: !!selectedCommunityId && communityOnly,
+          } as any)
           .select()
           .single();
         if (error) throw error;
@@ -409,6 +431,32 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
               {filteredSeasons.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
             </SelectContent>
           </Select>
+        </div>
+      )}
+
+      {userCommunities.length > 0 && (
+        <div className="space-y-2">
+          <div>
+            <Label>Comunidade (opcional)</Label>
+            <Select value={selectedCommunityId || "none"} onValueChange={v => setSelectedCommunityId(v === "none" ? "" : v)}>
+              <SelectTrigger><SelectValue placeholder="Nenhuma" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Nenhuma</SelectItem>
+                {userCommunities.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          {selectedCommunityId && (
+            <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={communityOnly}
+                onChange={e => setCommunityOnly(e.target.checked)}
+                className="h-4 w-4 rounded border-border accent-gold"
+              />
+              Exclusiva para membros da comunidade
+            </label>
+          )}
         </div>
       )}
 

@@ -14,6 +14,7 @@ import {
   ChevronDown,
   LayoutGrid,
   Bell,
+  UsersRound,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -181,6 +182,12 @@ const Navbar = () => {
           <Link to="/partidas">
             <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
               <Calendar className="h-4 w-4" /> Partidas
+            </Button>
+          </Link>
+
+          <Link to="/comunidades">
+            <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
+              <UsersRound className="h-4 w-4" /> Comunidades
             </Button>
           </Link>
 

@@ -251,6 +251,20 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
               <div className="space-y-2"><Label>Hora *</Label><Input type="time" value={playedTime} onChange={e => setPlayedTime(e.target.value)} /></div>
               <div className="space-y-2"><Label>Duração (min)</Label><Input type="number" value={duration} onChange={e => setDuration(e.target.value)} placeholder="90" /></div>
             </div>
+            <div className="space-y-2">
+              <Label>Local / Plataforma</Label>
+              <Select value={platform || 'none'} onValueChange={v => setPlatform(v === 'none' ? '' : v)}>
+                <SelectTrigger><SelectValue placeholder="Onde foi jogado?" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Não especificado</SelectItem>
+                  <SelectItem value="Presencial">Presencial</SelectItem>
+                  <SelectItem value="Tabletop Simulator">Tabletop Simulator</SelectItem>
+                  <SelectItem value="BoardGame Arena">BoardGame Arena</SelectItem>
+                  <SelectItem value="Discord">Discord</SelectItem>
+                  <SelectItem value="Outro Online">Outro Online</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex justify-end">
               <Button variant="gold" onClick={() => setStep(2)} disabled={!seasonId || !scriptId || !playedDate || !playedTime}>
                 Próximo <ChevronRight className="h-4 w-4 ml-1" />

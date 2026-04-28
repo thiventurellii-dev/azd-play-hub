@@ -585,6 +585,16 @@ const SeasonDetail = () => {
               <CardContent className="py-4">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                   <TrendingUp className="h-4 w-4" /> Win Rate médio
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="O que é Win Rate médio?"><Info className="h-3.5 w-3.5 opacity-70 hover:opacity-100" /></button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-[240px] text-xs">
+                        Média da taxa de vitórias (vitórias ÷ partidas) de todos os participantes da temporada.
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 <p className="text-2xl font-bold text-gold">{kpis.winRate}%</p>
               </CardContent>
@@ -593,6 +603,18 @@ const SeasonDetail = () => {
               <CardContent className="py-4">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                   <TrendingUp className="h-4 w-4" /> {isBlood ? "Pontos médios" : "MMR médio"}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="O que é MMR médio?"><Info className="h-3.5 w-3.5 opacity-70 hover:opacity-100" /></button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-[240px] text-xs">
+                        {isBlood
+                          ? "Média de pontos acumulados pelos participantes da temporada."
+                          : "Média do MMR atual (matchmaking rating) de todos os participantes — indica a força média do grupo."}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 <p className="text-2xl font-bold text-gold">{kpis.avgMmr}</p>
               </CardContent>
@@ -604,8 +626,6 @@ const SeasonDetail = () => {
             <TabsList>
               <TabsTrigger value="ranking">Ranking</TabsTrigger>
               <TabsTrigger value="matches">Partidas</TabsTrigger>
-              <TabsTrigger value="stats">Estatísticas</TabsTrigger>
-              {!isBlood && <TabsTrigger value="games">Jogos</TabsTrigger>}
             </TabsList>
 
             <TabsContent value="ranking" className="space-y-4">

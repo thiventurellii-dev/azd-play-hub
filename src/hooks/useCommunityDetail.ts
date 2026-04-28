@@ -82,12 +82,13 @@ export const useCommunityRooms = (communityId?: string) =>
     queryKey: ["community-rooms", communityId],
     enabled: !!communityId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const query: any = supabase
         .from("match_rooms")
         .select("*, game:games(id, name, image_url, slug)")
-        .eq("community_id" as any, communityId!)
+        .eq("community_id", communityId!)
         .in("status", ["open", "full", "in_progress"])
         .order("scheduled_at", { ascending: true });
+      const { data, error } = await query;
       if (error) throw error;
       return data ?? [];
     },
@@ -98,11 +99,12 @@ export const useCommunitySeasons = (communityId?: string) =>
     queryKey: ["community-seasons", communityId],
     enabled: !!communityId,
     queryFn: async () => {
-      const { data, error } = await supabase
+      const query: any = supabase
         .from("seasons")
         .select("*")
-        .eq("community_id" as any, communityId!)
+        .eq("community_id", communityId!)
         .order("start_date", { ascending: false });
+      const { data, error } = await query;
       if (error) throw error;
       return data ?? [];
     },

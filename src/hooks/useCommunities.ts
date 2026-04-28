@@ -90,12 +90,13 @@ export const useGlobalCommunityStats = () =>
   useQuery({
     queryKey: ["communities-global-stats"],
     queryFn: async (): Promise<GlobalStats> => {
+      const sb: any = supabase;
       const [c, m, mt, bm, t] = await Promise.all([
-        supabase.from("communities" as any).select("id", { count: "exact", head: true }),
-        supabase.from("community_members" as any).select("id", { count: "exact", head: true }).eq("status", "active"),
-        supabase.from("matches").select("id", { count: "exact", head: true }).not("community_id" as any, "is", null),
-        supabase.from("blood_matches").select("id", { count: "exact", head: true }).not("community_id" as any, "is", null),
-        supabase.from("seasons").select("id", { count: "exact", head: true }).not("community_id" as any, "is", null),
+        sb.from("communities").select("id", { count: "exact", head: true }),
+        sb.from("community_members").select("id", { count: "exact", head: true }).eq("status", "active"),
+        sb.from("matches").select("id", { count: "exact", head: true }).not("community_id", "is", null),
+        sb.from("blood_matches").select("id", { count: "exact", head: true }).not("community_id", "is", null),
+        sb.from("seasons").select("id", { count: "exact", head: true }).not("community_id", "is", null),
       ]);
       return {
         communities: c.count ?? 0,

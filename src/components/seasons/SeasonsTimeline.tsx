@@ -15,16 +15,16 @@ const MONTHS_PT = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET"
 
 const startOfDay = (d: Date) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
 
-// Palette of distinct hues for seasons. Cycles by index.
+// Palette inspired by warm/muted reference: amber, soft purple, sage, steel blue
 const SEASON_PALETTE = [
-  "hsl(45 95% 55%)",   // gold
-  "hsl(280 70% 65%)",  // purple
-  "hsl(140 60% 50%)",  // green
-  "hsl(210 85% 60%)",  // blue
-  "hsl(15 85% 60%)",   // orange-red
-  "hsl(330 75% 60%)",  // pink
-  "hsl(180 65% 50%)",  // teal
-  "hsl(55 85% 55%)",   // yellow
+  "hsl(38 75% 52%)",   // amber/mustard
+  "hsl(280 35% 60%)",  // soft purple
+  "hsl(95 35% 42%)",   // sage/olive green
+  "hsl(215 55% 55%)",  // steel blue
+  "hsl(15 65% 55%)",   // terracotta
+  "hsl(330 40% 60%)",  // dusty pink
+  "hsl(180 35% 45%)",  // muted teal
+  "hsl(50 70% 55%)",   // soft yellow
 ];
 
 const colorFor = (s: SeasonItem, idx: number): string => {
@@ -267,6 +267,19 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
                     const participates = participatedIds.has(s.id);
                     const color = colorFor(s, idx);
 
+                    const barStyle: React.CSSProperties = {
+                      left: `${startPct}%`,
+                      width: `${widthPct}%`,
+                    };
+                    if (participates) {
+                      barStyle.backgroundColor = color;
+                    } else {
+                      // Hatched/striped pattern with transparent fill
+                      barStyle.backgroundColor = "transparent";
+                      barStyle.backgroundImage = `repeating-linear-gradient(135deg, ${color} 0 2px, transparent 2px 7px)`;
+                      barStyle.border = `1.5px solid ${color}`;
+                    }
+
                     return (
                       <div
                         key={s.id}
@@ -278,12 +291,7 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
                             "absolute top-1/2 -translate-y-1/2 h-4 rounded-full transition-all hover:brightness-110",
                             participates ? "shadow-[0_0_12px_rgba(255,255,255,0.15)]" : ""
                           )}
-                          style={{
-                            left: `${startPct}%`,
-                            width: `${widthPct}%`,
-                            backgroundColor: color,
-                            opacity: participates ? 1 : 0.35,
-                          }}
+                          style={barStyle}
                           title={`${s.name} — ${s.start_date} → ${s.end_date}`}
                         />
                       </div>

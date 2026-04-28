@@ -39,6 +39,7 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
   const [playedDate, setPlayedDate] = useState('');
   const [playedTime, setPlayedTime] = useState('');
   const [duration, setDuration] = useState('');
+  const [platform, setPlatform] = useState('');
 
   const [storytellerId, setStorytellerId] = useState('');
   const [evilPlayers, setEvilPlayers] = useState<BloodPlayerEntry[]>([{ player_id: '', character_id: '', team: 'evil' }]);

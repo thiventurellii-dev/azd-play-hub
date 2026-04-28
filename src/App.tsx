@@ -17,7 +17,7 @@ import SeasonDetail from "./pages/SeasonDetail.tsx";
 import Games from "./pages/Games.tsx";
 import Players from "./pages/Players.tsx";
 import Profile from "./pages/Profile.tsx";
-import Documents from "./pages/Documents.tsx";
+
 import Suggestions from "./pages/Suggestions.tsx";
 import Admin from "./pages/Admin.tsx";
 import NotFound from "./pages/NotFound.tsx";

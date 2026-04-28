@@ -1,80 +1,160 @@
-# Redesign da página /partidas
+# Sistema de Comunidades — Plano de Implementação
 
-Vamos transformar a página atual (cards em grid 2-3 colunas com tabs Abertas/Encerradas) na nova versão proposta: layout centrado em um **calendário-carousel** semanal com **linhas horizontais** de salas filtradas pelo dia selecionado. Toda a lógica existente (RLS, realtime, deep-link, criar sala, registrar resultado, comentários, MMR médio, tags, BotC) é preservada — muda apenas a apresentação e a navegação por data.
+## Visão geral
 
-## O que muda visualmente
+Comunidades são hubs/clãs que agrupam jogadores em torno de jogos, torneios e discussões. Toda partida, sala, torneio e discussão poderá (opcionalmente) pertencer a uma comunidade, possibilitando rankings internos, partidas exclusivas e identidade visual própria. Implementação faseada — começamos com o **núcleo (listagem + página da comunidade + membros + partidas vinculadas)** e deixamos torneios/discussões/mídia como fases seguintes.
 
-1. **Header** — mantém ícone + título + subtítulo, com `Registrar Resultado` (outline) e `Agendar Partida` (gold) no canto direito.
-2. **FilterBar horizontal compacta** — substitui a barra atual por uma única linha:
-  - Select de Jogo (com dropdown nativo estilizado).
-  - Chips toggle: Casual, Competitivo, Iniciante, Experiente, Novatos.
-  - Botão "Limpar filtros" só aparece quando há filtros ativos.
-3. **CalendarCarousel** — novo componente: 7 dias visíveis, "hoje" destacado, dia selecionado com borda dourada e fonte maior, contagem de salas por dia, dot dourado quando o dia tem salas do jogo filtrado, setas de navegação semanal e dots de paginação (4 semanas).
-4. **Lista de salas em linhas (`RoomRow`)** — substitui o card atual nesta página:
-  - Thumbnail do jogo à esquerda (imagem real do `games.image_url` quando existir, fallback para letra estilizada).
-  - Coluna de info: título + botão editar inline, jogo · Season, tags (Competitivo / nível / MMR médio), data/hora, barra de slots (verde / âmbar quando lotada).
-  - Coluna de jogadores: chips destacados — **dourado para o usuário logado**, **verde para amigos** (via tabela `friendships` com status `accepted`), neutro para os demais. Lista "Reserva" abaixo.
-  - Coluna de ações: Entrar / Sair / Na reserva / Reserva (lotada), Compartilhar (WhatsApp), Ver Resultados / Inserir Resultado, toggle de Comentários com contador.
-  - Painel de comentários expansível abaixo da linha (reusa `RoomComments` existente).
-  - Borda esquerda colorida pelo status (verde aberta, âmbar lotada, cinza encerrada, vermelho cancelada).
-5. **Cabeçalho do dia** — "Domingo, 27 de Abril" + badge HOJE + contagem de salas.
-6. **Seção "Outras salas — [Jogo Favorito]"** — abaixo da lista do dia, mostra salas futuras abertas do jogo favorito do usuário (em outros dias). Só aparece se nenhum filtro de jogo estiver ativo.
-7. **Legenda** ao final: Amigos / Você / Sem destaque.
-8. **Mobile** — calendário vira scroll horizontal (snap), filtros viram drawer (já existe), linhas viram cards verticais empilhados (info → jogadores → ações).
+## Como integra com o que já existe
 
-## Funcionalidades novas que precisam de backend
 
-### A. Jogo favorito do usuário (necessário para a seção "Outras salas")
+| Sistema atual               | Integração                                                                                                                                                 | &nbsp; | &nbsp; |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ------ |
+| `match_rooms`               | Coluna opcional `community_id`. Salas podem ser "exclusivas da comunidade" (só membros entram) ou abertas.                                                 | &nbsp; | &nbsp; |
+| `matches` / `blood_matches` | Coluna opcional `community_id` (preenchida quando a sala que originou a partida tinha comunidade). Permite calcular "partidas realizadas pela comunidade". | &nbsp; | &nbsp; |
+| &nbsp;                      | &nbsp;                                                                                                                                                     | &nbsp; | &nbsp; |
+| `profiles`                  | Inalterado. Vínculo via tabela de membros.                                                                                                                 | &nbsp; | &nbsp; |
+| `seasons`                   | Coluna opcional `community_id` para torneios/temporadas internas (fase 2).                                                                                 | &nbsp; | &nbsp; |
+| `user_favorites`            | Reaproveitado: adicionamos `community` ao enum para permitir favoritar comunidades (estrela já vista nos mockups).                                         | &nbsp; | &nbsp; |
+| Sidebar / BottomNav         | Novo item "Comunidades" no nav principal e no drawer mobile.                                                                                               | &nbsp; | &nbsp; |
 
-Não existe `favorite_game_id` no schema atual. Duas opções:
 
-- **(recomendado)** adicionar coluna `favorite_game_id uuid references games(id)` em `profiles`, editável na página `/perfil`. 
-- alternativa sem migração: inferir o "favorito" como o jogo mais jogado pelo usuário nos últimos 90 dias via `match_results` (sem UI extra).
+## Arquitetura de dados (Supabase externo `npinawelxdtsrcvzzvvs`)
 
-### B. Destaque de amigos nos chips
+### Novas tabelas
 
-Já temos `friendships(user_id, friend_id, status)`. Vou buscar a lista de `accepted` do usuário logado uma vez no `MatchRooms.tsx` e propagar para os `RoomRow` via prop, para colorir os chips em verde.  [Alteração: Só colora as bordas de verde e não nome do jogador, se isso for possível, para ficar mais clean]
+`**communities**`
 
-### C. Filtragem por dia selecionado
+- `id` uuid pk
+- `slug` text unique
+- `name` text
+- `tagline` text — frase curta ("Jogar, competir e evoluir juntos")
+- `description` text
+- `logo_url` text — escudo/ícone
+- `cover_url` text — banner do header
+- `country` text default `'BR'`
+- `language` text default `'pt-BR'`
+- `visibility` enum `public|private|invite_only`
+- `join_policy` enum `open|approval|invite_only`
+- `community_type` enum `boardgame|botc|rpg|mixed`
+- `created_by` uuid
+- `created_at`, `updated_at`
 
-Puramente client-side sobre `rooms` já carregados — sem mudança de backend. O fetch atual continua trazendo todas as salas; agrupamos por `scheduled_at` no dia selecionado.
+`**community_members**`
 
-## Funcionalidades preservadas (sem alteração lógica)
+- `id`, `community_id`, `user_id`
+- `role` enum `leader|moderator|member`
+- `status` enum `active|pending|banned`
+- `xp` integer default 0 — alimenta "Membros em destaque" / Ranking interno
+- `joined_at`
 
-- Auto-finalizar salas vencidas.
-- Realtime + polling 15s.
-- Deep-link `?room=ID` continua abrindo o `MatchRoomCard` original em modal (não migra para `RoomRow` para preservar o fluxo).
-- `CreateRoomDialog`, `EditRoomDialog`, `NewMatchFlow`, `NewMatchBotcFlow`, `MatchResultModal`, `RoomComments`.
-- Permissões: criador/admin podem editar/cancelar/excluir; resultado só por participantes ou admin.
-- Notificações de entrada/saída/lotada/cancelada.
-- Cálculo de MMR médio para salas de Season.
+`**community_join_requests**` (quando `join_policy='approval'`)
 
-## Arquivos a criar / modificar
+- `id`, `community_id`, `user_id`, `message`, `status (pending|approved|rejected)`, `reviewed_by`, timestamps
 
-**Novos componentes:**
+`**community_tags**` + `**community_tag_links**`
 
-- `src/components/matchrooms/RoomRow.tsx` — linha horizontal completa com comentários inline.
-- `src/components/matchrooms/CalendarCarousel.tsx` — carousel de 7 dias com navegação semanal.
-- `src/components/matchrooms/RoomFilterBar.tsx` — barra compacta (select + chips).
+- Tags livres ("Estratégia", "Casual", "Competitivo") exibidas nos cards.
 
-**Modificados:**
+`**community_games**`
 
-- `src/pages/MatchRooms.tsx` — substitui Tabs/grid pelo novo layout (calendário + lista por dia + favoritos). Mantém estados de filtros, deep-link, modais.
-- `src/pages/Profile.tsx` — adiciona seletor de "Jogo favorito" (se optarmos pela opção A).
-- `src/components/forms/...` — campo extra no perfil (se opção A).
+- `community_id`, `game_id` — "Jogos principais" para o filtro da listagem.
 
-**Migração SQL (se opção A):**
+`**community_discussions**` (fase 2 — incluído no schema, UI fica para depois)
 
-```sql
-alter table public.profiles add column favorite_game_id uuid references public.games(id) on delete set null;
+- `id`, `community_id`, `author_id`, `title`, `body`, `game_id?`, `tags[]`, `views`, timestamps
+
+`**community_discussion_replies**` (fase 2)
+
+- `id`, `discussion_id`, `author_id`, `body`, timestamps
+
+### Alterações em tabelas existentes
+
+- `match_rooms`: adicionar `community_id uuid null` + `community_only bool default false`.
+- `matches`, `blood_matches`: adicionar `community_id uuid null` (preenchido por trigger ao fechar a sala).
+- `seasons`: adicionar `community_id uuid null` (torneios internos vs. globais).
+- `user_favorites`: estender enum `favorite_entity_type` com `'community'`.
+
+### RLS (resumo)
+
+- `communities`: SELECT público para `visibility='public'`; demais somente para membros ativos. UPDATE/DELETE só para `leader` (verificado via função `has_community_role(user, community, role)` SECURITY DEFINER, mesmo padrão do `has_role` para evitar recursão).
+- `community_members`: SELECT membros ativos da própria comunidade; INSERT pelo próprio usuário (com `status='pending'` quando `join_policy='approval'`); UPDATE/DELETE de outros membros só por leader/moderator.
+- `community_join_requests`: leader/moderator gerenciam; usuário vê as próprias.
+- `match_rooms` com `community_only=true`: SELECT/INSERT exigem ser membro ativo.
+
+### Função e view auxiliares
+
+- `has_community_role(_user uuid, _community uuid, _role text)` SECURITY DEFINER.
+- `community_stats` view: agrega contagem de membros, partidas, torneios e ranking geral por comunidade (consumida pela home e pelo card lateral "Comunidades populares").
+
+## Frontend
+
+### Rotas novas (App.tsx)
+
+- `/comunidades` → `Communities.tsx` (listagem — primeira imagem)
+- `/comunidades/:slug` → `CommunityDetail.tsx` (página da comunidade — segunda imagem)
+- `/comunidades/nova` → criação (modal/page) para usuários autenticados
+
+### Componentes novos
+
+```
+src/pages/
+  Communities.tsx
+  CommunityDetail.tsx
+src/components/communities/
+  CommunityCard.tsx              — usado em "destaque" e "todas as comunidades"
+  CommunityListRow.tsx           — variação enxuta da listagem
+  CommunityHero.tsx              — header com logo, cover, tags, botão editar
+  CommunityStatsRow.tsx          — 4 caixas (Membros, Partidas, Torneios, Ranking)
+  CommunityTabs.tsx              — Visão geral | Membros | Partidas | Torneios | Discussões | Mídia
+  CommunityUpcomingMatches.tsx   — reaproveita MatchRoomCard filtrado por community_id
+  CommunityActiveTournaments.tsx — fase 2 (placeholder no fase 1)
+  CommunityAboutCard.tsx         — descrição + regras principais
+  CommunityFeaturedMembers.tsx   — top 5 por XP com badge "Líder"
+  CommunityRecentActivity.tsx    — feed (joins, partidas criadas, etc.)
+  CommunityFiltersSidebar.tsx    — busca + jogos + idioma + tipo
+  CreateCommunityDialog.tsx
+  JoinCommunityButton.tsx        — comportamento depende de join_policy
+src/hooks/
+  useCommunities.ts              — listagem + filtros + paginação
+  useCommunityDetail.ts          — fetch agregado da comunidade + stats
+  useCommunityMembership.ts      — estado do usuário (membro? pendente? leader?)
 ```
 
-*(Lembrete: o banco em uso é o **externo** `npinawelxdtsrcvzzvvs` — a migração precisa ser rodada lá manualmente, não no Lovable Cloud.)*
+### Reaproveitamentos
 
-## Pergunta antes de implementar
+- `FavoriteButton` já cobrirá `entity_type='community'` (estrela ao lado do nome — visível nos mocks).
+- `MatchRoomCard` (já existe) usado em "Próximas partidas" da comunidade.
+- `EntityEditButton` / `EntitySheet` para o botão "Editar comunidade" (padrão das outras entidades).
+- `RankingCards` para o bloco de membros em destaque.
 
-1. **Jogo favorito** — você prefere (A) adicionar a coluna `favorite_game_id` no perfil + UI no `/perfil`, ou (B) inferir automaticamente pelo jogo mais jogado nos últimos 90 dias (sem migração nem UI extra)? [Resposta: A opção do Usuário marcar o jogo como favorito será através das páginas de Slugs dos jogos]
-2. **Tabs Abertas/Encerradas** — o redesign mostra apenas as salas do dia selecionado (passado, hoje ou futuro), eliminando as tabs. Confirmo essa remoção? [Resposta: Confirma]
-3. `**MatchRoomCard` antigo** — manter apenas para o modal de deep-link (`?room=ID`) e remover do listing principal. Ok? [Resposta: Ok]
+### Navegação
 
-Ao aprovar, eu implemento na ordem: (1) componentes novos, (2) integração em `MatchRooms.tsx`, (3) migração + UI de jogo favorito (se opção A), (4) QA visual.
+- Adicionar "Comunidades" ao `BottomNav` (substituindo provavelmente "Jogadores" no slot principal — confirmar) e ao drawer "Mais".
+- Adicionar entrada na `Navbar` desktop.
+
+## Fases sugeridas
+
+**Fase 1 — Núcleo (escopo deste plano para implementar agora)**
+
+- Migração SQL completa (tabelas, enums, RLS, função, view, alterações em `match_rooms`/`matches`/`blood_matches`/`seasons`/`user_favorites`).
+- Páginas `/comunidades` e `/comunidades/:slug` com: hero, stats, tabs **Visão geral + Membros + Partidas**.
+- Criação de comunidade, ingresso (open/approval), edição pelo líder.
+- Vínculo opcional ao criar `match_rooms` (campo "Comunidade" no `CreateRoomDialog`).
+- Filtro de comunidades + favoritar comunidade.
+
+**Fase 2 — depois de validar fase 1**
+
+- Aba Torneios (seasons internas) + Discussões + Mídia.
+- Feed de "Atividade recente" e "Membros em destaque" com XP automatizado por triggers.
+- Convites diretos, banimento, transferência de liderança.
+
+## Pontos para confirmar antes de implementar
+
+1. **Escopo da fase 1**: confirmo apenas Núcleo (Visão geral / Membros / Partidas), deixando Torneios/Discussões/Mídia como placeholders "Em breve" nas tabs? [Sim]
+2. **Slot no BottomNav mobile**: substituir "Jogadores" por "Comunidades", ou manter ambos (Comunidades vai para o drawer "Mais")? [Sim]
+3. **Vínculo de partidas**: ao criar uma sala dentro de uma comunidade, ela deve ser **sempre exclusiva** dos membros, ou o criador escolhe entre "exclusiva" vs. "aberta a todos com a tag da comunidade"? [Criador Escolhe]
+4. **Múltiplas comunidades por usuário**: usuário pode pertencer a várias (recomendado) — confirmar. [Sim]  
+  
+O sistema de XP vai ser Global e não atrelado especificamente a comunidade. Depois vamos pensar em um sistema para integrar isto.
+
+Após sua aprovação e respostas, sigo com a migração SQL no banco externo + implementação da fase 1.

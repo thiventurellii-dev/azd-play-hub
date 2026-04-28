@@ -10,6 +10,9 @@ import { useCommunityDetail, useCommunityRooms, useCommunitySeasons } from "@/ho
 import JoinCommunityButton from "@/components/communities/JoinCommunityButton";
 import { useCommunityMembership } from "@/hooks/useCommunityMembership";
 import DiscussionsTab from "@/components/communities/DiscussionsTab";
+import { useCommunityTopics } from "@/hooks/useCommunityDiscussions";
+import { MessageSquare } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 import EditCommunityDialog from "@/components/communities/EditCommunityDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";

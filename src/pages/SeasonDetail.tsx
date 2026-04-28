@@ -669,6 +669,7 @@ const SeasonDetail = () => {
             <TabsList>
               <TabsTrigger value="ranking">Ranking</TabsTrigger>
               <TabsTrigger value="matches">Partidas</TabsTrigger>
+              <TabsTrigger value="stats">Estatísticas</TabsTrigger>
             </TabsList>
 
             <TabsContent value="ranking" className="space-y-4">
@@ -686,61 +687,63 @@ const SeasonDetail = () => {
                 </Select>
               )}
 
-              <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
-                <div className="min-w-0">
-                  {isBlood ? (
-                    bloodRankings.length === 0 ? (
-                      <Card className="bg-card border-border"><CardContent className="py-12 text-center text-muted-foreground">Nenhum ranking disponível ainda.</CardContent></Card>
-                    ) : (
-                      <div className="overflow-x-auto">
-                        <div className="grid grid-cols-[40px_1fr_70px_70px_70px_70px_70px_80px] gap-2 px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          <span>#</span><span>Jogador</span>
-                          <span className="text-center">Partidas</span>
-                          <span className="text-center">V. Mal</span>
-                          <span className="text-center">V. Bem</span>
-                          <span className="text-center">% Vit.</span>
-                          <span className="text-center">Narr.</span>
-                          <span className="text-right">Pontos</span>
-                        </div>
-                        {bloodRankings.map((r, i) => {
-                          const { winPct } = getBloodWinStats(r);
-                          return (
-                            <motion.div key={r.player_id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}>
-                              <div className={`grid grid-cols-[40px_1fr_70px_70px_70px_70px_70px_80px] gap-2 items-center px-4 py-3 rounded-lg border border-border hover:border-gold/20 transition-colors ${getBloodPrizeClass(i)}`}>
-                                <div className="flex items-center justify-center">{getRankIcon(i)}</div>
-                                <div className="flex items-center gap-2 min-w-0">
-                                  <Avatar className="h-6 w-6 flex-shrink-0">
-                                    {r.avatar_url && <AvatarImage src={r.avatar_url} alt={r.player_name} />}
-                                    <AvatarFallback className="text-[10px] bg-secondary">{r.player_name.charAt(0).toUpperCase()}</AvatarFallback>
-                                  </Avatar>
-                                  <p className="font-semibold truncate">{r.player_name}</p>
-                                </div>
-                                <p className="text-center text-sm">{r.games_played}</p>
-                                <p className="text-center text-sm text-red-400">{r.wins_evil}</p>
-                                <p className="text-center text-sm text-blue-400">{r.wins_good}</p>
-                                <p className="text-center text-sm">{winPct}%</p>
-                                <p className="text-center text-sm text-muted-foreground">{r.games_as_storyteller}</p>
-                                <p className="text-right text-lg font-bold text-gold">{r.total_points}</p>
-                              </div>
-                            </motion.div>
-                          );
-                        })}
-                      </div>
-                    )
-                  ) : rankings.length === 0 ? (
+              <div className="min-w-0">
+                {isBlood ? (
+                  bloodRankings.length === 0 ? (
                     <Card className="bg-card border-border"><CardContent className="py-12 text-center text-muted-foreground">Nenhum ranking disponível ainda.</CardContent></Card>
                   ) : (
                     <div className="overflow-x-auto">
-                      <div className="grid grid-cols-[40px_1fr_80px_80px_80px_90px] gap-2 px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      <div className="grid grid-cols-[40px_1fr_70px_70px_70px_70px_70px_80px] gap-2 px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                         <span>#</span><span>Jogador</span>
                         <span className="text-center">Partidas</span>
-                        <span className="text-center">Vitórias</span>
-                        <span className="text-center">Win Rate</span>
-                        <span className="text-right">MMR</span>
+                        <span className="text-center">V. Mal</span>
+                        <span className="text-center">V. Bem</span>
+                        <span className="text-center">% Vit.</span>
+                        <span className="text-center">Narr.</span>
+                        <span className="text-right">Pontos</span>
                       </div>
-                      {rankings.map((r, i) => (
+                      {bloodRankings.map((r, i) => {
+                        const { winPct } = getBloodWinStats(r);
+                        return (
+                          <motion.div key={r.player_id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}>
+                            <div className={`grid grid-cols-[40px_1fr_70px_70px_70px_70px_70px_80px] gap-2 items-center px-4 py-3 rounded-lg border border-border hover:border-gold/20 transition-colors ${getBloodPrizeClass(i)}`}>
+                              <div className="flex items-center justify-center">{getRankIcon(i)}</div>
+                              <div className="flex items-center gap-2 min-w-0">
+                                <Avatar className="h-6 w-6 flex-shrink-0">
+                                  {r.avatar_url && <AvatarImage src={r.avatar_url} alt={r.player_name} />}
+                                  <AvatarFallback className="text-[10px] bg-secondary">{r.player_name.charAt(0).toUpperCase()}</AvatarFallback>
+                                </Avatar>
+                                <p className="font-semibold truncate">{r.player_name}</p>
+                              </div>
+                              <p className="text-center text-sm">{r.games_played}</p>
+                              <p className="text-center text-sm text-red-400">{r.wins_evil}</p>
+                              <p className="text-center text-sm text-blue-400">{r.wins_good}</p>
+                              <p className="text-center text-sm">{winPct}%</p>
+                              <p className="text-center text-sm text-muted-foreground">{r.games_as_storyteller}</p>
+                              <p className="text-right text-lg font-bold text-gold">{r.total_points}</p>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  )
+                ) : rankings.length === 0 ? (
+                  <Card className="bg-card border-border"><CardContent className="py-12 text-center text-muted-foreground">Nenhum ranking disponível ainda.</CardContent></Card>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <div className="grid grid-cols-[40px_1fr_80px_80px_80px_120px_90px] gap-2 px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      <span>#</span><span>Jogador</span>
+                      <span className="text-center">Partidas</span>
+                      <span className="text-center">Vitórias</span>
+                      <span className="text-center">Win Rate</span>
+                      <span className="text-center">Variação</span>
+                      <span className="text-right">MMR</span>
+                    </div>
+                    {rankings.map((r, i) => {
+                      const delta = positionDeltas[r.player_id];
+                      return (
                         <motion.div key={r.player_id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}>
-                          <div className={`grid grid-cols-[40px_1fr_80px_80px_80px_90px] gap-2 items-center px-4 py-3 rounded-lg border border-border hover:border-gold/20 transition-colors ${i < 3 ? "border-gold/30" : ""}`}>
+                          <div className={`grid grid-cols-[40px_1fr_80px_80px_80px_120px_90px] gap-2 items-center px-4 py-3 rounded-lg border border-border hover:border-gold/20 transition-colors ${i < 3 ? "border-gold/30" : ""}`}>
                             <div className="flex items-center justify-center">{getRankIcon(i)}</div>
                             <div className="flex items-center gap-2 min-w-0">
                               <Avatar className="h-6 w-6 flex-shrink-0">
@@ -754,26 +757,42 @@ const SeasonDetail = () => {
                             <p className="text-center text-sm">
                               {r.games_played > 0 ? Math.round((r.wins / r.games_played) * 100) : 0}%
                             </p>
+                            <div className="flex items-center justify-center text-xs font-medium">
+                              {delta === undefined ? (
+                                <span className="text-muted-foreground/40">—</span>
+                              ) : delta > 0 ? (
+                                <span className="flex items-center gap-1 text-green-500">
+                                  <ArrowUp className="h-3.5 w-3.5" /> +{delta} {delta === 1 ? "posição" : "posições"}
+                                </span>
+                              ) : delta < 0 ? (
+                                <span className="flex items-center gap-1 text-red-500">
+                                  <ArrowDown className="h-3.5 w-3.5" /> {delta} {Math.abs(delta) === 1 ? "posição" : "posições"}
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-1 text-muted-foreground">
+                                  <Minus className="h-3.5 w-3.5" /> 0
+                                </span>
+                              )}
+                            </div>
                             <p className="text-right text-lg font-bold text-gold">{Number(r.current_mmr).toFixed(2)}</p>
                           </div>
                         </motion.div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Side stats panel — visible only on xl+ */}
-                <div className="hidden xl:block">
-                  <SeasonStatsPanel
-                    isBlood={!!isBlood}
-                    matches={matches}
-                    bloodMatches={bloodMatches}
-                    rankings={rankings}
-                    bloodRankings={bloodRankings}
-                    hasFactions={hasFactions}
-                  />
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
+            </TabsContent>
+
+            <TabsContent value="stats">
+              <SeasonStatsPanel
+                isBlood={!!isBlood}
+                matches={matches}
+                bloodMatches={bloodMatches}
+                rankings={rankings}
+                bloodRankings={bloodRankings}
+                hasFactions={hasFactions}
+              />
             </TabsContent>
 
             <TabsContent value="matches">

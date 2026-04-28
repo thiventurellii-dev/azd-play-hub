@@ -206,7 +206,7 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
             <div className="flex items-center justify-between gap-2">
               <p className="text-sm font-semibold">{isBlood ? "Estatística de Times" : "Estatística de Facções"}</p>
               <Select value={factionSort} onValueChange={(v) => setFactionSort(v as "games" | "winrate")}>
-                <SelectTrigger className="h-7 w-[120px] text-xs">
+                <SelectTrigger className="h-7 w-[150px] text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

@@ -350,7 +350,7 @@ const GameDetail = () => {
                 isBlood={false}
                 matches={statsMatches}
                 bloodMatches={[]}
-                rankings={[]}
+                rankings={statsRankings as any}
                 bloodRankings={[]}
                 hasFactions={hasFactions}
               />

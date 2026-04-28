@@ -434,6 +434,32 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
         </div>
       )}
 
+      {userCommunities.length > 0 && (
+        <div className="space-y-2">
+          <div>
+            <Label>Comunidade (opcional)</Label>
+            <Select value={selectedCommunityId || "none"} onValueChange={v => setSelectedCommunityId(v === "none" ? "" : v)}>
+              <SelectTrigger><SelectValue placeholder="Nenhuma" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Nenhuma</SelectItem>
+                {userCommunities.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          {selectedCommunityId && (
+            <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={communityOnly}
+                onChange={e => setCommunityOnly(e.target.checked)}
+                className="h-4 w-4 rounded border-border accent-gold"
+              />
+              Exclusiva para membros da comunidade
+            </label>
+          )}
+        </div>
+      )}
+
       <div>
         <Label>Descrição {!isEdit && "(opcional)"}</Label>
         <Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Observações sobre a partida..." rows={3} />

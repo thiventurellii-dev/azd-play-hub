@@ -27,6 +27,7 @@ import {
 } from "@/lib/brazil-data";
 import { Camera } from "lucide-react";
 import { useRef } from "react";
+import XpBadge from "@/components/shared/XpBadge";
 
 const CHART_COLORS = [
   "hsl(43, 100%, 50%)",

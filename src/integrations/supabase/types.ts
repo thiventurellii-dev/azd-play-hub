@@ -819,6 +819,7 @@ export type Database = {
           max_players: number
           result_id: string | null
           result_type: string | null
+          room_type: Database["public"]["Enums"]["match_room_type"]
           scheduled_at: string
           season_id: string | null
           status: Database["public"]["Enums"]["match_room_status"]
@@ -835,6 +836,7 @@ export type Database = {
           max_players?: number
           result_id?: string | null
           result_type?: string | null
+          room_type?: Database["public"]["Enums"]["match_room_type"]
           scheduled_at: string
           season_id?: string | null
           status?: Database["public"]["Enums"]["match_room_status"]
@@ -851,6 +853,7 @@ export type Database = {
           max_players?: number
           result_id?: string | null
           result_type?: string | null
+          room_type?: Database["public"]["Enums"]["match_room_type"]
           scheduled_at?: string
           season_id?: string | null
           status?: Database["public"]["Enums"]["match_room_status"]
@@ -1467,6 +1470,7 @@ export type Database = {
         | "in_progress"
         | "finished"
         | "cancelled"
+      match_room_type: "boardgame" | "botc" | "rpg"
       rpg_adventure_tag: "official" | "homebrew"
       season_type: "boardgame" | "blood"
     }
@@ -1608,6 +1612,7 @@ export const Constants = {
         "finished",
         "cancelled",
       ],
+      match_room_type: ["boardgame", "botc", "rpg"],
       rpg_adventure_tag: ["official", "homebrew"],
       season_type: ["boardgame", "blood"],
     },

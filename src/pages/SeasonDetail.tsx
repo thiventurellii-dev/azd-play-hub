@@ -715,6 +715,7 @@ const SeasonDetail = () => {
                     bloodMatches={bloodMatches}
                     rankings={rankings}
                     bloodRankings={bloodRankings}
+                    hasFactions={hasFactions}
                   />
                 </div>
               </div>

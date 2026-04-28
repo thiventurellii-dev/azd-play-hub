@@ -194,7 +194,7 @@ const SeasonDetail = () => {
 
         const { data: mData } = await supabase
           .from("matches")
-          .select("id, played_at, duration_minutes, image_url, first_player_id, game_id")
+          .select("id, played_at, duration_minutes, image_url, first_player_id, game_id, platform")
           .eq("season_id", id)
           .order("played_at", { ascending: false })
           .limit(50);

@@ -419,11 +419,11 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
                     })()}
                     <div className="flex-1 space-y-1 min-w-0">
                       {positionStats.slices.map((s) => (
-                        <div key={s.position} className="flex items-center gap-1.5 text-xs" title={`${s.count} vitórias em ${s.played} partidas no assento ${s.position}`}>
+                        <div key={s.position} className="flex items-center gap-1.5 text-xs tabular-nums" title={`${s.count} vitórias em ${s.played} partidas no assento ${s.position}`}>
                           <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
                           <span className="text-muted-foreground flex-shrink-0">{s.position}ª assento</span>
-                          <span className="ml-auto font-semibold text-foreground">{s.count} vit</span>
-                          <span className="text-muted-foreground">({s.pct}%)</span>
+                          <span className="ml-auto font-semibold text-foreground text-right w-12">{s.count} vit</span>
+                          <span className="text-muted-foreground text-right w-10">({s.pct}%)</span>
                         </div>
                       ))}
                     </div>

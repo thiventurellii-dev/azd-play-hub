@@ -153,19 +153,24 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
     return { winStreak, longest, maxScore };
   }, [isBlood, matches, bloodMatches]);
 
-  // Position distribution (non-Blood only)
+  // First-player finishing position distribution (non-Blood only)
+  // Mede: quando alguém começa a partida (1ª posição na mesa), em que colocação final terminou?
   const positionStats = useMemo(() => {
     if (isBlood) return null;
     const counts: Record<number, number> = {};
     let total = 0;
     let maxPos = 0;
     for (const m of matches) {
+      if (!m.first_player_id) continue;
+      const firstResult = m.results.find((r) => r.player_id === m.first_player_id);
+      if (!firstResult || typeof firstResult.position !== "number" || firstResult.position <= 0) continue;
+      const pos = firstResult.position;
+      counts[pos] = (counts[pos] || 0) + 1;
+      if (pos > maxPos) maxPos = pos;
+      total++;
+      // Track table size to know how many positions to display
       for (const r of m.results) {
-        if (typeof r.position === "number" && r.position > 0) {
-          counts[r.position] = (counts[r.position] || 0) + 1;
-          if (r.position > maxPos) maxPos = r.position;
-          total++;
-        }
+        if (typeof r.position === "number" && r.position > maxPos) maxPos = r.position;
       }
     }
     if (total === 0) return null;
@@ -261,8 +266,8 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
         <Card className="bg-card border-border">
           <CardContent className="py-4 space-y-3">
             <div>
-              <p className="text-sm font-semibold">Posição final na mesa</p>
-              <p className="text-xs text-muted-foreground">Distribuição das colocações</p>
+              <p className="text-sm font-semibold">Colocação do 1º a jogar</p>
+              <p className="text-xs text-muted-foreground">Em que posição final terminou quem começou</p>
             </div>
             <div className="flex items-center gap-4">
               {(() => {
@@ -307,7 +312,7 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
                 {positionStats.slices.map((s) => (
                   <div key={s.position} className="flex items-center gap-2 text-xs">
                     <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
-                    <span className="text-muted-foreground flex-shrink-0">{s.position}º lugar</span>
+                    <span className="text-muted-foreground flex-shrink-0">{s.position}ª posição</span>
                     <span className="ml-auto font-semibold text-foreground">{s.pct}%</span>
                     <span className="text-muted-foreground">({s.count})</span>
                   </div>

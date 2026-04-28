@@ -298,6 +298,12 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
                       <p className="text-[11px] text-muted-foreground truncate mt-1">{otherStats.minScore?.name ?? "—"}</p>
                     </div>
                   </div>
+                  {otherStats.avgWinScore !== null && (
+                    <div className="text-center border-t border-border pt-3 mt-1">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Pontuação média de vitória</p>
+                      <p className="text-2xl font-bold text-gold leading-none">{otherStats.avgWinScore}</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ) : null}

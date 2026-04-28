@@ -29,6 +29,8 @@ import PlayerProfile from "./pages/PlayerProfile.tsx";
 import SteamCallback from "./pages/SteamCallback.tsx";
 import ScriptDetail from "./pages/ScriptDetail.tsx";
 import Install from "./pages/Install.tsx";
+import Communities from "./pages/Communities.tsx";
+import CommunityDetail from "./pages/CommunityDetail.tsx";
 
 const queryClient = new QueryClient();
 
@@ -59,6 +61,8 @@ const App = () => (
                 <Route path="/documentos" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
                 <Route path="/suggestions" element={<ProtectedRoute><Suggestions /></ProtectedRoute>} />
                 <Route path="/partidas" element={<ProtectedRoute><MatchRooms /></ProtectedRoute>} />
+                <Route path="/comunidades" element={<ProtectedRoute><Communities /></ProtectedRoute>} />
+                <Route path="/comunidades/:slug" element={<ProtectedRoute><CommunityDetail /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
                 <Route path="/auth/steam/callback" element={<ProtectedRoute><SteamCallback /></ProtectedRoute>} />

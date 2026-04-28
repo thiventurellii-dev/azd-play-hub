@@ -17,7 +17,7 @@ import SeasonDetail from "./pages/SeasonDetail.tsx";
 import Games from "./pages/Games.tsx";
 import Players from "./pages/Players.tsx";
 import Profile from "./pages/Profile.tsx";
-import Documents from "./pages/Documents.tsx";
+
 import Suggestions from "./pages/Suggestions.tsx";
 import Admin from "./pages/Admin.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -59,7 +59,7 @@ const App = () => (
                 <Route path="/players" element={<ProtectedRoute><Players /></ProtectedRoute>} />
                 <Route path="/perfil/:nickname" element={<ProtectedRoute><PlayerProfile /></ProtectedRoute>} />
                 <Route path="/rankings" element={<ProtectedRoute><Rankings /></ProtectedRoute>} />
-                <Route path="/documentos" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
+                
                 <Route path="/suggestions" element={<ProtectedRoute><Suggestions /></ProtectedRoute>} />
                 <Route path="/partidas" element={<ProtectedRoute><MatchRooms /></ProtectedRoute>} />
                 <Route path="/comunidades" element={<ProtectedRoute><Communities /></ProtectedRoute>} />

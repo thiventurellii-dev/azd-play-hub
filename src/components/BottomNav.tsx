@@ -81,11 +81,6 @@ const BottomNav = () => {
                   <BarChart3 className="h-5 w-5" /> Rankings
                 </Button>
               </Link>
-              <Link to="/documentos" onClick={() => setDrawerOpen(false)}>
-                <Button variant="ghost" className="w-full justify-start gap-3 h-12 text-base">
-                  <FileText className="h-5 w-5" /> Documentos
-                </Button>
-              </Link>
               <Link to="/suggestions" onClick={() => setDrawerOpen(false)}>
                 <Button variant="ghost" className="w-full justify-start gap-3 h-12 text-base">
                   <Lightbulb className="h-5 w-5" /> Sugestões

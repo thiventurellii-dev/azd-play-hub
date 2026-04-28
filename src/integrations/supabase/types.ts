@@ -345,30 +345,6 @@ export type Database = {
         }
         Relationships: []
       }
-      community_documents: {
-        Row: {
-          created_at: string
-          file_url: string
-          id: string
-          title: string
-          uploaded_by: string | null
-        }
-        Insert: {
-          created_at?: string
-          file_url: string
-          id?: string
-          title: string
-          uploaded_by?: string | null
-        }
-        Update: {
-          created_at?: string
-          file_url?: string
-          id?: string
-          title?: string
-          uploaded_by?: string | null
-        }
-        Relationships: []
-      }
       community_rules: {
         Row: {
           content: string
@@ -1302,6 +1278,7 @@ export type Database = {
           prize_3rd: number | null
           prize_4th_6th: number | null
           prize_7th_10th: number | null
+          regulation_url: string | null
           start_date: string
           status: string
           type: Database["public"]["Enums"]["season_type"]
@@ -1319,6 +1296,7 @@ export type Database = {
           prize_3rd?: number | null
           prize_4th_6th?: number | null
           prize_7th_10th?: number | null
+          regulation_url?: string | null
           start_date: string
           status?: string
           type?: Database["public"]["Enums"]["season_type"]
@@ -1336,6 +1314,7 @@ export type Database = {
           prize_3rd?: number | null
           prize_4th_6th?: number | null
           prize_7th_10th?: number | null
+          regulation_url?: string | null
           start_date?: string
           status?: string
           type?: Database["public"]["Enums"]["season_type"]

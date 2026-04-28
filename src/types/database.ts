@@ -6,6 +6,7 @@ export interface RankingEntry {
   games_played: number;
   wins: number;
   player_name: string;
+  avatar_url?: string | null;
 }
 
 export interface BloodRankingEntry {
@@ -16,6 +17,13 @@ export interface BloodRankingEntry {
   wins_good: number;
   games_as_storyteller: number;
   player_name: string;
+  avatar_url?: string | null;
+}
+
+export interface GameInfoLite {
+  id: string;
+  name: string;
+  factions?: any;
 }
 
 export interface SeasonBase {

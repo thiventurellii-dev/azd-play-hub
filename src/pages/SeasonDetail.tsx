@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/lib/supabaseExternal";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,9 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Calendar, Clock, Users, ExternalLink, Video, Award, ChevronDown, ChevronUp,
-  Flag, Share2, UserPlus, Gamepad2, TrendingUp, Trophy, Shield, FileText,
+  Flag, Share2, UserPlus, Gamepad2, TrendingUp, Trophy, Shield, FileText, Info, Upload, Download,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { getRankIcon, getBloodPrizeClass, getBloodWinStats } from "@/utils/game-logic";
@@ -16,6 +18,7 @@ import type {
   SeasonFull, RankingEntry, BloodRankingEntry, MatchRecord, BloodMatchRecord, GameInfo,
 } from "@/types/database";
 import { useNotification } from "@/components/NotificationDialog";
+import { useAuth } from "@/contexts/AuthContext";
 import { SeasonStatsPanel } from "@/components/seasons/SeasonStatsPanel";
 
 const statusColors: Record<string, string> = {
@@ -57,7 +60,8 @@ const MatchImage = ({ src }: { src: string }) => {
 const SeasonDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { notify } = useNotification();
-  const [season, setSeason] = useState<(SeasonFull & { cover_url: string | null; start_date: string; end_date: string }) | null>(null);
+  const { isAdmin } = useAuth();
+  const [season, setSeason] = useState<(SeasonFull & { cover_url: string | null; start_date: string; end_date: string; regulation_url: string | null }) | null>(null);
   const [coverFallback, setCoverFallback] = useState<string | null>(null);
   const [linkedItems, setLinkedItems] = useState<{ name: string; image_url: string | null }[]>([]);
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
@@ -65,10 +69,14 @@ const SeasonDetail = () => {
   const [matches, setMatches] = useState<MatchRecord[]>([]);
   const [bloodMatches, setBloodMatches] = useState<BloodMatchRecord[]>([]);
   const [games, setGames] = useState<GameInfo[]>([]);
+  const [gameFactionsMap, setGameFactionsMap] = useState<Record<string, any>>({});
+  const [avatarMap, setAvatarMap] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(true);
   const [selectedGameId, setSelectedGameId] = useState<string>("all");
   const [expandedMatch, setExpandedMatch] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("ranking");
+  const [uploadingReg, setUploadingReg] = useState(false);
+  const regFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -85,6 +93,7 @@ const SeasonDetail = () => {
             prize_4th_6th: (sData as any).prize_4th_6th || 0,
             prize_7th_10th: (sData as any).prize_7th_10th || 0,
             cover_url: (sData as any).cover_url || null,
+            regulation_url: (sData as any).regulation_url || null,
           }
         : null;
       setSeason(seasonData);
@@ -120,7 +129,12 @@ const SeasonDetail = () => {
           const allPlayerIds = [...new Set([...storytellerIds, ...((playersRes.data || []) as any[]).map((p) => p.player_id)])];
           const { data: profiles } = await supabase.rpc("get_public_profiles", { p_ids: allPlayerIds });
           const pMap: Record<string, string> = {};
-          for (const p of profiles || []) pMap[p.id] = (p as any).nickname || p.name;
+          const aMap: Record<string, string | null> = {};
+          for (const p of profiles || []) {
+            pMap[p.id] = (p as any).nickname || p.name;
+            aMap[p.id] = (p as any).avatar_url || null;
+          }
+          setAvatarMap((prev) => ({ ...prev, ...aMap }));
 
           const charIds = [...new Set(((playersRes.data || []) as any[]).map((p) => p.character_id))];
           const { data: charsData } = charIds.length > 0
@@ -148,8 +162,17 @@ const SeasonDetail = () => {
           const playerIds = (brData as any[]).map((r) => r.player_id);
           const { data: profiles } = await supabase.rpc("get_public_profiles", { p_ids: playerIds });
           const pMap: Record<string, string> = {};
-          for (const p of profiles || []) pMap[p.id] = (p as any).nickname || p.name;
-          setBloodRankings((brData as any[]).map((r) => ({ ...r, player_name: pMap[r.player_id] || "?" })));
+          const aMap: Record<string, string | null> = {};
+          for (const p of profiles || []) {
+            pMap[p.id] = (p as any).nickname || p.name;
+            aMap[p.id] = (p as any).avatar_url || null;
+          }
+          setAvatarMap((prev) => ({ ...prev, ...aMap }));
+          setBloodRankings((brData as any[]).map((r) => ({
+            ...r,
+            player_name: pMap[r.player_id] || "?",
+            avatar_url: aMap[r.player_id] || null,
+          })));
         }
       } else {
         const { data: sgData } = await supabase.from("season_games").select("game_id").eq("season_id", id);
@@ -160,6 +183,9 @@ const SeasonDetail = () => {
           gamesData = gData || [];
         }
         setGames(gamesData);
+        const fmap: Record<string, any> = {};
+        for (const g of gamesData) fmap[g.id] = (g as any).factions;
+        setGameFactionsMap(fmap);
         const items = gamesData.map((g) => ({ name: g.name, image_url: g.image_url }));
         setLinkedItems(items);
         setCoverFallback(items.find((i) => i.image_url)?.image_url || null);
@@ -186,7 +212,12 @@ const SeasonDetail = () => {
           const playerIds = [...new Set((resRes.data || []).map((r) => r.player_id))];
           const { data: profiles } = await supabase.rpc("get_public_profiles", { p_ids: playerIds });
           const pMap: Record<string, string> = {};
-          for (const p of profiles || []) pMap[p.id] = (p as any).nickname || p.name;
+          const aMap: Record<string, string | null> = {};
+          for (const p of profiles || []) {
+            pMap[p.id] = (p as any).nickname || p.name;
+            aMap[p.id] = (p as any).avatar_url || null;
+          }
+          setAvatarMap((prev) => ({ ...prev, ...aMap }));
 
           setMatches(
             mData.map((m) => ({
@@ -237,21 +268,32 @@ const SeasonDetail = () => {
           const playerIds = Object.keys(agg);
           const { data: profiles } = await supabase.rpc("get_public_profiles", { p_ids: playerIds });
           const pMap: Record<string, string> = {};
-          for (const p of profiles || []) pMap[p.id] = (p as any).nickname || p.name;
+          const aMap: Record<string, string | null> = {};
+          for (const p of profiles || []) {
+            pMap[p.id] = (p as any).nickname || p.name;
+            aMap[p.id] = (p as any).avatar_url || null;
+          }
+          setAvatarMap((prev) => ({ ...prev, ...aMap }));
           aggregated = playerIds
             .map((pid) => ({
               player_id: pid,
               current_mmr: parseFloat((agg[pid].mmr / gameCount[pid]).toFixed(2)),
               games_played: agg[pid].gp, wins: agg[pid].wins,
               player_name: pMap[pid] || "Unknown",
+              avatar_url: aMap[pid] || null,
             }))
             .sort((a, b) => b.current_mmr - a.current_mmr);
         } else {
           const playerIds = rData.map((r) => r.player_id);
           const { data: profiles } = await supabase.rpc("get_public_profiles", { p_ids: playerIds });
           const pMap: Record<string, string> = {};
-          for (const p of profiles || []) pMap[p.id] = (p as any).nickname || p.name;
-          aggregated = rData.map((r) => ({ ...r, player_name: pMap[r.player_id] || "Unknown" }));
+          const aMap: Record<string, string | null> = {};
+          for (const p of profiles || []) {
+            pMap[p.id] = (p as any).nickname || p.name;
+            aMap[p.id] = (p as any).avatar_url || null;
+          }
+          setAvatarMap((prev) => ({ ...prev, ...aMap }));
+          aggregated = rData.map((r) => ({ ...r, player_name: pMap[r.player_id] || "Unknown", avatar_url: aMap[r.player_id] || null }));
         }
         setRankings(aggregated);
       } else {
@@ -266,6 +308,13 @@ const SeasonDetail = () => {
   // Computed stats
   const isBlood = season?.type === "blood";
   const liveStatus = season ? computeStatus(season.start_date, season.end_date) : "upcoming";
+
+  const hasFactions = useMemo(() => {
+    if (isBlood) return true;
+    const hasArr = (f: any) => Array.isArray(f) && f.length > 0;
+    if (selectedGameId !== "all") return hasArr(gameFactionsMap[selectedGameId]);
+    return Object.values(gameFactionsMap).some(hasArr);
+  }, [isBlood, selectedGameId, gameFactionsMap]);
 
   const kpis = useMemo(() => {
     if (!season) return { participants: 0, matchesCount: 0, winRate: 0, avgMmr: 0 };
@@ -323,6 +372,27 @@ const SeasonDetail = () => {
     }
   };
   const handleInvite = () => notify("info", "Convite de jogadores em breve!");
+
+  const handleRegulationUpload = async (file: File) => {
+    if (!season || !id) return;
+    setUploadingReg(true);
+    try {
+      const ext = file.name.split(".").pop() || "pdf";
+      const path = `${id}/regulamento-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("season-regulations").upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from("season-regulations").getPublicUrl(path);
+      const { error: updErr } = await supabase.from("seasons").update({ regulation_url: urlData.publicUrl } as any).eq("id", id);
+      if (updErr) throw updErr;
+      setSeason({ ...season, regulation_url: urlData.publicUrl });
+      notify("success", "Regulamento enviado!");
+    } catch (e: any) {
+      notify("error", e.message || "Falha no upload");
+    } finally {
+      setUploadingReg(false);
+      if (regFileRef.current) regFileRef.current.value = "";
+    }
+  };
 
   return (
     <div className="container py-8 space-y-6">
@@ -392,9 +462,9 @@ const SeasonDetail = () => {
                 {!isBlood ? (
                   <div className="grid grid-cols-3 gap-1.5">
                     {[
-                      { label: "1º lugar", val: season.prize_1st },
-                      { label: "2º lugar", val: season.prize_2nd },
-                      { label: "3º lugar", val: season.prize_3rd },
+                      { label: "🥇 1º", val: season.prize_1st },
+                      { label: "🥈 2º", val: season.prize_2nd },
+                      { label: "🥉 3º", val: season.prize_3rd },
                     ].map((p) => (
                       <div key={p.label} className="rounded-md border border-border bg-secondary/30 py-2">
                         <p className="text-[10px] text-muted-foreground">{p.label}</p>
@@ -405,9 +475,9 @@ const SeasonDetail = () => {
                 ) : (
                   <div className="grid grid-cols-3 gap-1.5">
                     {[
-                      { label: "1º-3º", val: season.prize_1st },
-                      { label: "4º-6º", val: season.prize_4th_6th },
-                      { label: "7º-10º", val: season.prize_7th_10th },
+                      { label: "🥇 1º-3º", val: season.prize_1st },
+                      { label: "🥈 4º-6º", val: season.prize_4th_6th },
+                      { label: "🥉 7º-10º", val: season.prize_7th_10th },
                     ].map((p) => (
                       <div key={p.label} className="rounded-md border border-border bg-secondary/30 py-2">
                         <p className="text-[10px] text-muted-foreground">{p.label}</p>
@@ -420,14 +490,13 @@ const SeasonDetail = () => {
             </Card>
           )}
 
-          {/* Format info */}
+          {/* Format info — sem critério de desempate */}
           <Card className="bg-card border-border">
             <CardContent className="py-4 space-y-3 text-sm">
               {[
                 { icon: Award, label: "Sistema de pontuação", val: isBlood ? "Pontos Blood" : "MMR Global" },
                 { icon: Shield, label: "Formato", val: "Competitivo" },
                 { icon: Gamepad2, label: "Partidas válidas", val: "Jogos ranqueados" },
-                { icon: TrendingUp, label: "Critério de desempate", val: "Maior win rate, depois MMR" },
               ].map((it) => (
                 <div key={it.label} className="flex items-start gap-2">
                   <it.icon className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
@@ -440,9 +509,50 @@ const SeasonDetail = () => {
             </CardContent>
           </Card>
 
-          <Button variant="outline" className="w-full gap-1.5" asChild>
-            <Link to="/rules"><FileText className="h-4 w-4" /> Regulamento da temporada</Link>
-          </Button>
+          {/* Regulamento — admins fazem upload, todos baixam */}
+          <input
+            ref={regFileRef}
+            type="file"
+            accept=".pdf,.doc,.docx"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleRegulationUpload(f);
+            }}
+          />
+          {season.regulation_url ? (
+            <div className="space-y-2">
+              <Button variant="outline" className="w-full gap-1.5" asChild>
+                <a href={season.regulation_url} target="_blank" rel="noopener noreferrer">
+                  <Download className="h-4 w-4" /> Baixar Regulamento
+                </a>
+              </Button>
+              {isAdmin && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full gap-1.5 text-xs"
+                  onClick={() => regFileRef.current?.click()}
+                  disabled={uploadingReg}
+                >
+                  <Upload className="h-3.5 w-3.5" /> {uploadingReg ? "Enviando..." : "Substituir regulamento"}
+                </Button>
+              )}
+            </div>
+          ) : isAdmin ? (
+            <Button
+              variant="outline"
+              className="w-full gap-1.5"
+              onClick={() => regFileRef.current?.click()}
+              disabled={uploadingReg}
+            >
+              <Upload className="h-4 w-4" /> {uploadingReg ? "Enviando..." : "Subir Regulamento"}
+            </Button>
+          ) : (
+            <Button variant="outline" className="w-full gap-1.5" disabled>
+              <FileText className="h-4 w-4" /> Regulamento indisponível
+            </Button>
+          )}
         </aside>
 
         {/* Main content */}
@@ -475,6 +585,16 @@ const SeasonDetail = () => {
               <CardContent className="py-4">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                   <TrendingUp className="h-4 w-4" /> Win Rate médio
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="O que é Win Rate médio?"><Info className="h-3.5 w-3.5 opacity-70 hover:opacity-100" /></button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-[240px] text-xs">
+                        Média da taxa de vitórias (vitórias ÷ partidas) de todos os participantes da temporada.
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 <p className="text-2xl font-bold text-gold">{kpis.winRate}%</p>
               </CardContent>
@@ -483,6 +603,18 @@ const SeasonDetail = () => {
               <CardContent className="py-4">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
                   <TrendingUp className="h-4 w-4" /> {isBlood ? "Pontos médios" : "MMR médio"}
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button type="button" aria-label="O que é MMR médio?"><Info className="h-3.5 w-3.5 opacity-70 hover:opacity-100" /></button>
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-[240px] text-xs">
+                        {isBlood
+                          ? "Média de pontos acumulados pelos participantes da temporada."
+                          : "Média do MMR atual (matchmaking rating) de todos os participantes — indica a força média do grupo."}
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
                 <p className="text-2xl font-bold text-gold">{kpis.avgMmr}</p>
               </CardContent>
@@ -494,8 +626,6 @@ const SeasonDetail = () => {
             <TabsList>
               <TabsTrigger value="ranking">Ranking</TabsTrigger>
               <TabsTrigger value="matches">Partidas</TabsTrigger>
-              <TabsTrigger value="stats">Estatísticas</TabsTrigger>
-              {!isBlood && <TabsTrigger value="games">Jogos</TabsTrigger>}
             </TabsList>
 
             <TabsContent value="ranking" className="space-y-4">
@@ -535,7 +665,13 @@ const SeasonDetail = () => {
                             <motion.div key={r.player_id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}>
                               <div className={`grid grid-cols-[40px_1fr_70px_70px_70px_70px_70px_80px] gap-2 items-center px-4 py-3 rounded-lg border border-border hover:border-gold/20 transition-colors ${getBloodPrizeClass(i)}`}>
                                 <div className="flex items-center justify-center">{getRankIcon(i)}</div>
-                                <p className="font-semibold truncate">{r.player_name}</p>
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <Avatar className="h-6 w-6 flex-shrink-0">
+                                    {r.avatar_url && <AvatarImage src={r.avatar_url} alt={r.player_name} />}
+                                    <AvatarFallback className="text-[10px] bg-secondary">{r.player_name.charAt(0).toUpperCase()}</AvatarFallback>
+                                  </Avatar>
+                                  <p className="font-semibold truncate">{r.player_name}</p>
+                                </div>
                                 <p className="text-center text-sm">{r.games_played}</p>
                                 <p className="text-center text-sm text-red-400">{r.wins_evil}</p>
                                 <p className="text-center text-sm text-blue-400">{r.wins_good}</p>
@@ -563,7 +699,13 @@ const SeasonDetail = () => {
                         <motion.div key={r.player_id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}>
                           <div className={`grid grid-cols-[40px_1fr_80px_80px_80px_90px] gap-2 items-center px-4 py-3 rounded-lg border border-border hover:border-gold/20 transition-colors ${i < 3 ? "border-gold/30" : ""}`}>
                             <div className="flex items-center justify-center">{getRankIcon(i)}</div>
-                            <p className="font-semibold truncate">{r.player_name}</p>
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Avatar className="h-6 w-6 flex-shrink-0">
+                                {r.avatar_url && <AvatarImage src={r.avatar_url} alt={r.player_name} />}
+                                <AvatarFallback className="text-[10px] bg-secondary">{r.player_name.charAt(0).toUpperCase()}</AvatarFallback>
+                              </Avatar>
+                              <p className="font-semibold truncate">{r.player_name}</p>
+                            </div>
                             <p className="text-center text-sm">{r.games_played}</p>
                             <p className="text-center text-sm">{r.wins}</p>
                             <p className="text-center text-sm">
@@ -585,6 +727,7 @@ const SeasonDetail = () => {
                     bloodMatches={bloodMatches}
                     rankings={rankings}
                     bloodRankings={bloodRankings}
+                    hasFactions={hasFactions}
                   />
                 </div>
               </div>
@@ -681,7 +824,11 @@ const SeasonDetail = () => {
                                 {m.results.map((r, i) => (
                                   <div key={i} className="flex items-center gap-3 text-sm p-2 rounded-lg bg-secondary/30">
                                     <Badge variant={r.position === 1 ? "default" : "secondary"} className={`w-8 justify-center ${r.position === 1 ? "bg-gold text-black" : ""}`}>{r.position}º</Badge>
-                                    <span className="flex-1 font-medium flex items-center gap-1">
+                                    <Avatar className="h-5 w-5 flex-shrink-0">
+                                      {avatarMap[r.player_id] && <AvatarImage src={avatarMap[r.player_id] || undefined} alt={r.player_name} />}
+                                      <AvatarFallback className="text-[9px] bg-secondary">{r.player_name.charAt(0).toUpperCase()}</AvatarFallback>
+                                    </Avatar>
+                                    <span className="flex-1 font-medium flex items-center gap-1 min-w-0 truncate">
                                       {r.player_name}
                                       {r.player_id === m.first_player_id && <Flag className="h-3.5 w-3.5 text-gold ml-1" />}
                                     </span>
@@ -702,59 +849,6 @@ const SeasonDetail = () => {
               )}
             </TabsContent>
 
-            <TabsContent value="stats">
-              <SeasonStatsPanel
-                isBlood={!!isBlood}
-                matches={matches}
-                bloodMatches={bloodMatches}
-                rankings={rankings}
-                bloodRankings={bloodRankings}
-              />
-            </TabsContent>
-
-            {!isBlood && (
-              <TabsContent value="games">
-                {games.length === 0 ? (
-                  <Card className="bg-card border-border"><CardContent className="py-12 text-center text-muted-foreground">Nenhum jogo vinculado a esta season.</CardContent></Card>
-                ) : (
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {games.map((g) => (
-                      <Card key={g.id} className="bg-card border-border hover:border-gold/20 transition-colors">
-                        <CardContent className="py-4 space-y-3">
-                          <div className="flex items-center gap-3">
-                            {g.image_url ? (
-                              <img src={g.image_url} alt={g.name} className="h-12 w-12 rounded object-cover" />
-                            ) : (
-                              <div className="h-12 w-12 rounded bg-secondary flex items-center justify-center text-gold font-bold text-lg">{g.name.charAt(0)}</div>
-                            )}
-                            <div>
-                              <p className="font-semibold">{g.name}</p>
-                              {(g.min_players || g.max_players) && (
-                                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                  <Users className="h-3 w-3" /> {g.min_players || "?"}–{g.max_players || "?"} jogadores
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex gap-2 flex-wrap">
-                            {g.rules_url && (
-                              <a href={g.rules_url} target="_blank" rel="noopener noreferrer">
-                                <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1"><ExternalLink className="h-3 w-3" /> Regras</Badge>
-                              </a>
-                            )}
-                            {g.video_url && (
-                              <a href={g.video_url} target="_blank" rel="noopener noreferrer">
-                                <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1"><Video className="h-3 w-3" /> Vídeo</Badge>
-                              </a>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-            )}
           </Tabs>
         </main>
       </div>

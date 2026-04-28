@@ -211,13 +211,15 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
       }
 
       if (isEdit && room) {
-        const updatePayload = {
+        const updatePayload: any = {
           game_id: finalGameId,
           title,
           description: finalDescription,
           scheduled_at: scheduledAt,
           max_players: parseInt(maxPlayers) || 10,
           season_id: selectedSeasonId || null,
+          community_id: selectedCommunityId || null,
+          community_only: !!selectedCommunityId && communityOnly,
           ...(isAdminMode && status ? { status: status as "open" | "full" | "in_progress" | "finished" | "cancelled" } : {}),
         };
 
@@ -243,7 +245,9 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
             status: "open",
             blood_script_id: isBotC ? selectedScriptId : null,
             season_id: selectedSeasonId || null,
-          })
+            community_id: selectedCommunityId || null,
+            community_only: !!selectedCommunityId && communityOnly,
+          } as any)
           .select()
           .single();
         if (error) throw error;

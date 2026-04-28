@@ -134,6 +134,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
   const [selectedSeasonId, setSelectedSeasonId] = useState("");
   const [selectedCommunityId, setSelectedCommunityId] = useState("");
   const [communityOnly, setCommunityOnly] = useState(false);
+  const [platform, setPlatform] = useState("");
   const [status, setStatus] = useState("");
 
   useEffect(() => {

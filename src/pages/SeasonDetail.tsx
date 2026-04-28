@@ -203,7 +203,7 @@ const SeasonDetail = () => {
           const [resRes, gamesRes] = await Promise.all([
             supabase
               .from("match_results")
-              .select("match_id, player_id, position, score, mmr_change, mmr_before, mmr_after, faction")
+              .select("match_id, player_id, position, seat_position, score, mmr_change, mmr_before, mmr_after, faction")
               .in("match_id", matchIds),
             supabase.from("games").select("id, name").in("id", gameIdsMatch),
           ]);

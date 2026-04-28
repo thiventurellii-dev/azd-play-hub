@@ -93,6 +93,7 @@ const SeasonDetail = () => {
             prize_4th_6th: (sData as any).prize_4th_6th || 0,
             prize_7th_10th: (sData as any).prize_7th_10th || 0,
             cover_url: (sData as any).cover_url || null,
+            regulation_url: (sData as any).regulation_url || null,
           }
         : null;
       setSeason(seasonData);

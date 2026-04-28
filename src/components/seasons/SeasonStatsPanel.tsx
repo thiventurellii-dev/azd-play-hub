@@ -17,7 +17,7 @@ interface Props {
 
 interface FactionStat { name: string; count: number; wins: number; pct: number; winRate: number; color: string }
 
-const FACTION_COLORS = ["bg-gold", "bg-blue-500", "bg-purple-500", "bg-emerald-500", "bg-pink-500", "bg-orange-500"];
+const FACTION_COLORS = ["bg-gold", "bg-blue-500", "bg-purple-500", "bg-emerald-500", "bg-pink-500", "bg-orange-500", "bg-cyan-500", "bg-red-500", "bg-yellow-500", "bg-indigo-500"];
 
 const PlayerLine = ({ rank, name, avatar_url, value, suffix = "" }: { rank: number; name: string; avatar_url?: string | null; value: number | string; suffix?: string }) => (
   <div className="flex items-center justify-between text-sm gap-2 min-w-0">

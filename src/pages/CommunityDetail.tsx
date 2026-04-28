@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { ArrowLeft, Users, Calendar, Trophy, Shield, Crown, Globe, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -10,12 +10,16 @@ import { useCommunityDetail, useCommunityRooms, useCommunitySeasons } from "@/ho
 import JoinCommunityButton from "@/components/communities/JoinCommunityButton";
 import { useCommunityMembership } from "@/hooks/useCommunityMembership";
 import DiscussionsTab from "@/components/communities/DiscussionsTab";
+import EditCommunityDialog from "@/components/communities/EditCommunityDialog";
+import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 const CommunityDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
+  const [editOpen, setEditOpen] = useState(false);
   const { data: community, isLoading } = useCommunityDetail(slug);
   const { data: rooms = [] } = useCommunityRooms(community?.id);
   const { data: seasons = [] } = useCommunitySeasons(community?.id);
@@ -105,9 +109,9 @@ const CommunityDetail = () => {
               </div>
               <div className="flex flex-col gap-2">
                 <JoinCommunityButton communityId={community.id} joinPolicy={community.join_policy} />
-                {isLeader && (
-                  <Button variant="outline" size="sm" disabled>
-                    <Shield className="h-4 w-4 mr-1" /> Editar (em breve)
+                {(isLeader || isAdmin) && (
+                  <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+                    <Shield className="h-4 w-4 mr-1" /> Editar
                   </Button>
                 )}
               </div>
@@ -330,6 +334,7 @@ const CommunityDetail = () => {
           </TabsContent>
         </Tabs>
       </div>
+      <EditCommunityDialog community={community} open={editOpen} onOpenChange={setEditOpen} />
     </>
   );
 };

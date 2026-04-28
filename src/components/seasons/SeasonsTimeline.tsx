@@ -6,8 +6,6 @@ import { ChevronLeft, ChevronRight, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SeasonItem } from "@/hooks/useSeasonsData";
 
-type View = "week" | "month" | "quarter";
-
 interface Props {
   seasons: SeasonItem[];
   participatedIds: Set<string>;
@@ -17,83 +15,116 @@ const MONTHS_PT = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET"
 
 const startOfDay = (d: Date) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
 
-const getRangeDays = (view: View) => {
-  if (view === "week") return 7;
-  if (view === "month") return 31;
-  return 365; // quarter view shows ~1 year span like the mock
+// Palette of distinct hues for seasons. Cycles by index.
+const SEASON_PALETTE = [
+  "hsl(45 95% 55%)",   // gold
+  "hsl(280 70% 65%)",  // purple
+  "hsl(140 60% 50%)",  // green
+  "hsl(210 85% 60%)",  // blue
+  "hsl(15 85% 60%)",   // orange-red
+  "hsl(330 75% 60%)",  // pink
+  "hsl(180 65% 50%)",  // teal
+  "hsl(55 85% 55%)",   // yellow
+];
+
+const colorFor = (s: SeasonItem, idx: number): string => {
+  if (s.status === "finished") return "hsl(0 0% 45%)";
+  return SEASON_PALETTE[idx % SEASON_PALETTE.length];
 };
 
-const statusColor = (status: string): string => {
-  switch (status) {
-    case "active": return "bg-gold";
-    case "upcoming": return "bg-purple-500";
-    case "finished": return "bg-muted-foreground";
-    default: return "bg-blue-500";
-  }
-};
-const statusLabel = (status: string): string => {
-  switch (status) {
-    case "active": return "Ativa";
-    case "upcoming": return "Em breve";
-    case "finished": return "Encerrada";
-    default: return "";
-  }
-};
+const NAME_COL_PX = 200;
 
 export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
-  const [view, setView] = useState<View>("quarter");
+  // Anchor controls horizontal pan; fixed quarter view (~12 months window)
   const [anchor, setAnchor] = useState<Date>(startOfDay(new Date()));
 
-  const { rangeStart, rangeEnd, monthMarks, totalMs } = useMemo(() => {
-    const days = getRangeDays(view);
-    const start = new Date(anchor);
-    if (view === "quarter") {
-      // Center on anchor: ~3 months back, ~9 months forward
-      start.setMonth(start.getMonth() - 3);
-      start.setDate(1);
-    } else if (view === "month") {
-      start.setDate(start.getDate() - 7);
-    } else {
-      start.setDate(start.getDate() - 1);
-    }
+  const { rangeStart, rangeEnd, monthMarks, quarterMarks, totalMs } = useMemo(() => {
+    const start = new Date(anchor.getFullYear(), anchor.getMonth() - 3, 1);
     const end = new Date(start);
-    end.setDate(end.getDate() + days);
+    end.setMonth(end.getMonth() + 12);
 
-    // Build month tick marks
-    const marks: { date: Date; label: string }[] = [];
+    // Month marks
+    const months: { date: Date; label: string }[] = [];
     const cursor = new Date(start.getFullYear(), start.getMonth(), 1);
     while (cursor < end) {
-      marks.push({ date: new Date(cursor), label: MONTHS_PT[cursor.getMonth()] });
+      months.push({ date: new Date(cursor), label: MONTHS_PT[cursor.getMonth()] });
       cursor.setMonth(cursor.getMonth() + 1);
     }
+
+    // Quarter marks (group of 3 months). Each entry: start month index in `months`, label, year, month names
+    const quarters: { startDate: Date; endDate: Date; label: string; year: number; months: string }[] = [];
+    const qCursor = new Date(start);
+    while (qCursor < end) {
+      const qStart = new Date(qCursor);
+      const qNum = Math.floor(qStart.getMonth() / 3) + 1;
+      const qMonthStart = (qNum - 1) * 3;
+      const qDate = new Date(qStart.getFullYear(), qMonthStart, 1);
+      const qEnd = new Date(qStart.getFullYear(), qMonthStart + 3, 1);
+      const monthsLabel = [qMonthStart, qMonthStart + 1, qMonthStart + 2]
+        .map((m) => MONTHS_PT[m].charAt(0) + MONTHS_PT[m].slice(1).toLowerCase())
+        .join(" • ");
+      quarters.push({
+        startDate: qDate,
+        endDate: qEnd,
+        label: `Q${qNum}`,
+        year: qDate.getFullYear(),
+        months: monthsLabel,
+      });
+      qCursor.setMonth(qCursor.getMonth() + 3);
+      qCursor.setDate(1);
+    }
+
     return {
       rangeStart: start,
       rangeEnd: end,
-      monthMarks: marks,
+      monthMarks: months,
+      quarterMarks: quarters,
       totalMs: end.getTime() - start.getTime(),
     };
-  }, [view, anchor]);
+  }, [anchor]);
 
   const today = startOfDay(new Date());
   const todayPct = ((today.getTime() - rangeStart.getTime()) / totalMs) * 100;
   const todayInRange = todayPct >= 0 && todayPct <= 100;
 
-  // Filter seasons that intersect the range
+  // Detect year transitions inside the visible range (for the year row)
+  const yearGroups = useMemo(() => {
+    const groups: { year: number; startPct: number; endPct: number }[] = [];
+    let curYear = rangeStart.getFullYear();
+    let curStart = 0;
+    const cursor = new Date(rangeStart);
+    while (cursor < rangeEnd) {
+      const y = cursor.getFullYear();
+      if (y !== curYear) {
+        const transition = new Date(y, 0, 1);
+        const pct = ((transition.getTime() - rangeStart.getTime()) / totalMs) * 100;
+        groups.push({ year: curYear, startPct: curStart, endPct: pct });
+        curYear = y;
+        curStart = pct;
+      }
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+    groups.push({ year: curYear, startPct: curStart, endPct: 100 });
+    return groups;
+  }, [rangeStart, rangeEnd, totalMs]);
+
+  // Sort seasons by start date for stable color assignment
+  const indexedSeasons = useMemo(
+    () => [...seasons].sort((a, b) => a.start_date.localeCompare(b.start_date)).map((s, i) => ({ s, idx: i })),
+    [seasons]
+  );
+
   const visibleSeasons = useMemo(() => {
-    return seasons
-      .filter((s) => {
-        const sStart = new Date(s.start_date + "T00:00:00").getTime();
-        const sEnd = new Date(s.end_date + "T23:59:59").getTime();
-        return sEnd >= rangeStart.getTime() && sStart <= rangeEnd.getTime();
-      })
-      .sort((a, b) => a.start_date.localeCompare(b.start_date));
-  }, [seasons, rangeStart, rangeEnd]);
+    return indexedSeasons.filter(({ s }) => {
+      const sStart = new Date(s.start_date + "T00:00:00").getTime();
+      const sEnd = new Date(s.end_date + "T23:59:59").getTime();
+      return sEnd >= rangeStart.getTime() && sStart <= rangeEnd.getTime();
+    });
+  }, [indexedSeasons, rangeStart, rangeEnd]);
 
   const navigate = (dir: -1 | 1) => {
     const next = new Date(anchor);
-    if (view === "week") next.setDate(next.getDate() + dir * 7);
-    else if (view === "month") next.setMonth(next.getMonth() + dir);
-    else next.setMonth(next.getMonth() + dir * 3);
+    next.setMonth(next.getMonth() + dir * 3);
     setAnchor(next);
   };
 
@@ -109,119 +140,159 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
             </div>
             <p className="text-xs text-muted-foreground">Visualize a duração e o status das temporadas</p>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="inline-flex rounded-md border border-border bg-secondary/40 p-0.5">
-              {(["week", "month", "quarter"] as View[]).map((v) => (
-                <button
-                  key={v}
-                  onClick={() => setView(v)}
-                  className={cn(
-                    "px-3 py-1 text-xs rounded transition-colors",
-                    view === v ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {v === "week" ? "Semana" : v === "month" ? "Mês" : "Trimestre"}
-                </button>
-              ))}
-            </div>
-            <div className="inline-flex items-center gap-1">
-              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigate(-1)}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="sm" className="h-8" onClick={() => setAnchor(startOfDay(new Date()))}>
-                Hoje
-              </Button>
-              <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigate(1)}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
+          <div className="inline-flex items-center gap-1">
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigate(-1)}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => navigate(1)}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
         {/* Timeline */}
         <div className="overflow-x-auto">
-          <div className="min-w-[760px]">
-            {/* Month axis */}
-            <div className="relative h-10 border-b border-border">
-              {monthMarks.map((m, i) => {
-                const pct = ((m.date.getTime() - rangeStart.getTime()) / totalMs) * 100;
-                if (pct < 0 || pct > 100) return null;
-                return (
-                  <div
-                    key={i}
-                    className="absolute top-0 h-full border-l border-border/60 pl-1 pr-1"
-                    style={{ left: `${pct}%` }}
-                  >
-                    <span className="text-[10px] text-muted-foreground">{m.label}</span>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Bars */}
-            <div className="relative">
-              {todayInRange && (
-                <div
-                  className="absolute top-0 bottom-0 border-l-2 border-dashed border-gold pointer-events-none z-10"
-                  style={{ left: `${todayPct}%` }}
-                >
-                  <div className="absolute -top-2 -translate-x-1/2 left-0 px-1.5 py-0.5 rounded bg-gold text-[10px] font-bold text-black">
-                    Hoje
-                  </div>
-                </div>
-              )}
-
+          <div className="min-w-[900px] flex">
+            {/* Left fixed column: names */}
+            <div className="flex-shrink-0" style={{ width: NAME_COL_PX }}>
+              {/* Header spacers matching year + quarter + month rows */}
+              <div className="h-6 border-b border-border/40" />
+              <div className="h-10 border-b border-border/40" />
+              <div className="h-7 border-b border-border" />
               {visibleSeasons.length === 0 ? (
-                <div className="py-10 text-center text-sm text-muted-foreground">
+                <div className="py-10 text-center text-sm text-muted-foreground pr-3">
                   Nenhuma season neste período.
                 </div>
               ) : (
-                visibleSeasons.map((s) => {
-                  const sStart = new Date(s.start_date + "T00:00:00").getTime();
-                  const sEnd = new Date(s.end_date + "T23:59:59").getTime();
-                  const startPct = Math.max(0, ((sStart - rangeStart.getTime()) / totalMs) * 100);
-                  const endPct = Math.min(100, ((sEnd - rangeStart.getTime()) / totalMs) * 100);
-                  const widthPct = Math.max(1, endPct - startPct);
-                  const participates = participatedIds.has(s.id);
-                  const colorClass = participates ? statusColor(s.status) : "bg-muted-foreground/40";
+                visibleSeasons.map(({ s }) => {
                   const icon = s.type === "blood" ? "🩸" : "🎲";
-
                   return (
-                    <div key={s.id} className="relative h-10 flex items-center border-b border-border/40 last:border-b-0">
-                      <div className="absolute left-0 top-0 bottom-0 w-44 pl-1 flex items-center gap-1.5 bg-card z-[5]">
-                        <span className="text-sm">{icon}</span>
-                        <Link
-                          to={`/seasons/${s.id}`}
-                          className="text-xs truncate hover:text-gold transition-colors"
-                        >
-                          {s.name}
-                        </Link>
-                      </div>
-                      <div className="ml-44 relative h-full w-full">
-                        <Link
-                          to={`/seasons/${s.id}`}
-                          className={cn(
-                            "absolute top-1/2 -translate-y-1/2 h-4 rounded-full transition-opacity hover:opacity-80",
-                            colorClass
-                          )}
-                          style={{ left: `${startPct}%`, width: `${widthPct}%` }}
-                          title={`${s.name} — ${s.start_date} → ${s.end_date}`}
-                        />
-                      </div>
+                    <div
+                      key={s.id}
+                      className="h-11 flex items-center gap-1.5 pl-1 pr-3 border-b border-border/30 last:border-b-0"
+                    >
+                      <span className="text-sm">{icon}</span>
+                      <Link
+                        to={`/seasons/${s.id}`}
+                        className="text-xs truncate hover:text-gold transition-colors"
+                      >
+                        {s.name}
+                      </Link>
                     </div>
                   );
                 })
               )}
             </div>
-          </div>
-        </div>
 
-        {/* Legend */}
-        <div className="flex items-center gap-4 text-xs text-muted-foreground flex-wrap pt-2 border-t border-border">
-          <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-gold" /> Ativa</div>
-          <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-purple-500" /> Em breve</div>
-          <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-muted-foreground" /> Encerrada</div>
-          <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-muted-foreground/40" /> Não participa</div>
+            {/* Right scrollable area: header + bars */}
+            <div className="relative flex-1 border-l border-border">
+              {/* Year row */}
+              <div className="relative h-6 border-b border-border/40">
+                {yearGroups.map((g, i) => {
+                  const width = g.endPct - g.startPct;
+                  if (width <= 0) return null;
+                  return (
+                    <div
+                      key={i}
+                      className="absolute top-0 h-full flex items-center pl-2 text-[11px] font-semibold text-muted-foreground"
+                      style={{ left: `${g.startPct}%`, width: `${width}%` }}
+                    >
+                      {g.year}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Quarter row */}
+              <div className="relative h-10 border-b border-border/40">
+                {quarterMarks.map((q, i) => {
+                  const startPct = ((q.startDate.getTime() - rangeStart.getTime()) / totalMs) * 100;
+                  const endPct = ((q.endDate.getTime() - rangeStart.getTime()) / totalMs) * 100;
+                  const clampedStart = Math.max(0, startPct);
+                  const clampedEnd = Math.min(100, endPct);
+                  const width = clampedEnd - clampedStart;
+                  if (width <= 0) return null;
+                  return (
+                    <div
+                      key={i}
+                      className="absolute top-0 h-full flex flex-col justify-center pl-2 border-l border-border/40"
+                      style={{ left: `${clampedStart}%`, width: `${width}%` }}
+                    >
+                      <span className="text-xs font-bold text-foreground leading-tight">{q.label}</span>
+                      <span className="text-[9px] text-muted-foreground leading-tight truncate">{q.months}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Month axis */}
+              <div className="relative h-7 border-b border-border">
+                {monthMarks.map((m, i) => {
+                  const pct = ((m.date.getTime() - rangeStart.getTime()) / totalMs) * 100;
+                  if (pct < 0 || pct > 100) return null;
+                  return (
+                    <div
+                      key={i}
+                      className="absolute top-0 h-full border-l border-border/40 pl-1 flex items-center"
+                      style={{ left: `${pct}%` }}
+                    >
+                      <span className="text-[10px] text-muted-foreground">{m.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Bars area with today line */}
+              <div className="relative">
+                {todayInRange && (
+                  <div
+                    className="absolute -top-7 bottom-0 border-l-2 border-dashed border-gold pointer-events-none z-10"
+                    style={{ left: `${todayPct}%` }}
+                  >
+                    <div className="absolute -top-2 -translate-x-1/2 left-0 px-1.5 py-0.5 rounded bg-gold text-[10px] font-bold text-black">
+                      Hoje
+                    </div>
+                  </div>
+                )}
+
+                {visibleSeasons.length === 0 ? (
+                  <div className="py-10" />
+                ) : (
+                  visibleSeasons.map(({ s, idx }) => {
+                    const sStart = new Date(s.start_date + "T00:00:00").getTime();
+                    const sEnd = new Date(s.end_date + "T23:59:59").getTime();
+                    const startPct = Math.max(0, ((sStart - rangeStart.getTime()) / totalMs) * 100);
+                    const endPct = Math.min(100, ((sEnd - rangeStart.getTime()) / totalMs) * 100);
+                    const widthPct = Math.max(1, endPct - startPct);
+                    const participates = participatedIds.has(s.id);
+                    const color = colorFor(s, idx);
+
+                    return (
+                      <div
+                        key={s.id}
+                        className="relative h-11 flex items-center border-b border-border/30 last:border-b-0"
+                      >
+                        <Link
+                          to={`/seasons/${s.id}`}
+                          className={cn(
+                            "absolute top-1/2 -translate-y-1/2 h-4 rounded-full transition-all hover:brightness-110",
+                            participates ? "shadow-[0_0_12px_rgba(255,255,255,0.15)]" : ""
+                          )}
+                          style={{
+                            left: `${startPct}%`,
+                            width: `${widthPct}%`,
+                            backgroundColor: color,
+                            opacity: participates ? 1 : 0.35,
+                          }}
+                          title={`${s.name} — ${s.start_date} → ${s.end_date}`}
+                        />
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>

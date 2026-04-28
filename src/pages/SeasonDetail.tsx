@@ -561,62 +561,68 @@ const SeasonDetail = () => {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <Card className="bg-card border-border">
               <CardContent className="py-4">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                  <Users className="h-4 w-4" /> Participantes
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
+                    <Users className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">Participantes</span>
+                  </div>
+                  <p className="text-2xl font-bold text-gold leading-none">{kpis.participants}</p>
                 </div>
-                <p className="text-2xl font-bold text-gold">{kpis.participants}</p>
-                <button onClick={() => setActiveTab("ranking")} className="text-[11px] text-muted-foreground hover:text-gold transition-colors">
-                  Ver todos →
-                </button>
               </CardContent>
             </Card>
             <Card className="bg-card border-border">
               <CardContent className="py-4">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                  <Gamepad2 className="h-4 w-4" /> Partidas realizadas
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
+                    <Gamepad2 className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">Partidas realizadas</span>
+                  </div>
+                  <p className="text-2xl font-bold text-gold leading-none">{kpis.matchesCount}</p>
                 </div>
-                <p className="text-2xl font-bold text-gold">{kpis.matchesCount}</p>
-                <button onClick={() => setActiveTab("matches")} className="text-[11px] text-muted-foreground hover:text-gold transition-colors">
-                  Ver partidas →
-                </button>
               </CardContent>
             </Card>
             <Card className="bg-card border-border">
               <CardContent className="py-4">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                  <TrendingUp className="h-4 w-4" /> Win Rate médio
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" aria-label="O que é Win Rate médio?"><Info className="h-3.5 w-3.5 opacity-70 hover:opacity-100" /></button>
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-[240px] text-xs">
-                        Média da taxa de vitórias (vitórias ÷ partidas) de todos os participantes da temporada.
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
+                    <TrendingUp className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">Win Rate médio</span>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button type="button" aria-label="O que é Win Rate médio?" className="flex-shrink-0"><Info className="h-3.5 w-3.5 opacity-70 hover:opacity-100" /></button>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-[240px] text-xs">
+                          Média da taxa de vitórias (vitórias ÷ partidas) de todos os participantes da temporada.
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <p className="text-2xl font-bold text-gold leading-none">{kpis.winRate}%</p>
                 </div>
-                <p className="text-2xl font-bold text-gold">{kpis.winRate}%</p>
               </CardContent>
             </Card>
             <Card className="bg-card border-border">
               <CardContent className="py-4">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
-                  <TrendingUp className="h-4 w-4" /> {isBlood ? "Pontos médios" : "MMR médio"}
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button type="button" aria-label="O que é MMR médio?"><Info className="h-3.5 w-3.5 opacity-70 hover:opacity-100" /></button>
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-[240px] text-xs">
-                        {isBlood
-                          ? "Média de pontos acumulados pelos participantes da temporada."
-                          : "Média do MMR atual (matchmaking rating) de todos os participantes — indica a força média do grupo."}
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
+                    <TrendingUp className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">{isBlood ? "Pontos médios" : "MMR médio"}</span>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button type="button" aria-label="O que é MMR médio?" className="flex-shrink-0"><Info className="h-3.5 w-3.5 opacity-70 hover:opacity-100" /></button>
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-[240px] text-xs">
+                          {isBlood
+                            ? "Média de pontos acumulados pelos participantes da temporada."
+                            : "Média do MMR atual (matchmaking rating) de todos os participantes — indica a força média do grupo."}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <p className="text-2xl font-bold text-gold leading-none">{kpis.avgMmr}</p>
                 </div>
-                <p className="text-2xl font-bold text-gold">{kpis.avgMmr}</p>
               </CardContent>
             </Card>
           </div>

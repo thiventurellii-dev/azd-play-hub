@@ -40,33 +40,37 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
   const factions: FactionStat[] = useMemo(() => {
     const counts: Record<string, number> = {};
     const wins: Record<string, number> = {};
-    let total = 0;
+    const totalMatches = isBlood ? bloodMatches.length : matches.length;
     if (isBlood) {
       for (const m of bloodMatches) {
+        const seen = new Set<string>();
         for (const p of m.players) {
           const k = p.team === "evil" ? "Mal" : "Bem";
+          if (seen.has(k)) continue;
+          seen.add(k);
           counts[k] = (counts[k] || 0) + 1;
           if (p.team === m.winning_team) wins[k] = (wins[k] || 0) + 1;
-          total++;
         }
       }
     } else {
       for (const m of matches) {
+        const seen = new Set<string>();
         for (const r of m.results) {
           const f = (r as any).faction;
-          if (f) {
-            counts[f] = (counts[f] || 0) + 1;
-            if (r.position === 1) wins[f] = (wins[f] || 0) + 1;
-            total++;
+          if (!f || seen.has(f)) continue;
+          seen.add(f);
+          counts[f] = (counts[f] || 0) + 1;
+          if (m.results.some((rr) => (rr as any).faction === f && rr.position === 1)) {
+            wins[f] = (wins[f] || 0) + 1;
           }
         }
       }
     }
-    if (total === 0) return [];
+    if (totalMatches === 0) return [];
     const arr = Object.entries(counts).map(([name, count]) => ({
       name, count,
       wins: wins[name] || 0,
-      pct: Math.round((count / total) * 100),
+      pct: Math.round((count / totalMatches) * 100),
       winRate: count > 0 ? Math.round(((wins[name] || 0) / count) * 100) : 0,
       color: "",
     }));
@@ -202,7 +206,7 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
             <div className="flex items-center justify-between gap-2">
               <p className="text-sm font-semibold">{isBlood ? "Estatística de Times" : "Estatística de Facções"}</p>
               <Select value={factionSort} onValueChange={(v) => setFactionSort(v as "games" | "winrate")}>
-                <SelectTrigger className="h-7 w-[120px] text-xs">
+                <SelectTrigger className="h-7 w-[150px] text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -220,7 +224,7 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
                     <div className="flex items-center justify-between text-xs mb-1">
                       <span className="truncate">{f.name}</span>
                       <span className="text-muted-foreground">
-                        {factionSort === "winrate" ? `${f.winRate}% WR · ${f.count}j` : `${f.pct}% (${f.count})`}
+                        {factionSort === "winrate" ? `${f.winRate}% (${f.count})` : `${f.pct}% (${f.count})`}
                       </span>
                     </div>
                     <div className="h-1.5 rounded-full bg-secondary overflow-hidden">

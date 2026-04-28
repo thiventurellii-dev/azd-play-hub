@@ -1,5 +1,4 @@
-import { useMemo, useState } from "react";
-import { Helmet } from "react-helmet-async";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -49,12 +48,12 @@ const Communities = () => {
     [communities]
   );
 
+  useEffect(() => {
+    document.title = "Comunidades | Amizade AzD";
+  }, []);
+
   return (
     <>
-      <Helmet>
-        <title>Comunidades | Amizade AzD</title>
-        <meta name="description" content="Encontre e participe de comunidades de jogos de tabuleiro, BotC e RPG na Amizade." />
-      </Helmet>
 
       <div className="container py-6 space-y-6 pb-24 md:pb-8">
         {/* Header */}

@@ -1,5 +1,5 @@
+import { useEffect } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
-import { Helmet } from "react-helmet-async";
 import { ArrowLeft, Users, Calendar, Trophy, Shield, Crown, Globe, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";

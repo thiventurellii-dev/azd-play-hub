@@ -268,21 +268,32 @@ const SeasonDetail = () => {
           const playerIds = Object.keys(agg);
           const { data: profiles } = await supabase.rpc("get_public_profiles", { p_ids: playerIds });
           const pMap: Record<string, string> = {};
-          for (const p of profiles || []) pMap[p.id] = (p as any).nickname || p.name;
+          const aMap: Record<string, string | null> = {};
+          for (const p of profiles || []) {
+            pMap[p.id] = (p as any).nickname || p.name;
+            aMap[p.id] = (p as any).avatar_url || null;
+          }
+          setAvatarMap((prev) => ({ ...prev, ...aMap }));
           aggregated = playerIds
             .map((pid) => ({
               player_id: pid,
               current_mmr: parseFloat((agg[pid].mmr / gameCount[pid]).toFixed(2)),
               games_played: agg[pid].gp, wins: agg[pid].wins,
               player_name: pMap[pid] || "Unknown",
+              avatar_url: aMap[pid] || null,
             }))
             .sort((a, b) => b.current_mmr - a.current_mmr);
         } else {
           const playerIds = rData.map((r) => r.player_id);
           const { data: profiles } = await supabase.rpc("get_public_profiles", { p_ids: playerIds });
           const pMap: Record<string, string> = {};
-          for (const p of profiles || []) pMap[p.id] = (p as any).nickname || p.name;
-          aggregated = rData.map((r) => ({ ...r, player_name: pMap[r.player_id] || "Unknown" }));
+          const aMap: Record<string, string | null> = {};
+          for (const p of profiles || []) {
+            pMap[p.id] = (p as any).nickname || p.name;
+            aMap[p.id] = (p as any).avatar_url || null;
+          }
+          setAvatarMap((prev) => ({ ...prev, ...aMap }));
+          aggregated = rData.map((r) => ({ ...r, player_name: pMap[r.player_id] || "Unknown", avatar_url: aMap[r.player_id] || null }));
         }
         setRankings(aggregated);
       } else {

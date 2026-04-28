@@ -113,7 +113,7 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
       .sort((a, b) => b.value - a.value).slice(0, 3);
   }, [isBlood, rankings, bloodRankings]);
 
-  // Streaks + longest match + max score
+  // Streaks + longest match + max/min winning score
   const otherStats = useMemo(() => {
     if (isBlood) {
       let longest = { duration: 0, label: "—" };
@@ -122,7 +122,7 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
           longest = { duration: m.duration_minutes || 0, label: m.script_name };
         }
       }
-      return { winStreak: null, longest, maxScore: null };
+      return { winStreak: null, longest, maxScore: null, minScore: null };
     }
     let longest = { duration: 0, label: "—" };
     for (const m of matches) {
@@ -133,12 +133,34 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
       }
     }
     let maxScore = { value: 0, name: "—" };
+    let minScore: { value: number; name: string } | null = null;
     for (const m of matches) {
-      for (const r of m.results) {
-        if ((r.score || 0) > maxScore.value) maxScore = { value: r.score, name: r.player_name };
+      const winner = m.results.find((r) => r.position === 1);
+      if (winner) {
+        if ((winner.score || 0) > maxScore.value) maxScore = { value: winner.score, name: winner.player_name };
+        if (minScore === null || (winner.score || 0) < minScore.value) minScore = { value: winner.score || 0, name: winner.player_name };
       }
     }
-    return { winStreak: null, longest, maxScore };
+    return { winStreak: null, longest, maxScore, minScore };
+  }, [isBlood, matches, bloodMatches]);
+
+  // Platform stats
+  const platformStats = useMemo(() => {
+    const counts: Record<string, number> = {};
+    const source: { platform?: string | null }[] = isBlood ? bloodMatches as any[] : matches as any[];
+    let total = 0;
+    for (const m of source) {
+      const p = (m as any).platform || "Não especificado";
+      counts[p] = (counts[p] || 0) + 1;
+      total++;
+    }
+    if (total === 0) return null;
+    const PLAT_COLORS = ["bg-gold", "bg-blue-500", "bg-purple-500", "bg-emerald-500", "bg-pink-500", "bg-orange-500"];
+    const arr = Object.entries(counts)
+      .map(([name, count]) => ({ name, count, pct: Math.round((count / total) * 100) }))
+      .sort((a, b) => b.count - a.count)
+      .map((p, i) => ({ ...p, color: PLAT_COLORS[i % PLAT_COLORS.length] }));
+    return { items: arr, total };
   }, [isBlood, matches, bloodMatches]);
 
   // Win rate by seat position (non-Blood only)

@@ -150,6 +150,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
     setSelectedScriptId(room.blood_script_id ?? "");
     setSelectedCommunityId(room.community_id ?? "");
     setCommunityOnly(!!room.community_only);
+    setPlatform(room.platform ?? "");
     setStatus("");
     const game = games.find(g => g.id === room.game?.id);
     if (game?.slug === "blood-on-the-clocktower") {

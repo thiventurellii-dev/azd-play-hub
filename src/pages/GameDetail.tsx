@@ -187,6 +187,25 @@ const GameDetail = () => {
     }));
   }, [allMatches, allResults, pMap, game]);
 
+  // Synthetic rankings for SeasonStatsPanel (it uses these for top winners / win rate cards)
+  const statsRankings = useMemo(() => {
+    const ps: Record<string, { games: number; wins: number }> = {};
+    for (const r of allResults as any[]) {
+      if (!r.player_id) continue;
+      if (!ps[r.player_id]) ps[r.player_id] = { games: 0, wins: 0 };
+      ps[r.player_id].games++;
+      if (r.position === 1) ps[r.player_id].wins++;
+    }
+    return Object.entries(ps).map(([pid, s]) => ({
+      player_id: pid,
+      current_mmr: 1000,
+      games_played: s.games,
+      wins: s.wins,
+      player_name: pMap[pid] || "?",
+      avatar_url: aMap[pid] || null,
+    }));
+  }, [allResults, pMap, aMap]);
+
   const hasFactions = useMemo(() => {
     if (!game) return false;
     const f = (game as any).factions;

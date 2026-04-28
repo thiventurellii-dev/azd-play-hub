@@ -39,13 +39,12 @@ const CommunityDetail = () => {
   const isLeader = membership.status === "active" && membership.role === "leader";
   const featuredMembers = community.members.slice(0, 5);
 
+  useEffect(() => {
+    if (community) document.title = `${community.name} | Comunidades`;
+  }, [community]);
+
   return (
     <>
-      <Helmet>
-        <title>{community.name} | Comunidades</title>
-        <meta name="description" content={community.tagline || community.description || community.name} />
-      </Helmet>
-
       <div className="container py-4 space-y-4 pb-24 md:pb-8">
         <div className="flex items-center justify-between">
           <Link to="/comunidades">

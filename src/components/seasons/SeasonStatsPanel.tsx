@@ -153,6 +153,36 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
     return { winStreak, longest, maxScore };
   }, [isBlood, matches, bloodMatches]);
 
+  // Position distribution (non-Blood only)
+  const positionStats = useMemo(() => {
+    if (isBlood) return null;
+    const counts: Record<number, number> = {};
+    let total = 0;
+    let maxPos = 0;
+    for (const m of matches) {
+      for (const r of m.results) {
+        if (typeof r.position === "number" && r.position > 0) {
+          counts[r.position] = (counts[r.position] || 0) + 1;
+          if (r.position > maxPos) maxPos = r.position;
+          total++;
+        }
+      }
+    }
+    if (total === 0) return null;
+    const POS_COLORS = ["hsl(142 71% 45%)", "hsl(0 72% 55%)", "hsl(38 92% 55%)", "hsl(217 91% 60%)", "hsl(280 70% 60%)", "hsl(180 60% 50%)", "hsl(20 80% 55%)", "hsl(320 70% 60%)"];
+    const slices = Array.from({ length: maxPos }, (_, i) => {
+      const pos = i + 1;
+      const count = counts[pos] || 0;
+      return {
+        position: pos,
+        count,
+        pct: Math.round((count / total) * 100),
+        color: POS_COLORS[i % POS_COLORS.length],
+      };
+    });
+    return { slices, total };
+  }, [isBlood, matches]);
+
   return (
     <div className="space-y-4">
       <h3 className="text-base font-semibold">Estatísticas da temporada</h3>

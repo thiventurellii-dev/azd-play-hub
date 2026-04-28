@@ -224,7 +224,7 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
                     <div className="flex items-center justify-between text-xs mb-1">
                       <span className="truncate">{f.name}</span>
                       <span className="text-muted-foreground">
-                        {factionSort === "winrate" ? `${f.winRate}% WR · ${f.count}j` : `${f.pct}% (${f.count})`}
+                        {factionSort === "winrate" ? `${f.winRate}% (${f.count})` : `${f.pct}% (${f.count})`}
                       </span>
                     </div>
                     <div className="h-1.5 rounded-full bg-secondary overflow-hidden">

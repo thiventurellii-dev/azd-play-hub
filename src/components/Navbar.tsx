@@ -12,9 +12,8 @@ import {
   Trophy,
   Gamepad2,
   ChevronDown,
-  LayoutGrid,
   Bell,
-  UsersRound,
+  MessagesSquare,
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -187,7 +186,7 @@ const Navbar = () => {
 
           <Link to="/comunidades">
             <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
-              <UsersRound className="h-4 w-4" /> Comunidades
+              <MessagesSquare className="h-4 w-4" /> Comunidades
             </Button>
           </Link>
 
@@ -197,18 +196,11 @@ const Navbar = () => {
             </Button>
           </Link>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="gap-1 text-muted-foreground hover:text-foreground">
-                <LayoutGrid className="h-4 w-4" /> Acervo <ChevronDown className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={() => navigate("/games")}>
-                <Gamepad2 className="h-4 w-4 mr-2" /> Coleção de Jogos
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Link to="/games">
+            <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
+              <Gamepad2 className="h-4 w-4" /> Jogos
+            </Button>
+          </Link>
 
           <Link to="/suggestions">
             <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">

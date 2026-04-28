@@ -153,39 +153,42 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
     return { winStreak, longest, maxScore };
   }, [isBlood, matches, bloodMatches]);
 
-  // First-player finishing position distribution (non-Blood only)
-  // Mede: quando alguém começa a partida (1ª posição na mesa), em que colocação final terminou?
+  // Win rate by seat position (non-Blood only)
+  // Para cada assento na mesa, quantas vezes quem sentou ali venceu (position === 1).
   const positionStats = useMemo(() => {
     if (isBlood) return null;
-    const counts: Record<number, number> = {};
-    let total = 0;
-    let maxPos = 0;
+    const wins: Record<number, number> = {};
+    const totals: Record<number, number> = {};
+    let maxSeat = 0;
+    let totalWins = 0;
     for (const m of matches) {
-      if (!m.first_player_id) continue;
-      const firstResult = m.results.find((r) => r.player_id === m.first_player_id);
-      if (!firstResult || typeof firstResult.position !== "number" || firstResult.position <= 0) continue;
-      const pos = firstResult.position;
-      counts[pos] = (counts[pos] || 0) + 1;
-      if (pos > maxPos) maxPos = pos;
-      total++;
-      // Track table size to know how many positions to display
       for (const r of m.results) {
-        if (typeof r.position === "number" && r.position > maxPos) maxPos = r.position;
+        const seat = (r as any).seat_position;
+        if (typeof seat !== "number" || seat <= 0) continue;
+        totals[seat] = (totals[seat] || 0) + 1;
+        if (seat > maxSeat) maxSeat = seat;
+        if (r.position === 1) {
+          wins[seat] = (wins[seat] || 0) + 1;
+          totalWins++;
+        }
       }
     }
-    if (total === 0) return null;
+    if (totalWins === 0 || maxSeat === 0) return null;
     const POS_COLORS = ["hsl(142 71% 45%)", "hsl(0 72% 55%)", "hsl(38 92% 55%)", "hsl(217 91% 60%)", "hsl(280 70% 60%)", "hsl(180 60% 50%)", "hsl(20 80% 55%)", "hsl(320 70% 60%)"];
-    const slices = Array.from({ length: maxPos }, (_, i) => {
-      const pos = i + 1;
-      const count = counts[pos] || 0;
+    const slices = Array.from({ length: maxSeat }, (_, i) => {
+      const seat = i + 1;
+      const w = wins[seat] || 0;
+      const t = totals[seat] || 0;
       return {
-        position: pos,
-        count,
-        pct: Math.round((count / total) * 100),
+        position: seat,
+        count: w,
+        pct: totalWins > 0 ? Math.round((w / totalWins) * 100) : 0,
+        winRate: t > 0 ? Math.round((w / t) * 100) : 0,
+        played: t,
         color: POS_COLORS[i % POS_COLORS.length],
       };
     });
-    return { slices, total };
+    return { slices, total: totalWins };
   }, [isBlood, matches]);
 
   return (

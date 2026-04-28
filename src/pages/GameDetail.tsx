@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
-import { ExternalLink, Video, ArrowLeft, Users, Clock, Trash2, Trophy, TrendingUp, Target, Hash, Flame, Award } from "lucide-react";
+import { ExternalLink, Video, ArrowLeft, Users, Clock, Trash2, Trophy, TrendingUp, Target, Hash } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotification } from "@/components/NotificationDialog";
 import { EntityEditButton } from "@/components/shared/EntityEditButton";

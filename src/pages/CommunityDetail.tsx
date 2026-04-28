@@ -10,6 +10,9 @@ import { useCommunityDetail, useCommunityRooms, useCommunitySeasons } from "@/ho
 import JoinCommunityButton from "@/components/communities/JoinCommunityButton";
 import { useCommunityMembership } from "@/hooks/useCommunityMembership";
 import DiscussionsTab from "@/components/communities/DiscussionsTab";
+import { useCommunityTopics } from "@/hooks/useCommunityDiscussions";
+import { MessageSquare } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 import EditCommunityDialog from "@/components/communities/EditCommunityDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
@@ -24,6 +27,8 @@ const CommunityDetail = () => {
   const { data: rooms = [] } = useCommunityRooms(community?.id);
   const { data: seasons = [] } = useCommunitySeasons(community?.id);
   const { state: membership } = useCommunityMembership(community?.id, community?.join_policy);
+
+  const { data: recentTopics = [] } = useCommunityTopics(community?.id);
 
   useEffect(() => {
     if (community) document.title = `${community.name} | Comunidades`;
@@ -64,13 +69,13 @@ const CommunityDetail = () => {
 
         {/* Hero */}
         <Card className="bg-card border-border overflow-hidden">
-          <div className="relative h-40 bg-gradient-to-br from-secondary to-background">
+          <div className="relative h-48 md:h-56 bg-gradient-to-br from-secondary to-background">
             {community.cover_url && (
               <img src={community.cover_url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-50" />
             )}
           </div>
           <CardContent className="pt-0 pb-5">
-            <div className="flex flex-col md:flex-row md:items-end gap-4 -mt-12">
+            <div className="flex flex-col md:flex-row md:items-end gap-4 -mt-10 md:-mt-12 relative">
               {community.logo_url ? (
                 <img
                   src={community.logo_url}
@@ -197,6 +202,55 @@ const CommunityDetail = () => {
                           </Link>
                         ))}
                       </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-card border-border">
+                  <CardContent className="py-5">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-semibold flex items-center gap-2">
+                        <MessageSquare className="h-4 w-4 text-gold" />
+                        Discussões recentes
+                      </h3>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const trigger = document.querySelector<HTMLElement>('[role="tab"][value="discussions"]');
+                          trigger?.click();
+                        }}
+                        className="text-xs text-gold hover:underline"
+                      >
+                        Ver todas
+                      </button>
+                    </div>
+                    {recentTopics.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Nenhuma discussão ainda.</p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {recentTopics.slice(0, 5).map((t) => (
+                          <li key={t.id}>
+                            <Link
+                              to={`/comunidades/${community.slug}/discussao/${t.id}`}
+                              className="block rounded-lg border border-border p-3 hover:border-gold/30 transition-colors"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="font-medium text-sm truncate">
+                                  {t.pinned && <span className="text-gold mr-1">📌</span>}
+                                  {t.title}
+                                </p>
+                                <span className="text-[11px] text-muted-foreground shrink-0">
+                                  {t.comments_count ?? 0} 💬
+                                </span>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1 truncate">
+                                {t.author?.nickname || t.author?.name || "—"} •{" "}
+                                {formatDistanceToNow(new Date(t.created_at), { locale: ptBR, addSuffix: true })}
+                              </p>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
                     )}
                   </CardContent>
                 </Card>

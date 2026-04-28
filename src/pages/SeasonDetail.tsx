@@ -192,12 +192,22 @@ const SeasonDetail = () => {
         setLinkedItems(items);
         setCoverFallback(items.find((i) => i.image_url)?.image_url || null);
 
-        const { data: mData } = await supabase
+        let { data: mData, error: mErr } = await supabase
           .from("matches")
           .select("id, played_at, duration_minutes, image_url, first_player_id, game_id, platform")
           .eq("season_id", id)
           .order("played_at", { ascending: false })
           .limit(50);
+        // Fallback if `platform` column doesn't exist on the external DB
+        if (mErr) {
+          const retry = await supabase
+            .from("matches")
+            .select("id, played_at, duration_minutes, image_url, first_player_id, game_id")
+            .eq("season_id", id)
+            .order("played_at", { ascending: false })
+            .limit(50);
+          mData = retry.data as any;
+        }
 
         if (mData && mData.length > 0) {
           const matchIds = mData.map((m) => m.id);

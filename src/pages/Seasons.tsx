@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabaseExternal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
@@ -31,7 +31,6 @@ const Seasons = () => {
   const seasonGames = data?.seasonGames || {};
   const seasonScripts = data?.seasonScripts || {};
 
-  const [tab, setTab] = useState<"open" | "closed">("open");
   const [closedOpen, setClosedOpen] = useState(false);
   const [howOpen, setHowOpen] = useState(false);
 
@@ -162,75 +161,57 @@ const Seasons = () => {
         </div>
       ) : (
         <>
-          {/* Open / Closed tabs */}
-          <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
-            <TabsList>
-              <TabsTrigger value="open">Abertas ({openSeasons.length})</TabsTrigger>
-              <TabsTrigger value="closed">Encerradas ({finishedSeasons.length})</TabsTrigger>
-            </TabsList>
+        <div className="space-y-6">
+          {/* Timeline */}
+          <SeasonsTimeline seasons={seasons} participatedIds={participated} />
 
-            <TabsContent value="open" className="space-y-6 mt-6">
-              {/* Timeline */}
-              <SeasonsTimeline seasons={seasons} participatedIds={participated} />
-
-              {/* Active grid */}
-              <div>
-                <div className="flex items-baseline gap-2 mb-1">
-                  <h2 className="text-lg font-semibold">Seasons em destaque</h2>
-                  <span className="text-sm text-muted-foreground">({openSeasons.length})</span>
-                </div>
-                <p className="text-xs text-muted-foreground mb-4">Participe das temporadas em andamento e dispute o ranking!</p>
-                {openSeasons.length === 0 ? (
-                  <Card className="bg-card border-border"><CardContent className="py-12 text-center text-muted-foreground">Nenhuma season aberta.</CardContent></Card>
-                ) : (
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {openSeasons.map((s, i) => (
-                      <SeasonCardLarge
-                        key={s.id}
-                        season={s}
-                        index={i}
-                        linkedNames={linkedNames(s)}
-                        isAdmin={isAdmin}
-                        onEdit={() => openEdit(s)}
-                      />
-                    ))}
-                  </div>
-                )}
+          {/* Active grid */}
+          <div>
+            <div className="flex items-baseline gap-2 mb-1">
+              <h2 className="text-lg font-semibold">Seasons em destaque</h2>
+              <span className="text-sm text-muted-foreground">({openSeasons.length})</span>
+            </div>
+            <p className="text-xs text-muted-foreground mb-4">Participe das temporadas em andamento e dispute o ranking!</p>
+            {openSeasons.length === 0 ? (
+              <Card className="bg-card border-border"><CardContent className="py-12 text-center text-muted-foreground">Nenhuma season aberta.</CardContent></Card>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {openSeasons.map((s, i) => (
+                  <SeasonCardLarge
+                    key={s.id}
+                    season={s}
+                    index={i}
+                    linkedNames={linkedNames(s)}
+                    isAdmin={isAdmin}
+                    onEdit={() => openEdit(s)}
+                  />
+                ))}
               </div>
+            )}
+          </div>
 
-              {/* Finished collapsible */}
-              <Collapsible open={closedOpen} onOpenChange={setClosedOpen}>
-                <CollapsibleTrigger asChild>
-                  <button className="w-full flex items-center justify-between px-4 py-3 rounded-lg border border-border bg-card hover:border-gold/30 transition-colors">
-                    <div className="text-left">
-                      <p className="font-semibold">Seasons Encerradas</p>
-                      <p className="text-xs text-muted-foreground">{finishedSeasons.length} temporadas anteriores · clique para {closedOpen ? "ocultar" : "ver"}</p>
-                    </div>
-                    <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${closedOpen ? "rotate-180" : ""}`} />
-                  </button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-2 mt-3">
-                  {finishedSeasons.length === 0 ? (
-                    <Card className="bg-card border-border"><CardContent className="py-8 text-center text-muted-foreground text-sm">Nenhuma season encerrada ainda.</CardContent></Card>
-                  ) : (
-                    finishedSeasons.map((s) => (
-                      <SeasonRowFinished key={s.id} season={s} linkedNames={linkedNames(s)} />
-                    ))
-                  )}
-                </CollapsibleContent>
-              </Collapsible>
-            </TabsContent>
-
-            <TabsContent value="closed" className="mt-6 space-y-2">
+          {/* Finished collapsible */}
+          <Collapsible open={closedOpen} onOpenChange={setClosedOpen}>
+            <CollapsibleTrigger asChild>
+              <button className="w-full flex items-center justify-between px-4 py-3 rounded-lg border border-border bg-card hover:border-gold/30 transition-colors">
+                <div className="text-left">
+                  <p className="font-semibold">Seasons Encerradas</p>
+                  <p className="text-xs text-muted-foreground">{finishedSeasons.length} temporadas anteriores · clique para {closedOpen ? "ocultar" : "ver"}</p>
+                </div>
+                <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform ${closedOpen ? "rotate-180" : ""}`} />
+              </button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-2 mt-3">
               {finishedSeasons.length === 0 ? (
-                <Card className="bg-card border-border"><CardContent className="py-12 text-center text-muted-foreground">Nenhuma season encerrada ainda.</CardContent></Card>
+                <Card className="bg-card border-border"><CardContent className="py-8 text-center text-muted-foreground text-sm">Nenhuma season encerrada ainda.</CardContent></Card>
               ) : (
                 finishedSeasons.map((s) => (
                   <SeasonRowFinished key={s.id} season={s} linkedNames={linkedNames(s)} />
                 ))
               )}
-            </TabsContent>
-          </Tabs>
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
         </>
       )}
 

@@ -15,22 +15,22 @@ const MONTHS_PT = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET"
 
 const startOfDay = (d: Date) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
 
-// Palette inspired by warm/muted reference: amber, soft purple, sage, steel blue
-const SEASON_PALETTE = [
-  "hsl(38 75% 52%)",   // amber/mustard
-  "hsl(280 35% 60%)",  // soft purple
-  "hsl(95 35% 42%)",   // sage/olive green
-  "hsl(215 55% 55%)",  // steel blue
-  "hsl(15 65% 55%)",   // terracotta
-  "hsl(330 40% 60%)",  // dusty pink
-  "hsl(180 35% 45%)",  // muted teal
-  "hsl(50 70% 55%)",   // soft yellow
+// Curated palette: gold, soft purple, green, desaturated blue
+// Each entry: [r, g, b] for rgba composition (gradients + glow)
+const SEASON_PALETTE: Array<[number, number, number]> = [
+  [245, 180, 0],   // #F5B400 amarelo
+  [139, 92, 246],  // #8B5CF6 roxo suave
+  [34, 197, 94],   // #22C55E verde
+  [59, 130, 246],  // #3B82F6 azul dessaturado
 ];
+const FINISHED_RGB: [number, number, number] = [107, 114, 128]; // #6B7280 cinza neutro
 
-const colorFor = (s: SeasonItem, idx: number): string => {
-  if (s.status === "finished") return "hsl(0 0% 45%)";
+const colorFor = (s: SeasonItem, idx: number): [number, number, number] => {
+  if (s.status === "finished") return FINISHED_RGB;
   return SEASON_PALETTE[idx % SEASON_PALETTE.length];
 };
+
+const rgba = ([r, g, b]: [number, number, number], a: number) => `rgba(${r}, ${g}, ${b}, ${a})`;
 
 const NAME_COL_PX = 200;
 
@@ -265,19 +265,29 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
                     const endPct = Math.min(100, ((sEnd - rangeStart.getTime()) / totalMs) * 100);
                     const widthPct = Math.max(1, endPct - startPct);
                     const participates = participatedIds.has(s.id);
-                    const color = colorFor(s, idx);
+                    const rgb = colorFor(s, idx);
+                    const isFinished = s.status === "finished";
+                    const isFuture = new Date(s.start_date) > today;
 
                     const barStyle: React.CSSProperties = {
                       left: `${startPct}%`,
                       width: `${widthPct}%`,
                     };
-                    if (participates) {
-                      barStyle.backgroundColor = color;
+
+                    if (isFinished) {
+                      // Flat, low contrast
+                      barStyle.background = rgba(rgb, 0.45);
+                    } else if (participates) {
+                      // Active + participating: full gradient + glow
+                      barStyle.background = `linear-gradient(90deg, ${rgba(rgb, 0.2)} 0%, ${rgba(rgb, 0.6)} 40%, ${rgba(rgb, 1)} 100%)`;
+                      if (!isFuture) {
+                        barStyle.boxShadow = `0 0 12px ${rgba(rgb, 0.35)}, 0 0 24px ${rgba(rgb, 0.2)}`;
+                      }
                     } else {
-                      // Hatched/striped pattern with transparent fill
+                      // Not participating: hatched, no glow
                       barStyle.backgroundColor = "transparent";
-                      barStyle.backgroundImage = `repeating-linear-gradient(135deg, ${color} 0 2px, transparent 2px 7px)`;
-                      barStyle.border = `1.5px solid ${color}`;
+                      barStyle.backgroundImage = `repeating-linear-gradient(135deg, ${rgba(rgb, 0.9)} 0 2px, transparent 2px 7px)`;
+                      barStyle.border = `1.5px solid ${rgba(rgb, 0.9)}`;
                     }
 
                     return (
@@ -287,10 +297,7 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
                       >
                         <Link
                           to={`/seasons/${s.id}`}
-                          className={cn(
-                            "absolute top-1/2 -translate-y-1/2 h-4 rounded-full transition-all hover:brightness-110",
-                            participates ? "shadow-[0_0_12px_rgba(255,255,255,0.15)]" : ""
-                          )}
+                          className="absolute top-1/2 -translate-y-1/2 h-4 rounded-full transition-all hover:brightness-110"
                           style={barStyle}
                           title={`${s.name} — ${s.start_date} → ${s.end_date}`}
                         />

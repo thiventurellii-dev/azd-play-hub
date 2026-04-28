@@ -53,6 +53,7 @@ export interface MatchRecord {
   first_player_id: string | null;
   game_name: string;
   game_id: string;
+  platform?: string | null;
   results: MatchResultEntry[];
 }
 

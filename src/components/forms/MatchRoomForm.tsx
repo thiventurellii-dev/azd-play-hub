@@ -29,8 +29,18 @@ export interface MatchRoomData {
   blood_script_id?: string | null;
   community_id?: string | null;
   community_only?: boolean;
+  platform?: string | null;
   game: { id: string; name: string; image_url: string | null };
 }
+
+const PLATFORM_OPTIONS = [
+  "Presencial",
+  "Tabletop Simulator",
+  "BoardGame Arena",
+  "Board Game Arena",
+  "Discord",
+  "Online",
+];
 
 interface MatchRoomFormProps {
   room?: MatchRoomData | null;

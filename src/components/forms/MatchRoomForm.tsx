@@ -27,6 +27,8 @@ export interface MatchRoomData {
   max_players: number;
   season_id?: string | null;
   blood_script_id?: string | null;
+  community_id?: string | null;
+  community_only?: boolean;
   game: { id: string; name: string; image_url: string | null };
 }
 
@@ -36,21 +38,32 @@ interface MatchRoomFormProps {
   onSuccess?: () => void;
 }
 
-const useFormOptions = (enabled: boolean) =>
+const useFormOptions = (enabled: boolean, userId?: string) =>
   useQuery({
-    queryKey: ["match-room-form-options"],
+    queryKey: ["match-room-form-options", userId],
     queryFn: async () => {
-      const [gamesRes, scriptsRes, tagsRes, seasonsRes] = await Promise.all([
+      const sb: any = supabase;
+      const [gamesRes, scriptsRes, tagsRes, seasonsRes, communitiesRes] = await Promise.all([
         supabase.from("games").select("id, name, slug, max_players").order("name"),
         supabase.from("blood_scripts").select("id, name").order("name"),
         supabase.from("room_tags").select("id, name").order("name"),
         supabase.from("seasons").select("id, name, status, type").in("status", ["active", "upcoming"]).order("name"),
+        userId
+          ? sb
+              .from("community_members")
+              .select("community_id, communities(id, name, slug)")
+              .eq("user_id", userId)
+              .eq("status", "active")
+          : Promise.resolve({ data: [] }),
       ]);
       return {
         games: (gamesRes.data ?? []) as Game[],
         scripts: (scriptsRes.data ?? []) as BloodScript[],
         tags: (tagsRes.data ?? []) as RoomTag[],
         seasons: (seasonsRes.data ?? []) as Season[],
+        communities: ((communitiesRes.data ?? []) as any[])
+          .map((r) => r.communities)
+          .filter(Boolean) as { id: string; name: string; slug: string }[],
       };
     },
     enabled,

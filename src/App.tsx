@@ -31,6 +31,7 @@ import ScriptDetail from "./pages/ScriptDetail.tsx";
 import Install from "./pages/Install.tsx";
 import Communities from "./pages/Communities.tsx";
 import CommunityDetail from "./pages/CommunityDetail.tsx";
+import TopicDetail from "./pages/TopicDetail.tsx";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +64,7 @@ const App = () => (
                 <Route path="/partidas" element={<ProtectedRoute><MatchRooms /></ProtectedRoute>} />
                 <Route path="/comunidades" element={<ProtectedRoute><Communities /></ProtectedRoute>} />
                 <Route path="/comunidades/:slug" element={<ProtectedRoute><CommunityDetail /></ProtectedRoute>} />
+                <Route path="/comunidades/:slug/discussao/:topicId" element={<ProtectedRoute><TopicDetail /></ProtectedRoute>} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                 <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
                 <Route path="/auth/steam/callback" element={<ProtectedRoute><SteamCallback /></ProtectedRoute>} />

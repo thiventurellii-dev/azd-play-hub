@@ -9,6 +9,7 @@ import { FavoriteButton } from "@/components/shared/FavoriteButton";
 import { useCommunityDetail, useCommunityRooms, useCommunitySeasons } from "@/hooks/useCommunityDetail";
 import JoinCommunityButton from "@/components/communities/JoinCommunityButton";
 import { useCommunityMembership } from "@/hooks/useCommunityMembership";
+import DiscussionsTab from "@/components/communities/DiscussionsTab";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -37,6 +38,9 @@ const CommunityDetail = () => {
   }
 
   const isLeader = membership.status === "active" && membership.role === "leader";
+  const isMember = membership.status === "active";
+  const canModerate =
+    isMember && (membership.role === "leader" || membership.role === "moderator");
   const featuredMembers = community.members.slice(0, 5);
 
   useEffect(() => {
@@ -141,8 +145,7 @@ const CommunityDetail = () => {
             <TabsTrigger value="members">Membros</TabsTrigger>
             <TabsTrigger value="matches">Partidas</TabsTrigger>
             <TabsTrigger value="tournaments">Torneios</TabsTrigger>
-            <TabsTrigger value="discussions" disabled>Discussões</TabsTrigger>
-            <TabsTrigger value="media" disabled>Mídia</TabsTrigger>
+            <TabsTrigger value="discussions">Discussões</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4 mt-4">

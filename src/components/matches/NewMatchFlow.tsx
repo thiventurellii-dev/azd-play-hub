@@ -454,6 +454,20 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
                 <Input type="number" value={duration} onChange={e => setDuration(e.target.value)} placeholder="120" />
               </div>
               <div className="space-y-2">
+                <Label>Local / Plataforma</Label>
+                <Select value={platform || 'none'} onValueChange={v => setPlatform(v === 'none' ? '' : v)}>
+                  <SelectTrigger><SelectValue placeholder="Onde foi jogado?" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Não especificado</SelectItem>
+                    <SelectItem value="Presencial">Presencial</SelectItem>
+                    <SelectItem value="Tabletop Simulator">Tabletop Simulator</SelectItem>
+                    <SelectItem value="BoardGame Arena">BoardGame Arena</SelectItem>
+                    <SelectItem value="Discord">Discord</SelectItem>
+                    <SelectItem value="Outro Online">Outro Online</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2 sm:col-span-2">
                 <Label>Foto (opcional)</Label>
                 <label className="flex items-center gap-2 rounded-md border border-dashed border-border px-4 py-2 cursor-pointer hover:bg-secondary/50 transition-colors">
                   <Upload className="h-4 w-4 text-muted-foreground" />

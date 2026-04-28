@@ -14,20 +14,40 @@ const fetchGameDetail = async (slug: string) => {
     tags = (tagData || []).map((t: any) => t.name);
   }
 
-  const { data: matches } = await supabase.from("matches").select("id, played_at, duration_minutes, season_id").eq("game_id", game.id).order("played_at", { ascending: false });
-  const matchIds = (matches || []).map((m) => m.id);
+  // Try to fetch with platform; fall back if column doesn't exist on external DB
+  let { data: matches, error: mErr } = await supabase
+    .from("matches")
+    .select("id, played_at, duration_minutes, image_url, season_id, first_player_id, platform")
+    .eq("game_id", game.id)
+    .order("played_at", { ascending: false });
+  if (mErr) {
+    const retry = await supabase
+      .from("matches")
+      .select("id, played_at, duration_minutes, image_url, season_id, first_player_id")
+      .eq("game_id", game.id)
+      .order("played_at", { ascending: false });
+    matches = retry.data as any;
+  }
+  const matchIds = (matches || []).map((m: any) => m.id);
 
   if (matchIds.length === 0) {
-    return { game, tags, matches: [], results: [], playerMap: {} as Record<string, string> };
+    return { game, tags, matches: [], results: [], playerMap: {} as Record<string, string>, avatarMap: {} as Record<string, string | null> };
   }
 
-  const { data: results } = await supabase.from("match_results").select("*").in("match_id", matchIds);
-  const playerIds = [...new Set((results || []).map((r) => r.player_id))];
+  const { data: results } = await supabase
+    .from("match_results")
+    .select("id, match_id, player_id, position, score, seat_position, faction, mmr_change, mmr_before, mmr_after")
+    .in("match_id", matchIds);
+  const playerIds = [...new Set((results || []).map((r: any) => r.player_id))];
   const { data: profiles } = await supabase.rpc("get_public_profiles", { p_ids: playerIds });
   const playerMap: Record<string, string> = {};
-  for (const p of profiles || []) playerMap[p.id] = (p as any).nickname || p.name;
+  const avatarMap: Record<string, string | null> = {};
+  for (const p of profiles || []) {
+    playerMap[p.id] = (p as any).nickname || p.name;
+    avatarMap[p.id] = (p as any).avatar_url || null;
+  }
 
-  return { game, tags, matches: matches || [], results: results || [], playerMap };
+  return { game, tags, matches: matches || [], results: results || [], playerMap, avatarMap };
 };
 
 export const useGameDetail = (slug: string | undefined) => {

@@ -75,6 +75,7 @@ export interface BloodMatchRecord {
   script_name: string;
   winning_team: string;
   storyteller_name: string;
+  platform?: string | null;
   players: BloodMatchPlayer[];
 }
 

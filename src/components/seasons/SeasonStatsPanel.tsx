@@ -228,14 +228,20 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
   const heatmap = useMemo(() => {
     const dates = isBlood ? bloodMatches.map((m) => m.played_at) : matches.map((m) => m.played_at);
     if (dates.length === 0) return null;
-    // 4 hour buckets: 0h, 6h, 12h, 18h
+    // 4 hour buckets: 0-12, 12-18, 18-21, 21-24
     const grid: number[][] = Array.from({ length: 4 }, () => Array(7).fill(0));
     let max = 0;
+    const bucketOf = (h: number) => {
+      if (h < 12) return 0;
+      if (h < 18) return 1;
+      if (h < 21) return 2;
+      return 3;
+    };
     for (const iso of dates) {
       const d = new Date(iso);
       const day = d.getDay(); // 0..6 (Sun..Sat)
       const h = d.getHours();
-      const row = Math.floor(h / 6); // 0..3
+      const row = bucketOf(h);
       grid[row][day] += 1;
       if (grid[row][day] > max) max = grid[row][day];
     }
@@ -466,7 +472,7 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
                   <div className="flex-1 flex items-center justify-center">
                     <div className="flex gap-2 w-full max-w-[420px]">
                       <div className="flex flex-col justify-around text-[10px] text-muted-foreground py-4 w-6">
-                        {["0h", "6h", "12h", "18h"].map((h) => <span key={h}>{h}</span>)}
+                        {["0-12h", "12-18h", "18-21h", "21-24h"].map((h) => <span key={h}>{h}</span>)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-muted-foreground mb-1">

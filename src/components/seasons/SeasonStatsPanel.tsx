@@ -460,33 +460,35 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
 
             {heatmap && (
               <Card className="bg-card border-border">
-                <CardContent className="py-4 space-y-3">
+                <CardContent className="py-4 space-y-3 h-full flex flex-col">
                   <div>
                     <p className="text-sm font-semibold">Mapa de calor</p>
                     <p className="text-xs text-muted-foreground">Dias da semana e horários mais jogados</p>
                   </div>
-                  <div className="flex gap-2">
-                    <div className="flex flex-col justify-around text-[10px] text-muted-foreground py-4 w-6">
-                      {["0h", "6h", "12h", "18h"].map((h) => <span key={h}>{h}</span>)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-muted-foreground mb-1">
-                        {DAY_LABELS.map((d) => <span key={d}>{d}</span>)}
+                  <div className="flex-1 flex items-center justify-center">
+                    <div className="flex gap-2 w-full max-w-[420px]">
+                      <div className="flex flex-col justify-around text-[10px] text-muted-foreground py-4 w-6">
+                        {["0h", "6h", "12h", "18h"].map((h) => <span key={h}>{h}</span>)}
                       </div>
-                      <div className="grid grid-rows-4 gap-1">
-                        {heatmap.grid.map((row, ri) => (
-                          <div key={ri} className="grid grid-cols-7 gap-1">
-                            {row.map((count, ci) => {
-                              const intensity = heatmap.max > 0 ? count / heatmap.max : 0;
-                              return (
-                                <div key={ci} className="h-6 rounded-sm border border-border/40"
-                                  style={{ backgroundColor: count === 0 ? "hsl(var(--secondary) / 0.3)" : `hsl(38 100% 50% / ${0.15 + intensity * 0.85})` }}
-                                  title={`${DAY_LABELS[ci]} ${ri * 6}h–${(ri + 1) * 6}h: ${count} partidas`}
-                                />
-                              );
-                            })}
-                          </div>
-                        ))}
+                      <div className="flex-1 min-w-0">
+                        <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-muted-foreground mb-1">
+                          {DAY_LABELS.map((d) => <span key={d}>{d}</span>)}
+                        </div>
+                        <div className="grid grid-rows-4 gap-1">
+                          {heatmap.grid.map((row, ri) => (
+                            <div key={ri} className="grid grid-cols-7 gap-1">
+                              {row.map((count, ci) => {
+                                const intensity = heatmap.max > 0 ? count / heatmap.max : 0;
+                                return (
+                                  <div key={ci} className="h-8 rounded-sm border border-border/40"
+                                    style={{ backgroundColor: count === 0 ? "hsl(var(--secondary) / 0.3)" : `hsl(38 100% 50% / ${0.15 + intensity * 0.85})` }}
+                                    title={`${DAY_LABELS[ci]} ${ri * 6}h–${(ri + 1) * 6}h: ${count} partidas`}
+                                  />
+                                );
+                              })}
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>

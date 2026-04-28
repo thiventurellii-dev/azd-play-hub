@@ -28,33 +28,6 @@ import { DateBlock } from "@/components/shared/DateBlock";
 import EditMatchDialog from "@/components/matches/EditMatchDialog";
 import type { MatchRecord } from "@/types/database";
 
-const HighlightCard = ({ title, items, suffix = "" }: { title: string; items: { id: string; name: string; avatar_url?: string | null; value: number | string }[]; suffix?: string }) => (
-  <Card className="bg-card border-border">
-    <CardContent className="py-4 space-y-2">
-      <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
-      {items.length === 0 ? (
-        <p className="text-xs text-muted-foreground">—</p>
-      ) : (
-        <div className="space-y-1.5">
-          {items.map((it, i) => (
-            <div key={it.id || i} className="flex items-center justify-between gap-2 text-sm min-w-0">
-              <div className="flex items-center gap-2 min-w-0 flex-1">
-                <span className="text-muted-foreground text-xs w-3 flex-shrink-0">{i + 1}</span>
-                <Avatar className="h-5 w-5 flex-shrink-0">
-                  {it.avatar_url && <AvatarImage src={it.avatar_url} alt={it.name} />}
-                  <AvatarFallback className="text-[9px] bg-secondary">{it.name.charAt(0).toUpperCase()}</AvatarFallback>
-                </Avatar>
-                <span className="truncate min-w-0">{it.name}</span>
-              </div>
-              <span className="font-bold text-gold flex-shrink-0">{it.value}{suffix}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </CardContent>
-  </Card>
-);
-
 const GameDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();

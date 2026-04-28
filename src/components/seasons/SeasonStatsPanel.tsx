@@ -257,6 +257,67 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
         </Card>
       </div>
 
+      {positionStats && (
+        <Card className="bg-card border-border">
+          <CardContent className="py-4 space-y-3">
+            <div>
+              <p className="text-sm font-semibold">Posição final na mesa</p>
+              <p className="text-xs text-muted-foreground">Distribuição das colocações</p>
+            </div>
+            <div className="flex items-center gap-4">
+              {(() => {
+                const size = 120;
+                const stroke = 22;
+                const r = (size - stroke) / 2;
+                const c = 2 * Math.PI * r;
+                let offset = 0;
+                return (
+                  <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
+                    <svg width={size} height={size} className="-rotate-90">
+                      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="hsl(var(--secondary))" strokeWidth={stroke} />
+                      {positionStats.slices.map((s) => {
+                        if (s.count === 0) return null;
+                        const len = (s.count / positionStats.total) * c;
+                        const dasharray = `${len} ${c - len}`;
+                        const dashoffset = -offset;
+                        offset += len;
+                        return (
+                          <circle
+                            key={s.position}
+                            cx={size / 2}
+                            cy={size / 2}
+                            r={r}
+                            fill="none"
+                            stroke={s.color}
+                            strokeWidth={stroke}
+                            strokeDasharray={dasharray}
+                            strokeDashoffset={dashoffset}
+                          />
+                        );
+                      })}
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <p className="text-xl font-bold leading-none">{positionStats.total}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">partidas</p>
+                    </div>
+                  </div>
+                );
+              })()}
+              <div className="flex-1 space-y-1.5 min-w-0">
+                {positionStats.slices.map((s) => (
+                  <div key={s.position} className="flex items-center gap-2 text-xs">
+                    <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
+                    <span className="text-muted-foreground flex-shrink-0">{s.position}º lugar</span>
+                    <span className="ml-auto font-semibold text-foreground">{s.pct}%</span>
+                    <span className="text-muted-foreground">({s.count})</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div>
         <p className="text-sm font-semibold mb-2">Outras estatísticas</p>
         <div className="grid grid-cols-2 gap-2">

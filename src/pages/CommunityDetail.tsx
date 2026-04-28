@@ -319,6 +319,15 @@ const CommunityDetail = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="discussions" className="mt-4">
+            <DiscussionsTab
+              communityId={community.id}
+              communitySlug={community.slug}
+              isMember={isMember}
+              canModerate={canModerate}
+            />
+          </TabsContent>
         </Tabs>
       </div>
     </>

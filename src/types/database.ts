@@ -60,6 +60,7 @@ export interface MatchResultEntry {
   player_name: string;
   player_id: string;
   position: number;
+  seat_position?: number | null;
   score: number;
   mmr_change: number;
   mmr_before: number;

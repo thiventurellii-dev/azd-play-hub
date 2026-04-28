@@ -124,12 +124,10 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
       }
       return { winStreak: null, longest, maxScore: null, minScore: null };
     }
-    let longest = { duration: 0, label: "—" };
+    let longest = { duration: 0, label: "" };
     for (const m of matches) {
       if ((m.duration_minutes || 0) > longest.duration) {
-        const top1 = m.results.find((r) => r.position === 1)?.player_name || "?";
-        const top2 = m.results.find((r) => r.position === 2)?.player_name || "?";
-        longest = { duration: m.duration_minutes || 0, label: `${top1} vs ${top2}` };
+        longest = { duration: m.duration_minutes || 0, label: "" };
       }
     }
     let maxScore = { value: 0, name: "—" };

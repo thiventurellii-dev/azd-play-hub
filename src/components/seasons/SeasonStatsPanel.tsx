@@ -266,8 +266,8 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
         <Card className="bg-card border-border">
           <CardContent className="py-4 space-y-3">
             <div>
-              <p className="text-sm font-semibold">Posição final na mesa</p>
-              <p className="text-xs text-muted-foreground">Distribuição das colocações</p>
+              <p className="text-sm font-semibold">Colocação do 1º a jogar</p>
+              <p className="text-xs text-muted-foreground">Em que posição final terminou quem começou</p>
             </div>
             <div className="flex items-center gap-4">
               {(() => {

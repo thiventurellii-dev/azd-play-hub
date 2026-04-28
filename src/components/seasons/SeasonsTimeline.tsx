@@ -281,10 +281,9 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
                         barStyle.boxShadow = `0 0 12px ${rgba(rgb, 0.35)}, 0 0 24px ${rgba(rgb, 0.2)}`;
                       }
                     } else {
-                      // Not participating: hatched, no glow
-                      barStyle.backgroundColor = "transparent";
-                      barStyle.backgroundImage = `repeating-linear-gradient(135deg, ${rgba(rgb, 0.9)} 0 2px, transparent 2px 7px)`;
-                      barStyle.border = `1.5px solid ${rgba(rgb, 0.9)}`;
+                      // Not participating: faded flat color, no glow
+                      barStyle.background = rgba(rgb, 0.25);
+                      barStyle.border = `1px solid ${rgba(rgb, 0.5)}`;
                     }
 
                     return (

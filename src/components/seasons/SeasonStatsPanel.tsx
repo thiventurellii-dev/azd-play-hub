@@ -33,6 +33,8 @@ const PlayerLine = ({ rank, name, avatar_url, value, suffix = "" }: { rank: numb
   </div>
 );
 
+const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
 export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, bloodRankings, hasFactions = true }: Props) => {
   const [factionSort, setFactionSort] = useState<"games" | "winrate">("games");
 
@@ -122,24 +124,6 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
       }
       return { winStreak: null, longest, maxScore: null };
     }
-    const sorted = [...matches].sort((a, b) => a.played_at.localeCompare(b.played_at));
-    const perPlayer: Record<string, { name: string; results: number[] }> = {};
-    for (const m of sorted) {
-      for (const r of m.results) {
-        if (!r.player_id) continue;
-        if (!perPlayer[r.player_id]) perPlayer[r.player_id] = { name: r.player_name, results: [] };
-        perPlayer[r.player_id].results.push(r.position);
-      }
-    }
-    let winStreak = { name: "—", count: 0 };
-    for (const p of Object.values(perPlayer)) {
-      let curW = 0, maxW = 0;
-      for (const pos of p.results) {
-        if (pos === 1) { curW++; maxW = Math.max(maxW, curW); }
-        else { curW = 0; }
-      }
-      if (maxW > winStreak.count) winStreak = { name: p.name, count: maxW };
-    }
     let longest = { duration: 0, label: "—" };
     for (const m of matches) {
       if ((m.duration_minutes || 0) > longest.duration) {
@@ -154,11 +138,10 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
         if ((r.score || 0) > maxScore.value) maxScore = { value: r.score, name: r.player_name };
       }
     }
-    return { winStreak, longest, maxScore };
+    return { winStreak: null, longest, maxScore };
   }, [isBlood, matches, bloodMatches]);
 
   // Win rate by seat position (non-Blood only)
-  // Para cada assento na mesa, quantas vezes quem sentou ali venceu (position === 1).
   const positionStats = useMemo(() => {
     if (isBlood) return null;
     const wins: Record<number, number> = {};
@@ -195,50 +178,94 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
     return { slices, total: totalWins };
   }, [isBlood, matches]);
 
+  // Duration histogram + average
+  const durationStats = useMemo(() => {
+    const source = isBlood
+      ? bloodMatches.map((m) => m.duration_minutes || 0)
+      : matches.map((m) => m.duration_minutes || 0);
+    const valid = source.filter((d) => d > 0);
+    if (valid.length === 0) return null;
+    const buckets = [
+      { label: "0–60", min: 0, max: 60 },
+      { label: "60–90", min: 60, max: 90 },
+      { label: "90–120", min: 90, max: 120 },
+      { label: "120–150", min: 120, max: 150 },
+      { label: "150+", min: 150, max: Infinity },
+    ];
+    const counts = buckets.map((b) => valid.filter((d) => d >= b.min && d < b.max).length);
+    const max = Math.max(...counts, 1);
+    const avg = Math.round(valid.reduce((s, d) => s + d, 0) / valid.length);
+    const variance = valid.reduce((s, d) => s + Math.pow(d - avg, 2), 0) / valid.length;
+    const std = Math.round(Math.sqrt(variance));
+    return {
+      buckets: buckets.map((b, i) => ({ label: b.label, count: counts[i], pct: Math.round((counts[i] / valid.length) * 100), height: (counts[i] / max) * 100 })),
+      avg,
+      std,
+    };
+  }, [isBlood, matches, bloodMatches]);
+
+  // Heatmap day-of-week × hour-bucket
+  const heatmap = useMemo(() => {
+    const dates = isBlood ? bloodMatches.map((m) => m.played_at) : matches.map((m) => m.played_at);
+    if (dates.length === 0) return null;
+    // 4 hour buckets: 0h, 6h, 12h, 18h
+    const grid: number[][] = Array.from({ length: 4 }, () => Array(7).fill(0));
+    let max = 0;
+    for (const iso of dates) {
+      const d = new Date(iso);
+      const day = d.getDay(); // 0..6 (Sun..Sat)
+      const h = d.getHours();
+      const row = Math.floor(h / 6); // 0..3
+      grid[row][day] += 1;
+      if (grid[row][day] > max) max = grid[row][day];
+    }
+    return { grid, max };
+  }, [isBlood, matches, bloodMatches]);
+
   return (
     <div className="space-y-4">
       <h3 className="text-base font-semibold">Estatísticas da temporada</h3>
 
-      {/* Factions — only shown when applicable */}
-      {showFactions && (
-        <Card className="bg-card border-border">
-          <CardContent className="py-4 space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-semibold">{isBlood ? "Estatística de Times" : "Estatística de Facções"}</p>
-              <Select value={factionSort} onValueChange={(v) => setFactionSort(v as "games" | "winrate")}>
-                <SelectTrigger className="h-7 w-[150px] text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="games">Mais jogos</SelectItem>
-                  <SelectItem value="winrate">Maior winrate</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {factions.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Sem dados ainda.</p>
-            ) : (
-              <div className="space-y-2">
-                {factions.map((f) => (
-                  <div key={f.name}>
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="truncate">{f.name}</span>
-                      <span className="text-muted-foreground">
-                        {factionSort === "winrate" ? `${f.winRate}% (${f.count})` : `${f.pct}% (${f.count})`}
-                      </span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
-                      <div className={`h-full ${f.color}`} style={{ width: `${factionSort === "winrate" ? f.winRate : f.pct}%` }} />
-                    </div>
-                  </div>
-                ))}
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* Factions */}
+        {showFactions && (
+          <Card className="bg-card border-border">
+            <CardContent className="py-4 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-semibold">{isBlood ? "Estatística de Times" : "Estatística de Facções"}</p>
+                <Select value={factionSort} onValueChange={(v) => setFactionSort(v as "games" | "winrate")}>
+                  <SelectTrigger className="h-7 w-[150px] text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="games">Mais jogos</SelectItem>
+                    <SelectItem value="winrate">Maior winrate</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+              {factions.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Sem dados ainda.</p>
+              ) : (
+                <div className="space-y-2">
+                  {factions.map((f) => (
+                    <div key={f.name}>
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="truncate">{f.name}</span>
+                        <span className="text-muted-foreground">
+                          {factionSort === "winrate" ? `${f.winRate}% (${f.count})` : `${f.pct}% (${f.count})`}
+                        </span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+                        <div className={`h-full ${f.color}`} style={{ width: `${factionSort === "winrate" ? f.winRate : f.pct}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
-      <div className="grid gap-3 grid-cols-1 items-stretch">
         <Card className="bg-card border-border">
           <CardContent className="py-4 flex flex-col gap-2 h-full">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Mais vitórias</p>
@@ -253,6 +280,7 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
             </div>
           </CardContent>
         </Card>
+
         <Card className="bg-card border-border">
           <CardContent className="py-4 flex flex-col gap-2 h-full">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Maior win rate</p>
@@ -267,83 +295,144 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
             </div>
           </CardContent>
         </Card>
-      </div>
 
-      {positionStats && (
-        <Card className="bg-card border-border">
-          <CardContent className="py-4 space-y-3">
-            <div>
-              <p className="text-sm font-semibold">Vitórias por posição na mesa</p>
-              <p className="text-xs text-muted-foreground">Em qual assento mais se ganha</p>
-            </div>
-            <div className="flex items-center gap-4">
-              {(() => {
-                const size = 120;
-                const stroke = 22;
-                const r = (size - stroke) / 2;
-                const c = 2 * Math.PI * r;
-                let offset = 0;
-                return (
-                  <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
-                    <svg width={size} height={size} className="-rotate-90">
-                      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="hsl(var(--secondary))" strokeWidth={stroke} />
-                      {positionStats.slices.map((s) => {
-                        if (s.count === 0) return null;
-                        const len = (s.count / positionStats.total) * c;
-                        const dasharray = `${len} ${c - len}`;
-                        const dashoffset = -offset;
-                        offset += len;
-                        return (
-                          <circle
-                            key={s.position}
-                            cx={size / 2}
-                            cy={size / 2}
-                            r={r}
-                            fill="none"
-                            stroke={s.color}
-                            strokeWidth={stroke}
-                            strokeDasharray={dasharray}
-                            strokeDashoffset={dashoffset}
-                          />
-                        );
-                      })}
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <p className="text-xl font-bold leading-none">{positionStats.total}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">vitórias</p>
+        {positionStats && (
+          <Card className="bg-card border-border">
+            <CardContent className="py-4 space-y-3">
+              <div>
+                <p className="text-sm font-semibold">Vitórias por posição na mesa</p>
+                <p className="text-xs text-muted-foreground">Em qual assento mais se ganha</p>
+              </div>
+              <div className="flex items-center gap-4">
+                {(() => {
+                  const size = 120;
+                  const stroke = 22;
+                  const r = (size - stroke) / 2;
+                  const c = 2 * Math.PI * r;
+                  let offset = 0;
+                  return (
+                    <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
+                      <svg width={size} height={size} className="-rotate-90">
+                        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="hsl(var(--secondary))" strokeWidth={stroke} />
+                        {positionStats.slices.map((s) => {
+                          if (s.count === 0) return null;
+                          const len = (s.count / positionStats.total) * c;
+                          const dasharray = `${len} ${c - len}`;
+                          const dashoffset = -offset;
+                          offset += len;
+                          return (
+                            <circle
+                              key={s.position}
+                              cx={size / 2}
+                              cy={size / 2}
+                              r={r}
+                              fill="none"
+                              stroke={s.color}
+                              strokeWidth={stroke}
+                              strokeDasharray={dasharray}
+                              strokeDashoffset={dashoffset}
+                            />
+                          );
+                        })}
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <p className="text-xl font-bold leading-none">{positionStats.total}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">vitórias</p>
+                      </div>
                     </div>
-                  </div>
-                );
-              })()}
-              <div className="flex-1 space-y-1.5 min-w-0">
-                {positionStats.slices.map((s) => (
-                  <div key={s.position} className="flex items-center gap-2 text-xs">
-                    <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
-                    <span className="text-muted-foreground flex-shrink-0">{s.position}ª posição</span>
-                    <span className="ml-auto font-semibold text-foreground">{s.pct}%</span>
-                    <span className="text-muted-foreground">({s.count})</span>
+                  );
+                })()}
+                <div className="flex-1 space-y-1.5 min-w-0">
+                  {positionStats.slices.map((s) => (
+                    <div key={s.position} className="flex items-center gap-2 text-xs">
+                      <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
+                      <span className="text-muted-foreground flex-shrink-0">{s.position}ª posição</span>
+                      <span className="ml-auto font-semibold text-foreground">{s.pct}%</span>
+                      <span className="text-muted-foreground">({s.count})</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Duration histogram */}
+        {durationStats && (
+          <Card className="bg-card border-border">
+            <CardContent className="py-4 space-y-3">
+              <div>
+                <p className="text-sm font-semibold">Duração das partidas</p>
+                <p className="text-xs text-muted-foreground">Tempo total das partidas</p>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-xs text-muted-foreground">Média</span>
+                <span className="text-2xl font-bold">{durationStats.avg} min</span>
+                <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">± {durationStats.std} min</span>
+              </div>
+              <div className="flex items-end gap-1 h-24 mt-2">
+                {durationStats.buckets.map((b) => (
+                  <div key={b.label} className="flex-1 flex flex-col items-center gap-1">
+                    <span className="text-[10px] text-muted-foreground">{b.pct}%</span>
+                    <div className="w-full bg-secondary/40 rounded-sm relative" style={{ height: "70%" }}>
+                      <div
+                        className="absolute bottom-0 left-0 right-0 bg-gold rounded-sm transition-all"
+                        style={{ height: `${b.height}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">{b.label}</span>
                   </div>
                 ))}
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Heatmap */}
+        {heatmap && (
+          <Card className="bg-card border-border md:col-span-2">
+            <CardContent className="py-4 space-y-3">
+              <div>
+                <p className="text-sm font-semibold">Mapa de calor</p>
+                <p className="text-xs text-muted-foreground">Dias da semana e horários mais jogados</p>
+              </div>
+              <div className="flex gap-2">
+                <div className="flex flex-col justify-around text-[10px] text-muted-foreground py-1">
+                  {["0h", "6h", "12h", "18h"].map((h) => <span key={h}>{h}</span>)}
+                </div>
+                <div className="flex-1">
+                  <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-muted-foreground mb-1">
+                    {DAY_LABELS.map((d) => <span key={d}>{d}</span>)}
+                  </div>
+                  <div className="grid grid-rows-4 gap-1">
+                    {heatmap.grid.map((row, ri) => (
+                      <div key={ri} className="grid grid-cols-7 gap-1">
+                        {row.map((count, ci) => {
+                          const intensity = heatmap.max > 0 ? count / heatmap.max : 0;
+                          return (
+                            <div
+                              key={ci}
+                              className="aspect-square rounded-sm border border-border/40"
+                              style={{
+                                backgroundColor: count === 0 ? "hsl(var(--secondary) / 0.3)" : `hsl(var(--gold-hsl, 38 100% 50%) / ${0.15 + intensity * 0.85})`,
+                              }}
+                              title={`${DAY_LABELS[ci]} ${ri * 6}h–${(ri + 1) * 6}h: ${count} partidas`}
+                            />
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
 
       <div>
         <p className="text-sm font-semibold mb-2">Outras estatísticas</p>
         <div className="grid grid-cols-2 gap-2">
-          {otherStats.winStreak && (
-            <Card className="bg-card border-border">
-              <CardContent className="py-3 text-center space-y-1">
-                <div className="flex items-center justify-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                  <TrendingUp className="h-3 w-3" /> Maior seq. vitórias
-                </div>
-                <p className="text-xl font-bold text-gold">{otherStats.winStreak.count}</p>
-                <p className="text-[11px] text-muted-foreground truncate">{otherStats.winStreak.name}</p>
-              </CardContent>
-            </Card>
-          )}
           <Card className="bg-card border-border">
             <CardContent className="py-3 text-center space-y-1">
               <div className="flex items-center justify-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">

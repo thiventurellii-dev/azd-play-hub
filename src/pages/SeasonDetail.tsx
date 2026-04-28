@@ -11,6 +11,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import {
   Calendar, Clock, Users, ExternalLink, Video, Award, ChevronDown, ChevronUp,
   Flag, Share2, UserPlus, Gamepad2, TrendingUp, Trophy, Shield, FileText, Info, Upload, Download,
+  ArrowUp, ArrowDown, Minus,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { getRankIcon, getBloodPrizeClass, getBloodWinStats } from "@/utils/game-logic";

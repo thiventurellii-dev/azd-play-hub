@@ -232,6 +232,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
           community_id: selectedCommunityId || null,
           community_only: !!selectedCommunityId && communityOnly,
           room_type: category || 'boardgame',
+          platform: platform || null,
           ...(isAdminMode && status ? { status: status as "open" | "full" | "in_progress" | "finished" | "cancelled" } : {}),
         };
 

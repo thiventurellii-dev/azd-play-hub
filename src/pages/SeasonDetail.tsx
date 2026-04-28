@@ -757,7 +757,7 @@ const SeasonDetail = () => {
                       const delta = positionDeltas[r.player_id];
                       return (
                         <motion.div key={r.player_id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}>
-                          <div className={`grid grid-cols-[40px_1fr_80px_80px_80px_120px_90px] gap-2 items-center px-4 py-3 rounded-lg border border-border hover:border-gold/20 transition-colors ${i < 3 ? "border-gold/30" : ""}`}>
+                          <div className={`grid grid-cols-[40px_1fr_80px_80px_80px_140px_90px] gap-2 items-center px-4 py-3 rounded-lg border border-border hover:border-gold/20 transition-colors ${i < 3 ? "border-gold/30" : ""}`}>
                             <div className="flex items-center justify-center">{getRankIcon(i)}</div>
                             <div className="flex items-center gap-2 min-w-0">
                               <Avatar className="h-6 w-6 flex-shrink-0">

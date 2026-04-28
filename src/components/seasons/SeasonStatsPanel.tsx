@@ -77,7 +77,7 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
       color: "",
     }));
     arr.sort((a, b) => factionSort === "winrate" ? b.winRate - a.winRate : b.count - a.count);
-    return arr.slice(0, 5).map((f, i) => ({ ...f, color: FACTION_COLORS[i % FACTION_COLORS.length] }));
+    return arr.slice(0, 10).map((f, i) => ({ ...f, color: FACTION_COLORS[i % FACTION_COLORS.length] }));
   }, [isBlood, matches, bloodMatches, factionSort]);
 
   const showFactions = hasFactions && (isBlood || factions.length > 0);

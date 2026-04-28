@@ -48,6 +48,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
   const [playedDate, setPlayedDate] = useState(prefilledDate || '');
   const [playedTime, setPlayedTime] = useState('');
   const [duration, setDuration] = useState('');
+  const [platform, setPlatform] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
 
   // BotC script

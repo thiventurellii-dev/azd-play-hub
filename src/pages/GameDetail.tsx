@@ -412,32 +412,35 @@ const GameDetail = () => {
                     <Card key={m.id} className="bg-card border-border hover:border-gold/20 transition-colors cursor-pointer"
                       onClick={() => setExpandedMatch(isExpanded ? null : m.id)}>
                       <CardContent className="py-4 space-y-3">
-                        <div className="flex items-center justify-between flex-wrap gap-2">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <Badge variant="outline">{game.name}</Badge>
-                            {isCompetitive ? (
-                              <Badge variant="outline" className="text-xs border-gold/40 text-gold">Competitiva</Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-xs">Casual</Badge>
-                            )}
-                            {winner && <span className="text-sm font-medium text-gold flex items-center gap-1"><Trophy className="h-3.5 w-3.5" /> {winner.player_name}</span>}
-                            {m.duration_minutes && (
-                              <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                <Clock className="h-3 w-3" /> {m.duration_minutes} min
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                            <span className="text-xs text-muted-foreground">{new Date(m.played_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</span>
-                            <EditActionButton entityType="match" onClick={() => { setEditMatch(m); setEditMatchOpen(true); }} />
-                            <button
-                              type="button"
-                              className="text-muted-foreground"
-                              onClick={() => setExpandedMatch(isExpanded ? null : m.id)}
-                              aria-label={isExpanded ? "Recolher" : "Expandir"}
-                            >
-                              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                            </button>
+                        <div className="flex items-center gap-3">
+                          <DateBlock date={m.played_at} />
+                          <div className="flex-1 min-w-0 flex items-center justify-between flex-wrap gap-2">
+                            <div className="flex items-center gap-2 flex-wrap min-w-0">
+                              <Badge variant="outline">{game.name}</Badge>
+                              {isCompetitive ? (
+                                <Badge variant="outline" className="text-xs border-gold/40 text-gold">Competitiva</Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-xs">Casual</Badge>
+                              )}
+                              {winner && <span className="text-sm font-medium text-gold flex items-center gap-1"><Trophy className="h-3.5 w-3.5" /> {winner.player_name}</span>}
+                              {m.duration_minutes && (
+                                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                  <Clock className="h-3 w-3" /> {m.duration_minutes} min
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                              <span className="text-[11px] text-muted-foreground tabular-nums">{new Date(m.played_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
+                              <EditActionButton entityType="match" onClick={() => { setEditMatch(m); setEditMatchOpen(true); }} />
+                              <button
+                                type="button"
+                                className="text-muted-foreground"
+                                onClick={() => setExpandedMatch(isExpanded ? null : m.id)}
+                                aria-label={isExpanded ? "Recolher" : "Expandir"}
+                              >
+                                {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                              </button>
+                            </div>
                           </div>
                         </div>
                         {isExpanded && (

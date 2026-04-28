@@ -60,7 +60,8 @@ const MatchImage = ({ src }: { src: string }) => {
 const SeasonDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { notify } = useNotification();
-  const [season, setSeason] = useState<(SeasonFull & { cover_url: string | null; start_date: string; end_date: string }) | null>(null);
+  const { isAdmin } = useAuth();
+  const [season, setSeason] = useState<(SeasonFull & { cover_url: string | null; start_date: string; end_date: string; regulation_url: string | null }) | null>(null);
   const [coverFallback, setCoverFallback] = useState<string | null>(null);
   const [linkedItems, setLinkedItems] = useState<{ name: string; image_url: string | null }[]>([]);
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
@@ -68,10 +69,14 @@ const SeasonDetail = () => {
   const [matches, setMatches] = useState<MatchRecord[]>([]);
   const [bloodMatches, setBloodMatches] = useState<BloodMatchRecord[]>([]);
   const [games, setGames] = useState<GameInfo[]>([]);
+  const [gameFactionsMap, setGameFactionsMap] = useState<Record<string, any>>({});
+  const [avatarMap, setAvatarMap] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(true);
   const [selectedGameId, setSelectedGameId] = useState<string>("all");
   const [expandedMatch, setExpandedMatch] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("ranking");
+  const [uploadingReg, setUploadingReg] = useState(false);
+  const regFileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!id) return;

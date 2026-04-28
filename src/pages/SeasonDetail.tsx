@@ -462,9 +462,9 @@ const SeasonDetail = () => {
                 {!isBlood ? (
                   <div className="grid grid-cols-3 gap-1.5">
                     {[
-                      { label: "1º lugar", val: season.prize_1st },
-                      { label: "2º lugar", val: season.prize_2nd },
-                      { label: "3º lugar", val: season.prize_3rd },
+                      { label: "🥇 1º", val: season.prize_1st },
+                      { label: "🥈 2º", val: season.prize_2nd },
+                      { label: "🥉 3º", val: season.prize_3rd },
                     ].map((p) => (
                       <div key={p.label} className="rounded-md border border-border bg-secondary/30 py-2">
                         <p className="text-[10px] text-muted-foreground">{p.label}</p>
@@ -475,9 +475,9 @@ const SeasonDetail = () => {
                 ) : (
                   <div className="grid grid-cols-3 gap-1.5">
                     {[
-                      { label: "1º-3º", val: season.prize_1st },
-                      { label: "4º-6º", val: season.prize_4th_6th },
-                      { label: "7º-10º", val: season.prize_7th_10th },
+                      { label: "🥇 1º-3º", val: season.prize_1st },
+                      { label: "🥈 4º-6º", val: season.prize_4th_6th },
+                      { label: "🥉 7º-10º", val: season.prize_7th_10th },
                     ].map((p) => (
                       <div key={p.label} className="rounded-md border border-border bg-secondary/30 py-2">
                         <p className="text-[10px] text-muted-foreground">{p.label}</p>
@@ -490,14 +490,13 @@ const SeasonDetail = () => {
             </Card>
           )}
 
-          {/* Format info */}
+          {/* Format info — sem critério de desempate */}
           <Card className="bg-card border-border">
             <CardContent className="py-4 space-y-3 text-sm">
               {[
                 { icon: Award, label: "Sistema de pontuação", val: isBlood ? "Pontos Blood" : "MMR Global" },
                 { icon: Shield, label: "Formato", val: "Competitivo" },
                 { icon: Gamepad2, label: "Partidas válidas", val: "Jogos ranqueados" },
-                { icon: TrendingUp, label: "Critério de desempate", val: "Maior win rate, depois MMR" },
               ].map((it) => (
                 <div key={it.label} className="flex items-start gap-2">
                   <it.icon className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
@@ -510,9 +509,50 @@ const SeasonDetail = () => {
             </CardContent>
           </Card>
 
-          <Button variant="outline" className="w-full gap-1.5" asChild>
-            <Link to="/rules"><FileText className="h-4 w-4" /> Regulamento da temporada</Link>
-          </Button>
+          {/* Regulamento — admins fazem upload, todos baixam */}
+          <input
+            ref={regFileRef}
+            type="file"
+            accept=".pdf,.doc,.docx"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleRegulationUpload(f);
+            }}
+          />
+          {season.regulation_url ? (
+            <div className="space-y-2">
+              <Button variant="outline" className="w-full gap-1.5" asChild>
+                <a href={season.regulation_url} target="_blank" rel="noopener noreferrer">
+                  <Download className="h-4 w-4" /> Baixar Regulamento
+                </a>
+              </Button>
+              {isAdmin && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full gap-1.5 text-xs"
+                  onClick={() => regFileRef.current?.click()}
+                  disabled={uploadingReg}
+                >
+                  <Upload className="h-3.5 w-3.5" /> {uploadingReg ? "Enviando..." : "Substituir regulamento"}
+                </Button>
+              )}
+            </div>
+          ) : isAdmin ? (
+            <Button
+              variant="outline"
+              className="w-full gap-1.5"
+              onClick={() => regFileRef.current?.click()}
+              disabled={uploadingReg}
+            >
+              <Upload className="h-4 w-4" /> {uploadingReg ? "Enviando..." : "Subir Regulamento"}
+            </Button>
+          ) : (
+            <Button variant="outline" className="w-full gap-1.5" disabled>
+              <FileText className="h-4 w-4" /> Regulamento indisponível
+            </Button>
+          )}
         </aside>
 
         {/* Main content */}

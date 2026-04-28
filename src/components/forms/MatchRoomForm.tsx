@@ -105,11 +105,12 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
   const queryClient = useQueryClient();
   const isEdit = !!room;
 
-  const { data: options, isLoading: optionsLoading } = useFormOptions(true);
+  const { data: options, isLoading: optionsLoading } = useFormOptions(true, user?.id);
   const games = useMemo(() => options?.games ?? [], [options?.games]);
   const bloodScripts = useMemo(() => options?.scripts ?? [], [options?.scripts]);
   const availableTags = useMemo(() => options?.tags ?? [], [options?.tags]);
   const seasons = useMemo(() => options?.seasons ?? [], [options?.seasons]);
+  const userCommunities = useMemo(() => options?.communities ?? [], [options?.communities]);
 
   const [category, setCategory] = useState<"boardgame" | "botc" | "rpg" | "">("");
   const [gameId, setGameId] = useState("");
@@ -122,6 +123,8 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
   const [selectedScriptId, setSelectedScriptId] = useState("");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [selectedSeasonId, setSelectedSeasonId] = useState("");
+  const [selectedCommunityId, setSelectedCommunityId] = useState("");
+  const [communityOnly, setCommunityOnly] = useState(false);
   const [status, setStatus] = useState("");
 
   useEffect(() => {
@@ -135,6 +138,8 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
     setMaxPlayers(String(room.max_players ?? 10));
     setSelectedSeasonId(room.season_id ?? "");
     setSelectedScriptId(room.blood_script_id ?? "");
+    setSelectedCommunityId(room.community_id ?? "");
+    setCommunityOnly(!!room.community_only);
     setStatus("");
     const game = games.find(g => g.id === room.game?.id);
     if (game?.slug === "blood-on-the-clocktower") {

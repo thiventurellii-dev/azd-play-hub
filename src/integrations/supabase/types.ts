@@ -1290,6 +1290,7 @@ export type Database = {
       }
       seasons: {
         Row: {
+          cover_url: string | null
           created_at: string
           description: string | null
           end_date: string
@@ -1306,6 +1307,7 @@ export type Database = {
           type: Database["public"]["Enums"]["season_type"]
         }
         Insert: {
+          cover_url?: string | null
           created_at?: string
           description?: string | null
           end_date: string
@@ -1322,6 +1324,7 @@ export type Database = {
           type?: Database["public"]["Enums"]["season_type"]
         }
         Update: {
+          cover_url?: string | null
           created_at?: string
           description?: string | null
           end_date?: string

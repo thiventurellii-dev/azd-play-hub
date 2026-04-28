@@ -129,8 +129,8 @@ const Seasons = () => {
         <div className="flex items-center gap-2">
           <Dialog open={howOpen} onOpenChange={setHowOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1.5">
-                <Info className="h-4 w-4" /> Entenda como funciona
+              <Button variant="outline" size="icon" aria-label="Entenda como funciona">
+                <Info className="h-4 w-4" />
               </Button>
             </DialogTrigger>
             <DialogContent>

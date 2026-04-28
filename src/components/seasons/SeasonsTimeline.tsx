@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Info } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SeasonItem } from "@/hooks/useSeasonsData";
 
@@ -134,10 +134,7 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
         {/* Header */}
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold">Calendário das Seasons</h2>
-              <Info className="h-3.5 w-3.5 text-muted-foreground" />
-            </div>
+            <h2 className="text-lg font-semibold">Calendário das Seasons</h2>
             <p className="text-xs text-muted-foreground">Visualize a duração e o status das temporadas</p>
           </div>
           <div className="inline-flex items-center gap-1">

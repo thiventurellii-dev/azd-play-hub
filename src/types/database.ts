@@ -53,6 +53,7 @@ export interface MatchRecord {
   first_player_id: string | null;
   game_name: string;
   game_id: string;
+  platform?: string | null;
   results: MatchResultEntry[];
 }
 
@@ -74,6 +75,7 @@ export interface BloodMatchRecord {
   script_name: string;
   winning_team: string;
   storyteller_name: string;
+  platform?: string | null;
   players: BloodMatchPlayer[];
 }
 

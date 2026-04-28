@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { TrendingUp, Clock, Target } from "lucide-react";
+import { Clock } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { MatchRecord, BloodMatchRecord, RankingEntry, BloodRankingEntry } from "@/types/database";
 
@@ -113,7 +113,7 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
       .sort((a, b) => b.value - a.value).slice(0, 3);
   }, [isBlood, rankings, bloodRankings]);
 
-  // Streaks + longest match + max score
+  // Streaks + longest match + max/min winning score
   const otherStats = useMemo(() => {
     if (isBlood) {
       let longest = { duration: 0, label: "—" };
@@ -122,7 +122,7 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
           longest = { duration: m.duration_minutes || 0, label: m.script_name };
         }
       }
-      return { winStreak: null, longest, maxScore: null };
+      return { winStreak: null, longest, maxScore: null, minScore: null };
     }
     let longest = { duration: 0, label: "—" };
     for (const m of matches) {
@@ -133,12 +133,34 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
       }
     }
     let maxScore = { value: 0, name: "—" };
+    let minScore: { value: number; name: string } | null = null;
     for (const m of matches) {
-      for (const r of m.results) {
-        if ((r.score || 0) > maxScore.value) maxScore = { value: r.score, name: r.player_name };
+      const winner = m.results.find((r) => r.position === 1);
+      if (winner) {
+        if ((winner.score || 0) > maxScore.value) maxScore = { value: winner.score, name: winner.player_name };
+        if (minScore === null || (winner.score || 0) < minScore.value) minScore = { value: winner.score || 0, name: winner.player_name };
       }
     }
-    return { winStreak: null, longest, maxScore };
+    return { winStreak: null, longest, maxScore, minScore };
+  }, [isBlood, matches, bloodMatches]);
+
+  // Platform stats
+  const platformStats = useMemo(() => {
+    const counts: Record<string, number> = {};
+    const source: { platform?: string | null }[] = isBlood ? bloodMatches as any[] : matches as any[];
+    let total = 0;
+    for (const m of source) {
+      const p = (m as any).platform || "Não especificado";
+      counts[p] = (counts[p] || 0) + 1;
+      total++;
+    }
+    if (total === 0) return null;
+    const PLAT_COLORS = ["bg-gold", "bg-blue-500", "bg-purple-500", "bg-emerald-500", "bg-pink-500", "bg-orange-500"];
+    const arr = Object.entries(counts)
+      .map(([name, count]) => ({ name, count, pct: Math.round((count / total) * 100) }))
+      .sort((a, b) => b.count - a.count)
+      .map((p, i) => ({ ...p, color: PLAT_COLORS[i % PLAT_COLORS.length] }));
+    return { items: arr, total };
   }, [isBlood, matches, bloodMatches]);
 
   // Win rate by seat position (non-Blood only)
@@ -222,112 +244,236 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
     return { grid, max };
   }, [isBlood, matches, bloodMatches]);
 
+  const longestLabel = otherStats.longest.duration > 0
+    ? `${Math.floor(otherStats.longest.duration / 60)}h ${otherStats.longest.duration % 60}m`
+    : "—";
+
   return (
     <div className="space-y-4">
       <h3 className="text-base font-semibold">Estatísticas da temporada</h3>
 
-      {/* Row 1: Top 3 boards (vitórias / win rate) + posição na mesa */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="bg-card border-border">
-          <CardContent className="py-4 flex flex-col gap-2 h-full">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Mais vitórias</p>
-            <div className="flex-1 flex flex-col gap-2 justify-start">
-              {topWinners.length === 0 ? (
-                <p className="text-xs text-muted-foreground">—</p>
-              ) : (
-                topWinners.map((w, i) => (
-                  <PlayerLine key={w.player_id || i} rank={i + 1} name={w.name} avatar_url={w.avatar_url} value={w.value} />
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 lg:grid-cols-4">
+        {/* LEFT: 3 columns of stacked rows */}
+        <div className="space-y-4 lg:col-span-3">
+          {/* Row 1: Mais vitórias | Pontuação vencedora (max+min) | Maior win rate */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <Card className="bg-card border-border">
+              <CardContent className="py-4 flex flex-col gap-2 h-full">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Mais vitórias</p>
+                <div className="flex-1 flex flex-col gap-2 justify-start">
+                  {topWinners.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">—</p>
+                  ) : (
+                    topWinners.map((w, i) => (
+                      <PlayerLine key={w.player_id || i} rank={i + 1} name={w.name} avatar_url={w.avatar_url} value={w.value} />
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card className="bg-card border-border">
-          <CardContent className="py-4 flex flex-col gap-2 h-full">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Maior win rate</p>
-            <div className="flex-1 flex flex-col gap-2 justify-start">
-              {topWinRate.length === 0 ? (
-                <p className="text-xs text-muted-foreground">—</p>
-              ) : (
-                topWinRate.map((w, i) => (
-                  <PlayerLine key={w.player_id || i} rank={i + 1} name={w.name} avatar_url={w.avatar_url} value={w.value} suffix="%" />
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
+            {otherStats.maxScore ? (
+              <Card className="bg-card border-border">
+                <CardContent className="py-4 flex flex-col gap-3 h-full">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Pontuação vencedora</p>
+                  <div className="flex-1 grid grid-cols-2 gap-2 items-center">
+                    <div className="text-center">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Maior</p>
+                      <p className="text-2xl font-bold text-gold leading-none">{otherStats.maxScore.value}</p>
+                      <p className="text-[11px] text-muted-foreground truncate mt-1">{otherStats.maxScore.name}</p>
+                    </div>
+                    <div className="text-center border-l border-border">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Menor</p>
+                      <p className="text-2xl font-bold leading-none">{otherStats.minScore?.value ?? "—"}</p>
+                      <p className="text-[11px] text-muted-foreground truncate mt-1">{otherStats.minScore?.name ?? "—"}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : null}
 
-        {positionStats && (
-          <Card className="bg-card border-border">
-            <CardContent className="py-4 space-y-3 h-full">
-              <div>
-                <p className="text-sm font-semibold">Vitórias por posição na mesa</p>
-                <p className="text-xs text-muted-foreground">Em qual assento mais se ganha</p>
-              </div>
-              <div className="flex items-center gap-4">
-                {(() => {
-                  const size = 110;
-                  const stroke = 20;
-                  const r = (size - stroke) / 2;
-                  const c = 2 * Math.PI * r;
-                  let offset = 0;
-                  return (
-                    <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
-                      <svg width={size} height={size} className="-rotate-90">
-                        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="hsl(var(--secondary))" strokeWidth={stroke} />
-                        {positionStats.slices.map((s) => {
-                          if (s.count === 0) return null;
-                          const len = (s.count / positionStats.total) * c;
-                          const dasharray = `${len} ${c - len}`;
-                          const dashoffset = -offset;
-                          offset += len;
-                          return (
-                            <circle
-                              key={s.position}
-                              cx={size / 2}
-                              cy={size / 2}
-                              r={r}
-                              fill="none"
-                              stroke={s.color}
-                              strokeWidth={stroke}
-                              strokeDasharray={dasharray}
-                              strokeDashoffset={dashoffset}
-                            />
-                          );
-                        })}
-                      </svg>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <p className="text-lg font-bold leading-none">{positionStats.total}</p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">vitórias</p>
+            <Card className="bg-card border-border">
+              <CardContent className="py-4 flex flex-col gap-2 h-full">
+                <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Maior win rate</p>
+                <div className="flex-1 flex flex-col gap-2 justify-start">
+                  {topWinRate.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">—</p>
+                  ) : (
+                    topWinRate.map((w, i) => (
+                      <PlayerLine key={w.player_id || i} rank={i + 1} name={w.name} avatar_url={w.avatar_url} value={w.value} suffix="%" />
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Row 2: Plataforma + Posição na mesa */}
+          <div className="grid gap-4 md:grid-cols-2">
+            {platformStats && (
+              <Card className="bg-card border-border">
+                <CardContent className="py-4 space-y-3 h-full">
+                  <div>
+                    <p className="text-sm font-semibold">Local / Plataforma</p>
+                    <p className="text-xs text-muted-foreground">Onde as partidas aconteceram</p>
+                  </div>
+                  <div className="space-y-2">
+                    {platformStats.items.map((p) => (
+                      <div key={p.name}>
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span className="truncate">{p.name}</span>
+                          <span className="text-muted-foreground">{p.pct}% ({p.count})</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+                          <div className={`h-full ${p.color}`} style={{ width: `${p.pct}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {positionStats && (
+              <Card className="bg-card border-border">
+                <CardContent className="py-4 space-y-3 h-full">
+                  <div>
+                    <p className="text-sm font-semibold">Vitórias por posição na mesa</p>
+                    <p className="text-xs text-muted-foreground">Em qual assento mais se ganha</p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    {(() => {
+                      const size = 110;
+                      const stroke = 20;
+                      const r = (size - stroke) / 2;
+                      const c = 2 * Math.PI * r;
+                      let offset = 0;
+                      return (
+                        <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
+                          <svg width={size} height={size} className="-rotate-90">
+                            <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="hsl(var(--secondary))" strokeWidth={stroke} />
+                            {positionStats.slices.map((s) => {
+                              if (s.count === 0) return null;
+                              const len = (s.count / positionStats.total) * c;
+                              const dasharray = `${len} ${c - len}`;
+                              const dashoffset = -offset;
+                              offset += len;
+                              return (
+                                <circle key={s.position} cx={size / 2} cy={size / 2} r={r} fill="none" stroke={s.color} strokeWidth={stroke} strokeDasharray={dasharray} strokeDashoffset={dashoffset} />
+                              );
+                            })}
+                          </svg>
+                          <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <p className="text-lg font-bold leading-none">{positionStats.total}</p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">vitórias</p>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                    <div className="flex-1 space-y-1 min-w-0">
+                      {positionStats.slices.map((s) => (
+                        <div key={s.position} className="flex items-center gap-1.5 text-xs">
+                          <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
+                          <span className="text-muted-foreground flex-shrink-0">{s.position}ª</span>
+                          <span className="ml-auto font-semibold text-foreground">{s.pct}%</span>
+                          <span className="text-muted-foreground">({s.count})</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Row 3: Duração + Heatmap */}
+          <div className="grid gap-4 lg:grid-cols-2">
+            {durationStats && (
+              <Card className="bg-card border-border">
+                <CardContent className="py-4 space-y-3">
+                  <div>
+                    <p className="text-sm font-semibold">Duração das partidas</p>
+                    <p className="text-xs text-muted-foreground">Tempo total das partidas</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-md bg-secondary/40 px-3 py-2">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Média</p>
+                      <div className="flex items-baseline gap-1.5 mt-0.5">
+                        <span className="text-xl font-bold leading-none">{durationStats.avg} min</span>
+                        <span className="text-[10px] text-muted-foreground">± {durationStats.std}</span>
                       </div>
                     </div>
-                  );
-                })()}
-                <div className="flex-1 space-y-1 min-w-0">
-                  {positionStats.slices.map((s) => (
-                    <div key={s.position} className="flex items-center gap-1.5 text-xs">
-                      <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
-                      <span className="text-muted-foreground flex-shrink-0">{s.position}ª</span>
-                      <span className="ml-auto font-semibold text-foreground">{s.pct}%</span>
-                      <span className="text-muted-foreground">({s.count})</span>
+                    <div className="rounded-md bg-secondary/40 px-3 py-2">
+                      <p className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Mais longa</p>
+                      <div className="mt-0.5">
+                        <span className="text-xl font-bold leading-none">{longestLabel}</span>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground truncate mt-0.5">{otherStats.longest.label}</p>
                     </div>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+                  </div>
+                  <div className="flex items-end justify-around gap-2 h-32 mt-2 pb-5 relative">
+                    {durationStats.buckets.map((b) => (
+                      <div key={b.label} className="flex-1 flex flex-col items-center justify-end h-full relative">
+                        <span className="text-[10px] text-muted-foreground mb-1">{b.pct}%</span>
+                        <div
+                          className="w-[60%] bg-gold rounded-t-sm transition-all min-h-[2px]"
+                          style={{ height: `${b.height}%` }}
+                        />
+                        <span className="absolute -bottom-5 text-[10px] text-muted-foreground">{b.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-      {/* Row 2: Facções (largura total quando presente) */}
-      {showFactions && (
-        <Card className="bg-card border-border">
-          <CardContent className="py-4 space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-semibold">{isBlood ? "Estatística de Times" : "Estatística de Facções"}</p>
+            {heatmap && (
+              <Card className="bg-card border-border">
+                <CardContent className="py-4 space-y-3">
+                  <div>
+                    <p className="text-sm font-semibold">Mapa de calor</p>
+                    <p className="text-xs text-muted-foreground">Dias da semana e horários mais jogados</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="flex flex-col justify-around text-[10px] text-muted-foreground py-4 w-6">
+                      {["0h", "6h", "12h", "18h"].map((h) => <span key={h}>{h}</span>)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-muted-foreground mb-1">
+                        {DAY_LABELS.map((d) => <span key={d}>{d}</span>)}
+                      </div>
+                      <div className="grid grid-rows-4 gap-1">
+                        {heatmap.grid.map((row, ri) => (
+                          <div key={ri} className="grid grid-cols-7 gap-1">
+                            {row.map((count, ci) => {
+                              const intensity = heatmap.max > 0 ? count / heatmap.max : 0;
+                              return (
+                                <div key={ci} className="h-6 rounded-sm border border-border/40"
+                                  style={{ backgroundColor: count === 0 ? "hsl(var(--secondary) / 0.3)" : `hsl(38 100% 50% / ${0.15 + intensity * 0.85})` }}
+                                  title={`${DAY_LABELS[ci]} ${ri * 6}h–${(ri + 1) * 6}h: ${count} partidas`}
+                                />
+                              );
+                            })}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT: Faction stats — full height sidebar */}
+        {showFactions && (
+          <Card className="bg-card border-border lg:col-span-1 h-full">
+            <CardContent className="py-4 space-y-3 h-full flex flex-col">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-semibold">{isBlood ? "Estatística de Times" : "Estatística de Facções"}</p>
+              </div>
               <Select value={factionSort} onValueChange={(v) => setFactionSort(v as "games" | "winrate")}>
-                <SelectTrigger className="h-7 w-[150px] text-xs">
+                <SelectTrigger className="h-7 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -335,130 +481,28 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
                   <SelectItem value="winrate">Maior winrate</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            {factions.length === 0 ? (
-              <p className="text-xs text-muted-foreground">Sem dados ainda.</p>
-            ) : (
-              <div className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
-                {factions.map((f) => (
-                  <div key={f.name}>
-                    <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="truncate">{f.name}</span>
-                      <span className="text-muted-foreground">
-                        {factionSort === "winrate" ? `${f.winRate}% (${f.count})` : `${f.pct}% (${f.count})`}
-                      </span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
-                      <div className={`h-full ${f.color}`} style={{ width: `${factionSort === "winrate" ? f.winRate : f.pct}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Row 3: Duração + Heatmap lado a lado em telas largas */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        {durationStats && (
-          <Card className="bg-card border-border">
-            <CardContent className="py-4 space-y-3">
-              <div>
-                <p className="text-sm font-semibold">Duração das partidas</p>
-                <p className="text-xs text-muted-foreground">Tempo total das partidas</p>
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-xs text-muted-foreground">Média</span>
-                <span className="text-2xl font-bold">{durationStats.avg} min</span>
-                <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">± {durationStats.std} min</span>
-              </div>
-              <div className="flex items-end gap-2 h-32 mt-2 pb-5 relative">
-                {durationStats.buckets.map((b) => (
-                  <div key={b.label} className="flex-1 flex flex-col items-center justify-end h-full relative">
-                    <span className="text-[10px] text-muted-foreground mb-1">{b.pct}%</span>
-                    <div
-                      className="w-full bg-gold rounded-t-sm transition-all min-h-[2px]"
-                      style={{ height: `${b.height}%` }}
-                    />
-                    <span className="absolute -bottom-5 text-[10px] text-muted-foreground">{b.label}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {heatmap && (
-          <Card className="bg-card border-border">
-            <CardContent className="py-4 space-y-3">
-              <div>
-                <p className="text-sm font-semibold">Mapa de calor</p>
-                <p className="text-xs text-muted-foreground">Dias da semana e horários mais jogados</p>
-              </div>
-              <div className="flex gap-2">
-                <div className="flex flex-col justify-around text-[10px] text-muted-foreground py-4 w-6">
-                  {["0h", "6h", "12h", "18h"].map((h) => <span key={h}>{h}</span>)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-muted-foreground mb-1">
-                    {DAY_LABELS.map((d) => <span key={d}>{d}</span>)}
-                  </div>
-                  <div className="grid grid-rows-4 gap-1">
-                    {heatmap.grid.map((row, ri) => (
-                      <div key={ri} className="grid grid-cols-7 gap-1">
-                        {row.map((count, ci) => {
-                          const intensity = heatmap.max > 0 ? count / heatmap.max : 0;
-                          return (
-                            <div
-                              key={ci}
-                              className="h-6 rounded-sm border border-border/40"
-                              style={{
-                                backgroundColor: count === 0 ? "hsl(var(--secondary) / 0.3)" : `hsl(38 100% 50% / ${0.15 + intensity * 0.85})`,
-                              }}
-                              title={`${DAY_LABELS[ci]} ${ri * 6}h–${(ri + 1) * 6}h: ${count} partidas`}
-                            />
-                          );
-                        })}
+              {factions.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Sem dados ainda.</p>
+              ) : (
+                <div className="space-y-3 flex-1">
+                  {factions.map((f) => (
+                    <div key={f.name}>
+                      <div className="flex items-center justify-between text-xs mb-1">
+                        <span className="truncate">{f.name}</span>
+                        <span className="text-muted-foreground">
+                          {factionSort === "winrate" ? `${f.winRate}% (${f.count})` : `${f.pct}% (${f.count})`}
+                        </span>
                       </div>
-                    ))}
-                  </div>
+                      <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+                        <div className={`h-full ${f.color}`} style={{ width: `${factionSort === "winrate" ? f.winRate : f.pct}%` }} />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         )}
-      </div>
-
-      {/* Row 4: Outras estatísticas */}
-      <div>
-        <p className="text-sm font-semibold mb-2">Outras estatísticas</p>
-        <div className="grid grid-cols-2 gap-2">
-          <Card className="bg-card border-border">
-            <CardContent className="py-3 text-center space-y-1">
-              <div className="flex items-center justify-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                <Clock className="h-3 w-3" /> Partida mais longa
-              </div>
-              <p className="text-xl font-bold">
-                {otherStats.longest.duration > 0
-                  ? `${Math.floor(otherStats.longest.duration / 60)}h ${otherStats.longest.duration % 60}m`
-                  : "—"}
-              </p>
-              <p className="text-[11px] text-muted-foreground truncate">{otherStats.longest.label}</p>
-            </CardContent>
-          </Card>
-          {otherStats.maxScore && (
-            <Card className="bg-card border-border">
-              <CardContent className="py-3 text-center space-y-1">
-                <div className="flex items-center justify-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                  <Target className="h-3 w-3" /> Maior pontuação
-                </div>
-                <p className="text-xl font-bold text-gold">{otherStats.maxScore.value}</p>
-                <p className="text-[11px] text-muted-foreground truncate">{otherStats.maxScore.name}</p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
       </div>
     </div>
   );

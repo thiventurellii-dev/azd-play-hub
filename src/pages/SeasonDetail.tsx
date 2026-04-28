@@ -149,6 +149,7 @@ const SeasonDetail = () => {
               id: m.id, played_at: m.played_at, duration_minutes: m.duration_minutes,
               script_name: scriptMap[m.script_id] || "?", winning_team: m.winning_team,
               storyteller_name: pMap[m.storyteller_player_id] || "?",
+              platform: m.platform || null,
               players: ((playersRes.data || []) as any[])
                 .filter((p) => p.match_id === m.id)
                 .map((p) => ({ player_name: pMap[p.player_id] || "?", character_name: charMap[p.character_id] || "?", team: p.team })),
@@ -193,7 +194,7 @@ const SeasonDetail = () => {
 
         const { data: mData } = await supabase
           .from("matches")
-          .select("id, played_at, duration_minutes, image_url, first_player_id, game_id")
+          .select("id, played_at, duration_minutes, image_url, first_player_id, game_id, platform")
           .eq("season_id", id)
           .order("played_at", { ascending: false })
           .limit(50);
@@ -225,6 +226,7 @@ const SeasonDetail = () => {
               id: m.id, played_at: m.played_at, duration_minutes: m.duration_minutes,
               image_url: m.image_url, first_player_id: (m as any).first_player_id || null,
               game_name: gameMap[m.game_id] || "?", game_id: m.game_id,
+              platform: (m as any).platform || null,
               results: (resRes.data || [])
                 .filter((r) => r.match_id === m.id)
                 .sort((a, b) => a.position - b.position)

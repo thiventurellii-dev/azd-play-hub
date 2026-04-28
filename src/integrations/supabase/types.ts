@@ -225,6 +225,7 @@ export type Database = {
           created_at: string
           duration_minutes: number | null
           id: string
+          platform: string | null
           played_at: string
           script_id: string
           season_id: string
@@ -236,6 +237,7 @@ export type Database = {
           created_at?: string
           duration_minutes?: number | null
           id?: string
+          platform?: string | null
           played_at?: string
           script_id: string
           season_id: string
@@ -247,6 +249,7 @@ export type Database = {
           created_at?: string
           duration_minutes?: number | null
           id?: string
+          platform?: string | null
           played_at?: string
           script_id?: string
           season_id?: string
@@ -793,6 +796,7 @@ export type Database = {
           game_id: string
           id: string
           max_players: number
+          platform: string | null
           result_id: string | null
           result_type: string | null
           room_type: Database["public"]["Enums"]["match_room_type"]
@@ -810,6 +814,7 @@ export type Database = {
           game_id: string
           id?: string
           max_players?: number
+          platform?: string | null
           result_id?: string | null
           result_type?: string | null
           room_type?: Database["public"]["Enums"]["match_room_type"]
@@ -827,6 +832,7 @@ export type Database = {
           game_id?: string
           id?: string
           max_players?: number
+          platform?: string | null
           result_id?: string | null
           result_type?: string | null
           room_type?: Database["public"]["Enums"]["match_room_type"]
@@ -869,6 +875,7 @@ export type Database = {
           game_id: string
           id: string
           image_url: string | null
+          platform: string | null
           played_at: string
           season_id: string
         }
@@ -880,6 +887,7 @@ export type Database = {
           game_id: string
           id?: string
           image_url?: string | null
+          platform?: string | null
           played_at?: string
           season_id: string
         }
@@ -891,6 +899,7 @@ export type Database = {
           game_id?: string
           id?: string
           image_url?: string | null
+          platform?: string | null
           played_at?: string
           season_id?: string
         }

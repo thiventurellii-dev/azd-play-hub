@@ -82,6 +82,7 @@ export const submitBloodMatch = async (params: {
   winningTeam: 'good' | 'evil';
   players: BloodPlayerEntry[];
   victoryConditions?: string[];
+  platform?: string | null;
 }) => {
   const { data: match, error: matchErr } = await supabase
     .from('blood_matches')
@@ -93,6 +94,7 @@ export const submitBloodMatch = async (params: {
       storyteller_player_id: params.storytellerId,
       winning_team: params.winningTeam,
       victory_conditions: params.victoryConditions || [],
+      platform: params.platform || null,
     } as any)
     .select().single();
   if (matchErr) throw matchErr;

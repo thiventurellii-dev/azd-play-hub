@@ -29,8 +29,17 @@ export interface MatchRoomData {
   blood_script_id?: string | null;
   community_id?: string | null;
   community_only?: boolean;
+  platform?: string | null;
   game: { id: string; name: string; image_url: string | null };
 }
+
+const PLATFORM_OPTIONS = [
+  "Presencial",
+  "Tabletop Simulator",
+  "BoardGame Arena",
+  "Discord",
+  "Outro Online",
+];
 
 interface MatchRoomFormProps {
   room?: MatchRoomData | null;
@@ -125,6 +134,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
   const [selectedSeasonId, setSelectedSeasonId] = useState("");
   const [selectedCommunityId, setSelectedCommunityId] = useState("");
   const [communityOnly, setCommunityOnly] = useState(false);
+  const [platform, setPlatform] = useState("");
   const [status, setStatus] = useState("");
 
   useEffect(() => {
@@ -140,6 +150,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
     setSelectedScriptId(room.blood_script_id ?? "");
     setSelectedCommunityId(room.community_id ?? "");
     setCommunityOnly(!!room.community_only);
+    setPlatform(room.platform ?? "");
     setStatus("");
     const game = games.find(g => g.id === room.game?.id);
     if (game?.slug === "blood-on-the-clocktower") {
@@ -221,6 +232,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
           community_id: selectedCommunityId || null,
           community_only: !!selectedCommunityId && communityOnly,
           room_type: category || 'boardgame',
+          platform: platform || null,
           ...(isAdminMode && status ? { status: status as "open" | "full" | "in_progress" | "finished" | "cancelled" } : {}),
         };
 
@@ -249,6 +261,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
             community_id: selectedCommunityId || null,
             community_only: !!selectedCommunityId && communityOnly,
             room_type: category || 'boardgame',
+            platform: platform || null,
           } as any)
           .select()
           .single();
@@ -381,6 +394,17 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
       <div>
         <Label>Vagas Máximas</Label>
         <Input type="number" min="2" value={maxPlayers} onChange={e => setMaxPlayers(e.target.value)} />
+      </div>
+
+      <div>
+        <Label>Local / Plataforma</Label>
+        <Select value={platform || "none"} onValueChange={v => setPlatform(v === "none" ? "" : v)}>
+          <SelectTrigger><SelectValue placeholder="Onde será jogado?" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">Não especificado</SelectItem>
+            {PLATFORM_OPTIONS.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+          </SelectContent>
+        </Select>
       </div>
 
       {isAdminMode && isEdit && (

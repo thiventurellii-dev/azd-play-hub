@@ -833,59 +833,6 @@ const SeasonDetail = () => {
               )}
             </TabsContent>
 
-            <TabsContent value="stats">
-              <SeasonStatsPanel
-                isBlood={!!isBlood}
-                matches={matches}
-                bloodMatches={bloodMatches}
-                rankings={rankings}
-                bloodRankings={bloodRankings}
-              />
-            </TabsContent>
-
-            {!isBlood && (
-              <TabsContent value="games">
-                {games.length === 0 ? (
-                  <Card className="bg-card border-border"><CardContent className="py-12 text-center text-muted-foreground">Nenhum jogo vinculado a esta season.</CardContent></Card>
-                ) : (
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {games.map((g) => (
-                      <Card key={g.id} className="bg-card border-border hover:border-gold/20 transition-colors">
-                        <CardContent className="py-4 space-y-3">
-                          <div className="flex items-center gap-3">
-                            {g.image_url ? (
-                              <img src={g.image_url} alt={g.name} className="h-12 w-12 rounded object-cover" />
-                            ) : (
-                              <div className="h-12 w-12 rounded bg-secondary flex items-center justify-center text-gold font-bold text-lg">{g.name.charAt(0)}</div>
-                            )}
-                            <div>
-                              <p className="font-semibold">{g.name}</p>
-                              {(g.min_players || g.max_players) && (
-                                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                                  <Users className="h-3 w-3" /> {g.min_players || "?"}–{g.max_players || "?"} jogadores
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex gap-2 flex-wrap">
-                            {g.rules_url && (
-                              <a href={g.rules_url} target="_blank" rel="noopener noreferrer">
-                                <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1"><ExternalLink className="h-3 w-3" /> Regras</Badge>
-                              </a>
-                            )}
-                            {g.video_url && (
-                              <a href={g.video_url} target="_blank" rel="noopener noreferrer">
-                                <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1"><Video className="h-3 w-3" /> Vídeo</Badge>
-                              </a>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </TabsContent>
-            )}
           </Tabs>
         </main>
       </div>

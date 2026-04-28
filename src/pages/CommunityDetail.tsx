@@ -231,7 +231,7 @@ const CommunityDetail = () => {
                         {recentTopics.slice(0, 5).map((t) => (
                           <li key={t.id}>
                             <Link
-                              to={`/comunidades/${community.slug}/topicos/${t.id}`}
+                              to={`/comunidades/${community.slug}/discussao/${t.id}`}
                               className="block rounded-lg border border-border p-3 hover:border-gold/30 transition-colors"
                             >
                               <div className="flex items-center justify-between gap-2">

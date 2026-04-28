@@ -11,7 +11,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import {
   ExternalLink, Video, ArrowLeft, Users, Clock, Trash2, Hash,
-  Trophy, ChevronDown, ChevronUp, Flag,
+  Trophy, ChevronDown, ChevronUp, Flag, Calendar,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";

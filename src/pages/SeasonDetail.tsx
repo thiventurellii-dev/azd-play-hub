@@ -162,8 +162,17 @@ const SeasonDetail = () => {
           const playerIds = (brData as any[]).map((r) => r.player_id);
           const { data: profiles } = await supabase.rpc("get_public_profiles", { p_ids: playerIds });
           const pMap: Record<string, string> = {};
-          for (const p of profiles || []) pMap[p.id] = (p as any).nickname || p.name;
-          setBloodRankings((brData as any[]).map((r) => ({ ...r, player_name: pMap[r.player_id] || "?" })));
+          const aMap: Record<string, string | null> = {};
+          for (const p of profiles || []) {
+            pMap[p.id] = (p as any).nickname || p.name;
+            aMap[p.id] = (p as any).avatar_url || null;
+          }
+          setAvatarMap((prev) => ({ ...prev, ...aMap }));
+          setBloodRankings((brData as any[]).map((r) => ({
+            ...r,
+            player_name: pMap[r.player_id] || "?",
+            avatar_url: aMap[r.player_id] || null,
+          })));
         }
       } else {
         const { data: sgData } = await supabase.from("season_games").select("game_id").eq("season_id", id);

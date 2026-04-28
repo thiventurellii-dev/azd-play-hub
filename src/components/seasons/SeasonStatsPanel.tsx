@@ -13,6 +13,8 @@ interface Props {
   bloodRankings: BloodRankingEntry[];
   /** When false, hides the factions box entirely (e.g. selected boardgame has no factions). */
   hasFactions?: boolean;
+  /** Custom title — defaults to "Estatísticas da temporada". */
+  title?: string;
 }
 
 interface FactionStat { name: string; count: number; wins: number; pct: number; winRate: number; color: string }
@@ -35,7 +37,7 @@ const PlayerLine = ({ rank, name, avatar_url, value, suffix = "" }: { rank: numb
 
 const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, bloodRankings, hasFactions = true }: Props) => {
+export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, bloodRankings, hasFactions = true, title = "Estatísticas da temporada" }: Props) => {
   const [factionSort, setFactionSort] = useState<"games" | "winrate">("games");
 
   // Factions
@@ -254,7 +256,7 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
 
   return (
     <div className="space-y-4">
-      <h3 className="text-base font-semibold">Estatísticas da temporada</h3>
+      <h3 className="text-base font-semibold">{title}</h3>
 
       <div className="grid gap-4 lg:grid-cols-4">
         {/* LEFT: 3 columns of stacked rows */}

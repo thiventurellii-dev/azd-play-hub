@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseExternal";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,19 +6,25 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
-import { ExternalLink, Video, ArrowLeft, Users, Clock, Trash2, Trophy, TrendingUp, Target, Hash } from "lucide-react";
+import {
+  ExternalLink, Video, ArrowLeft, Users, Clock, Trash2, Hash,
+  Trophy, ChevronDown, ChevronUp, Flag,
+} from "lucide-react";
+import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotification } from "@/components/NotificationDialog";
 import { EntityEditButton } from "@/components/shared/EntityEditButton";
 import GameForm from "@/components/forms/GameForm";
-import GameMatchHistory from "@/components/games/GameMatchHistory";
 import { useGameDetail } from "@/hooks/useGameDetail";
 import { useQueryClient } from "@tanstack/react-query";
 import { FavoriteButton } from "@/components/shared/FavoriteButton";
 import { SeasonStatsPanel } from "@/components/seasons/SeasonStatsPanel";
 import { GamePersonalStatsPanel } from "@/components/games/GamePersonalStatsPanel";
+import { EditActionButton } from "@/components/shared/EditActionButton";
+import EditMatchDialog from "@/components/matches/EditMatchDialog";
 import type { MatchRecord } from "@/types/database";
 
 const HighlightCard = ({ title, items, suffix = "" }: { title: string; items: { id: string; name: string; avatar_url?: string | null; value: number | string }[]; suffix?: string }) => (
@@ -66,24 +72,6 @@ const GameDetail = () => {
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["game-detail", slug] });
 
-  // KPIs
-  const kpis = useMemo(() => {
-    if (allResults.length === 0) return { totalMatches: 0, avgScore: 0, highScore: 0, highScorePlayer: "—", worstWinScore: 0 };
-    const scores = allResults.map((r: any) => r.score || 0);
-    const winnerScores = allResults.filter((r: any) => r.position === 1).map((r: any) => r.score || 0);
-    const highScore = Math.max(...scores);
-    const highScoreResult = allResults.find((r: any) => (r.score || 0) === highScore);
-    const worstWin = winnerScores.length > 0 ? Math.min(...winnerScores) : 0;
-    const avgScore = Math.round(scores.reduce((a: number, b: number) => a + b, 0) / scores.length);
-    return {
-      totalMatches: allMatches.length,
-      avgScore,
-      highScore,
-      highScorePlayer: highScoreResult ? pMap[highScoreResult.player_id] || "?" : "—",
-      worstWinScore: worstWin,
-    };
-  }, [allResults, allMatches, pMap]);
-
   // Activity over time (last 6 months)
   const monthlyData = useMemo(() => {
     const months: Record<string, number> = {};
@@ -105,7 +93,6 @@ const GameDetail = () => {
   // Highlights (top players)
   const highlights = useMemo(() => {
     const ps: Record<string, { wins: number; games: number; bestStreak: number; currentStreak: number }> = {};
-    // Build chronological order to compute streaks
     const matchesAsc = [...allMatches].sort((a, b) => a.played_at.localeCompare(b.played_at));
     const resByMatch: Record<string, any[]> = {};
     for (const r of allResults) {
@@ -143,23 +130,12 @@ const GameDetail = () => {
     return { mostWins, topWinRate, mostGames, longestStreak };
   }, [allMatches, allResults, pMap, aMap]);
 
-  // History formatted for GameMatchHistory
-  const allHistory = useMemo(() => {
-    return allMatches.map((m: any) => ({
-      ...m,
-      results: allResults
-        .filter((r: any) => r.match_id === m.id)
-        .sort((a: any, b: any) => a.position - b.position)
-        .map((r: any) => ({ ...r, player_name: pMap[r.player_id] || "?" })),
-    }));
-  }, [allMatches, allResults, pMap]);
-
   const uniquePlayers = useMemo(
     () => Object.entries(pMap).map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name)),
     [pMap],
   );
 
-  // Build MatchRecord[] for SeasonStatsPanel
+  // Build MatchRecord[] for SeasonStatsPanel + match list
   const statsMatches: MatchRecord[] = useMemo(() => {
     return allMatches.map((m: any) => ({
       id: m.id,
@@ -167,6 +143,7 @@ const GameDetail = () => {
       duration_minutes: m.duration_minutes ?? null,
       image_url: m.image_url ?? null,
       first_player_id: m.first_player_id ?? null,
+      season_id: m.season_id ?? null,
       game_name: game?.name || "",
       game_id: game?.id || "",
       platform: m.platform ?? null,
@@ -174,6 +151,7 @@ const GameDetail = () => {
         .filter((r: any) => r.match_id === m.id)
         .sort((a: any, b: any) => a.position - b.position)
         .map((r: any) => ({
+          id: r.id,
           player_name: pMap[r.player_id] || "?",
           player_id: r.player_id,
           position: r.position,
@@ -184,10 +162,10 @@ const GameDetail = () => {
           mmr_after: r.mmr_after || 1000,
           faction: r.faction || null,
         })) as any,
-    }));
+    })) as any;
   }, [allMatches, allResults, pMap, game]);
 
-  // Synthetic rankings for SeasonStatsPanel (it uses these for top winners / win rate cards)
+  // Synthetic rankings for SeasonStatsPanel cards
   const statsRankings = useMemo(() => {
     const ps: Record<string, { games: number; wins: number }> = {};
     for (const r of allResults as any[]) {
@@ -212,6 +190,31 @@ const GameDetail = () => {
     return Array.isArray(f) && f.length > 0;
   }, [game]);
 
+  // ===== Match list filters (Season-style) =====
+  const [timeFilter, setTimeFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [playerFilter, setPlayerFilter] = useState("all");
+  const [pageSize, setPageSize] = useState(10);
+  const [page, setPage] = useState(0);
+  const [expandedMatch, setExpandedMatch] = useState<string | null>(null);
+  const [editMatch, setEditMatch] = useState<any>(null);
+  const [editMatchOpen, setEditMatchOpen] = useState(false);
+
+  const filteredMatches = useMemo(() => {
+    let h = [...statsMatches];
+    const now = new Date();
+    if (timeFilter === "3m") h = h.filter((m) => new Date(m.played_at) >= new Date(now.getFullYear(), now.getMonth() - 3, now.getDate()));
+    else if (timeFilter === "6m") h = h.filter((m) => new Date(m.played_at) >= new Date(now.getFullYear(), now.getMonth() - 6, now.getDate()));
+    else if (timeFilter === "1y") h = h.filter((m) => new Date(m.played_at) >= new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()));
+    if (typeFilter === "competitive") h = h.filter((m: any) => !!m.season_id);
+    else if (typeFilter === "casual") h = h.filter((m: any) => !m.season_id);
+    if (playerFilter !== "all") h = h.filter((m) => m.results.some((r: any) => r.player_id === playerFilter));
+    return h.sort((a, b) => b.played_at.localeCompare(a.played_at));
+  }, [statsMatches, timeFilter, typeFilter, playerFilter]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredMatches.length / pageSize));
+  const pagedMatches = filteredMatches.slice(page * pageSize, (page + 1) * pageSize);
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-20">
@@ -229,6 +232,12 @@ const GameDetail = () => {
   }
 
   const chartConfig = { count: { label: "Partidas", color: "hsl(var(--gold))" } };
+  const totalMatches = allMatches.length;
+  const avgDuration = (() => {
+    const wd = allMatches.filter((m: any) => m.duration_minutes);
+    if (!wd.length) return null;
+    return Math.round(wd.reduce((s: number, m: any) => s + m.duration_minutes, 0) / wd.length);
+  })();
 
   return (
     <div className="space-y-6">
@@ -247,24 +256,22 @@ const GameDetail = () => {
             <Link to="/games" className="text-sm text-muted-foreground hover:text-foreground mb-2 inline-flex items-center gap-1">
               <ArrowLeft className="h-3 w-3" /> Jogos
             </Link>
-            <div className="flex items-end justify-between">
+            <div className="flex items-end justify-between gap-4 flex-wrap">
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">{game.name}</h1>
                   <FavoriteButton entityType="game" entityId={game.id} size="md" />
+                  <Badge variant="outline" className="ml-1 gap-1 border-gold/40 text-gold">
+                    <Hash className="h-3 w-3" /> {totalMatches} {totalMatches === 1 ? "partida" : "partidas"}
+                  </Badge>
                 </div>
                 <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground flex-wrap">
                   {(game.min_players || game.max_players) && (
                     <span className="flex items-center gap-1"><Users className="h-4 w-4" /> {game.min_players || "?"}–{game.max_players || "?"} jogadores</span>
                   )}
-                  {(() => {
-                    const wd = allMatches.filter((m: any) => m.duration_minutes);
-                    if (wd.length > 0) {
-                      const avg = Math.round(wd.reduce((s: number, m: any) => s + m.duration_minutes, 0) / wd.length);
-                      return <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> ~{avg} min</span>;
-                    }
-                    return null;
-                  })()}
+                  {avgDuration !== null && (
+                    <span className="flex items-center gap-1"><Clock className="h-4 w-4" /> ~{avgDuration} min</span>
+                  )}
                   {tags.map((t) => <Badge key={t} variant="outline" className="text-xs">{t}</Badge>)}
                 </div>
                 <div className="flex gap-2 mt-2">
@@ -303,14 +310,6 @@ const GameDetail = () => {
 
           {/* OVERVIEW */}
           <TabsContent value="overview" className="mt-6 space-y-6">
-            {/* KPIs */}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Card className="bg-card border-border"><CardContent className="pt-6 text-center"><Trophy className="h-8 w-8 mx-auto text-gold mb-2" /><p className="text-2xl font-bold text-gold">{kpis.highScore}</p><p className="text-xs text-muted-foreground">Maior Pontuação</p><p className="text-xs font-medium mt-1">{kpis.highScorePlayer}</p></CardContent></Card>
-              <Card className="bg-card border-border"><CardContent className="pt-6 text-center"><TrendingUp className="h-8 w-8 mx-auto text-gold mb-2" /><p className="text-2xl font-bold">{kpis.avgScore}</p><p className="text-xs text-muted-foreground">Pontuação Média</p></CardContent></Card>
-              <Card className="bg-card border-border"><CardContent className="pt-6 text-center"><Target className="h-8 w-8 mx-auto text-gold mb-2" /><p className="text-2xl font-bold">{kpis.worstWinScore}</p><p className="text-xs text-muted-foreground">Pior Pontuação Vencedora</p></CardContent></Card>
-              <Card className="bg-card border-border"><CardContent className="pt-6 text-center"><Hash className="h-8 w-8 mx-auto text-gold mb-2" /><p className="text-2xl font-bold">{kpis.totalMatches}</p><p className="text-xs text-muted-foreground">Total de Partidas</p></CardContent></Card>
-            </div>
-
             {/* Destaques */}
             <div className="space-y-3">
               <div>
@@ -325,7 +324,20 @@ const GameDetail = () => {
               </div>
             </div>
 
-            {/* Atividade */}
+            {/* Estatísticas detalhadas (reaproveita SeasonStatsPanel) */}
+            {statsMatches.length > 0 && (
+              <SeasonStatsPanel
+                isBlood={false}
+                matches={statsMatches}
+                bloodMatches={[]}
+                rankings={statsRankings as any}
+                bloodRankings={[]}
+                hasFactions={hasFactions}
+                title="Estatísticas do jogo"
+              />
+            )}
+
+            {/* Atividade — agora no final */}
             {monthlyData.some((d) => d.count > 0) && (
               <Card className="bg-card border-border">
                 <CardContent className="pt-6">
@@ -343,23 +355,155 @@ const GameDetail = () => {
                 </CardContent>
               </Card>
             )}
-
-            {/* Estatísticas detalhadas (reaproveita SeasonStatsPanel) */}
-            {statsMatches.length > 0 && (
-              <SeasonStatsPanel
-                isBlood={false}
-                matches={statsMatches}
-                bloodMatches={[]}
-                rankings={statsRankings as any}
-                bloodRankings={[]}
-                hasFactions={hasFactions}
-              />
-            )}
           </TabsContent>
 
-          {/* MATCHES */}
-          <TabsContent value="matches" className="mt-6">
-            <GameMatchHistory allHistory={allHistory} uniquePlayers={uniquePlayers} gameId={game.id} onSaved={invalidate} />
+          {/* MATCHES — Season-style */}
+          <TabsContent value="matches" className="mt-6 space-y-4">
+            <div className="flex flex-wrap gap-3 items-center">
+              <Select value={timeFilter} onValueChange={(v) => { setTimeFilter(v); setPage(0); }}>
+                <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todo o tempo</SelectItem>
+                  <SelectItem value="1y">1 ano</SelectItem>
+                  <SelectItem value="6m">6 meses</SelectItem>
+                  <SelectItem value="3m">3 meses</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setPage(0); }}>
+                <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  <SelectItem value="competitive">Competitivas</SelectItem>
+                  <SelectItem value="casual">Casuais</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={playerFilter} onValueChange={(v) => { setPlayerFilter(v); setPage(0); }}>
+                <SelectTrigger className="w-[180px]"><SelectValue placeholder="Jogador..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os jogadores</SelectItem>
+                  {uniquePlayers.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(parseInt(v)); setPage(0); }}>
+                <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5/pág</SelectItem>
+                  <SelectItem value="10">10/pág</SelectItem>
+                  <SelectItem value="20">20/pág</SelectItem>
+                </SelectContent>
+              </Select>
+              {(timeFilter !== "all" || typeFilter !== "all" || playerFilter !== "all") && (
+                <Button variant="ghost" size="sm" className="gap-1 text-muted-foreground" onClick={() => { setTimeFilter("all"); setTypeFilter("all"); setPlayerFilter("all"); setPage(0); }}>
+                  ✕ Limpar filtros
+                </Button>
+              )}
+            </div>
+
+            {filteredMatches.length === 0 ? (
+              <Card className="bg-card border-border"><CardContent className="py-12 text-center text-muted-foreground">Nenhuma partida registrada.</CardContent></Card>
+            ) : (
+              <div className="space-y-3">
+                {pagedMatches.map((m: any) => {
+                  const isExpanded = expandedMatch === m.id;
+                  const winner = m.results.find((r: any) => r.position === 1);
+                  const isCompetitive = !!m.season_id;
+                  return (
+                    <Card key={m.id} className="bg-card border-border hover:border-gold/20 transition-colors cursor-pointer"
+                      onClick={() => setExpandedMatch(isExpanded ? null : m.id)}>
+                      <CardContent className="py-4 space-y-3">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge variant="outline">{game.name}</Badge>
+                            {isCompetitive ? (
+                              <Badge variant="outline" className="text-xs border-gold/40 text-gold">Competitiva</Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs">Casual</Badge>
+                            )}
+                            {winner && <span className="text-sm font-medium text-gold flex items-center gap-1"><Trophy className="h-3.5 w-3.5" /> {winner.player_name}</span>}
+                            {m.duration_minutes && (
+                              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Clock className="h-3 w-3" /> {m.duration_minutes} min
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                            <span className="text-xs text-muted-foreground">{new Date(m.played_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</span>
+                            <EditActionButton entityType="match" onClick={() => { setEditMatch(m); setEditMatchOpen(true); }} />
+                            <button
+                              type="button"
+                              className="text-muted-foreground"
+                              onClick={() => setExpandedMatch(isExpanded ? null : m.id)}
+                              aria-label={isExpanded ? "Recolher" : "Expandir"}
+                            >
+                              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            </button>
+                          </div>
+                        </div>
+                        {isExpanded && (
+                          <div className="space-y-2 pt-2 border-t border-border" onClick={(e) => e.stopPropagation()}>
+                            {m.image_url && (
+                              <div className="rounded-lg overflow-hidden border border-border">
+                                <img src={m.image_url} alt="Partida" className="w-full h-48 object-cover" />
+                              </div>
+                            )}
+                            {m.results.map((r: any, i: number) => (
+                              <motion.div
+                                key={r.id || i}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: i * 0.03 }}
+                                className="flex items-center gap-3 text-sm p-2 rounded-lg bg-secondary/30"
+                              >
+                                <Badge variant={r.position === 1 ? "default" : "secondary"} className={`w-8 justify-center ${r.position === 1 ? "bg-gold text-black" : ""}`}>{r.position}º</Badge>
+                                <Avatar className="h-5 w-5 flex-shrink-0">
+                                  {aMap[r.player_id] && <AvatarImage src={aMap[r.player_id] || undefined} alt={r.player_name} />}
+                                  <AvatarFallback className="text-[9px] bg-secondary">{r.player_name.charAt(0).toUpperCase()}</AvatarFallback>
+                                </Avatar>
+                                <span className="flex-1 font-medium flex items-center gap-1 min-w-0 truncate">
+                                  {r.player_name}
+                                  {r.player_id === m.first_player_id && <Flag className="h-3.5 w-3.5 text-gold ml-1" />}
+                                </span>
+                                <span className="text-muted-foreground">{r.score} pts</span>
+                                {isCompetitive && (
+                                  <span className={`text-xs font-medium ${r.mmr_change >= 0 ? "text-green-500" : "text-red-500"}`}>
+                                    {r.mmr_change >= 0 ? "+" : ""}{Number(r.mmr_change).toFixed(2)} MMR
+                                  </span>
+                                )}
+                              </motion.div>
+                            ))}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between pt-2">
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(0, p - 1))} disabled={page === 0}>Anterior</Button>
+                <span className="text-sm text-muted-foreground">{page + 1} / {totalPages}</span>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))} disabled={page >= totalPages - 1}>Próxima</Button>
+              </div>
+            )}
+
+            <EditMatchDialog
+              open={editMatchOpen}
+              onOpenChange={setEditMatchOpen}
+              match={editMatch ? {
+                id: editMatch.id,
+                played_at: editMatch.played_at,
+                duration_minutes: editMatch.duration_minutes,
+                season_id: editMatch.season_id,
+                game_id: game.id,
+                results: editMatch.results?.map((r: any) => ({
+                  id: r.id, player_id: r.player_id, player_name: r.player_name,
+                  position: r.position, score: r.score || 0, is_first: false,
+                })) || [],
+              } : null}
+              onSaved={invalidate}
+            />
           </TabsContent>
 
           {/* PERSONAL */}

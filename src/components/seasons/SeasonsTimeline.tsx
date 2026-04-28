@@ -134,10 +134,7 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
         {/* Header */}
         <div className="flex items-start justify-between gap-3 flex-wrap">
           <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold">Calendário das Seasons</h2>
-              <Info className="h-3.5 w-3.5 text-muted-foreground" />
-            </div>
+            <h2 className="text-lg font-semibold">Calendário das Seasons</h2>
             <p className="text-xs text-muted-foreground">Visualize a duração e o status das temporadas</p>
           </div>
           <div className="inline-flex items-center gap-1">

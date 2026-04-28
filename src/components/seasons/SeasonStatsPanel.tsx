@@ -312,7 +312,7 @@ export const SeasonStatsPanel = ({ isBlood, matches, bloodMatches, rankings, blo
                 {positionStats.slices.map((s) => (
                   <div key={s.position} className="flex items-center gap-2 text-xs">
                     <span className="h-2 w-2 rounded-full flex-shrink-0" style={{ background: s.color }} />
-                    <span className="text-muted-foreground flex-shrink-0">{s.position}º lugar</span>
+                    <span className="text-muted-foreground flex-shrink-0">{s.position}ª posição</span>
                     <span className="ml-auto font-semibold text-foreground">{s.pct}%</span>
                     <span className="text-muted-foreground">({s.count})</span>
                   </div>

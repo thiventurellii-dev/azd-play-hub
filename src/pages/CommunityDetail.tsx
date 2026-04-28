@@ -28,6 +28,8 @@ const CommunityDetail = () => {
   const { data: seasons = [] } = useCommunitySeasons(community?.id);
   const { state: membership } = useCommunityMembership(community?.id, community?.join_policy);
 
+  const { data: recentTopics = [] } = useCommunityTopics(community?.id);
+
   useEffect(() => {
     if (community) document.title = `${community.name} | Comunidades`;
   }, [community]);

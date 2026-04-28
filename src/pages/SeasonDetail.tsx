@@ -373,6 +373,27 @@ const SeasonDetail = () => {
   };
   const handleInvite = () => notify("info", "Convite de jogadores em breve!");
 
+  const handleRegulationUpload = async (file: File) => {
+    if (!season || !id) return;
+    setUploadingReg(true);
+    try {
+      const ext = file.name.split(".").pop() || "pdf";
+      const path = `${id}/regulamento-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("season-regulations").upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from("season-regulations").getPublicUrl(path);
+      const { error: updErr } = await supabase.from("seasons").update({ regulation_url: urlData.publicUrl } as any).eq("id", id);
+      if (updErr) throw updErr;
+      setSeason({ ...season, regulation_url: urlData.publicUrl });
+      notify("success", "Regulamento enviado!");
+    } catch (e: any) {
+      notify("error", e.message || "Falha no upload");
+    } finally {
+      setUploadingReg(false);
+      if (regFileRef.current) regFileRef.current.value = "";
+    }
+  };
+
   return (
     <div className="container py-8 space-y-6">
       <Link to="/seasons" className="text-sm text-muted-foreground hover:text-foreground inline-block">

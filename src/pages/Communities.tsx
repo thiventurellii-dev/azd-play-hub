@@ -27,7 +27,7 @@ const Communities = () => {
         (c) =>
           c.name.toLowerCase().includes(s) ||
           (c.tagline ?? "").toLowerCase().includes(s) ||
-          (c.description ?? "").toLowerCase().includes(s)
+          (c.description ?? "").toLowerCase().includes(s),
       );
     }
     if (typeFilter !== "all") list = list.filter((c) => c.community_type === typeFilter);
@@ -41,11 +41,11 @@ const Communities = () => {
 
   const featured = useMemo(
     () => [...communities].sort((a, b) => b.members_count - a.members_count).slice(0, 3),
-    [communities]
+    [communities],
   );
   const popular = useMemo(
     () => [...communities].sort((a, b) => b.members_count - a.members_count).slice(0, 5),
-    [communities]
+    [communities],
   );
 
   useEffect(() => {
@@ -54,7 +54,6 @@ const Communities = () => {
 
   return (
     <>
-
       <div className="container py-6 space-y-6 pb-24 md:pb-8">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3">
@@ -154,7 +153,9 @@ const Communities = () => {
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">Ordenar por:</span>
                 <Select value={sort} onValueChange={(v) => setSort(v as any)}>
-                  <SelectTrigger className="h-8 w-[150px]"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-8 w-[150px]">
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="members">Mais membros</SelectItem>
                     <SelectItem value="matches">Mais partidas</SelectItem>
@@ -201,7 +202,9 @@ const Communities = () => {
                 <div>
                   <Label className="text-xs">Tipo de comunidade</Label>
                   <Select value={typeFilter} onValueChange={setTypeFilter}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todos</SelectItem>
                       <SelectItem value="mixed">Misto</SelectItem>
@@ -214,7 +217,10 @@ const Communities = () => {
                 <Button
                   variant="outline"
                   className="w-full"
-                  onClick={() => { setSearch(""); setTypeFilter("all"); }}
+                  onClick={() => {
+                    setSearch("");
+                    setTypeFilter("all");
+                  }}
                 >
                   Limpar filtros
                 </Button>
@@ -224,7 +230,7 @@ const Communities = () => {
             <Card className="bg-gradient-to-br from-gold/10 to-transparent border-gold/30">
               <CardContent className="py-5 text-center">
                 <Shield className="h-8 w-8 mx-auto text-gold mb-2" />
-                <p className="font-semibold">Não encontrou sua tribo?</p>
+                <p className="font-semibold">Não encontrou um Grupo?</p>
                 <p className="text-xs text-muted-foreground mb-3">
                   Crie sua própria comunidade e convide seus amigos para jogar juntos!
                 </p>

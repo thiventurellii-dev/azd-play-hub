@@ -834,22 +834,25 @@ const SeasonDetail = () => {
                         <Card key={m.id} className="bg-card border-border hover:border-gold/20 transition-colors cursor-pointer"
                           onClick={() => setExpandedMatch(isExpanded ? null : m.id)}>
                           <CardContent className="py-4 space-y-3">
-                            <div className="flex items-center justify-between flex-wrap gap-2">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <Badge variant="outline">{m.script_name}</Badge>
-                                <Badge className={m.winning_team === "evil" ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-blue-500/20 text-blue-400 border-blue-500/30"}>
-                                  {m.winning_team === "evil" ? "💀 Mal" : "🛡️ Bem"}
-                                </Badge>
-                                <span className="text-xs text-muted-foreground">Narrador: {m.storyteller_name}</span>
-                                {m.duration_minutes && (
-                                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                    <Clock className="h-3 w-3" /> {m.duration_minutes} min
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-xs text-muted-foreground">{new Date(m.played_at).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</span>
-                                {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                            <div className="flex items-center gap-3">
+                              <DateBlock date={m.played_at} />
+                              <div className="flex-1 min-w-0 flex items-center justify-between flex-wrap gap-2">
+                                <div className="flex items-center gap-2 flex-wrap min-w-0">
+                                  <Badge variant="outline">{m.script_name}</Badge>
+                                  <Badge className={m.winning_team === "evil" ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-blue-500/20 text-blue-400 border-blue-500/30"}>
+                                    {m.winning_team === "evil" ? "💀 Mal" : "🛡️ Bem"}
+                                  </Badge>
+                                  <span className="text-xs text-muted-foreground">Narrador: {m.storyteller_name}</span>
+                                  {m.duration_minutes && (
+                                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                      <Clock className="h-3 w-3" /> {m.duration_minutes} min
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-[11px] text-muted-foreground tabular-nums">{new Date(m.played_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
+                                  {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                                </div>
                               </div>
                             </div>
                             {isExpanded && (

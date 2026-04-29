@@ -86,15 +86,7 @@ const RpgAdventureDetail = () => {
               >
                 {(onClose) => (
                   <RpgAdventureForm
-                    adventure={{
-                      id: a.id,
-                      name: a.name,
-                      description: a.description,
-                      tag: a.tag,
-                      image_url: a.image_url,
-                      system_id: a.system_id,
-                      slug: a.slug,
-                    }}
+                    adventure={a as any}
                     onSuccess={onClose}
                   />
                 )}

@@ -34,7 +34,7 @@ export const LandingTestimonials = () => (
         <span className="text-gold">construímos amizades."</span>
       </motion.blockquote>
       <motion.p {...fadeUp(0.15)} className="mt-6 text-center text-base md:text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-        A AzD é uma comunidade real — de pessoas que se encontram, passam horas na mesa, celebram vitórias e já planejam a próxima partida antes de ir embora.
+        A AzD é uma comunidade de pessoas com interesses em comum. Pessoas que se divertem, competem e já planejam as próximas partidas antes mesmo de finalizar a atual!
       </motion.p>
 
       <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-5">

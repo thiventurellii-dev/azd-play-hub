@@ -5,7 +5,7 @@ import { Hero } from "@/components/home/Hero";
 export const LandingHero = () => {
   return (
     <div className="relative min-h-[92vh] flex flex-col items-center justify-center bg-background">
-      <Hero subtitle="Mais do que jogar, construímos amizades. Seasons competitivas, partidas agendadas, rankings e muito mais — tudo em um só lugar." />
+      <Hero subtitle="Seasons competitivas, partidas agendadas, estatísticas e muito mais. Tudo em um só lugar!" />
 
       <div className="pointer-events-none absolute bottom-8 inset-x-0 flex justify-center">
         <motion.a

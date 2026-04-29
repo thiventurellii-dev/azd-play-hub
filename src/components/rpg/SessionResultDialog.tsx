@@ -702,7 +702,7 @@ export const SessionResultDialog = ({
         )}
 
         {/* Tipos disponíveis (chips) */}
-        <div className="flex items-center gap-2 flex-wrap pt-1">
+        <div className="flex flex-wrap gap-2 items-center pt-1">
           <span className="text-[11px] text-muted-foreground">Tipos disponíveis:</span>
           {quickTypes.map((t) => {
             const theme = EVENT_THEME[t];

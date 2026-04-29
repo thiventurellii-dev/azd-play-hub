@@ -58,7 +58,7 @@ const Communities = () => {
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-start gap-3">
           <div className="h-12 w-12 rounded-lg bg-gold/15 border border-gold/30 flex items-center justify-center flex-shrink-0">
-            <UsersRound className="h-6 w-6 text-gold" />
+            <MessagesSquare className="h-6 w-6 text-gold" />
           </div>
           <div>
             <h1 className="text-2xl md:text-3xl font-bold">Comunidades</h1>

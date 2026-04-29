@@ -180,6 +180,29 @@ const Games = () => {
               <div className="rounded-lg border border-border bg-surface p-2.5 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Filter className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0 ml-1" />
+                  {allTags.length > 0 && (
+                    <Select value={tagFilter} onValueChange={setTagFilter}>
+                      <SelectTrigger
+                        className={cn(
+                          "h-8 w-auto min-w-[160px] text-xs",
+                          tagFilter !== "all" && "text-gold border-gold/40",
+                        )}
+                      >
+                        <SelectValue placeholder="Todas as tags" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todas as tags</SelectItem>
+                        {allTags
+                          .filter((t) => !["estratégia", "estrategia", "família", "familia", "social", "temático", "tematico"].includes(t.name.toLowerCase()))
+                          .map((t) => (
+                            <SelectItem key={t.id} value={t.name}>
+                              {t.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  <div className="hidden sm:block w-px h-5 bg-border mx-1" />
                   <div className="flex flex-wrap gap-1.5">
                     {CATEGORIES.map((cat) => {
                       const active = categoryFilter === cat;
@@ -198,29 +221,7 @@ const Games = () => {
                     })}
                   </div>
                   <div className="hidden sm:block w-px h-5 bg-border mx-1" />
-                  {allTags.length > 0 && (
-                    <Select value={tagFilter} onValueChange={setTagFilter}>
-                      <SelectTrigger
-                        className={cn(
-                          "h-8 w-auto min-w-[150px] text-xs",
-                          tagFilter !== "all" && "text-gold border-gold/40",
-                        )}
-                      >
-                        <SelectValue placeholder="Todas as tags" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todas as tags</SelectItem>
-                        {allTags
-                          .filter((t) => !["estratégia", "estrategia", "família", "familia", "social", "temático", "tematico"].includes(t.name.toLowerCase()))
-                          .map((t) => (
-                            <SelectItem key={t.id} value={t.name}>
-                              {t.name}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                  <div className="flex items-center gap-1.5 ml-auto">
+                  <div className="flex items-center gap-1.5">
                     <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                     <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
                       <SelectTrigger

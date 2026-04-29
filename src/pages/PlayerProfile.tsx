@@ -9,13 +9,12 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from "recharts";
 import {
   Trophy, Gamepad2, ArrowLeft, Calendar, Clock, Award, Pencil, Lock, CalendarIcon,
-  Users, MessagesSquare, MapPin, Sparkles, BarChart3, ChevronRight,
+  Users, MessagesSquare, MapPin, Sparkles, ChevronRight,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import FriendButton from "@/components/friendlist/FriendButton";

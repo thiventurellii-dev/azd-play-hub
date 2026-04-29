@@ -66,6 +66,7 @@ const Games = () => {
   type SortKey = "name" | "matches" | "favorites";
   const [sortBy, setSortBy] = useState<SortKey>("name");
   const [favoriteGameIds, setFavoriteGameIds] = useState<Set<string>>(new Set());
+  const [activityFilter, setActivityFilter] = useState<"all" | "season" | "tournament">("all");
 
   useEffect(() => {
     if (!user?.id) {
@@ -90,6 +91,12 @@ const Games = () => {
     if (tagFilter !== "all") {
       list = list.filter((g: any) => (gameTagMap[g.id] || []).includes(tagFilter));
     }
+    if (activityFilter === "season") {
+      list = list.filter((g: any) => activeSeasonGameIds.has(g.id));
+    } else if (activityFilter === "tournament") {
+      // Placeholder until tournament model exists
+      list = [];
+    }
     const sorted = [...list];
     if (sortBy === "matches") {
       sorted.sort((a: any, b: any) => (matchCounts[b.id] || 0) - (matchCounts[a.id] || 0));
@@ -104,7 +111,7 @@ const Games = () => {
       sorted.sort((a: any, b: any) => a.name.localeCompare(b.name));
     }
     return sorted;
-  }, [games, tagFilter, categoryFilter, gameTagMap, sortBy, matchCounts, favoriteGameIds]);
+  }, [games, tagFilter, categoryFilter, gameTagMap, sortBy, matchCounts, favoriteGameIds, activityFilter, activeSeasonGameIds]);
 
   // Blood KPIs
   const activeScriptsCount = useMemo(

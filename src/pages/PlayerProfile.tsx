@@ -126,6 +126,7 @@ const PlayerProfile = () => {
         const { data: games } = await supabase.from("games").select("id, name, slug, image_url").in("id", gameIds);
         for (const g of games || []) gameMap[g.id] = g;
         for (const m of matches || []) matchesById[m.id] = m;
+        if (matches && matches.length > 0) setLastMatchDate(matches[0].played_at);
 
         setStats({ totalGames: results.length, uniqueGames: gameIds.length });
 

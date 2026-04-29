@@ -18,6 +18,7 @@ import NewMatchBotcFlow from "@/components/matches/NewMatchBotcFlow";
 import MatchResultModal from "@/components/matches/MatchResultModal";
 import { EntitySheet } from "@/components/shared/EntitySheet";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import SessionResultDialog from "@/components/rpg/SessionResultDialog";
 
 interface RoomPlayer {
   id: string;

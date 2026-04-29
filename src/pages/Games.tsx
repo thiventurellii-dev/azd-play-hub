@@ -62,6 +62,19 @@ const Games = () => {
   const [addSystemOpen, setAddSystemOpen] = useState(false);
   const [addAdventureOpen, setAddAdventureOpen] = useState(false);
 
+  // Sort + favorites
+  type SortKey = "name" | "matches" | "favorites";
+  const [sortBy, setSortBy] = useState<SortKey>("name");
+  const [favoriteGameIds, setFavoriteGameIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!user?.id) {
+      setFavoriteGameIds(new Set());
+      return;
+    }
+    fetchUserFavorites(user.id, "game").then((ids) => setFavoriteGameIds(new Set(ids)));
+  }, [user?.id]);
+
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["games-page-data"] });
 
   const filteredGames = useMemo(() => {
@@ -77,8 +90,21 @@ const Games = () => {
     if (tagFilter !== "all") {
       list = list.filter((g: any) => (gameTagMap[g.id] || []).includes(tagFilter));
     }
-    return list;
-  }, [games, tagFilter, categoryFilter, gameTagMap]);
+    const sorted = [...list];
+    if (sortBy === "matches") {
+      sorted.sort((a: any, b: any) => (matchCounts[b.id] || 0) - (matchCounts[a.id] || 0));
+    } else if (sortBy === "favorites") {
+      sorted.sort((a: any, b: any) => {
+        const af = favoriteGameIds.has(a.id) ? 1 : 0;
+        const bf = favoriteGameIds.has(b.id) ? 1 : 0;
+        if (bf !== af) return bf - af;
+        return a.name.localeCompare(b.name);
+      });
+    } else {
+      sorted.sort((a: any, b: any) => a.name.localeCompare(b.name));
+    }
+    return sorted;
+  }, [games, tagFilter, categoryFilter, gameTagMap, sortBy, matchCounts, favoriteGameIds]);
 
   // Blood KPIs
   const activeScriptsCount = useMemo(

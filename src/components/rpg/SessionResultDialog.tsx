@@ -240,6 +240,8 @@ export const SessionResultDialog = ({
   );
   const [events, setEvents] = useState<EventDraft[]>([]);
   const [xpOpen, setXpOpen] = useState(false);
+  const [xpPerPlayer, setXpPerPlayer] = useState('');
+  const [groupTreasure, setGroupTreasure] = useState('');
   const [saving, setSaving] = useState(false);
   const [resolvedCampaignName, setResolvedCampaignName] = useState<string | null>(
     campaignName ?? null,
@@ -736,18 +738,31 @@ export const SessionResultDialog = ({
             {xpOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
             XP e loot (opcional)
           </span>
-          <span className="text-[11px]">3 campos</span>
+          <span className="text-[11px]">2 campos</span>
         </button>
         {xpOpen && (
-          <div className="mt-3 grid gap-3 sm:grid-cols-3 text-sm text-muted-foreground">
-            <div className="rounded-md border border-dashed border-border p-3 text-center text-xs">
-              XP por jogador (em breve)
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                XP por jogador
+              </Label>
+              <Input
+                type="number"
+                min={0}
+                value={xpPerPlayer}
+                onChange={(e) => setXpPerPlayer(e.target.value)}
+                placeholder="Ex.: 450"
+              />
             </div>
-            <div className="rounded-md border border-dashed border-border p-3 text-center text-xs">
-              Loot principal (em breve)
-            </div>
-            <div className="rounded-md border border-dashed border-border p-3 text-center text-xs">
-              Tesouro coletivo (em breve)
+            <div className="space-y-1.5">
+              <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                Tesouro coletivo
+              </Label>
+              <Input
+                value={groupTreasure}
+                onChange={(e) => setGroupTreasure(e.target.value)}
+                placeholder="Ex.: 1.200 po + gema rara"
+              />
             </div>
           </div>
         )}

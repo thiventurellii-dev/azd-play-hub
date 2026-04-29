@@ -202,10 +202,57 @@ const RpgAdventureDetail = () => {
             <AdventureMasterNotes notes={a.master_notes} />
           </Card>
 
-          <Card title="Campanhas dessa aventura">
-            <p className="text-xs text-muted-foreground italic">
-              Em breve — sistema de campanhas será liberado na próxima fase.
-            </p>
+          <Card title={`Campanhas dessa aventura${adventureCampaigns.length ? ` (${adventureCampaigns.length})` : ''}`}>
+            {adventureCampaigns.length === 0 ? (
+              <div className="text-center py-4">
+                <Sword className="h-8 w-8 text-muted-foreground/30 mx-auto mb-2" />
+                <p className="text-xs text-muted-foreground italic mb-3">
+                  Nenhuma campanha rolando com essa aventura ainda.
+                </p>
+                {(isMestre || isMestreFlag) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 border-gold/40 text-gold hover:bg-gold/10"
+                    onClick={() => setCreateOpen(true)}
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Ser o primeiro mestre
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {adventureCampaigns.map((c) => (
+                  <Link
+                    key={c.id}
+                    to={`/campanhas/${c.slug || c.id}`}
+                    className="flex items-center justify-between gap-3 rounded-md border border-border bg-background/40 hover:border-purple-500/40 hover:bg-card transition-colors p-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{c.name}</p>
+                      <p className="text-[11px] text-muted-foreground truncate">
+                        Mestre {c.master?.nickname || c.master?.name || '—'} · {c.session_count ?? 0} sessões
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground flex-shrink-0">
+                      <span className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        {c.party_count ?? 0}/{c.max_players ?? '∞'}
+                      </span>
+                      <Badge variant="outline" className="text-[10px] py-0 px-1.5 h-4">
+                        {c.status === 'planning'
+                          ? 'Em prep.'
+                          : c.status === 'active'
+                            ? 'Ativa'
+                            : c.status === 'completed'
+                              ? 'Concluída'
+                              : 'Abandonada'}
+                      </Badge>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
           </Card>
 
           <Card title="Aventureiros que se aventuraram">

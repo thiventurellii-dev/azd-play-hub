@@ -11,6 +11,8 @@ import { DatePickerField } from '@/components/ui/date-picker-field';
 import logo from '@/assets/azd-logo.png';
 import { useNotification } from '@/components/NotificationDialog';
 import { brazilianStates, citiesByState, pronounsOptions, countryCodes, formatPhone, unformatPhone } from '@/lib/brazil-data';
+import PlayerTagsSelector, { PlayerTag } from '@/components/profile/PlayerTagsSelector';
+import { useProfileTags, saveProfileTags } from '@/hooks/useProfileTags';
 
 const CompleteProfile = () => {
   const { user, setProfileCompleted } = useAuth();
@@ -28,6 +30,7 @@ const CompleteProfile = () => {
     pronouns: '',
   });
   const [saving, setSaving] = useState(false);
+  const { tags: playerTags, setTags: setPlayerTags } = useProfileTags(user?.id);
 
   const cities = useMemo(() => citiesByState[form.state] || [], [form.state]);
 
@@ -46,6 +49,9 @@ const CompleteProfile = () => {
     if (!form.name || !form.nickname || !form.phone || !form.state || !form.city || !form.birth_date || !form.gender || !form.pronouns) {
       return notify('error', 'Preencha todos os campos obrigatórios');
     }
+    if (playerTags.length === 0) {
+      return notify('error', 'Escolha pelo menos uma tag de jogador');
+    }
     setSaving(true);
 
     const newStatus = 'active';
@@ -63,6 +69,9 @@ const CompleteProfile = () => {
       email: user.email || '',
       status: newStatus,
     } as any).eq('id', user.id);
+    if (!error) {
+      try { await saveProfileTags(user.id, playerTags); } catch (e) { console.warn('tags save failed', e); }
+    }
     setSaving(false);
     if (error) return notify('error', error.message);
     
@@ -163,6 +172,11 @@ const CompleteProfile = () => {
                 {pronounsOptions.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Como você joga? * <span className="text-xs text-muted-foreground font-normal">(escolha pelo menos uma)</span></Label>
+            <PlayerTagsSelector selected={playerTags} onChange={setPlayerTags} />
           </div>
 
           <Button variant="gold" onClick={handleSave} disabled={saving} className="w-full">

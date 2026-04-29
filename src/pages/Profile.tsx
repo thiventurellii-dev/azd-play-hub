@@ -15,6 +15,8 @@ import { brazilianStates, citiesByState, pronounsOptions, countryCodes, formatPh
 import FriendsList from '@/components/friendlist/FriendsList';
 import XpBadge from '@/components/shared/XpBadge';
 import { useProfileCompletion } from '@/hooks/useProfileCompletion';
+import PlayerTagsSelector, { PlayerTagsBadges, PlayerTag } from '@/components/profile/PlayerTagsSelector';
+import { useProfileTags, saveProfileTags } from '@/hooks/useProfileTags';
 
 const Profile = () => {
   const { user, role } = useAuth();
@@ -30,6 +32,8 @@ const Profile = () => {
   const [savingPassword, setSavingPassword] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { tags: playerTags, setTags: setPlayerTags } = useProfileTags(user?.id);
+  const [editTags, setEditTags] = useState<PlayerTag[]>([]);
 
   // Email change
   const [changingEmail, setChangingEmail] = useState(false);
@@ -65,6 +69,9 @@ const Profile = () => {
     if (!form.name || !form.nickname || !form.phone || !form.state || !form.city || !form.birth_date || !form.gender || !form.pronouns) {
       return notify('error', 'Preencha todos os campos obrigatórios');
     }
+    if (editTags.length === 0) {
+      return notify('error', 'Escolha pelo menos uma tag de jogador');
+    }
     setSaving(true);
     const { error } = await supabase.from('profiles').update({
       name: form.name,
@@ -77,6 +84,15 @@ const Profile = () => {
       gender: form.gender,
       pronouns: form.pronouns,
     } as any).eq('id', user.id);
+    if (!error) {
+      try {
+        await saveProfileTags(user.id, editTags);
+        setPlayerTags(editTags);
+      } catch (e: any) {
+        setSaving(false);
+        return notify('error', 'Erro ao salvar tags: ' + (e.message || ''));
+      }
+    }
     setSaving(false);
     if (error) return notify('error', error.message);
     notify('success', 'Perfil atualizado!');
@@ -182,9 +198,8 @@ const Profile = () => {
                 <CardTitle>{profile?.name || 'Sem nome'}</CardTitle>
                 {profile?.nickname && <p className="text-sm text-muted-foreground">@{profile.nickname}</p>}
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <Badge variant={role === 'admin' ? 'default' : 'secondary'}>
-                    {role === 'admin' ? 'Admin' : 'Player'}
-                  </Badge>
+                  {role === 'admin' && <Badge variant="default">Admin</Badge>}
+                  <PlayerTagsBadges tags={playerTags} />
                   <XpBadge userId={user?.id} variant="compact" />
                 </div>
                 <div className="mt-3 max-w-[260px]">
@@ -194,7 +209,7 @@ const Profile = () => {
             </div>
             <div className="flex flex-col gap-1.5 sm:flex-row sm:gap-2">
               {!editing && (
-                <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+                <Button variant="outline" size="sm" onClick={() => { setEditTags(playerTags); setEditing(true); }}>
                   <Pencil className="h-4 w-4 mr-1" /> Editar Perfil
                 </Button>
               )}
@@ -293,6 +308,10 @@ const Profile = () => {
                     {pronounsOptions.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Como você joga? * <span className="text-xs text-muted-foreground font-normal">(escolha pelo menos uma)</span></Label>
+                <PlayerTagsSelector selected={editTags} onChange={setEditTags} />
               </div>
               <div className="flex gap-2">
                 <Button variant="gold" onClick={handleSave} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>

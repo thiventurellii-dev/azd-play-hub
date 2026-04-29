@@ -10,7 +10,7 @@ import {
 import { Users, Clock, ExternalLink, Video, MoreHorizontal, BarChart3, Pencil } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { EntityEditButton } from "@/components/shared/EntityEditButton";
+
 import GameForm, { type GameFormData } from "@/components/forms/GameForm";
 import { FavoriteButton } from "@/components/shared/FavoriteButton";
 import { useAuth } from "@/contexts/AuthContext";

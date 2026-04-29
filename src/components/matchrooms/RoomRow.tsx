@@ -18,7 +18,7 @@ import NewMatchFlow from "@/components/matches/NewMatchFlow";
 import NewMatchBotcFlow from "@/components/matches/NewMatchBotcFlow";
 import MatchResultModal from "@/components/matches/MatchResultModal";
 import SessionResultDialog from "@/components/rpg/SessionResultDialog";
-import { EntitySheet } from "@/components/shared/EntitySheet";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 interface RoomPlayer {
@@ -529,31 +529,41 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
           participantIds={resultParticipantIds}
         />
       )}
-      <EntitySheet open={matchFlowOpen} onOpenChange={setMatchFlowOpen} title={isRpg ? "Registrar Sessão" : "Registrar Resultado"} description={isRpg ? "Recap, presença e eventos em destaque alimentam a Crônica da campanha." : "Registre o resultado desta partida."} widthClass={isRpg ? "sm:max-w-2xl" : "sm:max-w-lg"}>
-        <ErrorBoundary>
-          {isRpg ? (
-            <SessionResultDialog
-              roomId={room.id}
-              campaignId={room.campaign_id!}
-              defaultTitle={room.session_title || room.title}
-              initialRecap={room.session_recap}
-              initialDuration={room.duration_minutes}
-              initialSessionNumber={room.session_number}
-              confirmedPlayers={confirmed.map(p => ({ player_id: p.player_id, name: displayName(p) }))}
-              onComplete={() => handleResultComplete()}
-            />
-          ) : isBotC ? (
-            <NewMatchBotcFlow onComplete={handleResultComplete} />
-          ) : (
-            <NewMatchFlow
-              prefilledGameId={room.game?.id}
-              prefilledPlayers={confirmed.map(p => p.player_id)}
-              prefilledDate={room.scheduled_at?.slice(0, 10)}
-              onComplete={handleResultComplete}
-            />
-          )}
-        </ErrorBoundary>
-      </EntitySheet>
+      <Dialog open={matchFlowOpen} onOpenChange={setMatchFlowOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{isRpg ? "Registrar Sessão" : "Registrar Resultado"}</DialogTitle>
+            <DialogDescription>
+              {isRpg
+                ? "Recap, presença e eventos em destaque alimentam a Crônica da campanha."
+                : "Registre o resultado desta partida."}
+            </DialogDescription>
+          </DialogHeader>
+          <ErrorBoundary>
+            {isRpg ? (
+              <SessionResultDialog
+                roomId={room.id}
+                campaignId={room.campaign_id!}
+                defaultTitle={room.session_title || room.title}
+                initialRecap={room.session_recap}
+                initialDuration={room.duration_minutes}
+                initialSessionNumber={room.session_number}
+                confirmedPlayers={confirmed.map(p => ({ player_id: p.player_id, name: displayName(p) }))}
+                onComplete={() => handleResultComplete()}
+              />
+            ) : isBotC ? (
+              <NewMatchBotcFlow onComplete={handleResultComplete} />
+            ) : (
+              <NewMatchFlow
+                prefilledGameId={room.game?.id}
+                prefilledPlayers={confirmed.map(p => p.player_id)}
+                prefilledDate={room.scheduled_at?.slice(0, 10)}
+                onComplete={handleResultComplete}
+              />
+            )}
+          </ErrorBoundary>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

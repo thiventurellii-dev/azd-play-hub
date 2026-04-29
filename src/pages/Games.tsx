@@ -43,6 +43,11 @@ const Games = () => {
   const gameTagMap = data?.gameTagMap || {};
 
   const [tagFilter, setTagFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+
+  const CATEGORIES = ["Estratégia", "Família", "Social", "Temático"];
+  const normalizeTag = (t: string) =>
+    t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
   const [addOpen, setAddOpen] = useState(false);
   const [newName, setNewName] = useState("");

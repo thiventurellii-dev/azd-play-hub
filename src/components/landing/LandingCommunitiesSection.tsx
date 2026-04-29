@@ -5,7 +5,7 @@ const CommunitiesMockup = () => (
   <div className="space-y-3 max-w-md">
     {[
       { icon: Users, name: "Amizade (AzD)", meta: "29 membros · 5 seasons", color: "hsl(43 80% 35%)", featured: true },
-      { icon: MessageCircle, name: "Sua Comunidade aqui", meta: "Crie em minutos · grátis", color: "hsl(220 30% 30%)" },
+      { icon: MessageCircle, name: "Sua Comunidade", meta: "Crie em minutos · grátis", color: "hsl(220 30% 30%)" },
       { icon: AtSign, name: "Grupo do Discord", meta: "Rankings · partidas · discussões", color: "hsl(160 30% 25%)" },
     ].map((c, i) => {
       const Icon = c.icon;

@@ -124,48 +124,26 @@ const BoardgameCard = ({
 
           {/* Title overlay on cover bottom */}
           <div className="absolute inset-x-0 bottom-0 p-4 z-10">
-            <div className="flex items-end justify-between gap-3">
-              <h3 className="text-xl font-bold leading-tight text-white drop-shadow-md line-clamp-2">
-                {game.name}
-              </h3>
-              {category && (
-                <Badge
-                  variant="outline"
-                  className="shrink-0 border-white/20 bg-black/40 backdrop-blur-sm text-[10px] text-white/90 uppercase tracking-wider"
-                >
-                  {category}
-                </Badge>
-              )}
-            </div>
+            <h3 className="text-xl font-bold leading-tight text-white drop-shadow-md line-clamp-2">
+              {game.name}
+            </h3>
           </div>
         </div>
 
         {/* BODY */}
         <div className="flex flex-1 flex-col gap-3 p-4">
-          {/* Meta row */}
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            {playerRange && (
-              <span className="inline-flex items-center gap-1">
-                <Users className="h-3.5 w-3.5" /> {playerRange}
-              </span>
-            )}
-            {avgDuration && (
-              <>
-                <span className="text-border">·</span>
-                <span className="inline-flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5" /> ~{avgDuration} min
-                </span>
-              </>
-            )}
-          </div>
+          {/* Category */}
+          {category && (
+            <p className="text-xs text-muted-foreground/90 -mt-1">{category}</p>
+          )}
 
-          {/* Mechanics */}
+          {/* Mechanics chips */}
           {mechanics.length > 0 && (
             <div className="flex flex-wrap gap-1.5">
               {mechanics.map((m) => (
                 <span
                   key={m}
-                  className="rounded-full bg-secondary/60 px-2 py-0.5 text-[10px] text-muted-foreground"
+                  className="rounded-md bg-secondary/70 px-2 py-0.5 text-[11px] font-medium text-foreground/80 ring-1 ring-border/40"
                 >
                   {m}
                 </span>
@@ -173,16 +151,23 @@ const BoardgameCard = ({
             </div>
           )}
 
+          {/* Description */}
+          {description && (
+            <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
+              {description}
+            </p>
+          )}
+
           {/* Spacer */}
           <div className="flex-1" />
 
-          {/* Quick stats */}
-          <div className="flex items-center justify-between rounded-lg bg-background/40 px-3 py-2 ring-1 ring-border/30">
-            <Stat icon={Users} value={playerRange ?? "—"} />
-            <div className="h-6 w-px bg-border/50" />
-            <Stat icon={BarChart3} value={matchCount} label="partidas" />
-            <div className="h-6 w-px bg-border/50" />
-            <Stat icon={Clock} value={avgDuration ? `${avgDuration}m` : "—"} />
+          {/* Quick stats — players · matches · duration */}
+          <div className="flex items-end justify-between rounded-lg bg-background/40 px-3 py-2.5 ring-1 ring-border/30">
+            <StatBlock value={playerRange ?? "—"} label="Jogadores" icon={Users} />
+            <div className="h-8 w-px bg-border/50" />
+            <StatBlock value={`+${matchCount}`} label="Partidas" icon={BarChart3} highlight />
+            <div className="h-8 w-px bg-border/50" />
+            <StatBlock value={avgDuration ? `${avgDuration}m` : "—"} label="Duração média" icon={Clock} />
           </div>
 
           {/* Active context */}

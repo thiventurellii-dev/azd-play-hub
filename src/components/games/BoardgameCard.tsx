@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Users, Clock, ExternalLink, Video, MoreHorizontal, BarChart3, Pencil } from "lucide-react";
+import { Users, Clock, ExternalLink, Video, MoreHorizontal, BarChart3, Pencil, Flag } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
 
@@ -71,7 +71,13 @@ const BoardgameCard = ({
     >
       <article
         onClick={goToDetail}
-        className="group relative isolate flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl bg-card transform-gpu [backface-visibility:hidden] [-webkit-mask-image:-webkit-radial-gradient(white,black)] transition-all duration-300 ring-1 ring-border/40 hover:ring-gold/30 hover:-translate-y-0.5 shadow-[0_4px_20px_-12px_rgba(0,0,0,0.6)] hover:shadow-[0_12px_36px_-12px_rgba(255,184,0,0.18)]"
+        className={`group relative isolate flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl bg-card transform-gpu [backface-visibility:hidden] [-webkit-mask-image:-webkit-radial-gradient(white,black)] transition-all duration-300 ring-1 hover:-translate-y-0.5 ${
+          hasActiveTournament
+            ? "ring-amber-400/40 shadow-[0_0_0_1px_hsl(45_100%_60%/0.15),0_8px_28px_-10px_hsl(45_100%_55%/0.35)] hover:ring-amber-400/60 hover:shadow-[0_0_0_1px_hsl(45_100%_60%/0.25),0_14px_40px_-10px_hsl(45_100%_55%/0.45)]"
+            : hasActiveSeason
+              ? "ring-violet-500/40 shadow-[0_0_0_1px_hsl(265_85%_65%/0.12),0_8px_28px_-10px_hsl(265_85%_60%/0.32)] hover:ring-violet-400/60 hover:shadow-[0_0_0_1px_hsl(265_85%_65%/0.22),0_14px_40px_-10px_hsl(265_85%_60%/0.42)]"
+              : "ring-border/40 hover:ring-gold/30 shadow-[0_4px_20px_-12px_rgba(0,0,0,0.6)] hover:shadow-[0_12px_36px_-12px_rgba(255,184,0,0.18)]"
+        }`}
       >
         {/* COVER */}
         <div className="relative aspect-[16/10] w-full overflow-hidden rounded-t-2xl bg-gradient-to-br from-secondary via-card to-background">
@@ -95,11 +101,22 @@ const BoardgameCard = ({
 
           {/* Top floating actions */}
           <div className="absolute inset-x-0 top-0 flex items-start justify-between p-2.5 z-10">
-            <div
-              className="opacity-70 transition-opacity group-hover:opacity-100"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <FavoriteButton entityType="game" entityId={game.id} size="sm" />
+            <div className="flex items-center gap-1.5">
+              <div
+                className="opacity-70 transition-opacity group-hover:opacity-100"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <FavoriteButton entityType="game" entityId={game.id} size="sm" />
+              </div>
+              {hasActiveTournament ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 backdrop-blur-sm px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-200 ring-1 ring-amber-400/40 shadow-[0_0_12px_-2px_hsl(45_100%_55%/0.5)]">
+                  <Flag className="h-3 w-3" /> Torneio
+                </span>
+              ) : hasActiveSeason ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-violet-500/20 backdrop-blur-sm px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-violet-200 ring-1 ring-violet-400/40 shadow-[0_0_12px_-2px_hsl(265_85%_60%/0.5)]">
+                  <Flag className="h-3 w-3" /> Season
+                </span>
+              ) : null}
             </div>
 
             <div onClick={(e) => e.stopPropagation()}>
@@ -175,27 +192,7 @@ const BoardgameCard = ({
             <StatBlock value={avgDuration ? `${avgDuration}m` : "—"} label="Duração média" icon={Clock} />
           </div>
 
-          {/* Active context */}
-          {(hasActiveSeason || hasActiveTournament) && (
-            <div className="flex flex-wrap gap-1.5">
-              {hasActiveSeason && (
-                <Badge
-                  variant="outline"
-                  className="border-indigo-500/25 bg-indigo-500/10 text-indigo-300 text-[10px] uppercase tracking-wider"
-                >
-                  Season Ativa
-                </Badge>
-              )}
-              {hasActiveTournament && (
-                <Badge
-                  variant="outline"
-                  className="border-emerald-500/25 bg-emerald-500/10 text-emerald-300 text-[10px] uppercase tracking-wider"
-                >
-                  Torneio Ativo
-                </Badge>
-              )}
-            </div>
-          )}
+          {/* Active context now shown via card border + flag in cover */}
 
           {/* Action links */}
           {(game.rules_url || game.video_url) && (

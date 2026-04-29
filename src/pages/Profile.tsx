@@ -198,9 +198,8 @@ const Profile = () => {
                 <CardTitle>{profile?.name || 'Sem nome'}</CardTitle>
                 {profile?.nickname && <p className="text-sm text-muted-foreground">@{profile.nickname}</p>}
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  <Badge variant={role === 'admin' ? 'default' : 'secondary'}>
-                    {role === 'admin' ? 'Admin' : 'Player'}
-                  </Badge>
+                  {role === 'admin' && <Badge variant="default">Admin</Badge>}
+                  <PlayerTagsBadges tags={playerTags} />
                   <XpBadge userId={user?.id} variant="compact" />
                 </div>
                 <div className="mt-3 max-w-[260px]">

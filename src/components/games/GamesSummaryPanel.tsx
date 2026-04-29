@@ -25,19 +25,31 @@ const Stat = ({
     <Icon className="h-3.5 w-3.5 text-gold/70 shrink-0" />
     <div className="leading-tight">
       <p className="text-sm font-semibold text-foreground">{value}</p>
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground inline-flex items-center gap-1">
-        {label}
+      <div className="flex items-center gap-1">
+        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
         {tooltip && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <Info className="h-2.5 w-2.5 text-muted-foreground/70 hover:text-foreground transition-colors cursor-help" />
+              <button
+                type="button"
+                onClick={(e) => e.stopPropagation()}
+                className="inline-flex text-muted-foreground/70 hover:text-foreground transition-colors"
+                aria-label="Mais informações"
+              >
+                <Info className="h-3 w-3" />
+              </button>
             </TooltipTrigger>
-            <TooltipContent side="bottom" className="max-w-[220px] text-xs">
+            <TooltipContent
+              side="bottom"
+              align="center"
+              sideOffset={6}
+              className="z-[100] max-w-[240px] text-xs normal-case tracking-normal font-normal"
+            >
               {tooltip}
             </TooltipContent>
           </Tooltip>
         )}
-      </p>
+      </div>
     </div>
   </div>
 );

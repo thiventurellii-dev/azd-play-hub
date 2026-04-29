@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabaseExternal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -22,6 +23,8 @@ export interface GameFormData {
   min_players: number | null;
   max_players: number | null;
   factions: any;
+  description?: string | null;
+  category?: string | null;
 }
 
 interface Props {
@@ -41,6 +44,8 @@ const GameForm = ({ game, isAdminMode = false, onSuccess }: Props) => {
   const [videoUrl, setVideoUrl] = useState(game.video_url || "");
   const [minP, setMinP] = useState(game.min_players?.toString() || "");
   const [maxP, setMaxP] = useState(game.max_players?.toString() || "");
+  const [description, setDescription] = useState(game.description || "");
+  const [category, setCategory] = useState(game.category || "");
   const [factions, setFactions] = useState(() => {
     if (Array.isArray(game.factions)) {
       return game.factions.map((f: any) => (typeof f === "string" ? f : f.name || "")).filter(Boolean).join(", ");
@@ -85,7 +90,9 @@ const GameForm = ({ game, isAdminMode = false, onSuccess }: Props) => {
           min_players: minP ? parseInt(minP) : null,
           max_players: maxP ? parseInt(maxP) : null,
           factions: parsedFactions,
-        })
+          description: description.trim() || null,
+          category: category.trim() || null,
+        } as any)
         .eq("id", game.id);
       if (error) throw error;
 
@@ -161,6 +168,14 @@ const GameForm = ({ game, isAdminMode = false, onSuccess }: Props) => {
           <Label>Slug</Label>
           <Input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="brass-birmingham" />
         </div>
+      </div>
+      <div className="space-y-2">
+        <Label>Categoria</Label>
+        <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="Ex: Estratégia / Civilização" />
+      </div>
+      <div className="space-y-2">
+        <Label>Descrição</Label>
+        <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="Resumo curto do jogo..." />
       </div>
       <div className="space-y-2">
         <Label>URL da Imagem</Label>

@@ -15,6 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useNotification } from "@/components/NotificationDialog";
 import { useQueryClient } from "@tanstack/react-query";
 import BoardgameCard from "@/components/games/BoardgameCard";
+import GamesSummaryPanel from "@/components/games/GamesSummaryPanel";
 import BloodScriptCard from "@/components/games/BloodScriptCard";
 import { EntityEditButton } from "@/components/shared/EntityEditButton";
 import RpgSystemForm from "@/components/forms/RpgSystemForm";
@@ -32,6 +33,9 @@ const Games = () => {
   const games = data?.games || [];
   const gameSeasons = data?.gameSeasons || {};
   const avgDurations = data?.avgDurations || {};
+  const matchCounts = data?.matchCounts || {};
+  const totalPlaytime = data?.totalPlaytime || 0;
+  const activeSeasonGameIds = data?.activeSeasonGameIds || new Set<string>();
   const bloodScripts = data?.bloodScripts || [];
   const bloodCharacters = data?.bloodCharacters || [];
   const scriptSeasons = data?.scriptSeasons || {};

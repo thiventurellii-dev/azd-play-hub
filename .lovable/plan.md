@@ -1,75 +1,98 @@
-## Objetivo
+# Slug da Aventura RPG — `/aventuras/:slug`
 
-Transformar a landing page do usuário deslogado (`LoggedOutIndex` em `src/pages/Index.tsx`) numa página completa estilo marketing, baseada na referência `Landing_Page.html` enviada — porém com a ordem, textos e seções ajustados conforme pedido.
+Concordo com a sugestão: **Interesse** vai para o header (CTA principal), pois é a ação mais comum e gera engajamento. Mestre fica com botões secundários.
 
-## Ordem final das seções
+## 1. Migração — campos novos + tabela de interesses
 
-1. **Hero** — logo + título "Amizade" (mantém posição/estilo atual da nossa Hero)  
-   - Subtítulo + CTAs (Faça parte / Ver os jogos)
-   - Indicador "Explorar" abaixo (ampliado e mais em evidência)
-2. **Stats bar** — Jogadores ativos · Partidas registradas · Seasons realizadas · Jogos no catálogo (subida pra cima do "Explorar"... na prática logo abaixo do hero, antes do conteúdo "explorável")
-3. **Testimonials / "Mais do que jogar, construímos amizades"** — bloco de comentários da comunidade (subido para antes das seções de feature)
-4. **Perfil do Jogador** (texto reescrito — ver abaixo)
-5. **Salas de Partida (Agendamento)**
-6. **Comunidades — "Traga sua comunidade"** (nova seção)
-7. **Seasons / Ranking competitivo**
-8. **Jogos** (catálogo)
-9. **CTA final — "Pronto para entrar na mesa?"** + botões das nossas comunidades (Discord / WhatsApp / WhatsApp BotC) no final
+**`rpg_adventures`** (adicionar colunas opcionais que o mockup pede):
+- `tagline` text — frase curta sob o título
+- `level_min` int, `level_max` int
+- `players_min` int, `players_max` int
+- `duration_hours_min` int, `duration_hours_max` int
+- `tone` text — ex: "Sombrio · Gótico"
+- `genres` text[] — ex: ["Horror", "Mistério"]
+- `intensity` jsonb — `{combate, misterio, exploracao, roleplay, perigo}` em escala 0–4
+- `about_long` text — descrição longa
+- `highlights` jsonb — array `[{title, description}]`
+- `master_notes` jsonb — `{prep, hooks, variations, secrets}`
+- `materials` jsonb — `[{label, value}]` (PDF, mapas, etc)
+- `materials_url` text — link "Baixar materiais"
 
-## Mudanças de conteúdo solicitadas
+**Nova tabela `rpg_adventure_interests`**:
+- `id uuid pk`, `adventure_id uuid fk`, `user_id uuid fk`, `created_at timestamptz`
+- `unique(adventure_id, user_id)`
+- RLS: SELECT público (autenticados), INSERT/DELETE só do próprio usuário
 
-- **Hero**: manter a logo e o texto "Amizade" exatamente como já está hoje (não usa o layout do mockup, usa o nosso atual).
-- **"Explorar"**: aumentar fonte (ex. `text-sm` → `text-base`/`text-lg`, uppercase, tracking maior) e seta animada maior e mais visível, posicionada logo abaixo dos CTAs do hero.
-- **Stats**: dados reais do banco (jogadores, partidas, seasons, jogos), com counter animado ao entrar na viewport.
-- **Testimonials**: 3 cards com depoimentos (estáticos, mesmos textos do mockup).
-- **Perfil — texto novo**:  
-  Título: "Seu perfil completo e personalizado"  
-  Body: "Estatísticas, histórico de partidas, badges e personalização — tudo em um só lugar." (foco em perfil/estatísticas, não em MMR).
-- **Comunidades — nova seção** "Traga sua comunidade":  
-  Texto vendendo a ideia de que outros grupos podem usar a plataforma — criar comunidade, gerenciar membros, ter seus próprios rankings, discussões e calendário de partidas.  
-  CTA: "Criar minha comunidade".
-- **Ranking & Competitivo**: mantém o texto/mockup do MMR/seasons da referência.
-- **Jogos**: 3 cards de jogos (Blood, Brass, Arnak) — pode usar imagens estáticas ou buscar dinamicamente do catálogo (vou usar estático por simplicidade, igual ao mockup).
-- **CTA final**: "Pronto para entrar na mesa?" + botão "Criar conta grátis" + nota.  
-  **Abaixo do CTA**: botões das nossas comunidades reais (Discord, WhatsApp, WhatsApp BotC) puxados de `contact_links` — reaproveitar o componente `SocialButtons`.
+Campanhas e "aventureiros que jogaram" ficam como **placeholders visuais** nesta entrega — virão na Fase 3/4 do plano original.
 
-## Estrutura técnica
+## 2. Rota e página
 
-- Reescrever **`src/pages/Index.tsx`** → `LoggedOutIndex` agora renderiza um conjunto de seções modulares.
-- Criar componentes em **`src/components/landing/`**:
-  - `LandingHero.tsx` (envolve a `Hero` atual + CTAs + scroll hint ampliado)
-  - `LandingStats.tsx` (4 stats com counter animado, busca contagens via Supabase)
-  - `LandingTestimonials.tsx` (3 cards estáticos)
-  - `LandingProfileSection.tsx` (split text + mockup de perfil)
-  - `LandingMatchRoomsSection.tsx` (split mockup + text)
-  - `LandingCommunitiesSection.tsx` (split text + mockup com cards de comunidades)
-  - `LandingSeasonsSection.tsx` (split text + mockup ranking)
-  - `LandingGamesSection.tsx` (3 cards de jogos)
-  - `LandingFinalCTA.tsx` (CTA + nota + `<SocialButtons />` no final)
-- Usar **tokens semânticos existentes** (`bg-background`, `text-gold`, `border-border`, `bg-card`, etc.) em vez dos hex/HSL crus do HTML — já temos design system preto+dourado configurado.
-- Usar **framer-motion** + utilitários `fadeUp` que já existem no projeto, em vez do IntersectionObserver custom.
-- Counter animado pode usar um pequeno hook `useCountUp` (criado em `src/hooks/useCountUp.ts`) com `requestAnimationFrame` + `IntersectionObserver` para iniciar quando entrar na tela.
+- Adicionar rota `/aventuras/:slug` em `App.tsx` (protegida) → `pages/RpgAdventureDetail.tsx`
+- Em `Games.tsx` (tab RPG) e em `RpgAdventureCard` existente: card vira `Link` para `/aventuras/${slug}`
+- Helper `slugify` para gerar slugs ao criar/editar aventura no `RpgAdventureForm`
 
-## Layout split (text + mockup)
+## 3. Layout da página (baseado no mockup, com Interesse no header)
 
 ```text
-┌─────────────────────┬─────────────────────┐
-│   texto + features  │     mockup card     │
-│   + CTA gold        │    (UI preview)     │
-└─────────────────────┴─────────────────────┘
+[← Voltar para aventuras]
+
+┌─────────────────────────────────────────────────────────┐
+│ HEADER — grid: capa(140px) | conteúdo | INTERESSE box   │
+│ ┌─────┐  Nome ★                          ┌─────────────┐│
+│ │capa │  tagline                          │ INTERESSE   ││
+│ │     │  [sistema][oficial][gêneros]      │ ❤ 3 querem  ││
+│ │     │                                   │ [JM DI MA]  ││
+│ │     │  [♥ Tenho interesse] (gold, big)  │ [Confirmar] ││
+│ │     │  [Criar campanha] [Marcar sessão] └─────────────┘│
+│ │     │  ↑ visíveis só para mestres                      │
+│ └─────┘                                                  │
+└─────────────────────────────────────────────────────────┘
+
+[5 barras: Combate · Mistério · Exploração · Roleplay · Perigo]
+[Nível | Jogadores | Duração | Tom]
+
+┌─────────────────── 1fr ───────────────────┐ ┌─ 220px ─┐
+│ Sobre a aventura                          │ │ Stats   │
+│ O que torna especial (grid 2x2)           │ │ Top GMs │
+│ Notas para o Mestre (accordion)           │ │ Compat. │
+│ Campanhas (placeholder “em breve”)        │ │ Inclui  │
+│ Aventureiros que jogaram (placeholder)    │ │         │
+└───────────────────────────────────────────┘ └─────────┘
 ```
 
-Em mobile (<860px), mockup vai pra cima do texto. Seções alternam o lado (`reverse`) para ritmo visual.
+**Decisão de UX sobre o "Interesse"**:
+- Versão **desktop**: card de interesse fica fixado no canto superior direito do header (mais proeminente que apenas um botão), mostrando contador + avatares + botão grande "Tenho interesse / Remover interesse"
+- Versão **mobile**: o card colapsa e o botão `Tenho interesse` aparece em destaque dentro do header
+- Botões de mestre (`Criar campanha`, `Marcar sessão`) ficam abaixo, com aviso "visível apenas para mestres" — só renderizados se o usuário tem tag `mestre`
 
-## Dados
+## 4. Componentes novos
 
-- **Stats**: queries leves com `count: 'exact', head: true`:
-  - profiles, matches (+ blood_matches), seasons, games
-- **SocialButtons** já existe e busca de `contact_links` — reusar no rodapé do CTA.
-- Comunidades na seção "Traga sua comunidade" são **conceituais** (mockup), não consultam o banco.
+- `pages/RpgAdventureDetail.tsx` — página principal
+- `components/rpg/AdventureInterestCard.tsx` — card destacado do header com toggle de interesse + contador + avatares (realtime opcional via refetch)
+- `components/rpg/AdventureIntensityBars.tsx` — 5 barras de intensidade
+- `components/rpg/AdventureMasterNotes.tsx` — accordion (Dicas, Ganchos, Variações, Segredos com aviso de spoiler)
+- `components/rpg/AdventureSidebar.tsx` — stats placeholder + compatibilidade + materiais
+- `hooks/useRpgAdventureDetail.ts` — fetch da aventura por slug + sistema + contagem/lista de interessados + check `hasMestre`
 
-## Não muda
+## 5. Botões de mestre (placeholders funcionais)
 
-- Versão logada (`LoggedInIndex`) permanece intacta.
-- `Hero.tsx` permanece como está; só será **envolvida** pela nova `LandingHero` que adiciona CTAs + scroll hint maior.
-- Navbar do site continua sendo a global (não criamos navbar custom da landing).
+- `Criar campanha` → toast "Em breve — Fase 3 do roadmap" (ou abre Dialog vazio com aviso)
+- `Marcar sessão` → reaproveita `CreateRoomDialog` pré-preenchendo o jogo RPG e a aventura quando possível; se não der, mostra toast "Em breve"
+
+Decido por toast "Em breve" para ambos nesta entrega, evitando código half-baked. A integração real vem na Fase 3.
+
+## 6. Visual / detalhes estéticos
+
+- Paleta atual do projeto (gold + dark) preservada — substituir os roxos do mockup por **gold** (`#FFB800`) como accent principal e usar `secondary` no lugar do roxo `#c4a8ff` para manter consistência com o resto do AzD
+- Capa com gradiente dourado sutil quando não houver imagem
+- Hover sutil nos cards (lift + border gold/30)
+- Skeleton loading state durante fetch
+- Mobile-first: header colapsa em coluna única, sidebar vira seção abaixo
+
+## Fora de escopo desta entrega
+
+- Sistema completo de campanhas (fica para Fase 3)
+- Lista real de "aventureiros que jogaram" (depende de matches RPG concluídos — Fase 4)
+- Convite/aprovação de jogadores em campanha (Fase 3)
+
+Confirma este escopo? Após o ok, executo a migração e implemento tudo.

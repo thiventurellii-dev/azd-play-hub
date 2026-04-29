@@ -18,7 +18,13 @@ const fetchGamesData = async () => {
     supabase.from("rpg_adventures").select("*").order("name"),
   ]);
 
-  const games = ((gamesRes.data || []) as any[]).filter((g) => g.slug !== "blood-on-the-clocktower");
+  const games = ((gamesRes.data || []) as any[]).filter(
+    (g) =>
+      g.slug !== "blood-on-the-clocktower" &&
+      g.slug !== "rpg-generico" &&
+      g.slug !== "rpg-generic" &&
+      (g.name || "").trim().toLowerCase() !== "rpg"
+  );
   const bloodScripts = (scriptsRes.data || []) as any[];
   const bloodCharacters = (charsRes.data || []) as any[];
   const allTags = (tagsRes.data || []) as GameTag[];

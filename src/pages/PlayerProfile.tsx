@@ -285,38 +285,49 @@ const PlayerProfile = () => {
         .eq("status", "accepted");
       setFriendsCount(fCount || 0);
 
-      // ========= Season atual =========
-      const { data: activeSeasons } = await supabase
-        .from("seasons")
-        .select("id, name, status, end_date, type")
-        .eq("type", "boardgame" as any)
-        .eq("status", "active" as any)
-        .order("start_date", { ascending: false })
-        .limit(1);
-      const activeSeason = (activeSeasons || [])[0] as any;
-      if (activeSeason) {
-        const { data: ratings } = await supabase
-          .from("mmr_ratings")
-          .select("player_id, current_mmr")
-          .eq("season_id", activeSeason.id)
-          .order("current_mmr", { ascending: false });
-        if (ratings && ratings.length > 0) {
-          const idx = ratings.findIndex((r: any) => r.player_id === prof.id);
-          if (idx >= 0) {
-            const mmrs = ratings.map((r: any) => Number(r.current_mmr));
-            setSeasonCtx({
-              id: activeSeason.id,
-              name: activeSeason.name,
-              status: activeSeason.status,
-              end_date: activeSeason.end_date,
-              position: idx + 1,
-              total: ratings.length,
-              current_mmr: Number((ratings[idx] as any).current_mmr),
-              min_mmr: Math.min(...mmrs),
-              max_mmr: Math.max(...mmrs),
-            });
-          }
+      // ========= Seasons (todas em que o jogador participou) =========
+      const { data: playerRatings } = await supabase
+        .from("mmr_ratings")
+        .select("season_id, current_mmr")
+        .eq("player_id", prof.id);
+      if (playerRatings && playerRatings.length > 0) {
+        const seasonIds = [...new Set(playerRatings.map((r: any) => r.season_id))];
+        const { data: seasonsData } = await supabase
+          .from("seasons")
+          .select("id, name, status, end_date, start_date, type")
+          .in("id", seasonIds)
+          .eq("type", "boardgame" as any)
+          .order("start_date", { ascending: false });
+        const list: SeasonContext[] = [];
+        for (const s of (seasonsData || []) as any[]) {
+          const { data: allRatings } = await supabase
+            .from("mmr_ratings")
+            .select("player_id, current_mmr")
+            .eq("season_id", s.id)
+            .order("current_mmr", { ascending: false });
+          if (!allRatings || allRatings.length === 0) continue;
+          const idx = allRatings.findIndex((r: any) => r.player_id === prof.id);
+          if (idx < 0) continue;
+          const mmrs = allRatings.map((r: any) => Number(r.current_mmr));
+          list.push({
+            id: s.id,
+            name: s.name,
+            status: s.status,
+            end_date: s.end_date,
+            position: idx + 1,
+            total: allRatings.length,
+            current_mmr: Number((allRatings[idx] as any).current_mmr),
+            min_mmr: Math.min(...mmrs),
+            max_mmr: Math.max(...mmrs),
+          });
         }
+        // Active first, then by recency
+        list.sort((a, b) => {
+          if (a.status === "active" && b.status !== "active") return -1;
+          if (b.status === "active" && a.status !== "active") return 1;
+          return 0;
+        });
+        setSeasonsList(list);
       }
 
       // ========= BotC stats (mantido) =========

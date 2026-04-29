@@ -341,13 +341,13 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, prefil
     return (
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">Escolha a categoria:</p>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <button type="button" onClick={() => setCategory('boardgame')} className="flex flex-col items-center justify-center p-6 rounded-lg border-2 border-border hover:border-gold/60 text-center transition-all group aspect-[3/4]">
+        <div className="flex flex-wrap justify-center gap-4">
+          <button type="button" onClick={() => setCategory('boardgame')} className="flex flex-col items-center justify-center p-6 rounded-lg border-2 border-border hover:border-gold/60 text-center transition-all group w-[200px] aspect-[3/4]">
             <Gamepad2 className="h-12 w-12 mb-3 text-gold group-hover:scale-110 transition-transform" />
             <p className="font-semibold text-sm">Boardgame</p>
             <p className="text-xs text-muted-foreground mt-1">Jogos de tabuleiro</p>
           </button>
-          <button type="button" onClick={() => setCategory('botc')} className="flex flex-col items-center justify-center p-6 rounded-lg border-2 border-border hover:border-red-500/60 text-center transition-all group aspect-[3/4]">
+          <button type="button" onClick={() => setCategory('botc')} className="flex flex-col items-center justify-center p-6 rounded-lg border-2 border-border hover:border-red-500/60 text-center transition-all group w-[200px] aspect-[3/4]">
             <Skull className="h-12 w-12 mb-3 text-red-400 group-hover:scale-110 transition-transform" />
             <p className="font-semibold text-sm">Blood on the Clocktower</p>
             <p className="text-xs text-muted-foreground mt-1">BotC</p>

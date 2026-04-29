@@ -255,19 +255,24 @@ const BoardgameCard = ({
   );
 };
 
-const Stat = ({
+const StatBlock = ({
   icon: Icon,
   value,
   label,
+  highlight = false,
 }: {
   icon: any;
   value: string | number;
-  label?: string;
+  label: string;
+  highlight?: boolean;
 }) => (
-  <div className="flex items-center gap-1.5 min-w-0">
-    <Icon className="h-3.5 w-3.5 text-gold/60 shrink-0" />
-    <span className="text-xs font-semibold text-foreground">{value}</span>
-    {label && <span className="text-[10px] text-muted-foreground">{label}</span>}
+  <div className="flex flex-1 flex-col items-center gap-0.5 min-w-0 text-center">
+    <span className={`text-sm font-bold leading-tight ${highlight ? "text-gold" : "text-foreground"}`}>
+      {value}
+    </span>
+    <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+      <Icon className="h-3 w-3" /> {label}
+    </span>
   </div>
 );
 

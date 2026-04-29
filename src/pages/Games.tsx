@@ -293,14 +293,6 @@ const Games = () => {
                   )}
                 </div>
               </div>
-              <GamesSummaryPanel
-                totalGames={games.length}
-                activeCount={activeSeasonGameIds.size}
-                totalMatches={Object.values(matchCounts).reduce((a: number, b: number) => a + b, 0)}
-                totalPlaytimeMin={totalPlaytime}
-                totalLabel="jogos"
-                activeTooltip="Jogos com Season ou Torneio ativo no momento."
-              />
             </div>
             {filteredGames.length === 0 ? (
               <Card className="bg-card border-border"><CardContent className="py-12 text-center text-muted-foreground">Nenhum jogo encontrado.</CardContent></Card>

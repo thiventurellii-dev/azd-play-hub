@@ -21,6 +21,7 @@ import RpgSystemCard from "@/components/games/RpgSystemCard";
 import RpgAdventureCard from "@/components/games/RpgAdventureCard";
 import RpgSystemForm from "@/components/forms/RpgSystemForm";
 import RpgAdventureForm from "@/components/forms/RpgAdventureForm";
+import { CampaignsHighlight } from "@/components/rpg/CampaignsHighlight";
 import { useGamesData } from "@/hooks/useGamesData";
 
 const Games = () => {

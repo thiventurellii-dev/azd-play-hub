@@ -78,6 +78,28 @@ const RpgAdventureDetail = () => {
             {a.tag === 'official' && (
               <Star className="h-5 w-5 text-gold fill-gold/40" />
             )}
+            <div className="ml-auto">
+              <EntityEditButton
+                entityType="rpg"
+                title="Editar Aventura"
+                widthClass="sm:max-w-2xl"
+              >
+                {(onClose) => (
+                  <RpgAdventureForm
+                    adventure={{
+                      id: a.id,
+                      name: a.name,
+                      description: a.description,
+                      tag: a.tag,
+                      image_url: a.image_url,
+                      system_id: a.system_id,
+                      slug: a.slug,
+                    }}
+                    onSuccess={onClose}
+                  />
+                )}
+              </EntityEditButton>
+            </div>
           </div>
           {a.tagline && <p className="text-sm text-muted-foreground mb-3">{a.tagline}</p>}
           {!a.tagline && a.description && (

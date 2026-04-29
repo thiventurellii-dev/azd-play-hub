@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { supabase } from "@/lib/supabaseExternal";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,20 +8,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { ExternalLink, Video, Users, Plus, Sword } from "lucide-react";
-import { motion } from "framer-motion";
+import { Plus, Sword } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotification } from "@/components/NotificationDialog";
 import { useQueryClient } from "@tanstack/react-query";
 import BoardgameCard from "@/components/games/BoardgameCard";
 import GamesSummaryPanel from "@/components/games/GamesSummaryPanel";
 import BloodScriptCard from "@/components/games/BloodScriptCard";
-import { EntityEditButton } from "@/components/shared/EntityEditButton";
+import RpgSystemCard from "@/components/games/RpgSystemCard";
+import RpgAdventureCard from "@/components/games/RpgAdventureCard";
 import RpgSystemForm from "@/components/forms/RpgSystemForm";
 import RpgAdventureForm from "@/components/forms/RpgAdventureForm";
 import { useGamesData } from "@/hooks/useGamesData";
-import { Link } from "react-router-dom";
-import { slugify } from "@/lib/slugify";
 
 const Games = () => {
   const { user, isAdmin } = useAuth();
@@ -46,7 +43,6 @@ const Games = () => {
 
   const [tagFilter, setTagFilter] = useState("all");
 
-  // Add dialogs
   const [addOpen, setAddOpen] = useState(false);
   const [newName, setNewName] = useState("");
   const [newMinP, setNewMinP] = useState("");
@@ -65,6 +61,22 @@ const Games = () => {
     if (tagFilter === "all") return games;
     return games.filter((g: any) => (gameTagMap[g.id] || []).includes(tagFilter));
   }, [games, tagFilter, gameTagMap]);
+
+  // Blood KPIs
+  const activeScriptsCount = useMemo(
+    () => bloodScripts.filter((s: any) => (scriptSeasons[s.id] || []).some((l) => l.status === "active")).length,
+    [bloodScripts, scriptSeasons]
+  );
+
+  // RPG KPIs
+  const activeSystemIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const adv of rpgAdventures) {
+      // adventures with active linked content could be flagged later; for now: systems with any adventure
+      if (adv.system_id) ids.add(adv.system_id);
+    }
+    return ids;
+  }, [rpgAdventures]);
 
   const handleAddGame = async () => {
     if (!newName.trim()) return notify("error", "Nome obrigatório");
@@ -101,11 +113,13 @@ const Games = () => {
         <div className="flex justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-2 border-gold border-t-transparent" /></div>
       ) : (
         <Tabs defaultValue="boardgame" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="boardgame">🎲 Boardgames</TabsTrigger>
-            <TabsTrigger value="blood">🩸 Blood on the Clocktower</TabsTrigger>
-            <TabsTrigger value="rpg">⚔️ RPG</TabsTrigger>
-          </TabsList>
+          <div className="flex justify-center">
+            <TabsList>
+              <TabsTrigger value="boardgame">🎲 Boardgames</TabsTrigger>
+              <TabsTrigger value="blood">🩸 Blood on the Clocktower</TabsTrigger>
+              <TabsTrigger value="rpg">⚔️ RPG</TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Boardgames */}
           <TabsContent value="boardgame">
@@ -131,12 +145,14 @@ const Games = () => {
                 activeCount={activeSeasonGameIds.size}
                 totalMatches={Object.values(matchCounts).reduce((a: number, b: number) => a + b, 0)}
                 totalPlaytimeMin={totalPlaytime}
+                totalLabel="jogos"
+                activeTooltip="Jogos com Season ou Torneio ativo no momento."
               />
             </div>
             {filteredGames.length === 0 ? (
               <Card className="bg-card border-border"><CardContent className="py-12 text-center text-muted-foreground">Nenhum jogo encontrado.</CardContent></Card>
             ) : (
-              <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {filteredGames.map((g: any, i: number) => (
                   <BoardgameCard
                     key={g.id}
@@ -156,19 +172,36 @@ const Games = () => {
 
           {/* Blood Scripts */}
           <TabsContent value="blood">
-            {isAdmin && (
-              <div className="flex flex-wrap gap-2 mb-4">
-                <Button variant="outline" size="sm" onClick={() => setAddScriptOpen(true)}>
-                  <Plus className="h-4 w-4 mr-1" /> Adicionar Script
-                </Button>
+            <div className="flex flex-wrap gap-3 mb-5 items-center justify-between">
+              <div className="flex flex-wrap items-center gap-2">
+                {isAdmin && (
+                  <Button variant="outline" size="sm" onClick={() => setAddScriptOpen(true)}>
+                    <Plus className="h-4 w-4 mr-1" /> Adicionar Script
+                  </Button>
+                )}
               </div>
-            )}
+              <GamesSummaryPanel
+                totalGames={bloodScripts.length}
+                activeCount={activeScriptsCount}
+                totalMatches={bloodCharacters.length}
+                totalPlaytimeMin={0}
+                totalLabel="scripts"
+                activeTooltip="Scripts com Season ou Torneio ativo no momento."
+              />
+            </div>
             {bloodScripts.length === 0 ? (
               <Card className="bg-card border-border"><CardContent className="py-12 text-center text-muted-foreground">Nenhum script cadastrado.</CardContent></Card>
             ) : (
-              <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {bloodScripts.map((s: any, i: number) => (
-                  <BloodScriptCard key={s.id} script={s} characters={bloodCharacters.filter((c: any) => c.script_id === s.id)} seasons={scriptSeasons[s.id] || []} index={i} onUpdated={invalidate} />
+                  <BloodScriptCard
+                    key={s.id}
+                    script={s}
+                    characters={bloodCharacters.filter((c: any) => c.script_id === s.id)}
+                    seasons={scriptSeasons[s.id] || []}
+                    index={i}
+                    onUpdated={invalidate}
+                  />
                 ))}
               </div>
             )}
@@ -188,16 +221,29 @@ const Games = () => {
 
           {/* RPG */}
           <TabsContent value="rpg">
-            {isAdmin && (
-              <div className="flex gap-2 mb-4">
-                <Button variant="outline" size="sm" onClick={() => setAddSystemOpen(true)}>
-                  <Plus className="h-4 w-4 mr-1" /> Adicionar Sistema
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setAddAdventureOpen(true)} disabled={rpgSystems.length === 0}>
-                  <Plus className="h-4 w-4 mr-1" /> Adicionar Aventura
-                </Button>
+            <div className="flex flex-wrap gap-3 mb-5 items-center justify-between">
+              <div className="flex flex-wrap items-center gap-2">
+                {isAdmin && (
+                  <>
+                    <Button variant="outline" size="sm" onClick={() => setAddSystemOpen(true)}>
+                      <Plus className="h-4 w-4 mr-1" /> Adicionar Sistema
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setAddAdventureOpen(true)} disabled={rpgSystems.length === 0}>
+                      <Plus className="h-4 w-4 mr-1" /> Adicionar Aventura
+                    </Button>
+                  </>
+                )}
               </div>
-            )}
+              <GamesSummaryPanel
+                totalGames={rpgSystems.length}
+                activeCount={activeSystemIds.size}
+                totalMatches={rpgAdventures.length}
+                totalPlaytimeMin={0}
+                totalLabel="sistemas"
+                activeTooltip="Sistemas com Aventura, Season ou Torneio ativo."
+              />
+            </div>
+
             {rpgSystems.length === 0 ? (
               <Card className="bg-card border-border">
                 <CardContent className="py-12 text-center text-muted-foreground">
@@ -209,49 +255,11 @@ const Games = () => {
               <div className="space-y-8">
                 <div>
                   <h2 className="text-lg font-bold mb-4">Sistemas</h2>
-                  <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {rpgSystems.map((sys: any, i: number) => {
-                      const adventures = rpgAdventures.filter((a: any) => a.system_id === sys.id);
+                      const adventuresCount = rpgAdventures.filter((a: any) => a.system_id === sys.id).length;
                       return (
-                        <motion.div key={sys.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
-                          <Card className="bg-card border-border hover:border-purple-500/20 transition-all flex flex-col relative group">
-                            <CardContent className="py-5 space-y-3 flex-1 flex flex-col">
-                              <div className="flex items-start gap-4">
-                                {sys.image_url ? (
-                                  <img src={sys.image_url} alt={sys.name} className="h-16 w-16 rounded-lg object-cover flex-shrink-0" loading="lazy" />
-                                ) : (
-                                  <div className="h-16 w-16 rounded-lg bg-secondary flex items-center justify-center text-2xl flex-shrink-0">🎭</div>
-                                )}
-                                <div className="flex-1 min-w-0">
-                                  <h3 className="text-lg font-bold">{sys.name}</h3>
-                                  {sys.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{sys.description}</p>}
-                                  <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
-                                    <span className="flex items-center gap-1"><Users className="h-4 w-4" /> {adventures.length} aventura(s)</span>
-                                  </div>
-                                </div>
-                              </div>
-                              {(sys.rules_url || sys.video_url) && (
-                                <div className="flex gap-2 flex-wrap">
-                                  {sys.rules_url && (
-                                    <a href={sys.rules_url} target="_blank" rel="noopener noreferrer">
-                                      <Badge variant="outline" className="cursor-pointer hover:border-purple-500/50 gap-1 py-0.5 px-2 text-[10px]"><ExternalLink className="h-3 w-3" /> Regras</Badge>
-                                    </a>
-                                  )}
-                                  {sys.video_url && (
-                                    <a href={sys.video_url} target="_blank" rel="noopener noreferrer">
-                                      <Badge variant="outline" className="cursor-pointer hover:border-purple-500/50 gap-1 py-0.5 px-2 text-[10px]"><Video className="h-3 w-3" /> Vídeo</Badge>
-                                    </a>
-                                  )}
-                                </div>
-                              )}
-                            </CardContent>
-                            <div className="absolute top-3 right-3 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10">
-                              <EntityEditButton entityType="rpg" title="Editar Sistema">
-                                {(onClose) => <RpgSystemForm system={sys} onSuccess={() => { onClose(); invalidate(); }} />}
-                              </EntityEditButton>
-                            </div>
-                          </Card>
-                        </motion.div>
+                        <RpgSystemCard key={sys.id} system={sys} adventuresCount={adventuresCount} index={i} onUpdated={invalidate} />
                       );
                     })}
                   </div>
@@ -261,41 +269,11 @@ const Games = () => {
                   <div>
                     <Separator className="bg-gradient-to-r from-transparent via-purple-500/30 to-transparent mb-6" />
                     <h2 className="text-lg font-bold mb-4">Aventuras</h2>
-                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                       {rpgAdventures.map((adv: any, i: number) => {
                         const system = rpgSystems.find((s: any) => s.id === adv.system_id);
-                        const advSlug = adv.slug || slugify(adv.name) || adv.id;
                         return (
-                          <motion.div key={adv.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
-                            <Card className="bg-card border-border hover:border-gold/30 transition-colors relative group overflow-hidden">
-                              <Link to={`/aventuras/${advSlug}`} className="block">
-                                <CardContent className="py-4">
-                                  <div className="flex items-start gap-3">
-                                    {adv.image_url ? (
-                                      <img src={adv.image_url} alt={adv.name} className="h-12 w-12 rounded-lg object-cover flex-shrink-0" />
-                                    ) : (
-                                      <div className="h-12 w-12 rounded-lg bg-secondary flex items-center justify-center text-lg flex-shrink-0">📜</div>
-                                    )}
-                                    <div className="flex-1 min-w-0">
-                                      <p className="font-semibold group-hover:text-gold transition-colors">{adv.name}</p>
-                                      {adv.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{adv.description}</p>}
-                                      <div className="flex gap-2 mt-2 flex-wrap">
-                                        {system && <Badge variant="outline" className="text-[10px] border-gold/30 text-gold/90">🎭 {system.name}</Badge>}
-                                        <Badge variant="outline" className={`text-[10px] ${adv.tag === "homebrew" ? "border-orange-500/30 text-orange-400" : "border-emerald-500/30 text-emerald-400"}`}>
-                                          {adv.tag === "homebrew" ? "🏠 Homebrew" : "📖 Oficial"}
-                                        </Badge>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </CardContent>
-                              </Link>
-                              <div className="absolute top-2 right-2 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10" onClick={(e) => e.stopPropagation()}>
-                                <EntityEditButton entityType="rpg" title="Editar Aventura">
-                                  {(onClose) => <RpgAdventureForm adventure={adv} systems={rpgSystems} onSuccess={() => { onClose(); invalidate(); }} />}
-                                </EntityEditButton>
-                              </div>
-                            </Card>
-                          </motion.div>
+                          <RpgAdventureCard key={adv.id} adventure={adv} system={system} systems={rpgSystems} index={i} onUpdated={invalidate} />
                         );
                       })}
                     </div>

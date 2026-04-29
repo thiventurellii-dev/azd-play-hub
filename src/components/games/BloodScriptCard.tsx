@@ -1,13 +1,17 @@
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, Calendar } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Users, Calendar, MoreHorizontal, BarChart3, Pencil } from "lucide-react";
 import { motion } from "framer-motion";
-import { EntityEditButton } from "@/components/shared/EntityEditButton";
+import { useState } from "react";
 import EditBloodScriptDialog from "@/components/blood/EditBloodScriptDialog";
 import { FavoriteButton } from "@/components/shared/FavoriteButton";
-import { useState } from "react";
 
 interface BloodScript {
   id: string;
@@ -27,16 +31,6 @@ interface BloodCharacter {
 }
 interface SeasonLink { season_id: string; season_name: string; status: string; }
 
-const statusColors: Record<string, string> = {
-  active: "bg-green-500/20 text-green-400 border-green-500/30",
-  upcoming: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  finished: "bg-muted text-muted-foreground border-border",
-};
-
-const roleTypeLabels: Record<string, string> = {
-  townsfolk: "Cidadão", outsider: "Forasteiro", minion: "Lacaio", demon: "Demônio",
-};
-
 interface BloodScriptCardProps {
   script: BloodScript;
   characters: BloodCharacter[];
@@ -47,117 +41,119 @@ interface BloodScriptCardProps {
 
 const BloodScriptCard = ({ script, characters, seasons, index, onUpdated }: BloodScriptCardProps) => {
   const navigate = useNavigate();
-  const [expanded, setExpanded] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   const goodChars = characters.filter((c) => c.team === "good");
   const evilChars = characters.filter((c) => c.team === "evil");
   const scriptSlug = script.slug || script.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  const goToDetail = () => navigate(`/scripts/${scriptSlug}`);
+  const hasActiveSeason = seasons.some((s) => s.status === "active");
 
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
-      <Card className={`bg-card border-border hover:border-gold/20 transition-all ${expanded ? "" : "h-[280px] overflow-hidden"} flex flex-col relative group cursor-pointer`}>
-        <div className="absolute top-3 left-3 z-10">
-          <FavoriteButton entityType="blood_script" entityId={script.id} size="sm" />
-        </div>
-        <CardContent className="py-5 space-y-3 flex-1 flex flex-col">
-          <div className="flex items-start gap-4" onClick={() => navigate(`/scripts/${scriptSlug}`)}>
-            {script.image_url ? (
-              <img src={script.image_url} alt={script.name} className="h-20 w-20 rounded-lg object-cover flex-shrink-0" loading="lazy" />
-            ) : (
-              <div className="h-20 w-20 rounded-lg bg-secondary flex items-center justify-center text-2xl flex-shrink-0">🩸</div>
-            )}
-            <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-bold">{script.name}</h3>
-              {script.description && <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{script.description}</p>}
-              <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1"><Users className="h-4 w-4" /> {characters.length} personagens</span>
-                <span>👼 {goodChars.length}</span>
-                <span>😈 {evilChars.length}</span>
-              </div>
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.04 }}>
+      <article
+        onClick={goToDetail}
+        className="group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl bg-card transition-all duration-300 ring-1 ring-border/40 hover:ring-destructive/30 hover:-translate-y-0.5 shadow-[0_4px_20px_-12px_rgba(0,0,0,0.6)] hover:shadow-[0_12px_36px_-12px_rgba(220,38,38,0.18)]"
+      >
+        {/* COVER */}
+        <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-secondary via-card to-background">
+          {script.image_url ? (
+            <img
+              src={script.image_url}
+              alt={script.name}
+              loading="lazy"
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center text-6xl">🩸</div>
+          )}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-card" />
+          <div className="pointer-events-none absolute inset-0 shadow-[inset_0_0_60px_rgba(0,0,0,0.55)]" />
+
+          <div className="absolute inset-x-0 top-0 flex items-start justify-between p-2.5 z-10">
+            <div className="opacity-70 transition-opacity group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
+              <FavoriteButton entityType="blood_script" entityId={script.id} size="sm" />
+            </div>
+            <div onClick={(e) => e.stopPropagation()}>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-full bg-black/30 backdrop-blur-sm hover:bg-black/50 text-white/80 hover:text-white opacity-70 group-hover:opacity-100 transition-opacity"
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem onClick={goToDetail}>
+                    <BarChart3 className="h-3.5 w-3.5 mr-2" /> Ver detalhes
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setEditOpen(true)}>
+                    <Pencil className="h-3.5 w-3.5 mr-2" /> Editar script
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
-          <div className="flex-1" />
-          {seasons.length > 0 ? (
-            <div className="border-t border-border pt-3">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
-                <Calendar className="h-3 w-3" /> Seasons
-              </p>
-              <div className="flex gap-2 flex-wrap">
-                {seasons.map((ss) => (
-                  <Badge key={ss.season_id} className={`${statusColors[ss.status] || ""} text-xs`}>{ss.season_name}</Badge>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="border-t border-border pt-3">
-              <p className="text-xs text-muted-foreground italic">Nenhuma season vinculada</p>
-            </div>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-xs text-muted-foreground self-start"
-            onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-          >
-            {expanded ? "▲ Ocultar personagens" : "▼ Ver personagens"}
-          </Button>
-          {expanded && (
-            <div className="border-t border-border pt-3 space-y-2">
-              {goodChars.length > 0 && (
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">👼 Bem</p>
-                  <div className="flex flex-wrap gap-1">
-                    {goodChars.map((c) => (
-                      <Badge key={c.id} variant="outline" className="text-xs">
-                        {c.name} <span className="text-muted-foreground ml-1">({roleTypeLabels[c.role_type]})</span>
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {evilChars.length > 0 && (
-                <div>
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">😈 Mal</p>
-                  <div className="flex flex-wrap gap-1">
-                    {evilChars.map((c) => (
-                      <Badge key={c.id} variant="outline" className="text-xs border-destructive/30">
-                        {c.name} <span className="text-muted-foreground ml-1">({roleTypeLabels[c.role_type]})</span>
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </CardContent>
-        <div className="absolute top-3 right-3 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10" onClick={(e) => e.stopPropagation()}>
-          <EntityEditButton entityType="blood_script" title="Editar Script">
-            {(onClose) => {
-              // We use the EditBloodScriptDialog's form content inline
-              // For now, render a placeholder that opens the unified dialog
-              return <ScriptEditInline script={script} onClose={onClose} onSaved={onUpdated} />;
-            }}
-          </EntityEditButton>
+
+          <div className="absolute inset-x-0 bottom-0 p-4 z-10">
+            <h3 className="text-xl font-bold leading-tight text-white drop-shadow-md line-clamp-2">{script.name}</h3>
+          </div>
         </div>
-      </Card>
+
+        {/* BODY */}
+        <div className="flex flex-1 flex-col gap-3 p-4">
+          {script.description && (
+            <p className="text-xs text-muted-foreground line-clamp-2">{script.description}</p>
+          )}
+
+          <div className="flex-1" />
+
+          {/* Quick stats */}
+          <div className="flex items-center justify-between rounded-lg bg-background/40 px-3 py-2 ring-1 ring-border/30">
+            <Stat icon={Users} value={characters.length} label="pers." />
+            <div className="h-6 w-px bg-border/50" />
+            <Stat value={`👼 ${goodChars.length}`} />
+            <div className="h-6 w-px bg-border/50" />
+            <Stat value={`😈 ${evilChars.length}`} />
+          </div>
+
+          {/* Seasons */}
+          {seasons.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {hasActiveSeason && (
+                <Badge variant="outline" className="border-indigo-500/25 bg-indigo-500/10 text-indigo-300 text-[10px] uppercase tracking-wider">
+                  <Calendar className="h-3 w-3 mr-1" /> Season Ativa
+                </Badge>
+              )}
+              {seasons.slice(0, 2).map((ss) => (
+                <Badge key={ss.season_id} variant="outline" className="text-[10px] border-border/60 text-muted-foreground">
+                  {ss.season_name}
+                </Badge>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <EditBloodScriptDialog
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          script={{ ...script, victory_conditions: Array.isArray(script.victory_conditions) ? [...script.victory_conditions] : [] }}
+          onSaved={() => { onUpdated(); setEditOpen(false); }}
+          showCharacters={true}
+        />
+      </article>
     </motion.div>
   );
 };
 
-/** Inline wrapper that uses EditBloodScriptDialog logic but as a form */
-const ScriptEditInline = ({ script, onClose, onSaved }: { script: BloodScript; onClose: () => void; onSaved: () => void }) => {
-  // Since EditBloodScriptDialog is a standalone dialog, we'll just trigger the parent's unified dialog.
-  // This is a temporary bridge - ideally we'd extract a BloodScriptForm.
-  const [open, setOpen] = useState(true);
-  return (
-    <EditBloodScriptDialog
-      open={open}
-      onOpenChange={(o) => { setOpen(o); if (!o) onClose(); }}
-      script={{ ...script, victory_conditions: Array.isArray(script.victory_conditions) ? [...script.victory_conditions] : [] }}
-      onSaved={() => { onSaved(); onClose(); }}
-      showCharacters={true}
-    />
-  );
-};
+const Stat = ({ icon: Icon, value, label }: { icon?: any; value: string | number; label?: string }) => (
+  <div className="flex items-center gap-1.5 min-w-0">
+    {Icon && <Icon className="h-3.5 w-3.5 text-gold/60 shrink-0" />}
+    <span className="text-xs font-semibold text-foreground">{value}</span>
+    {label && <span className="text-[10px] text-muted-foreground">{label}</span>}
+  </div>
+);
 
 export default BloodScriptCard;

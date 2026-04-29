@@ -20,6 +20,8 @@ import { EntityEditButton } from "@/components/shared/EntityEditButton";
 import RpgSystemForm from "@/components/forms/RpgSystemForm";
 import RpgAdventureForm from "@/components/forms/RpgAdventureForm";
 import { useGamesData } from "@/hooks/useGamesData";
+import { Link } from "react-router-dom";
+import { slugify } from "@/lib/slugify";
 
 const Games = () => {
   const { user, isAdmin } = useAuth();
@@ -240,29 +242,32 @@ const Games = () => {
                     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                       {rpgAdventures.map((adv: any, i: number) => {
                         const system = rpgSystems.find((s: any) => s.id === adv.system_id);
+                        const advSlug = adv.slug || slugify(adv.name) || adv.id;
                         return (
                           <motion.div key={adv.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
-                            <Card className="bg-card border-border hover:border-purple-500/20 transition-colors relative group">
-                              <CardContent className="py-4">
-                                <div className="flex items-start gap-3">
-                                  {adv.image_url ? (
-                                    <img src={adv.image_url} alt={adv.name} className="h-12 w-12 rounded-lg object-cover flex-shrink-0" />
-                                  ) : (
-                                    <div className="h-12 w-12 rounded-lg bg-secondary flex items-center justify-center text-lg flex-shrink-0">📜</div>
-                                  )}
-                                  <div className="flex-1 min-w-0">
-                                    <p className="font-semibold">{adv.name}</p>
-                                    {adv.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{adv.description}</p>}
-                                    <div className="flex gap-2 mt-2 flex-wrap">
-                                      {system && <Badge variant="outline" className="text-[10px] border-purple-500/30 text-purple-400">🎭 {system.name}</Badge>}
-                                      <Badge variant="outline" className={`text-[10px] ${adv.tag === "homebrew" ? "border-orange-500/30 text-orange-400" : "border-green-500/30 text-green-400"}`}>
-                                        {adv.tag === "homebrew" ? "🏠 Homebrew" : "📖 Oficial"}
-                                      </Badge>
+                            <Card className="bg-card border-border hover:border-gold/30 transition-colors relative group overflow-hidden">
+                              <Link to={`/aventuras/${advSlug}`} className="block">
+                                <CardContent className="py-4">
+                                  <div className="flex items-start gap-3">
+                                    {adv.image_url ? (
+                                      <img src={adv.image_url} alt={adv.name} className="h-12 w-12 rounded-lg object-cover flex-shrink-0" />
+                                    ) : (
+                                      <div className="h-12 w-12 rounded-lg bg-secondary flex items-center justify-center text-lg flex-shrink-0">📜</div>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-semibold group-hover:text-gold transition-colors">{adv.name}</p>
+                                      {adv.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{adv.description}</p>}
+                                      <div className="flex gap-2 mt-2 flex-wrap">
+                                        {system && <Badge variant="outline" className="text-[10px] border-gold/30 text-gold/90">🎭 {system.name}</Badge>}
+                                        <Badge variant="outline" className={`text-[10px] ${adv.tag === "homebrew" ? "border-orange-500/30 text-orange-400" : "border-emerald-500/30 text-emerald-400"}`}>
+                                          {adv.tag === "homebrew" ? "🏠 Homebrew" : "📖 Oficial"}
+                                        </Badge>
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              </CardContent>
-                              <div className="absolute top-2 right-2 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10">
+                                </CardContent>
+                              </Link>
+                              <div className="absolute top-2 right-2 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10" onClick={(e) => e.stopPropagation()}>
                                 <EntityEditButton entityType="rpg" title="Editar Aventura">
                                   {(onClose) => <RpgAdventureForm adventure={adv} systems={rpgSystems} onSuccess={() => { onClose(); invalidate(); }} />}
                                 </EntityEditButton>

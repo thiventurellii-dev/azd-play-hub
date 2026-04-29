@@ -603,6 +603,39 @@ const PlayerProfile = () => {
               </div>
             </div>
 
+            {/* Info row (estilo da imagem: divididas por borda) */}
+            {(memberSince || location || lastMatchLabel) && (
+              <div className="mt-6 pt-5 border-t border-border/60 grid grid-cols-2 md:grid-cols-3 gap-px bg-border/50 rounded-lg overflow-hidden">
+                {memberSince && (
+                  <div className="bg-card px-4 py-3 flex items-start gap-3">
+                    <Calendar className="h-4 w-4 text-gold mt-0.5 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <div className="text-[11px] text-muted-foreground uppercase tracking-wider">Membro desde</div>
+                      <div className="text-sm font-semibold mt-0.5">{memberSince}</div>
+                    </div>
+                  </div>
+                )}
+                {location && (
+                  <div className="bg-card px-4 py-3 flex items-start gap-3">
+                    <MapPin className="h-4 w-4 text-gold mt-0.5 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <div className="text-[11px] text-muted-foreground uppercase tracking-wider">Localização</div>
+                      <div className="text-sm font-semibold mt-0.5 truncate">{location}</div>
+                    </div>
+                  </div>
+                )}
+                {lastMatchLabel && (
+                  <div className="bg-card px-4 py-3 flex items-start gap-3">
+                    <Clock className="h-4 w-4 text-gold mt-0.5 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <div className="text-[11px] text-muted-foreground uppercase tracking-wider">Última partida</div>
+                      <div className="text-sm font-semibold mt-0.5">{lastMatchLabel}</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Action buttons */}
             <div className="mt-5 flex items-center gap-2 justify-center lg:justify-end flex-wrap">
               {isOwnProfile ? (

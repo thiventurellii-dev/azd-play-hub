@@ -796,6 +796,7 @@ export type Database = {
       match_rooms: {
         Row: {
           blood_script_id: string | null
+          campaign_id: string | null
           created_at: string
           created_by: string
           description: string | null
@@ -808,12 +809,16 @@ export type Database = {
           room_type: Database["public"]["Enums"]["match_room_type"]
           scheduled_at: string
           season_id: string | null
+          session_number: number | null
+          session_recap: string | null
+          session_title: string | null
           status: Database["public"]["Enums"]["match_room_status"]
           title: string
           updated_at: string
         }
         Insert: {
           blood_script_id?: string | null
+          campaign_id?: string | null
           created_at?: string
           created_by: string
           description?: string | null
@@ -826,12 +831,16 @@ export type Database = {
           room_type?: Database["public"]["Enums"]["match_room_type"]
           scheduled_at: string
           season_id?: string | null
+          session_number?: number | null
+          session_recap?: string | null
+          session_title?: string | null
           status?: Database["public"]["Enums"]["match_room_status"]
           title: string
           updated_at?: string
         }
         Update: {
           blood_script_id?: string | null
+          campaign_id?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
@@ -844,6 +853,9 @@ export type Database = {
           room_type?: Database["public"]["Enums"]["match_room_type"]
           scheduled_at?: string
           season_id?: string | null
+          session_number?: number | null
+          session_recap?: string | null
+          session_title?: string | null
           status?: Database["public"]["Enums"]["match_room_status"]
           title?: string
           updated_at?: string
@@ -854,6 +866,13 @@ export type Database = {
             columns: ["blood_script_id"]
             isOneToOne: false
             referencedRelation: "blood_scripts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "match_rooms_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "rpg_campaigns"
             referencedColumns: ["id"]
           },
           {
@@ -1166,36 +1185,146 @@ export type Database = {
         }
         Relationships: []
       }
+      rpg_adventure_interests: {
+        Row: {
+          adventure_id: string
+          created_at: string
+          id: string
+          player_id: string
+        }
+        Insert: {
+          adventure_id: string
+          created_at?: string
+          id?: string
+          player_id: string
+        }
+        Update: {
+          adventure_id?: string
+          created_at?: string
+          id?: string
+          player_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rpg_adventure_interests_adventure_id_fkey"
+            columns: ["adventure_id"]
+            isOneToOne: false
+            referencedRelation: "rpg_adventures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       rpg_adventures: {
         Row: {
           created_at: string
           description: string | null
+          estimated_duration_hours: number | null
+          highlights: Json | null
+          hooks: string | null
           id: string
           image_url: string | null
+          materials: Json | null
+          max_players: number | null
+          min_players: number | null
           name: string
+          pillar_combat:
+            | Database["public"]["Enums"]["rpg_pillar_intensity"]
+            | null
+          pillar_danger:
+            | Database["public"]["Enums"]["rpg_pillar_intensity"]
+            | null
+          pillar_exploration:
+            | Database["public"]["Enums"]["rpg_pillar_intensity"]
+            | null
+          pillar_mystery:
+            | Database["public"]["Enums"]["rpg_pillar_intensity"]
+            | null
+          pillar_roleplay:
+            | Database["public"]["Enums"]["rpg_pillar_intensity"]
+            | null
+          recommended_level: string | null
+          secrets: string | null
+          setting: string | null
           slug: string | null
           system_id: string
           tag: Database["public"]["Enums"]["rpg_adventure_tag"]
+          tips: string | null
+          tone: string | null
+          variations: string | null
         }
         Insert: {
           created_at?: string
           description?: string | null
+          estimated_duration_hours?: number | null
+          highlights?: Json | null
+          hooks?: string | null
           id?: string
           image_url?: string | null
+          materials?: Json | null
+          max_players?: number | null
+          min_players?: number | null
           name: string
+          pillar_combat?:
+            | Database["public"]["Enums"]["rpg_pillar_intensity"]
+            | null
+          pillar_danger?:
+            | Database["public"]["Enums"]["rpg_pillar_intensity"]
+            | null
+          pillar_exploration?:
+            | Database["public"]["Enums"]["rpg_pillar_intensity"]
+            | null
+          pillar_mystery?:
+            | Database["public"]["Enums"]["rpg_pillar_intensity"]
+            | null
+          pillar_roleplay?:
+            | Database["public"]["Enums"]["rpg_pillar_intensity"]
+            | null
+          recommended_level?: string | null
+          secrets?: string | null
+          setting?: string | null
           slug?: string | null
           system_id: string
           tag?: Database["public"]["Enums"]["rpg_adventure_tag"]
+          tips?: string | null
+          tone?: string | null
+          variations?: string | null
         }
         Update: {
           created_at?: string
           description?: string | null
+          estimated_duration_hours?: number | null
+          highlights?: Json | null
+          hooks?: string | null
           id?: string
           image_url?: string | null
+          materials?: Json | null
+          max_players?: number | null
+          min_players?: number | null
           name?: string
+          pillar_combat?:
+            | Database["public"]["Enums"]["rpg_pillar_intensity"]
+            | null
+          pillar_danger?:
+            | Database["public"]["Enums"]["rpg_pillar_intensity"]
+            | null
+          pillar_exploration?:
+            | Database["public"]["Enums"]["rpg_pillar_intensity"]
+            | null
+          pillar_mystery?:
+            | Database["public"]["Enums"]["rpg_pillar_intensity"]
+            | null
+          pillar_roleplay?:
+            | Database["public"]["Enums"]["rpg_pillar_intensity"]
+            | null
+          recommended_level?: string | null
+          secrets?: string | null
+          setting?: string | null
           slug?: string | null
           system_id?: string
           tag?: Database["public"]["Enums"]["rpg_adventure_tag"]
+          tips?: string | null
+          tone?: string | null
+          variations?: string | null
         }
         Relationships: [
           {
@@ -1203,6 +1332,357 @@ export type Database = {
             columns: ["system_id"]
             isOneToOne: false
             referencedRelation: "rpg_systems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rpg_campaign_characters: {
+        Row: {
+          campaign_id: string
+          character_id: string
+          exit_room_id: string | null
+          exited_at: string | null
+          id: string
+          joined_at: string
+          status: Database["public"]["Enums"]["rpg_character_campaign_status"]
+        }
+        Insert: {
+          campaign_id: string
+          character_id: string
+          exit_room_id?: string | null
+          exited_at?: string | null
+          id?: string
+          joined_at?: string
+          status?: Database["public"]["Enums"]["rpg_character_campaign_status"]
+        }
+        Update: {
+          campaign_id?: string
+          character_id?: string
+          exit_room_id?: string | null
+          exited_at?: string | null
+          id?: string
+          joined_at?: string
+          status?: Database["public"]["Enums"]["rpg_character_campaign_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rpg_campaign_characters_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "rpg_campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rpg_campaign_characters_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "rpg_characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rpg_campaign_invites: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          revoked_at: string | null
+          token: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          revoked_at?: string | null
+          token?: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          revoked_at?: string | null
+          token?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rpg_campaign_invites_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "rpg_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rpg_campaign_players: {
+        Row: {
+          campaign_id: string
+          id: string
+          joined_at: string
+          player_id: string
+          status: Database["public"]["Enums"]["rpg_campaign_player_status"]
+        }
+        Insert: {
+          campaign_id: string
+          id?: string
+          joined_at?: string
+          player_id: string
+          status?: Database["public"]["Enums"]["rpg_campaign_player_status"]
+        }
+        Update: {
+          campaign_id?: string
+          id?: string
+          joined_at?: string
+          player_id?: string
+          status?: Database["public"]["Enums"]["rpg_campaign_player_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rpg_campaign_players_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "rpg_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rpg_campaign_posts: {
+        Row: {
+          author_id: string
+          body: string
+          campaign_id: string
+          created_at: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          campaign_id: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          campaign_id?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rpg_campaign_posts_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "rpg_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rpg_campaigns: {
+        Row: {
+          adventure_id: string | null
+          created_at: string
+          description: string | null
+          ended_at: string | null
+          id: string
+          image_url: string | null
+          is_public: boolean
+          master_id: string
+          max_players: number | null
+          name: string
+          open_join: boolean
+          slug: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["rpg_campaign_status"]
+          updated_at: string
+        }
+        Insert: {
+          adventure_id?: string | null
+          created_at?: string
+          description?: string | null
+          ended_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_public?: boolean
+          master_id: string
+          max_players?: number | null
+          name: string
+          open_join?: boolean
+          slug?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["rpg_campaign_status"]
+          updated_at?: string
+        }
+        Update: {
+          adventure_id?: string | null
+          created_at?: string
+          description?: string | null
+          ended_at?: string | null
+          id?: string
+          image_url?: string | null
+          is_public?: boolean
+          master_id?: string
+          max_players?: number | null
+          name?: string
+          open_join?: boolean
+          slug?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["rpg_campaign_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rpg_campaigns_adventure_id_fkey"
+            columns: ["adventure_id"]
+            isOneToOne: false
+            referencedRelation: "rpg_adventures"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rpg_characters: {
+        Row: {
+          alignment: string | null
+          backstory: string | null
+          class: string | null
+          created_at: string
+          external_url: string | null
+          gear: string | null
+          id: string
+          is_public: boolean
+          level: number | null
+          name: string
+          player_id: string
+          portrait_url: string | null
+          race: string | null
+          system_id: string | null
+          traits: string | null
+          updated_at: string
+        }
+        Insert: {
+          alignment?: string | null
+          backstory?: string | null
+          class?: string | null
+          created_at?: string
+          external_url?: string | null
+          gear?: string | null
+          id?: string
+          is_public?: boolean
+          level?: number | null
+          name: string
+          player_id: string
+          portrait_url?: string | null
+          race?: string | null
+          system_id?: string | null
+          traits?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alignment?: string | null
+          backstory?: string | null
+          class?: string | null
+          created_at?: string
+          external_url?: string | null
+          gear?: string | null
+          id?: string
+          is_public?: boolean
+          level?: number | null
+          name?: string
+          player_id?: string
+          portrait_url?: string | null
+          race?: string | null
+          system_id?: string | null
+          traits?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rpg_characters_system_id_fkey"
+            columns: ["system_id"]
+            isOneToOne: false
+            referencedRelation: "rpg_systems"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rpg_session_attendance: {
+        Row: {
+          created_at: string
+          id: string
+          player_id: string
+          present: boolean
+          room_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          player_id: string
+          present?: boolean
+          room_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          player_id?: string
+          present?: boolean
+          room_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rpg_session_attendance_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "match_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rpg_session_events: {
+        Row: {
+          character_id: string | null
+          created_at: string
+          description: string | null
+          event_type: Database["public"]["Enums"]["rpg_session_event_type"]
+          id: string
+          room_id: string
+        }
+        Insert: {
+          character_id?: string | null
+          created_at?: string
+          description?: string | null
+          event_type: Database["public"]["Enums"]["rpg_session_event_type"]
+          id?: string
+          room_id: string
+        }
+        Update: {
+          character_id?: string | null
+          created_at?: string
+          description?: string | null
+          event_type?: Database["public"]["Enums"]["rpg_session_event_type"]
+          id?: string
+          room_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rpg_session_events_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "rpg_characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rpg_session_events_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "match_rooms"
             referencedColumns: ["id"]
           },
         ]
@@ -1416,6 +1896,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_view_campaign: {
+        Args: { _campaign_id: string; _user_id: string }
+        Returns: boolean
+      }
       get_ghost_players: {
         Args: never
         Returns: {
@@ -1463,6 +1947,22 @@ export type Database = {
         Returns: boolean
       }
       insert_notifications: { Args: { p_rows: Json }; Returns: undefined }
+      is_campaign_master: {
+        Args: { _campaign_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_campaign_member: {
+        Args: { _campaign_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_master: { Args: { _user_id: string }; Returns: boolean }
+      lookup_campaign_invite: {
+        Args: { _token: string }
+        Returns: {
+          campaign_id: string
+          valid: boolean
+        }[]
+      }
       recalculate_blood_ratings: {
         Args: { p_season_id: string }
         Returns: undefined
@@ -1503,6 +2003,23 @@ export type Database = {
         | "aventureiro"
         | "mestre"
       rpg_adventure_tag: "official" | "homebrew"
+      rpg_campaign_player_status:
+        | "invited"
+        | "accepted"
+        | "pending_request"
+        | "left"
+        | "declined"
+      rpg_campaign_status: "planning" | "active" | "completed" | "abandoned"
+      rpg_character_campaign_status: "active" | "left" | "dead" | "retired"
+      rpg_pillar_intensity: "baixa" | "media" | "alta" | "muito_alta"
+      rpg_session_event_type:
+        | "death"
+        | "level_up"
+        | "milestone"
+        | "legendary_item"
+        | "important_npc"
+        | "betrayal"
+        | "achievement"
       season_type: "boardgame" | "blood"
     }
     CompositeTypes: {
@@ -1652,6 +2169,25 @@ export const Constants = {
         "mestre",
       ],
       rpg_adventure_tag: ["official", "homebrew"],
+      rpg_campaign_player_status: [
+        "invited",
+        "accepted",
+        "pending_request",
+        "left",
+        "declined",
+      ],
+      rpg_campaign_status: ["planning", "active", "completed", "abandoned"],
+      rpg_character_campaign_status: ["active", "left", "dead", "retired"],
+      rpg_pillar_intensity: ["baixa", "media", "alta", "muito_alta"],
+      rpg_session_event_type: [
+        "death",
+        "level_up",
+        "milestone",
+        "legendary_item",
+        "important_npc",
+        "betrayal",
+        "achievement",
+      ],
       season_type: ["boardgame", "blood"],
     },
   },

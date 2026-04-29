@@ -18,6 +18,7 @@ import { useProfileCompletion } from '@/hooks/useProfileCompletion';
 import PlayerTagsSelector, { PlayerTagsBadges, PlayerTag } from '@/components/profile/PlayerTagsSelector';
 import { useProfileTags, saveProfileTags } from '@/hooks/useProfileTags';
 import { MyCampaignsCard } from '@/components/rpg/MyCampaignsCard';
+import { EditProfileDialog } from '@/components/profile/EditProfileDialog';
 
 const Profile = () => {
   const { user, role } = useAuth();
@@ -65,40 +66,11 @@ const Profile = () => {
     });
   }, [user]);
 
-  const handleSave = async () => {
-    if (!user) return;
-    if (!form.name || !form.nickname || !form.phone || !form.state || !form.city || !form.birth_date || !form.gender || !form.pronouns) {
-      return notify('error', 'Preencha todos os campos obrigatórios');
-    }
-    if (editTags.length === 0) {
-      return notify('error', 'Escolha pelo menos uma tag de jogador');
-    }
-    setSaving(true);
-    const { error } = await supabase.from('profiles').update({
-      name: form.name,
-      nickname: form.nickname,
-      phone: unformatPhone(form.phone),
-      country_code: form.country_code,
-      state: form.state,
-      city: form.city,
-      birth_date: form.birth_date,
-      gender: form.gender,
-      pronouns: form.pronouns,
-    } as any).eq('id', user.id);
-    if (!error) {
-      try {
-        await saveProfileTags(user.id, editTags);
-        setPlayerTags(editTags);
-      } catch (e: any) {
-        setSaving(false);
-        return notify('error', 'Erro ao salvar tags: ' + (e.message || ''));
-      }
-    }
-    setSaving(false);
-    if (error) return notify('error', error.message);
-    notify('success', 'Perfil atualizado!');
-    setEditing(false);
-    setProfile({ ...profile, ...form, phone: unformatPhone(form.phone) });
+  // Save handler now lives in EditProfileDialog. The dialog calls onSaved with
+  // the updated profile + tags so we can refresh local state without a refetch.
+  const handleProfileSaved = (updated: any, newTags: PlayerTag[]) => {
+    setProfile({ ...profile, ...updated });
+    setPlayerTags(newTags);
   };
 
   const handleChangePassword = async () => {

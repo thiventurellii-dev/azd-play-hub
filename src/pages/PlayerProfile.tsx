@@ -579,14 +579,7 @@ const PlayerProfile = () => {
                     </Badge>
                     <XpBadge userId={profile.id} variant="compact" />
                   </div>
-                  <div className="mt-3 flex flex-col sm:flex-row gap-3 sm:gap-4 text-xs text-muted-foreground items-center sm:items-start justify-center sm:justify-start">
-                    {memberSince && (
-                      <span className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5 text-gold" /> Desde {memberSince}</span>
-                    )}
-                    {location && (
-                      <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-gold" /> {location}</span>
-                    )}
-                  </div>
+                  {/* (informações de membro/local foram movidas para a barra inferior do header) */}
                   <div className="mt-3 max-w-[300px] mx-auto sm:mx-0">
                     <XpBadge userId={profile.id} variant="full" />
                   </div>

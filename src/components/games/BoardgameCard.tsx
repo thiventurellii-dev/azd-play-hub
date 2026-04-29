@@ -233,8 +233,11 @@ const BoardgameCard = ({
           )}
         </div>
 
-        {/* Edit sheet (controlled by dropdown) */}
-        {canEditGame && (
+      </article>
+
+      {/* Edit sheet (controlled by dropdown) — rendered outside <article> so clicks don't bubble to navigation */}
+      {canEditGame && (
+        <div onClick={(e) => e.stopPropagation()}>
           <EntitySheet
             open={editOpen}
             onOpenChange={setEditOpen}
@@ -249,8 +252,8 @@ const BoardgameCard = ({
               }}
             />
           </EntitySheet>
-        )}
-      </article>
+        </div>
+      )}
     </motion.div>
   );
 };

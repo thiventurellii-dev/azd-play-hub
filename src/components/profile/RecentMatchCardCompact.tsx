@@ -4,10 +4,13 @@ import { Trophy, Skull, Minus } from "lucide-react";
 import type { RecentMatchItem } from "./RecentMatchCard";
 
 type Meta = {
-  wrap: string;
+  base: string;
+  directional: string;
   glow: string;
   edge: string;
+  innerShadow: string;
   accent: string;
+  mmr: string;
   icon: typeof Trophy;
 };
 
@@ -15,40 +18,60 @@ const meta = (m: RecentMatchItem): Meta => {
   if (m.is_competitive) {
     const delta = Number(m.mmr_change || 0);
     if (delta > 0) {
-      // Vitória competitiva — verde atmosférico
+      // Vitória — esmeralda profunda, suave e recompensadora
       return {
-        wrap: "border-green-900/40 bg-[radial-gradient(ellipse_at_top_right,_hsl(150_60%_12%/0.55),_hsl(220_8%_5%)_70%)]",
-        glow: "bg-[radial-gradient(circle_at_25%_30%,_hsl(150_70%_45%/0.10),_transparent_60%)]",
-        edge: "bg-gradient-to-b from-green-400/30 via-green-500/10 to-transparent",
-        accent: "text-green-300/90",
+        base: "border-emerald-950/60",
+        directional:
+          "bg-[linear-gradient(135deg,_hsl(158_55%_10%/0.85)_0%,_hsl(220_10%_5%)_55%,_hsl(220_12%_4%)_100%)]",
+        glow: "bg-[radial-gradient(circle_at_22%_28%,_hsl(155_75%_45%/0.09),_transparent_55%)]",
+        edge: "bg-gradient-to-b from-emerald-400/40 via-emerald-500/10 to-transparent",
+        innerShadow:
+          "shadow-[inset_0_1px_0_hsl(155_60%_55%/0.06),inset_0_-30px_60px_hsl(220_15%_3%/0.6),0_8px_24px_-12px_hsl(155_70%_20%/0.35)]",
+        accent: "text-emerald-300/85",
+        mmr: "text-emerald-200 drop-shadow-[0_0_8px_hsl(155_70%_45%/0.35)]",
         icon: Trophy,
       };
     }
-    // Derrota competitiva — vermelho profundo
+    // Derrota — crimson silenciado
     return {
-      wrap: "border-red-900/40 bg-[radial-gradient(ellipse_at_top_right,_hsl(355_55%_14%/0.65),_hsl(220_8%_5%)_70%)]",
-      glow: "bg-[radial-gradient(circle_at_70%_70%,_hsl(355_70%_40%/0.12),_transparent_65%)]",
-      edge: "bg-gradient-to-b from-red-400/35 via-red-500/12 to-transparent",
-      accent: "text-red-300/90",
+      base: "border-red-950/60",
+      directional:
+        "bg-[linear-gradient(135deg,_hsl(355_45%_11%/0.85)_0%,_hsl(220_10%_5%)_55%,_hsl(220_12%_4%)_100%)]",
+      glow: "bg-[radial-gradient(circle_at_75%_72%,_hsl(355_60%_38%/0.09),_transparent_55%)]",
+      edge: "bg-gradient-to-b from-red-400/35 via-red-500/8 to-transparent",
+      innerShadow:
+        "shadow-[inset_0_1px_0_hsl(355_50%_55%/0.05),inset_0_-30px_60px_hsl(220_15%_3%/0.6),0_8px_24px_-12px_hsl(355_60%_18%/0.35)]",
+      accent: "text-red-300/80",
+      mmr: "text-red-200 drop-shadow-[0_0_8px_hsl(355_70%_45%/0.3)]",
       icon: Skull,
     };
   }
   if (m.position === 1) {
-    // Vitória casual — amarelo atmosférico
+    // Vitória casual — âmbar suave
     return {
-      wrap: "border-yellow-900/40 bg-[radial-gradient(ellipse_at_top_right,_hsl(45_55%_12%/0.55),_hsl(220_8%_5%)_70%)]",
-      glow: "bg-[radial-gradient(circle_at_25%_30%,_hsl(45_85%_50%/0.10),_transparent_60%)]",
-      edge: "bg-gradient-to-b from-yellow-300/30 via-yellow-500/10 to-transparent",
-      accent: "text-yellow-200/90",
+      base: "border-yellow-950/60",
+      directional:
+        "bg-[linear-gradient(135deg,_hsl(45_50%_11%/0.85)_0%,_hsl(220_10%_5%)_55%,_hsl(220_12%_4%)_100%)]",
+      glow: "bg-[radial-gradient(circle_at_22%_28%,_hsl(45_85%_50%/0.09),_transparent_55%)]",
+      edge: "bg-gradient-to-b from-yellow-300/35 via-yellow-500/10 to-transparent",
+      innerShadow:
+        "shadow-[inset_0_1px_0_hsl(45_70%_55%/0.06),inset_0_-30px_60px_hsl(220_15%_3%/0.6),0_8px_24px_-12px_hsl(45_70%_20%/0.35)]",
+      accent: "text-yellow-200/85",
+      mmr: "text-yellow-100 drop-shadow-[0_0_8px_hsl(45_85%_50%/0.3)]",
       icon: Trophy,
     };
   }
-  // Casual derrota — cinza dessaturado
+  // Casual derrota — neutro dessaturado
   return {
-    wrap: "border-border/60 bg-[linear-gradient(180deg,_hsl(220_6%_11%),_hsl(220_8%_6%))]",
+    base: "border-border/50",
+    directional:
+      "bg-[linear-gradient(135deg,_hsl(220_8%_11%)_0%,_hsl(220_10%_6%)_60%,_hsl(220_12%_4%)_100%)]",
     glow: "",
     edge: "bg-gradient-to-b from-muted-foreground/10 to-transparent",
+    innerShadow:
+      "shadow-[inset_0_1px_0_hsl(0_0%_100%/0.03),inset_0_-30px_60px_hsl(220_15%_3%/0.6),0_6px_18px_-10px_hsl(220_15%_2%/0.5)]",
     accent: "text-muted-foreground",
+    mmr: "text-foreground/80",
     icon: Minus,
   };
 };
@@ -62,27 +85,31 @@ const RecentMatchCardCompact = ({ m }: { m: RecentMatchItem }) => {
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-xl border p-4 transition-all min-h-[180px] flex flex-col",
-        "hover:border-foreground/20",
-        meta_.wrap,
+        "group relative overflow-hidden rounded-xl border p-4 min-h-[180px] flex flex-col",
+        "transition-all duration-300 hover:-translate-y-0.5 hover:border-foreground/25",
+        meta_.base,
+        meta_.directional,
+        meta_.innerShadow,
       )}
     >
       {/* Edge accent light */}
       <div
         className={cn(
-          "pointer-events-none absolute top-0 left-0 h-full w-[2px] opacity-70",
+          "pointer-events-none absolute top-0 left-0 h-full w-[2px] opacity-80",
           meta_.edge,
         )}
       />
-      {/* Soft ambient glow */}
+      {/* Off-center ambient glow */}
       {meta_.glow && (
         <div className={cn("pointer-events-none absolute inset-0", meta_.glow)} />
       )}
+      {/* Vignette for micro-contrast (darker edges) */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,_transparent_55%,_hsl(220_15%_3%/0.45)_100%)]" />
 
       <div className="relative flex items-center justify-between mb-3">
         <Icon className={cn("h-4 w-4", meta_.accent)} />
         {m.is_competitive && m.mmr_change !== null && (
-          <span className={cn("text-[11px] font-bold tabular-nums", meta_.accent)}>
+          <span className={cn("text-[12px] font-bold tabular-nums tracking-tight", meta_.mmr)}>
             {delta >= 0 ? "+" : ""}
             {delta.toFixed(1)} MMR
           </span>
@@ -93,16 +120,16 @@ const RecentMatchCardCompact = ({ m }: { m: RecentMatchItem }) => {
         {m.game_slug ? (
           <Link
             to={`/jogos/${m.game_slug}`}
-            className="font-bold text-sm leading-snug hover:text-gold transition-colors line-clamp-2 block"
+            className="font-bold text-sm leading-snug text-foreground/95 hover:text-gold transition-colors line-clamp-2 block"
           >
             {m.game_name}
           </Link>
         ) : (
-          <span className="font-bold text-sm leading-snug line-clamp-2 block">
+          <span className="font-bold text-sm leading-snug text-foreground/95 line-clamp-2 block">
             {m.game_name}
           </span>
         )}
-        <div className="text-[11px] text-muted-foreground mt-1 tabular-nums">{date}</div>
+        <div className="text-[11px] text-muted-foreground/80 mt-1 tabular-nums">{date}</div>
 
         {m.score !== null && (
           <div className="flex items-center gap-1.5 mt-2 text-sm font-bold tabular-nums">

@@ -210,7 +210,7 @@ const Profile = () => {
             </div>
             <div className="flex flex-col gap-1.5 sm:flex-row sm:gap-2">
               {!editing && (
-                <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+                <Button variant="outline" size="sm" onClick={() => { setEditTags(playerTags); setEditing(true); }}>
                   <Pencil className="h-4 w-4 mr-1" /> Editar Perfil
                 </Button>
               )}

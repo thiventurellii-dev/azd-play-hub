@@ -20,11 +20,18 @@ export const useProfileTags = (userId?: string | null) => {
 
 export const saveProfileTags = async (userId: string, newTags: PlayerTag[]) => {
   // Replace strategy: delete all, then insert new
-  await supabase.from('profile_tags').delete().eq('user_id', userId);
+  const { error: delError } = await supabase.from('profile_tags').delete().eq('user_id', userId);
+  if (delError) {
+    console.error('[saveProfileTags] delete error', delError);
+    throw delError;
+  }
   if (newTags.length > 0) {
     const { error } = await supabase
       .from('profile_tags')
       .insert(newTags.map(tag => ({ user_id: userId, tag })) as any);
-    if (error) throw error;
+    if (error) {
+      console.error('[saveProfileTags] insert error', error);
+      throw error;
+    }
   }
 };

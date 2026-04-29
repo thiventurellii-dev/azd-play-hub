@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sword, Search, Plus, Sparkles, X, Filter, ArrowUpDown } from 'lucide-react';
+import { Sword, Search, Plus, Sparkles, X, Filter, ArrowUpDown, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -22,6 +23,7 @@ type StatusFilter = 'all' | 'in_progress' | 'completed' | 'planning' | 'abandone
 type SortKey = 'last_activity' | 'name' | 'most_sessions';
 
 const RpgCampaigns = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { data: campaigns = [], isLoading } = useRpgCampaigns();
   const { data: isMestre } = useIsMestre();
@@ -169,6 +171,13 @@ const RpgCampaigns = () => {
 
   return (
     <div className="container py-6 space-y-6 pb-24 md:pb-8">
+      <button
+        onClick={() => navigate('/games?tab=rpg')}
+        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        Voltar para RPG
+      </button>
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}

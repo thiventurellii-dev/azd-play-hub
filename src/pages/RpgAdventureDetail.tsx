@@ -264,6 +264,13 @@ const RpgAdventureDetail = () => {
 
         <AdventureSidebar adventure={a} />
       </div>
+
+      <CreateCampaignDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        defaultAdventureId={a.id}
+        lockAdventure
+      />
     </div>
   );
 };

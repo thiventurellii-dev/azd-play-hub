@@ -138,7 +138,7 @@ const BoardgameCard = ({
         <div className="flex flex-1 flex-col gap-3 p-4">
           {/* Category */}
           {category && (
-            <p className="text-xs text-muted-foreground/90 -mt-1">{category}</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-gold -mt-1">{category}</p>
           )}
 
           {/* Mechanics chips */}
@@ -169,7 +169,7 @@ const BoardgameCard = ({
           <div className="flex items-end justify-between rounded-lg bg-background/40 px-3 py-2.5 ring-1 ring-border/30">
             <StatBlock value={playerRange ?? "—"} label="Jogadores" icon={Users} />
             <div className="h-8 w-px bg-border/50" />
-            <StatBlock value={`+${matchCount}`} label="Partidas" icon={BarChart3} highlight />
+            <StatBlock value={`${matchCount}`} label="Partidas" icon={BarChart3} highlight />
             <div className="h-8 w-px bg-border/50" />
             <StatBlock value={avgDuration ? `${avgDuration}m` : "—"} label="Duração média" icon={Clock} />
           </div>

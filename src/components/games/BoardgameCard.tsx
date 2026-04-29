@@ -88,7 +88,6 @@ const BoardgameCard = ({
               : "ring-border/40 hover:ring-gold/30 shadow-[0_4px_20px_-12px_rgba(0,0,0,0.6)] hover:shadow-[0_12px_36px_-12px_rgba(255,184,0,0.18)]",
         )}
       >
-      >
         {/* COVER */}
         <div className="relative aspect-[16/10] w-full overflow-hidden rounded-t-2xl bg-gradient-to-br from-secondary via-card to-background">
           {game.image_url ? (

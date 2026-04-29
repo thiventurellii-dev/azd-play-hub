@@ -29,7 +29,9 @@ import {
 import { Camera } from "lucide-react";
 import XpBadge from "@/components/shared/XpBadge";
 import DateBlock from "@/components/shared/DateBlock";
-import RecentMatchCard, { RecentMatchItem } from "@/components/profile/RecentMatchCard";
+import { RecentMatchItem } from "@/components/profile/RecentMatchCard";
+import RecentMatchCardCompact from "@/components/profile/RecentMatchCardCompact";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { cn } from "@/lib/utils";
 
 const CHART_COLORS = [

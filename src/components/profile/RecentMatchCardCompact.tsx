@@ -81,6 +81,7 @@ const RecentMatchCardCompact = ({ m }: { m: RecentMatchItem }) => {
   const Icon = meta_.icon;
   const delta = Number(m.mmr_change || 0);
   const date = new Date(m.played_at).toLocaleDateString("pt-BR");
+  const isWin = (m.is_competitive && delta > 0) || (!m.is_competitive && m.position === 1);
 
   return (
     <div
@@ -90,8 +91,13 @@ const RecentMatchCardCompact = ({ m }: { m: RecentMatchItem }) => {
         meta_.base,
         meta_.directional,
         meta_.innerShadow,
+        isWin &&
+          "ring-1 ring-gold/25 shadow-[0_0_0_1px_hsl(var(--gold)/0.15),0_8px_28px_-12px_hsl(var(--gold)/0.25)]",
       )}
     >
+      {isWin && (
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold/60 to-transparent" />
+      )}
       {/* Edge accent light */}
       <div
         className={cn(
@@ -133,7 +139,10 @@ const RecentMatchCardCompact = ({ m }: { m: RecentMatchItem }) => {
 
         {m.score !== null && (
           <div className="flex items-center gap-1.5 mt-2 text-sm font-bold tabular-nums">
-            <span className={meta_.accent}>{m.score}</span>
+            <span className={meta_.accent}>
+              {m.score}
+              <span className="text-[10px] font-normal text-muted-foreground ml-0.5">pts.</span>
+            </span>
             {m.position && (
               <span className="text-[10px] text-muted-foreground font-normal ml-auto">
                 {m.position}º lugar
@@ -144,7 +153,11 @@ const RecentMatchCardCompact = ({ m }: { m: RecentMatchItem }) => {
       </div>
 
       {m.opponents.length > 0 && (
-        <div className="relative flex -space-x-1.5 mt-3">
+        <div className="relative flex items-center gap-2 mt-3">
+          <span className="text-[9px] uppercase tracking-wider text-muted-foreground/70 font-semibold">
+            vs
+          </span>
+          <div className="flex -space-x-1.5">
           {m.opponents.slice(0, 5).map((o, i) =>
             o.avatar_url ? (
               <img
@@ -169,6 +182,7 @@ const RecentMatchCardCompact = ({ m }: { m: RecentMatchItem }) => {
               +{m.opponents.length - 5}
             </div>
           )}
+          </div>
         </div>
       )}
     </div>

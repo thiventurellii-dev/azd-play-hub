@@ -37,6 +37,9 @@ const Register = () => {
     if (!nickname || !name || !email || !password || !phone || !state || !city || !birth_date || !gender || !pronouns) {
       return notify('error', 'Preencha todos os campos obrigatórios');
     }
+    if (playerTags.length === 0) {
+      return notify('error', 'Escolha pelo menos uma tag de jogador');
+    }
     if (!passwordRegex.test(password)) {
       return notify('error', 'A senha deve ter mínimo 8 caracteres, uma maiúscula, uma minúscula e um caractere especial');
     }
@@ -46,7 +49,7 @@ const Register = () => {
 
     setLoading(true);
     try {
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email, password,
         options: {
           data: { full_name: name, nickname, phone: unformatPhone(phone), country_code: form.country_code, state, city, birth_date, gender, pronouns },
@@ -54,6 +57,11 @@ const Register = () => {
         },
       });
       if (signUpError) throw signUpError;
+      // Save player tags (best-effort; user_id from signup)
+      const newUserId = signUpData?.user?.id;
+      if (newUserId) {
+        try { await saveProfileTags(newUserId, playerTags); } catch (e) { console.warn('tags save failed', e); }
+      }
       setSubmitted(true);
     } catch (err: any) {
       if (err.message?.includes('already registered') || err.message?.includes('already been registered') || err.status === 422) {

@@ -23,7 +23,7 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
         <CalendarPlus className="h-4 w-4 mr-1 shrink-0" /> Agendar Partida / Sessão
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Agendar Partida / Sessão</DialogTitle>
             <DialogDescription>

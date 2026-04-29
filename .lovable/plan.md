@@ -1,96 +1,104 @@
-## Redesign de /games — Boardgames
+# RPG: Campanhas, Personagens, Sessões e Mural
 
-Foco: substituir o `BoardgameCard` atual (avatar pequeno + lista) por um card cinematográfico com capa em destaque e meta hierárquica, e adicionar um painel resumo no topo da página.
+Esse plano organiza o que recebemos do mockup + briefing do Claude e adapta ao que já existe no projeto. Ele descreve o produto final e divide em entregas que podem ser feitas sem ordem rígida (você decidiu não pensar em "fases").
 
-Escopo: **apenas a aba Boardgames**. Blood e RPG ficam intocados nesta rodada (podem ganhar o mesmo tratamento depois).
+## O que já existe hoje
+- `rpg_systems` e `rpg_adventures` (com `slug`, `tag`, `image_url`).
+- `RpgAdventureDetail` (página da aventura) já com sidebar, intensidade, notas do mestre e card de interesse.
+- `match_rooms` com `room_type` (`boardgame | botc | rpg`), agendamento, jogadores, comentários e resultado.
+- Sistema de favoritos, notificações, RLS por papel (admin/player) e padrão de hooks `useXxxDetail`.
 
----
+## O que falta — visão de produto
 
-### 1. Estatísticas extras no hook
+### 1. Personagem como vitrine da comunidade
+Personagem é entidade própria (não filho da campanha). Pode ser ligado a uma ou mais campanhas via junction.
 
-Em `useGamesData.ts` adicionar:
-- `matchCounts: Record<gameId, number>` — total de partidas por jogo
-- `totalPlaytime: number` (em min) — soma global
-- `activeSeasonGameIds: Set<string>` — jogos com season `active`
-- (torneios não existem como entidade — vou usar season `active` como contexto. "Torneio" fica preparado mas oculto até existir o conceito.)
+Página `/rpg/personagens/:id`:
+- Retrato, nome, raça, classe, nível, sistema.
+- Campos opcionais: backstory curto, alinhamento, traços, equipamento.
+- Campo "Mais informações" com URL externa (LegendKeeper, D&D Beyond, Google Doc).
+- Lista de campanhas em que apareceu, com status (ativo, caído, aposentado, saiu).
+- Visibilidade pública/privada (default público).
 
-### 2. Novo `BoardgameCard.tsx` (reescrita)
+No `PlayerProfile`: aba **Personagens** mostrando "Hall dos Heróis" do jogador. Personagens caídos ganham tratamento especial (borda avermelhada, nome riscado, lápide com sessão da morte) — funciona como memorial.
 
-Estrutura:
+### 2. Campanha como espaço vivo
+Página `/rpg/campanhas/:slug` reproduzindo o mockup:
 
-```text
-┌─────────────────────────────────┐
-│  ★            ⋯  ← header float │
-│                                 │
-│      [COVER: ~55% altura]       │
-│       gradiente top→bottom      │
-│  ─── fade para card ───         │
-│                                 │
-│  Catan                  [pill]  │ ← título grande + categoria
-│  4–6 jogadores · ~75 min        │ ← meta com ícones
-│                                 │
-│  [worker placement] [economia]  │ ← chips de mecânicas
-│                                 │
-│  Curta descrição truncada em    │ ← 1–2 linhas
-│  duas linhas...                 │
-│                                 │
-│  ─────────────────────────────  │
-│  👥 4–6   🎲 27   ⏱ 75min       │ ← stats inline
-│                                 │
-│  [SEASON ATIVA]                 │ ← só se relevante
-│                                 │
-│  Regras  ·  Vídeo               │ ← ghost links
-└─────────────────────────────────┘
-```
+- **Header roxo** com nome, descrição curta, status (planejamento, em curso, concluída, abandonada), visibilidade (pública/privada), contagem de jogadores, mestre, datas, total de sessões e horas.
+- **Banner âmbar da próxima sessão**: aparece só se houver `match_room` futura linkada à campanha. Mostra data, título, contagem de confirmados e botão "Ver sala".
+- **A Party**: grid 4 colunas com cards de personagens (avatar, nome, raça/classe/nível, jogador). Personagens com status `dead | left | retired` recebem o tratamento "caído". Botão "Convidar jogador" (visível pro mestre).
+- **Crônica**: timeline vertical com as sessões. Bolinha dourada na última, roxa nas anteriores, vermelha quando a sessão teve morte de personagem. Cada sessão mostra título, data, duração, presentes e recap curto. Botão "Ver sessões anteriores" se houver mais que N.
+- **Mural da campanha**: feed cronológico simples (sem threading). Mestre marcado como "mestre", jogadores marcados pelo personagem que controlam. Campo de escrita inline.
+- **Sidebar direita**: visão geral (aventura, sistema, datas, visibilidade), barras de presença por jogador (verde >80%, âmbar abaixo), placeholder do "Diário do Mestre" (NPCs/locais/segredos — entra depois) e bloco "X pedidos de vaga" visível só pro mestre.
 
-Detalhes técnicos:
-- Container: `rounded-2xl overflow-hidden bg-card` + `shadow-[0_4px_20px_-8px_rgba(0,0,0,0.5)]`, hover `-translate-y-0.5` + `shadow-[0_8px_30px_-8px_rgba(255,184,0,0.15)]`
-- Capa: `aspect-[16/10]` com `<img>` absoluto + 2 overlays (`bg-gradient-to-b from-black/30 via-transparent to-card`) e vinheta sutil via `shadow-inner`
-- Sem capa: bloco `bg-gradient-to-br from-secondary to-card` com inicial em fonte grande, mesma altura
-- Título sobreposto na base da capa para hierarquia mais forte
-- Mecânicas/tags vêm de `tags[]` (já existe) — primeira tag vira "categoria" (pill grande), restantes viram chips
-- Descrição: nova fonte de dado? **Não temos campo `description` em `games`** — vou usar truncamento dos chips ou ocultar a seção se não houver. Recomendo adicionar `description` à tabela `games` numa migração futura (não nesta).
-- Stats bottom: jogadores, partidas (`matchCounts[id]`), duração média
-- Badge contextual: só renderiza se `activeSeasonGameIds.has(id)` → pill `bg-indigo-500/10 text-indigo-300 border-indigo-500/20` "SEASON ATIVA"
-- Ações: ⋯ (menu via `DropdownMenu` com Editar/Ver detalhe) e ★ (FavoriteButton já existente) com `opacity-60 hover:opacity-100`
-- Botões Regras/Vídeo: `Button variant="ghost" size="sm"` inline na base
-- Card inteiro clicável (Link para `/jogos/:slug`); ações internas usam `e.stopPropagation()`
+### 3. Sessão = match_room finalizada
+A "sessão" não é entidade nova: é uma `match_room` com `room_type='rpg'` ligada a uma campanha. Quando o mestre clica em "Inserir Resultado", o formulário existente ganha campos extras:
 
-### 3. Painel resumo no topo de `/games`
+- Título da sessão (default "Sessão N").
+- Recap (texto livre, markdown leve).
+- Presentes (checkbox da party — alimenta as barras de presença).
+- Eventos em destaque (lista repetível: tipo + personagem afetado + descrição). Tipos sugeridos: morte, level-up, marco, item lendário, npc importante, traição, conquista.
 
-Componente novo `GamesSummaryPanel.tsx` — barra horizontal compacta no canto direito do header da aba:
+A crônica e a sidebar de presença leem direto desses campos. Sem tabela `rpg_campaign_sessions` separada — a `match_room` já é a sessão.
 
-```text
-🎲 12 jogos   ⚡ 3 ativos   📊 247 partidas   ⏱ 312h jogadas
-```
+### 4. Aventura: vitrine + interesse
+Manter `RpgAdventureDetail` que já existe e enriquecer com campos do briefing: `recommended_level`, `min_players`, `max_players`, `estimated_duration_hours`, `setting`, `tone`, pilares (`combat`, `mystery`, `exploration`, `roleplay`, `danger` — enum baixa/média/alta/muito_alta), `tips`, `hooks`, `variations`, `secrets`, `highlights`, `materials`. Já temos `AdventureIntensityBars` e `AdventureMasterNotes` — só precisam dos campos no banco.
 
-Visual: `rounded-xl bg-card/60 border border-border/40 px-4 py-2 flex gap-6` — números em `text-foreground font-semibold`, labels em `text-muted-foreground text-xs`.
+Nova listagem `/rpg/campanhas` derivada de uma aventura: "Campanhas em curso desta aventura" + botão "Iniciar nova campanha" para mestres.
 
-Posicionamento: dentro de `TabsContent value="boardgame"`, ao lado dos filtros (filtro à esquerda, painel à direita via `justify-between`).
+### 5. Permissões
+- **Mestre**: tag/role do jogador. Só mestres veem "Criar campanha" e "Inserir resultado de sessão". Pode haver mestres por sistema (todo mundo é mestre por enquanto, depois evoluímos pra role formal).
+- **Mestre da campanha**: edita campanha, convida/aceita jogadores, encerra, posta no mural como "mestre", gerencia eventos da sessão.
+- **Jogador da party** (status `accepted`): confirma presença, posta no mural, sai, gerencia próprio personagem na campanha.
+- **De fora, campanha pública**: vê tudo (header, party, crônica, mural). Botão "Pedir vaga" cria entrada em `rpg_campaign_players` com status `pending_request`.
+- **De fora, campanha privada**: vê só capa, nome, mestre e status — sem crônica, party ou mural.
 
-### 4. Grid
+## Detalhes técnicos (Lovable / banco)
 
-Manter `grid gap-6 md:grid-cols-2 xl:grid-cols-3` (já está bom). Apenas ajustar gap para `gap-5` para ritmo visual mais apertado.
+### Tabelas novas
+- `rpg_characters` — `id, player_id, system_id, name, race, class, level, portrait_url, backstory, external_url, alignment, traits, gear, is_public, created_at`.
+- `rpg_campaigns` — `id, adventure_id, master_id, name, slug, description, image_url, status (planning|active|completed|abandoned), is_public, max_players, started_at, ended_at, created_at`.
+- `rpg_campaign_players` — `campaign_id, player_id, status (invited|accepted|pending_request|left), joined_at`.
+- `rpg_campaign_characters` — junction `campaign_id, character_id, status (active|left|dead|retired), joined_at, exited_at, exit_session_id`.
+- `rpg_campaign_posts` — `id, campaign_id, author_id, body, created_at, updated_at`.
+- `rpg_session_events` — `id, room_id, event_type, character_id, description, created_at`.
+- `rpg_session_attendance` — `room_id, player_id, present`. (Pode reaproveitar `match_room_players` se ele já carregar presença real; senão essa tabela complementa.)
+- `rpg_adventure_interests` — `adventure_id, player_id, created_at` (já existe lógica de interesse no card, mas sem persistência confirmada — verificar).
 
-### 5. Sem mudanças
+### Alterações em tabelas existentes
+- `match_rooms`: adicionar `campaign_id uuid NULL` (FK pra `rpg_campaigns`). Quando preenchido, RLS filtra: aceitos da campanha entram como player, demais como observador (se pública) ou ficam fora (se privada).
+- `rpg_adventures`: adicionar campos do item 4.
 
-- Aba Blood — intocada
-- Aba RPG — intocada
-- Dialogs de adicionar — intactos
-- Permissões/Edit button — mantido (movido para dentro do menu ⋯)
+### RLS
+- `rpg_campaigns` públicas: SELECT aberto. Privadas: só master + party + admin.
+- `rpg_campaign_posts`: SELECT pra quem vê a campanha. INSERT pra master + party.
+- `rpg_characters`: SELECT pra dono + master de campanhas onde aparece + admin; se `is_public`, todos.
+- Tudo o que muda banco vai via `supabase--migration` quando estivermos em modo build.
 
----
+### Frontend
+- Páginas: `RpgCampaignDetail`, `RpgCharacterDetail`, listagem `RpgCampaigns` (opcional, derivada da aventura).
+- Hooks: `useRpgCampaignDetail`, `useRpgCharacterDetail`, `useRpgCampaignPosts`, `useRpgSessionEvents`.
+- Forms: `RpgCampaignForm`, `RpgCharacterForm`, extensão do form de resultado de match_room RPG.
+- Componentes novos: `CampaignHeader`, `NextSessionBanner`, `PartyGrid` + `PartyCharacterCard` (com variante "fallen"), `ChronicleTimeline` + `ChronicleEntry`, `CampaignWall` + `WallPost`, `AttendanceBars`, `JoinRequestsCard`.
+- Tab "Personagens" em `PlayerProfile.tsx`.
 
-### Arquivos
+### Reaproveitamento
+- `EntityEditButton`, `FavoriteButton`, padrão `useXxxDetail`.
+- Form de resultado de match_room ganha branch específica quando `room_type='rpg'` e `campaign_id` está setado.
 
-**Editados:**
-- `src/components/games/BoardgameCard.tsx` — reescrita
-- `src/hooks/useGamesData.ts` — adicionar matchCounts, totalPlaytime, activeSeasonGameIds
-- `src/pages/Games.tsx` — passar novos dados, integrar painel
+## Decisões já tomadas (do seu reply ao Claude)
+- Mural cronológico simples (sem threads).
+- Match room finalizada vira sessão automaticamente; resultado da room = recap + duração + eventos em destaque.
+- Personagem é entidade própria, com integração externa (LegendKeeper/etc) opcional.
+- Diário do Mestre fica pra depois, não bloqueia.
 
-**Criados:**
-- `src/components/games/GamesSummaryPanel.tsx`
+## Perguntas que ainda precisam de resposta antes de codar
 
-### Pontos a confirmar
-1. **Descrição curta**: o campo não existe na tabela `games`. Posso (a) ocultar a seção quando vazia e adicionar coluna `description` numa migração futura, ou (b) já adicionar a coluna agora. Vou de (a) — mais seguro, sem mexer no banco externo nesta rodada.
-2. **"Torneio Ativo"**: não existe entidade Tournament. Vou só implementar "SEASON ATIVA" agora; o slot fica pronto para Tournament quando existir.
+1. **Quem pode ser mestre?** Hoje qualquer admin cria conteúdo RPG. Você quer (a) qualquer jogador autenticado pode criar campanha; (b) só quem tem tag/role "mestre" no perfil; (c) só admin? Isso muda RLS.
+2. **Personagem público por default?** Você prefere `is_public=true` no cadastro (vira vitrine na hora) ou `false` (jogador opta por compartilhar)?
+3. **Pedidos de vaga em campanha pública**: aprovação do mestre é obrigatória ou existe modo "entrada livre até lotar"?
+4. **Convidar jogador**: por busca de username (como nas amizades) ou por link de convite compartilhável?
+5. **Múltiplos personagens por campanha**: um jogador pode ter mais de um personagem ativo na mesma campanha (NPCs jogáveis, substitutos), ou um por vez?
+
+Responde essas 5 e eu sigo pra build.

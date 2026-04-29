@@ -31,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { EditProfileDialog } from "@/components/profile/EditProfileDialog";
 import { PlayerTagsBadges } from "@/components/profile/PlayerTagsSelector";
 import { useProfileTags } from "@/hooks/useProfileTags";
+import HallOfHeroes from "@/components/rpg/HallOfHeroes";
 
 const CHART_COLORS = [
   "hsl(43, 100%, 50%)", "hsl(200, 80%, 55%)", "hsl(150, 60%, 45%)", "hsl(340, 70%, 55%)",
@@ -946,6 +947,9 @@ const PlayerProfile = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* ======================= HALL DOS HERÓIS (RPG) ======================= */}
+      {profile && <HallOfHeroes playerId={profile.id} isOwnProfile={!!isOwnProfile} />}
 
       {/* ======================= COMUNIDADES + AMIGOS ======================= */}
       <div className="grid gap-6 lg:grid-cols-2">

@@ -36,6 +36,7 @@ import RpgAdventureDetail from "./pages/RpgAdventureDetail.tsx";
 import RpgCampaigns from "./pages/RpgCampaigns.tsx";
 import RpgCampaignDetail from "./pages/RpgCampaignDetail.tsx";
 import RpgCampaignInvite from "./pages/RpgCampaignInvite.tsx";
+import RpgCharacterDetail from "./pages/RpgCharacterDetail.tsx";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +64,7 @@ const App = () => (
                 <Route path="/campanhas" element={<ProtectedRoute><RpgCampaigns /></ProtectedRoute>} />
                 <Route path="/campanhas/convite/:token" element={<ProtectedRoute><RpgCampaignInvite /></ProtectedRoute>} />
                 <Route path="/campanhas/:slug" element={<ProtectedRoute><RpgCampaignDetail /></ProtectedRoute>} />
+                <Route path="/rpg/personagens/:id" element={<ProtectedRoute><RpgCharacterDetail /></ProtectedRoute>} />
                 <Route path="/scripts/:slug" element={<ProtectedRoute><ScriptDetail /></ProtectedRoute>} />
                 <Route path="/players" element={<ProtectedRoute><Players /></ProtectedRoute>} />
                 <Route path="/perfil/:nickname" element={<ProtectedRoute><PlayerProfile /></ProtectedRoute>} />

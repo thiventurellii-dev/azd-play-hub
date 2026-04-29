@@ -17,6 +17,7 @@ import EditRoomDialog from "./EditRoomDialog";
 import NewMatchFlow from "@/components/matches/NewMatchFlow";
 import NewMatchBotcFlow from "@/components/matches/NewMatchBotcFlow";
 import MatchResultModal from "@/components/matches/MatchResultModal";
+import SessionResultDialog from "@/components/rpg/SessionResultDialog";
 import { EntitySheet } from "@/components/shared/EntitySheet";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
@@ -40,6 +41,12 @@ export interface MatchRoom {
   blood_script_id?: string | null;
   result_id?: string | null;
   result_type?: string | null;
+  room_type?: string | null;
+  campaign_id?: string | null;
+  session_number?: number | null;
+  session_recap?: string | null;
+  session_title?: string | null;
+  duration_minutes?: number | null;
   game: { id: string; name: string; image_url: string | null };
   tags?: string[];
 }
@@ -234,6 +241,7 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
   const isCreator = user?.id === room.created_by;
   const canManage = isCreator || isAdmin;
   const isBotC = !!room.blood_script_id;
+  const isRpg = room.room_type === "rpg" && !!room.campaign_id;
 
   const date = new Date(room.scheduled_at);
   const formattedDate = date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
@@ -316,7 +324,12 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
   };
 
   const handleResultComplete = async (matchId?: string) => {
-    if (matchId) {
+    if (isRpg) {
+      // RPG: o próprio SessionResultDialog atualiza match_rooms (status=finished, result_type=rpg).
+      setHasResult(true);
+      setResultType("rpg");
+      setResultId(room.id); // para RPG usamos o próprio room.id como referência
+    } else if (matchId) {
       const rt = room.blood_script_id ? "blood" : "boardgame";
       await supabase.from("match_rooms").update({ result_id: matchId, result_type: rt } as any).eq("id", room.id);
       setResultId(matchId); setResultType(rt); setHasResult(true);
@@ -516,9 +529,20 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
           participantIds={resultParticipantIds}
         />
       )}
-      <EntitySheet open={matchFlowOpen} onOpenChange={setMatchFlowOpen} title="Registrar Resultado" description="Registre o resultado desta partida.">
+      <EntitySheet open={matchFlowOpen} onOpenChange={setMatchFlowOpen} title={isRpg ? "Registrar Sessão" : "Registrar Resultado"} description={isRpg ? "Recap, presença e eventos em destaque alimentam a Crônica da campanha." : "Registre o resultado desta partida."} widthClass={isRpg ? "sm:max-w-2xl" : "sm:max-w-lg"}>
         <ErrorBoundary>
-          {isBotC ? (
+          {isRpg ? (
+            <SessionResultDialog
+              roomId={room.id}
+              campaignId={room.campaign_id!}
+              defaultTitle={room.session_title || room.title}
+              initialRecap={room.session_recap}
+              initialDuration={room.duration_minutes}
+              initialSessionNumber={room.session_number}
+              confirmedPlayers={confirmed.map(p => ({ player_id: p.player_id, name: displayName(p) }))}
+              onComplete={() => handleResultComplete()}
+            />
+          ) : isBotC ? (
             <NewMatchBotcFlow onComplete={handleResultComplete} />
           ) : (
             <NewMatchFlow

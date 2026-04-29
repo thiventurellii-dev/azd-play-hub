@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { motion } from 'framer-motion';
 import FriendButton from '@/components/friendlist/FriendButton';
-import { Search } from 'lucide-react';
+import { Search, Users } from 'lucide-react';
 import { usePlayersData } from '@/hooks/usePlayersData';
 
 const Players = () => {

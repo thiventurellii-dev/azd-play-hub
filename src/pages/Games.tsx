@@ -153,6 +153,27 @@ const Games = () => {
               <div className="rounded-lg border border-border bg-card/40 p-2.5 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Filter className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0 ml-1" />
+                  <div className="flex flex-wrap gap-1.5">
+                    {CATEGORIES.map((cat) => {
+                      const active = categoryFilter === cat;
+                      return (
+                        <Button
+                          key={cat}
+                          type="button"
+                          variant={active ? "secondary" : "outline"}
+                          size="sm"
+                          className={cn(
+                            "h-8 px-3 rounded-full text-xs",
+                            active && "border-gold/50 text-gold",
+                          )}
+                          onClick={() => setCategoryFilter(active ? null : cat)}
+                        >
+                          {cat}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  <div className="hidden sm:block w-px h-5 bg-border mx-1" />
                   {allTags.length > 0 && (
                     <Select value={tagFilter} onValueChange={setTagFilter}>
                       <SelectTrigger
@@ -166,7 +187,7 @@ const Games = () => {
                       <SelectContent>
                         <SelectItem value="all">Todas as tags</SelectItem>
                         {allTags
-                          .filter((t) => !["estratégia", "estrategia", "família", "familia"].includes(t.name.toLowerCase()))
+                          .filter((t) => !["estratégia", "estrategia", "família", "familia", "social", "temático", "tematico"].includes(t.name.toLowerCase()))
                           .map((t) => (
                             <SelectItem key={t.id} value={t.name}>
                               {t.name}
@@ -175,23 +196,15 @@ const Games = () => {
                       </SelectContent>
                     </Select>
                   )}
-                  {tagFilter !== "all" && (
+                  {(tagFilter !== "all" || categoryFilter) && (
                     <Button
                       variant="ghost"
                       size="sm"
                       className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
-                      onClick={() => setTagFilter("all")}
+                      onClick={() => { setTagFilter("all"); setCategoryFilter(null); }}
                     >
                       <X className="h-3 w-3" /> Limpar
                     </Button>
-                  )}
-                  {user && (
-                    <>
-                      <div className="hidden sm:block w-px h-5 bg-border mx-1" />
-                      <Button variant="outline" size="sm" className="h-8" onClick={() => setAddOpen(true)}>
-                        <Plus className="h-4 w-4 mr-1" /> Adicionar Jogo
-                      </Button>
-                    </>
                   )}
                 </div>
               </div>

@@ -4,9 +4,19 @@ import { fadeUp } from "@/lib/animations";
 const testimonials = [
   {
     text: "Comecei sem conhecer quase ninguém. Depois de alguns jogos, fiz amigos que jogo até hoje. A plataforma ajuda muito a manter tudo organizado.",
-...
+    initials: "FC",
+    name: "Felipe C.",
+    role: "Membro desde 2022 · 2º lugar S6",
+    bg: "hsl(220 50% 35%)",
+  },
+  {
     text: "O Blood on the Clocktower aqui é de outro nível. Scripts variados, jogadores experientes, mas que recebem bem os novatos. Sempre alguém animado pra jogar no final de semana.",
-...
+    initials: "AT",
+    name: "Ana T.",
+    role: "Membro desde 2023 · Veterana BotC",
+    bg: "hsl(160 40% 28%)",
+  },
+  {
     text: "Disputar e ganhar as seasons é muito bom, mas o melhor mesmo é o papo depois das partidas. Esses são os momentos que me ficam guardados.",
     initials: "GS",
     name: "Gustavo S.",

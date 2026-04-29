@@ -158,9 +158,14 @@ const Games = () => {
   return (
     <div className="container py-10">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-8">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">Jogos</h1>
-          <p className="text-muted-foreground">Coleção de jogos da comunidade AzD</p>
+        <div className="flex items-start gap-3">
+          <div className="h-12 w-12 rounded-lg bg-gold/15 border border-gold/30 flex items-center justify-center flex-shrink-0">
+            <Dices className="h-6 w-6 text-gold" />
+          </div>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold">Jogos</h1>
+            <p className="text-sm text-muted-foreground">Coleção de jogos da comunidade AzD</p>
+          </div>
         </div>
         {user && (
           <Button variant="gold" size="sm" className="h-9" onClick={() => setAddOpen(true)}>

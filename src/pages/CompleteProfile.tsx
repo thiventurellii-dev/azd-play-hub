@@ -174,6 +174,11 @@ const CompleteProfile = () => {
             </Select>
           </div>
 
+          <div className="space-y-2">
+            <Label>Como você joga? * <span className="text-xs text-muted-foreground font-normal">(escolha pelo menos uma)</span></Label>
+            <PlayerTagsSelector selected={playerTags} onChange={setPlayerTags} />
+          </div>
+
           <Button variant="gold" onClick={handleSave} disabled={saving} className="w-full">
             {saving ? 'Salvando...' : 'Completar Perfil'}
           </Button>

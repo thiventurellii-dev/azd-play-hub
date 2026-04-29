@@ -129,7 +129,7 @@ export const LandingProfileSection = () => (
   <SplitSection
     id="perfil"
     tag="Perfil do Jogador"
-    title={<>Seu perfil completo<br />e <span className="text-gold">personalizado</span></>}
+    title={<>Seu perfil completo<br />e <span className="text-gold">Personalizado</span></>}
     body="Avatar, nível, XP, badges, estatísticas e histórico de partidas — tudo em um só lugar. O foco é você e a sua jornada na comunidade."
     features={[
       "Avatar, nickname, localização e pronomes personalizáveis",

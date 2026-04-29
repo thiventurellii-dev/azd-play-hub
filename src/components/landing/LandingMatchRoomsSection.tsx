@@ -42,7 +42,7 @@ export const LandingMatchRoomsSection = () => (
     id="partidas"
     tag="Salas de Partida"
     title={<>Agende.<br />Confirme presença.<br /><span className="text-gold">Apareça.</span></>}
-    body="Crie ou entre em salas de partida com poucos cliques. Veja quem vai, quantas vagas restam, onde será e qual jogo — tudo organizado e sem confusão no grupo do WhatsApp."
+    body="Crie ou entre em salas de partida com poucos cliques. Veja quem vai, quantas vagas restam, onde será e qual jogo — tudo organizado e sem confusão."
     features={[
       "Criação rápida de salas com data, local e jogo",
       "Confirmação de presença e controle de vagas",

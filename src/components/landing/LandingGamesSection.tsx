@@ -60,7 +60,7 @@ export const LandingGamesSection = () => (
           Catálogo
         </motion.p>
         <motion.h2 {...fadeUp(0.1)} className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.05]">
-          Os jogos que<br /><span className="text-gold">nos unem</span>
+          Os Jogos que<br /><span className="text-gold">nos Unem</span>
         </motion.h2>
         <motion.p {...fadeUp(0.2)} className="mt-5 text-base md:text-lg text-muted-foreground leading-relaxed">
           Do dedutivo social, ao europesado ou roleplay — a comunidade AzD abraça uma variedade de títulos. Cada jogo tem seu próprio espaço com regras, scripts e histórico de partidas.

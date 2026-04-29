@@ -47,7 +47,7 @@ export const LandingCommunitiesSection = () => (
     id="comunidades"
     tag="Comunidades"
     title={<>Traga sua<br /><span className="text-gold">comunidade</span></>}
-    body="Não é só pra AzD. Crie sua própria comunidade na plataforma — gerencie membros, organize seus rankings, agende partidas e mantenha discussões num espaço só seu."
+    body="A amizade envolve todas as outras comunidade. Crie sua própria comunidade na plataforma — gerencie membros, organize seus rankings, agende partidas e mantenha discussões num espaço só seu."
     features={[
       "Crie sua comunidade em minutos, totalmente grátis",
       "Rankings, seasons e estatísticas próprios do seu grupo",

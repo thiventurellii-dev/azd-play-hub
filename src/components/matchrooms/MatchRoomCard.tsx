@@ -441,7 +441,8 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
             <SessionResultDialog
               roomId={room.id}
               campaignId={room.campaign_id!}
-              confirmedPlayerIds={confirmed.map(p => p.player_id)}
+              defaultTitle={room.title}
+              confirmedPlayers={confirmed.map(p => ({ player_id: p.player_id, name: displayName(p) }))}
               onComplete={() => {
                 setMatchFlowOpen(false);
                 setHasResult(true);

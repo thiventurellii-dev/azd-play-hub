@@ -49,6 +49,9 @@ const CompleteProfile = () => {
     if (!form.name || !form.nickname || !form.phone || !form.state || !form.city || !form.birth_date || !form.gender || !form.pronouns) {
       return notify('error', 'Preencha todos os campos obrigatórios');
     }
+    if (playerTags.length === 0) {
+      return notify('error', 'Escolha pelo menos uma tag de jogador');
+    }
     setSaving(true);
 
     const newStatus = 'active';
@@ -66,6 +69,9 @@ const CompleteProfile = () => {
       email: user.email || '',
       status: newStatus,
     } as any).eq('id', user.id);
+    if (!error) {
+      try { await saveProfileTags(user.id, playerTags); } catch (e) { console.warn('tags save failed', e); }
+    }
     setSaving(false);
     if (error) return notify('error', error.message);
     

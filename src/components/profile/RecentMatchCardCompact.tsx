@@ -81,7 +81,7 @@ const RecentMatchCardCompact = ({ m }: { m: RecentMatchItem }) => {
   const Icon = meta_.icon;
   const delta = Number(m.mmr_change || 0);
   const date = new Date(m.played_at).toLocaleDateString("pt-BR");
-  const isWin = (m.is_competitive && delta > 0) || (!m.is_competitive && m.position === 1);
+  const isWin = m.position === 1;
 
   return (
     <div

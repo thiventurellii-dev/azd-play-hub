@@ -632,7 +632,9 @@ const MatchRooms = () => {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Registrar Resultado</DialogTitle>
-            <DialogDescription>Registre o resultado de uma partida.</DialogDescription>
+            <DialogDescription>
+              Registre o resultado de uma partida já jogada.
+            </DialogDescription>
           </DialogHeader>
           <ErrorBoundary>
             <NewMatchFlow

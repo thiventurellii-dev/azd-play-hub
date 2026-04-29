@@ -496,18 +496,19 @@ const PlayerProfile = () => {
   const location = [profile?.city, stateName].filter(Boolean).join(", ");
   const memberSince = profile?.created_at ? new Date(profile.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" }) : null;
 
-  const seasonProgress = (() => {
-    if (!seasonCtx) return 0;
-    const range = seasonCtx.max_mmr - seasonCtx.min_mmr;
+  const seasonProgressOf = (s: SeasonContext) => {
+    const range = s.max_mmr - s.min_mmr;
     if (range <= 0) return 50;
-    return Math.round(((seasonCtx.current_mmr - seasonCtx.min_mmr) / range) * 100);
-  })();
+    return Math.round(((s.current_mmr - s.min_mmr) / range) * 100);
+  };
+  const daysLeftOf = (s: SeasonContext) => {
+    if (!s.end_date) return null;
+    return Math.ceil((new Date(s.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  };
 
-  const daysLeft = (() => {
-    if (!seasonCtx?.end_date) return null;
-    const diff = Math.ceil((new Date(seasonCtx.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-    return diff;
-  })();
+  const lastMatchLabel = lastMatchDate
+    ? new Date(lastMatchDate).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
+    : null;
 
   const chartConfig = opponents.reduce(
     (acc, opp, i) => {

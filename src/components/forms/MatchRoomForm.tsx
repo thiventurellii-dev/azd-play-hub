@@ -244,13 +244,24 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
         if (newGame) finalGameId = newGame.id;
       }
       if (isRpg && !finalGameId) {
-        const { data: newGame } = await supabase.from("games").insert({
-          name: "RPG",
-          slug: "rpg-generico",
-          min_players: 2,
-          max_players: 10,
-        } as any).select("id").single();
-        if (newGame) finalGameId = newGame.id;
+        // Procura primeiro no banco para evitar duplicatas
+        const { data: existing } = await supabase
+          .from("games")
+          .select("id")
+          .or("slug.eq.rpg-generico,slug.eq.rpg-generic,name.ilike.rpg")
+          .limit(1)
+          .maybeSingle();
+        if (existing?.id) {
+          finalGameId = existing.id;
+        } else {
+          const { data: newGame } = await supabase.from("games").insert({
+            name: "RPG",
+            slug: "rpg-generico",
+            min_players: 2,
+            max_players: 10,
+          } as any).select("id").single();
+          if (newGame) finalGameId = newGame.id;
+        }
       }
       if (!finalGameId) throw new Error("Jogo não encontrado");
 

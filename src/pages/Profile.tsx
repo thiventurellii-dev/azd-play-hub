@@ -7,16 +7,15 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { useNotification } from '@/components/NotificationDialog';
 import { Pencil, Lock, Camera, Mail } from 'lucide-react';
-import { brazilianStates, citiesByState, pronounsOptions, countryCodes, formatPhone, unformatPhone } from '@/lib/brazil-data';
+import { brazilianStates, formatPhone } from '@/lib/brazil-data';
 import FriendsList from '@/components/friendlist/FriendsList';
 import XpBadge from '@/components/shared/XpBadge';
 import { useProfileCompletion } from '@/hooks/useProfileCompletion';
-import PlayerTagsSelector, { PlayerTagsBadges, PlayerTag } from '@/components/profile/PlayerTagsSelector';
-import { useProfileTags, saveProfileTags } from '@/hooks/useProfileTags';
+import { PlayerTagsBadges, PlayerTag } from '@/components/profile/PlayerTagsSelector';
+import { useProfileTags } from '@/hooks/useProfileTags';
 import { MyCampaignsCard } from '@/components/rpg/MyCampaignsCard';
 import { EditProfileDialog } from '@/components/profile/EditProfileDialog';
 
@@ -27,7 +26,6 @@ const Profile = () => {
   const [editing, setEditing] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const [form, setForm] = useState({ name: '', nickname: '', phone: '', country_code: '+55', state: '', city: '', birth_date: '', gender: '', pronouns: '', email: '' });
-  const [saving, setSaving] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -35,15 +33,12 @@ const Profile = () => {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { tags: playerTags, setTags: setPlayerTags } = useProfileTags(user?.id);
-  const [editTags, setEditTags] = useState<PlayerTag[]>([]);
 
   // Email change
   const [changingEmail, setChangingEmail] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [savingEmail, setSavingEmail] = useState(false);
   const [emailChangeRequested, setEmailChangeRequested] = useState(false);
-
-  const cities = citiesByState[form.state] || [];
 
   useEffect(() => {
     if (!user) return;

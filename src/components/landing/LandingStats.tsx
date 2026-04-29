@@ -42,17 +42,15 @@ export const LandingStats = () => {
         return;
       }
 
-      const [matchResultsRes, matchesRes, seasonsRes, gamesRes] = await Promise.all([
-        supabase.from("match_results").select("player_id"),
+      const [profilesRes, matchesRes, seasonsRes, gamesRes] = await Promise.all([
+        supabase.from("profiles").select("id", { count: "exact", head: true }),
         supabase.from("matches").select("id", { count: "exact", head: true }),
         supabase.from("seasons").select("id", { count: "exact", head: true }),
         supabase.from("games").select("id", { count: "exact", head: true }),
       ]);
 
-      const activePlayers = new Set((matchResultsRes.data || []).map((row) => row.player_id).filter(Boolean)).size;
-
       setCounts({
-        players: activePlayers,
+        players: profilesRes.count ?? 0,
         matches: matchesRes.count ?? 0,
         seasons: seasonsRes.count ?? 0,
         games: gamesRes.count ?? 0,
@@ -64,7 +62,7 @@ export const LandingStats = () => {
     <section id="stats" ref={ref} className="border-y border-border bg-surface py-12 md:py-16">
       <div className="container">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-          <StatItem value={counts.players} label="Jogadores ativos" inView={inView} />
+          <StatItem value={counts.players} label="Usuários registrados" inView={inView} />
           <StatItem value={counts.matches} label="Partidas registradas" inView={inView} delay={100} />
           <StatItem value={counts.seasons} label="Seasons criadas" inView={inView} delay={200} />
           <StatItem value={counts.games} label="Jogos no catálogo" inView={inView} delay={300} />

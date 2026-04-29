@@ -81,6 +81,7 @@ const RecentMatchCardCompact = ({ m }: { m: RecentMatchItem }) => {
   const Icon = meta_.icon;
   const delta = Number(m.mmr_change || 0);
   const date = new Date(m.played_at).toLocaleDateString("pt-BR");
+  const isWin = (m.is_competitive && delta > 0) || (!m.is_competitive && m.position === 1);
 
   return (
     <div
@@ -90,8 +91,13 @@ const RecentMatchCardCompact = ({ m }: { m: RecentMatchItem }) => {
         meta_.base,
         meta_.directional,
         meta_.innerShadow,
+        isWin &&
+          "ring-1 ring-gold/25 shadow-[0_0_0_1px_hsl(var(--gold)/0.15),0_8px_28px_-12px_hsl(var(--gold)/0.25)]",
       )}
     >
+      {isWin && (
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-gold/60 to-transparent" />
+      )}
       {/* Edge accent light */}
       <div
         className={cn(

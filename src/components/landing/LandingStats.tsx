@@ -30,6 +30,7 @@ export const LandingStats = () => {
   useEffect(() => {
     (async () => {
       const { data } = await supabase.rpc("get_landing_stats");
+
       if (data && typeof data === "object") {
         const d = data as Record<string, number>;
         setCounts({
@@ -38,7 +39,24 @@ export const LandingStats = () => {
           seasons: d.seasons ?? 0,
           games: d.games ?? 0,
         });
+        return;
       }
+
+      const [matchResultsRes, matchesRes, seasonsRes, gamesRes] = await Promise.all([
+        supabase.from("match_results").select("player_id"),
+        supabase.from("matches").select("id", { count: "exact", head: true }),
+        supabase.from("seasons").select("id", { count: "exact", head: true }),
+        supabase.from("games").select("id", { count: "exact", head: true }),
+      ]);
+
+      const activePlayers = new Set((matchResultsRes.data || []).map((row) => row.player_id).filter(Boolean)).size;
+
+      setCounts({
+        players: activePlayers,
+        matches: matchesRes.count ?? 0,
+        seasons: seasonsRes.count ?? 0,
+        games: gamesRes.count ?? 0,
+      });
     })();
   }, []);
 

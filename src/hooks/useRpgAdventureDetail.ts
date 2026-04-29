@@ -44,18 +44,17 @@ export const useRpgAdventureDetail = (slug?: string) => {
     enabled: !!slug,
     queryFn: async (): Promise<AdventureDetail | null> => {
       const key = slug as string;
-      // 1) try exact slug match
+      // Use select('*') so any extra columns the external DB has are returned;
+      // missing columns simply won't appear (no error).
       let { data } = await supabase
         .from('rpg_adventures')
         .select('*')
         .eq('slug', key)
         .maybeSingle();
-      // 2) try by id (uuid fallback)
       if (!data) {
         const r = await supabase.from('rpg_adventures').select('*').eq('id', key).maybeSingle();
         data = r.data as any;
       }
-      // 3) fallback: fetch all and match by slugified name (covers legacy rows without slug)
       if (!data) {
         const { data: all } = await supabase.from('rpg_adventures').select('*');
         const { slugify } = await import('@/lib/slugify');

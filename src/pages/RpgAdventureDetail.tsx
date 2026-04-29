@@ -123,10 +123,15 @@ const RpgAdventureDetail = () => {
           </div>
 
           {/* Master-only actions */}
-          {isMestre && (
+          {(isMestre || isMestreFlag) && (
             <div className="space-y-2">
               <div className="flex flex-wrap gap-2">
-                <Button variant="outline" size="sm" className="gap-1.5 border-gold/40 text-gold hover:bg-gold/10" onClick={handleSoon('Criar campanha')}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 border-gold/40 text-gold hover:bg-gold/10"
+                  onClick={() => setCreateOpen(true)}
+                >
                   <Plus className="h-3.5 w-3.5" /> Criar campanha
                 </Button>
                 <Button variant="outline" size="sm" className="gap-1.5" onClick={handleSoon('Marcar sessão')}>

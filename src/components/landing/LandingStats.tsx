@@ -48,7 +48,7 @@ export const LandingStats = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           <StatItem value={counts.players} label="Jogadores ativos" inView={inView} />
           <StatItem value={counts.matches} label="Partidas registradas" inView={inView} delay={100} />
-          <StatItem value={counts.seasons} label="Seasons realizadas" inView={inView} delay={200} />
+          <StatItem value={counts.seasons} label="Seasons criadas" inView={inView} delay={200} />
           <StatItem value={counts.games} label="Jogos no catálogo" inView={inView} delay={300} />
         </div>
       </div>

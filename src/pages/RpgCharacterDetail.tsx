@@ -185,7 +185,7 @@ const RpgCharacterDetail = () => {
               <h1 className={`text-2xl md:text-3xl font-bold tracking-tight ${isFallen ? 'line-through decoration-destructive/60' : ''}`}>
                 {c.name}
               </h1>
-              {statusPill(data.stats.overall_status)}
+              {statusPill(stats.overall_status)}
             </div>
             <p className="text-sm text-muted-foreground">
               {[c.race, c.class].filter(Boolean).join(' • ') || 'Aventureiro'}
@@ -234,10 +234,10 @@ const RpgCharacterDetail = () => {
 
       {/* Stat boxes */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <StatBox value={data.stats.campaigns} label="Campanhas" />
-        <StatBox value={data.stats.sessions} label="Sessões" />
+        <StatBox value={stats.campaigns} label="Campanhas" />
+        <StatBox value={stats.sessions} label="Sessões" />
         <StatBox value={`${hours}h`} label="De mesa" />
-        <StatBox value={monthYear(data.stats.since)} label="Desde" />
+        <StatBox value={monthYear(stats.since)} label="Desde" />
       </div>
 
       {/* Grid principal */}
@@ -259,16 +259,16 @@ const RpgCharacterDetail = () => {
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-base font-bold">Campanhas</h2>
               <span className="text-xs text-muted-foreground">
-                {data.appearances.length} campanha{data.appearances.length === 1 ? '' : 's'}
+                {(data.appearances ?? []).length} campanha{(data.appearances ?? []).length === 1 ? '' : 's'}
               </span>
             </div>
-            {data.appearances.length === 0 ? (
+            {(data.appearances ?? []).length === 0 ? (
               <div className="border border-dashed border-border rounded-lg p-6 text-center text-sm text-muted-foreground">
                 Este personagem ainda não viveu nenhuma aventura.
               </div>
             ) : (
               <div className="space-y-2">
-                {data.appearances.map((a) => {
+                {(data.appearances ?? []).map((a) => {
                   const camp = a.campaign;
                   const dateRange = a.exited_at
                     ? `${fullDate(a.joined_at)} — ${fullDate(a.exited_at)}`
@@ -310,16 +310,16 @@ const RpgCharacterDetail = () => {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-bold">Momentos marcantes</h2>
               <span className="text-xs text-muted-foreground">
-                {data.moments.length} destaque{data.moments.length === 1 ? '' : 's'}
+                {(data.moments ?? []).length} destaque{(data.moments ?? []).length === 1 ? '' : 's'}
               </span>
             </div>
-            {data.moments.length === 0 ? (
+            {(data.moments ?? []).length === 0 ? (
               <div className="border border-dashed border-border rounded-lg p-6 text-center text-sm text-muted-foreground">
                 Os momentos marcantes aparecerão conforme as sessões forem registradas.
               </div>
             ) : (
               <div className="relative pl-4 space-y-4 before:absolute before:left-[5px] before:top-1 before:bottom-1 before:w-px before:bg-border/60">
-                {data.moments.map((m) => {
+                {(data.moments ?? []).map((m) => {
                   const meta = eventMeta[m.event_type];
                   return (
                     <div key={m.id} className="relative">
@@ -384,13 +384,13 @@ const RpgCharacterDetail = () => {
           )}
 
           {/* Outros heróis */}
-          {(data.siblings.length > 0 || isOwner) && (
+          {((data.siblings ?? []).length > 0 || isOwner) && (
             <section className="rounded-2xl border border-border bg-card p-5">
               <h3 className="text-base font-bold mb-3">
                 Outros heróis{data.owner ? ` de ${data.owner.nickname || data.owner.name}` : ''}
               </h3>
               <div className="space-y-2">
-                {data.siblings.map((s) => {
+                {(data.siblings ?? []).map((s) => {
                   const isDead = s.status === 'dead';
                   const sInit = s.name?.[0]?.toUpperCase() || '?';
                   return (

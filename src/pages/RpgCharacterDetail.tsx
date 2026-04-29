@@ -110,10 +110,11 @@ const RpgCharacterDetail = () => {
   }
 
   const c = data.character;
+  const stats = data.stats ?? { campaigns: 0, sessions: 0, minutes: 0, since: c.created_at, overall_status: 'active' as const };
   const isOwner = user?.id === c.player_id;
-  const isFallen = data.stats.overall_status === 'dead';
+  const isFallen = stats.overall_status === 'dead';
   const ownerHandle = data.owner?.nickname || data.owner?.id;
-  const hours = Math.round(data.stats.minutes / 60);
+  const hours = Math.round((stats.minutes || 0) / 60);
   const initials = (c.name || '?').slice(0, 1).toUpperCase();
 
   const handleShare = async () => {

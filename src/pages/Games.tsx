@@ -177,7 +177,7 @@ const Games = () => {
           {/* Boardgames */}
           <TabsContent value="boardgame">
             <div className="flex flex-col gap-3 mb-5 md:flex-row md:items-center md:justify-between">
-              <div className="rounded-lg border border-border bg-card/40 p-2.5 flex-1">
+              <div className="rounded-lg border border-border bg-surface p-2.5 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Filter className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0 ml-1" />
                   <div className="flex flex-wrap gap-1.5">
@@ -189,10 +189,7 @@ const Games = () => {
                           type="button"
                           variant={active ? "secondary" : "outline"}
                           size="sm"
-                          className={cn(
-                            "h-8 px-3 rounded-full text-xs",
-                            active && "border-gold/50 text-gold",
-                          )}
+                          className="h-8 px-3 rounded-full text-xs"
                           onClick={() => setCategoryFilter(active ? null : cat)}
                         >
                           {cat}
@@ -205,11 +202,11 @@ const Games = () => {
                     <Select value={tagFilter} onValueChange={setTagFilter}>
                       <SelectTrigger
                         className={cn(
-                          "h-8 w-auto min-w-[160px] text-xs",
+                          "h-8 w-auto min-w-[150px] text-xs",
                           tagFilter !== "all" && "text-gold border-gold/40",
                         )}
                       >
-                        <SelectValue placeholder="Filtrar por tag" />
+                        <SelectValue placeholder="Todas as tags" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all">Todas as tags</SelectItem>
@@ -223,12 +220,30 @@ const Games = () => {
                       </SelectContent>
                     </Select>
                   )}
-                  {(tagFilter !== "all" || categoryFilter) && (
+                  <div className="flex items-center gap-1.5 ml-auto">
+                    <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                    <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
+                      <SelectTrigger
+                        className={cn(
+                          "h-8 w-auto min-w-[150px] text-xs",
+                          sortBy !== "name" && "text-gold border-gold/40",
+                        )}
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="name">Nome (A–Z)</SelectItem>
+                        <SelectItem value="matches">Mais partidas</SelectItem>
+                        <SelectItem value="favorites">Favoritos</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {(tagFilter !== "all" || categoryFilter || sortBy !== "name") && (
                     <Button
                       variant="ghost"
                       size="sm"
                       className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
-                      onClick={() => { setTagFilter("all"); setCategoryFilter(null); }}
+                      onClick={() => { setTagFilter("all"); setCategoryFilter(null); setSortBy("name"); }}
                     >
                       <X className="h-3 w-3" /> Limpar
                     </Button>

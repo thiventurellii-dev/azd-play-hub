@@ -343,6 +343,11 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
         toast.error("Preencha os campos obrigatórios (Script, Título, Data)");
         return;
       }
+    } else if (isRpg) {
+      if (!selectedCampaignId || !title || !scheduledDate) {
+        toast.error("Selecione uma campanha, título e data");
+        return;
+      }
     } else {
       if (!gameId || !title || !scheduledDate) {
         toast.error("Preencha os campos obrigatórios (Jogo, Título, Data)");

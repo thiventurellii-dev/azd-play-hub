@@ -1,15 +1,18 @@
-import { useNavigate, useParams } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Star, Calendar, Plus, Sparkles } from 'lucide-react';
+import { ArrowLeft, Star, Calendar, Plus, Sparkles, Sword, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { useRpgAdventureDetail } from '@/hooks/useRpgAdventureDetail';
+import { useRpgCampaigns, useIsMestre } from '@/hooks/useRpgCampaigns';
 import AdventureInterestCard from '@/components/rpg/AdventureInterestCard';
 import AdventureIntensityBars from '@/components/rpg/AdventureIntensityBars';
 import AdventureMasterNotes from '@/components/rpg/AdventureMasterNotes';
 import AdventureSidebar from '@/components/rpg/AdventureSidebar';
+import { CreateCampaignDialog } from '@/components/rpg/CreateCampaignDialog';
 import { EntityEditButton } from '@/components/shared/EntityEditButton';
 import RpgAdventureForm from '@/components/forms/RpgAdventureForm';
 

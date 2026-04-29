@@ -629,7 +629,7 @@ const MatchRooms = () => {
 
       {/* Manual result registration */}
       <Dialog open={matchFlowOpen} onOpenChange={setMatchFlowOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Registrar Resultado</DialogTitle>
             <DialogDescription>

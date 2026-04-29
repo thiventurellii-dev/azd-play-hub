@@ -317,14 +317,7 @@ const Games = () => {
 
           {/* Blood Scripts */}
           <TabsContent value="blood">
-            <div className="flex flex-wrap gap-3 mb-5 items-center justify-between">
-              <div className="flex flex-wrap items-center gap-2">
-                {isAdmin && (
-                  <Button variant="outline" size="sm" onClick={() => setAddScriptOpen(true)}>
-                    <Plus className="h-4 w-4 mr-1" /> Adicionar Script
-                  </Button>
-                )}
-              </div>
+            <div className="mb-4">
               <GamesSummaryPanel
                 totalGames={bloodScripts.length}
                 activeCount={activeScriptsCount}
@@ -334,6 +327,13 @@ const Games = () => {
                 activeTooltip="Scripts com Season ou Torneio ativo no momento."
               />
             </div>
+            {isAdmin && (
+              <div className="flex flex-wrap items-center gap-2 mb-5">
+                <Button variant="outline" size="sm" onClick={() => setAddScriptOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1" /> Adicionar Script
+                </Button>
+              </div>
+            )}
             {bloodScripts.length === 0 ? (
               <Card className="bg-card border-border"><CardContent className="py-12 text-center text-muted-foreground">Nenhum script cadastrado.</CardContent></Card>
             ) : (

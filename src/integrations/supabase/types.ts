@@ -1392,6 +1392,7 @@ export type Database = {
           linked_profile_id: string
         }[]
       }
+      get_landing_stats: { Args: never; Returns: Json }
       get_public_profiles:
         | {
             Args: { p_ids?: string[] }

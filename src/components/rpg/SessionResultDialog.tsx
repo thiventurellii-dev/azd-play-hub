@@ -12,8 +12,14 @@ import {
   Flag,
   Sparkles,
   UserSquare2,
-  Swords,
+  Drama,
   Trophy,
+  Handshake,
+  HeartCrack,
+  Eye,
+  Compass,
+  ShieldX,
+  Scale,
   X,
   Plus,
   ChevronDown,
@@ -80,17 +86,59 @@ const EVENT_THEME: Record<RpgSessionEventType, EventTheme> = {
   },
   betrayal: {
     label: 'Traição',
-    Icon: Swords,
+    Icon: Drama,
     bar: 'border-l-fuchsia-500',
     badge: 'bg-fuchsia-500/15 text-fuchsia-300 border border-fuchsia-500/30',
     chip: 'border-fuchsia-500/40 text-fuchsia-300 hover:bg-fuchsia-500/10',
   },
   achievement: {
-    label: 'Crítico épico',
+    label: 'Momento heróico',
     Icon: Trophy,
     bar: 'border-l-cyan-500',
     badge: 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30',
     chip: 'border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10',
+  },
+  alliance: {
+    label: 'Aliança',
+    Icon: Handshake,
+    bar: 'border-l-teal-500',
+    badge: 'bg-teal-500/15 text-teal-300 border border-teal-500/30',
+    chip: 'border-teal-500/40 text-teal-300 hover:bg-teal-500/10',
+  },
+  rivalry: {
+    label: 'Rivalidade',
+    Icon: HeartCrack,
+    bar: 'border-l-red-500',
+    badge: 'bg-red-500/15 text-red-300 border border-red-500/30',
+    chip: 'border-red-500/40 text-red-300 hover:bg-red-500/10',
+  },
+  revelation: {
+    label: 'Revelação',
+    Icon: Eye,
+    bar: 'border-l-indigo-500',
+    badge: 'bg-indigo-500/15 text-indigo-300 border border-indigo-500/30',
+    chip: 'border-indigo-500/40 text-indigo-300 hover:bg-indigo-500/10',
+  },
+  discovery: {
+    label: 'Descoberta',
+    Icon: Compass,
+    bar: 'border-l-lime-500',
+    badge: 'bg-lime-500/15 text-lime-300 border border-lime-500/30',
+    chip: 'border-lime-500/40 text-lime-300 hover:bg-lime-500/10',
+  },
+  defeat: {
+    label: 'Derrota',
+    Icon: ShieldX,
+    bar: 'border-l-zinc-500',
+    badge: 'bg-zinc-500/15 text-zinc-300 border border-zinc-500/30',
+    chip: 'border-zinc-500/40 text-zinc-300 hover:bg-zinc-500/10',
+  },
+  moral_dilemma: {
+    label: 'Dilema moral',
+    Icon: Scale,
+    bar: 'border-l-orange-500',
+    badge: 'bg-orange-500/15 text-orange-300 border border-orange-500/30',
+    chip: 'border-orange-500/40 text-orange-300 hover:bg-orange-500/10',
   },
 };
 
@@ -192,6 +240,8 @@ export const SessionResultDialog = ({
   );
   const [events, setEvents] = useState<EventDraft[]>([]);
   const [xpOpen, setXpOpen] = useState(false);
+  const [xpPerPlayer, setXpPerPlayer] = useState('');
+  const [groupTreasure, setGroupTreasure] = useState('');
   const [saving, setSaving] = useState(false);
   const [resolvedCampaignName, setResolvedCampaignName] = useState<string | null>(
     campaignName ?? null,
@@ -654,7 +704,7 @@ export const SessionResultDialog = ({
         )}
 
         {/* Tipos disponíveis (chips) */}
-        <div className="flex items-center gap-2 flex-wrap pt-1">
+        <div className="flex flex-wrap gap-2 items-center pt-1">
           <span className="text-[11px] text-muted-foreground">Tipos disponíveis:</span>
           {quickTypes.map((t) => {
             const theme = EVENT_THEME[t];
@@ -688,18 +738,31 @@ export const SessionResultDialog = ({
             {xpOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
             XP e loot (opcional)
           </span>
-          <span className="text-[11px]">3 campos</span>
+          <span className="text-[11px]">2 campos</span>
         </button>
         {xpOpen && (
-          <div className="mt-3 grid gap-3 sm:grid-cols-3 text-sm text-muted-foreground">
-            <div className="rounded-md border border-dashed border-border p-3 text-center text-xs">
-              XP por jogador (em breve)
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                XP por jogador
+              </Label>
+              <Input
+                type="number"
+                min={0}
+                value={xpPerPlayer}
+                onChange={(e) => setXpPerPlayer(e.target.value)}
+                placeholder="Ex.: 450"
+              />
             </div>
-            <div className="rounded-md border border-dashed border-border p-3 text-center text-xs">
-              Loot principal (em breve)
-            </div>
-            <div className="rounded-md border border-dashed border-border p-3 text-center text-xs">
-              Tesouro coletivo (em breve)
+            <div className="space-y-1.5">
+              <Label className="text-[11px] uppercase tracking-wider text-muted-foreground">
+                Tesouro coletivo
+              </Label>
+              <Input
+                value={groupTreasure}
+                onChange={(e) => setGroupTreasure(e.target.value)}
+                placeholder="Ex.: 1.200 po + gema rara"
+              />
             </div>
           </div>
         )}

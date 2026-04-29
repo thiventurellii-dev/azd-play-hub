@@ -40,7 +40,13 @@ const eventMeta: Record<RpgSessionEventType, { label: string; dot: string; chip:
   legendary_item: { label: 'Item lendário', dot: 'bg-purple-500',   chip: 'bg-purple-500/15 text-purple-400 border-purple-500/30' },
   important_npc:  { label: 'NPC',        dot: 'bg-blue-500',        chip: 'bg-blue-500/15 text-blue-400 border-blue-500/30' },
   betrayal:       { label: 'Traição',    dot: 'bg-orange-500',      chip: 'bg-orange-500/15 text-orange-400 border-orange-500/30' },
-  achievement:    { label: 'Conquista',  dot: 'bg-gold',            chip: 'bg-gold/15 text-gold border-gold/30' },
+  achievement:    { label: 'Momento heróico',  dot: 'bg-gold',            chip: 'bg-gold/15 text-gold border-gold/30' },
+  alliance:       { label: 'Aliança',    dot: 'bg-teal-500',        chip: 'bg-teal-500/15 text-teal-400 border-teal-500/30' },
+  rivalry:        { label: 'Rivalidade', dot: 'bg-red-500',         chip: 'bg-red-500/15 text-red-400 border-red-500/30' },
+  revelation:     { label: 'Revelação',  dot: 'bg-indigo-500',      chip: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30' },
+  discovery:      { label: 'Descoberta', dot: 'bg-lime-500',        chip: 'bg-lime-500/15 text-lime-400 border-lime-500/30' },
+  defeat:         { label: 'Derrota',    dot: 'bg-zinc-500',         chip: 'bg-zinc-500/15 text-zinc-400 border-zinc-500/30' },
+  moral_dilemma:  { label: 'Dilema moral', dot: 'bg-orange-500',     chip: 'bg-orange-500/15 text-orange-400 border-orange-500/30' },
 };
 
 const statusPill = (status: string) => {

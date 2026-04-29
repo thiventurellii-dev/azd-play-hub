@@ -16,7 +16,13 @@ export type RpgSessionEventType =
   | 'legendary_item'
   | 'important_npc'
   | 'betrayal'
-  | 'achievement';
+  | 'achievement'
+  | 'alliance'
+  | 'rivalry'
+  | 'revelation'
+  | 'discovery'
+  | 'defeat'
+  | 'moral_dilemma';
 
 export interface RpgCharacter {
   id: string;

@@ -2,15 +2,15 @@ import { motion } from "framer-motion";
 import { fadeUp } from "@/lib/animations";
 import brassCover from "@/assets/brass-birmingham-cover.png";
 import arnakCover from "@/assets/ruins-of-arnak-cover.png";
-import troubleBrewing from "@/assets/trouble-brewing.jpg";
-import overTheRiver from "@/assets/over-the-river.png";
+import bloodCover from "@/assets/blood-on-the-clocktower-cover.jpg";
+import rpgCover from "@/assets/rpg-d20.webp";
 
 const games = [
   {
     type: "Social / Dedutivo",
     name: "Blood on the Clocktower",
     desc: "O jogo de papel social mais complexo e satisfatório já criado. Aldeões contra Demônio em uma batalha de informação, lógica e confiança.",
-    image: troubleBrewing,
+    image: bloodCover,
     stats: [
       { num: "5–20", lbl: "Jogadores" },
       { num: "+180", lbl: "Partidas", gold: true },
@@ -43,7 +43,7 @@ const games = [
     type: "Roleplay / RPG",
     name: "Mesas de RPG",
     desc: "Aventuras narrativas em sistemas variados. Crie personagens, viva histórias compartilhadas e construa campanhas com a comunidade.",
-    image: overTheRiver,
+    image: rpgCover,
     stats: [
       { num: "3–6", lbl: "Jogadores" },
       { num: "Várias", lbl: "Sessões", gold: true },

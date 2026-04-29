@@ -42,16 +42,23 @@ export const LandingStats = () => {
         return;
       }
 
-      const [profilesRes, matchesRes, seasonsRes, gamesRes] = await Promise.all([
-        supabase.from("profiles").select("id", { count: "exact", head: true }),
+      // Fallback resiliente — RLS pode bloquear count anônimo em profiles,
+      // então usamos get_public_profiles (SECURITY DEFINER) para usuários.
+      const [publicProfiles, matchesRes, bloodMatchesRes, seasonsRes, gamesRes] = await Promise.all([
+        supabase.rpc("get_public_profiles"),
         supabase.from("matches").select("id", { count: "exact", head: true }),
+        supabase.from("blood_matches").select("id", { count: "exact", head: true }),
         supabase.from("seasons").select("id", { count: "exact", head: true }),
         supabase.from("games").select("id", { count: "exact", head: true }),
       ]);
 
+      const playersCount = Array.isArray(publicProfiles.data)
+        ? publicProfiles.data.filter((p: any) => (p.status ?? "active") !== "disabled").length
+        : 0;
+
       setCounts({
-        players: profilesRes.count ?? 0,
-        matches: matchesRes.count ?? 0,
+        players: playersCount,
+        matches: (matchesRes.count ?? 0) + (bloodMatchesRes.count ?? 0),
         seasons: seasonsRes.count ?? 0,
         games: gamesRes.count ?? 0,
       });

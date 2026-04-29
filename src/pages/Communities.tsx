@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Users, Trophy, Calendar, Shield, Search, UsersRound } from "lucide-react";
+import { Users, Trophy, Calendar, Shield, Search, UsersRound, MessagesSquare } from "lucide-react";
 import { useCommunities, useGlobalCommunityStats } from "@/hooks/useCommunities";
 import CommunityCard from "@/components/communities/CommunityCard";
 import CreateCommunityDialog from "@/components/communities/CreateCommunityDialog";

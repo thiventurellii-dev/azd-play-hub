@@ -228,6 +228,31 @@ const Games = () => {
                     })}
                   </div>
                   <div className="hidden sm:block w-px h-5 bg-border mx-1" />
+                  <div className="flex flex-wrap gap-1.5">
+                    {([
+                      { key: "season", label: "Season", color: "violet" },
+                      { key: "tournament", label: "Torneio", color: "amber" },
+                    ] as const).map((opt) => {
+                      const active = activityFilter === opt.key;
+                      return (
+                        <Button
+                          key={opt.key}
+                          type="button"
+                          variant={active ? "secondary" : "outline"}
+                          size="sm"
+                          className={cn(
+                            "h-8 px-3 rounded-full text-xs",
+                            active && opt.color === "violet" && "border-violet-400/60 text-violet-200 bg-violet-500/15",
+                            active && opt.color === "amber" && "border-amber-400/60 text-amber-200 bg-amber-500/15",
+                          )}
+                          onClick={() => setActivityFilter(active ? "all" : opt.key)}
+                        >
+                          {opt.label}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  <div className="hidden sm:block w-px h-5 bg-border mx-1" />
                   <div className="flex items-center gap-1.5">
                     <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                     <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>

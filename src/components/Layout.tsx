@@ -27,7 +27,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
 const Footer = () => (
   <footer className="border-t border-border bg-background py-6 hidden md:block">
-    <p className="text-center text-xs text-muted-foreground">© 2026 Amizade (AzD) feito com amizade.</p>
+    <p className="text-center text-xs text-muted-foreground">© 2026 AzD - feito com amizade.</p>
   </footer>
 );
 

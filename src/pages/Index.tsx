@@ -46,26 +46,19 @@ function getPositionDot(position: number | null) {
   return <div className={`w-2 h-2 rounded-full shrink-0 ${colorClass}`} />;
 }
 
-const LoggedOutIndex = () => {
-  const motionProps = useMotionProps();
-
-  return (
-    <div>
-      <Hero subtitle="Mais do que jogar, construímos amizades. Jogos casuais, seasons competitivas com premiações, estatísticas e muita diversão na mesa.">
-        <motion.div {...fadeUp(0.4)} className="relative mt-8 flex flex-wrap justify-center gap-4">
-          <Link to="/register">
-            <motion.div {...motionProps}>
-              <Button variant="gold" size="lg">
-                Faça parte da comunidade
-              </Button>
-            </motion.div>
-          </Link>
-        </motion.div>
-        <SocialButtons />
-      </Hero>
-    </div>
-  );
-};
+const LoggedOutIndex = () => (
+  <div>
+    <LandingHero />
+    <LandingStats />
+    <LandingTestimonials />
+    <LandingProfileSection />
+    <LandingMatchRoomsSection />
+    <LandingCommunitiesSection />
+    <LandingSeasonsSection />
+    <LandingGamesSection />
+    <LandingFinalCTA />
+  </div>
+);
 
 const LoggedInIndex = () => {
   const { user } = useAuth();

@@ -301,6 +301,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
             community_only: !!selectedCommunityId && communityOnly,
             room_type: category || 'boardgame',
             platform: platform || null,
+            campaign_id: isRpg ? (selectedCampaignId || null) : null,
           } as any)
           .select()
           .single();

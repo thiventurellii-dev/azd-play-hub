@@ -47,6 +47,7 @@ const RpgAdventureDetail = () => {
   const a = adventure;
   const handleSoon = (feature: string) => () =>
     toast.info(`${feature} estará disponível em breve.`, { description: 'Funcionalidade da Fase 3 do roadmap RPG.' });
+  const adventureCampaigns = allCampaigns.filter((c) => c.adventure_id === a.id);
 
   return (
     <div className="container py-4 md:py-6 max-w-6xl">

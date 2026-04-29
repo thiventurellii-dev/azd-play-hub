@@ -192,27 +192,7 @@ const BoardgameCard = ({
             <StatBlock value={avgDuration ? `${avgDuration}m` : "—"} label="Duração média" icon={Clock} />
           </div>
 
-          {/* Active context */}
-          {(hasActiveSeason || hasActiveTournament) && (
-            <div className="flex flex-wrap gap-1.5">
-              {hasActiveSeason && (
-                <Badge
-                  variant="outline"
-                  className="border-indigo-500/25 bg-indigo-500/10 text-indigo-300 text-[10px] uppercase tracking-wider"
-                >
-                  Season Ativa
-                </Badge>
-              )}
-              {hasActiveTournament && (
-                <Badge
-                  variant="outline"
-                  className="border-emerald-500/25 bg-emerald-500/10 text-emerald-300 text-[10px] uppercase tracking-wider"
-                >
-                  Torneio Ativo
-                </Badge>
-              )}
-            </div>
-          )}
+          {/* Active context now shown via card border + flag in cover */}
 
           {/* Action links */}
           {(game.rules_url || game.video_url) && (

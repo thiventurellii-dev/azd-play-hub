@@ -19,15 +19,15 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
 
   return (
     <>
-      <Button variant="gold" className="min-h-[44px] w-full sm:w-[200px] px-3" onClick={() => setOpen(true)}>
-        <CalendarPlus className="h-4 w-4 mr-1 shrink-0" /> Agendar Partida
+      <Button variant="gold" className="min-h-[44px] w-full sm:w-auto px-3" onClick={() => setOpen(true)}>
+        <CalendarPlus className="h-4 w-4 mr-1 shrink-0" /> Agendar Partida / Sessão
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Nova Sala de Partida</DialogTitle>
+            <DialogTitle>Agendar Partida / Sessão</DialogTitle>
             <DialogDescription>
-              Crie uma sala para agendar uma partida com outros jogadores.
+              Crie uma sala para reunir jogadores em uma partida ou sessão futura.
             </DialogDescription>
           </DialogHeader>
           <MatchRoomForm

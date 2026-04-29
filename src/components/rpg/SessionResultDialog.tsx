@@ -388,7 +388,7 @@ export const SessionResultDialog = ({
 
   const headerSubtitle = useMemo(() => {
     const parts: string[] = [];
-    if (campaignName) parts.push(campaignName);
+    if (resolvedCampaignName) parts.push(resolvedCampaignName);
     if (scheduledAt) {
       try {
         parts.push(
@@ -403,7 +403,7 @@ export const SessionResultDialog = ({
       }
     }
     return parts.join(' · ');
-  }, [campaignName, scheduledAt]);
+  }, [resolvedCampaignName, scheduledAt]);
 
   const presentCount = present.size;
   const totalConfirmed = confirmedPlayers.length;

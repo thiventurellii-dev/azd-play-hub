@@ -396,9 +396,11 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, prefil
 
   return (
     <div className="space-y-4">
-      <Button variant="outline" size="sm" onClick={() => setCategory('')}>
-        <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
-      </Button>
+      {!prefilledCategory && (
+        <Button variant="outline" size="sm" onClick={() => setCategory('')}>
+          <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
+        </Button>
+      )}
       <Card className="bg-card border-border">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">

@@ -40,6 +40,8 @@ interface MatchRoom {
   blood_script_id?: string | null;
   result_id?: string | null;
   result_type?: string | null;
+  room_type?: string | null;
+  campaign_id?: string | null;
   game: { id: string; name: string; image_url: string | null };
 }
 

@@ -309,6 +309,10 @@ const Profile = () => {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label>Como você joga? * <span className="text-xs text-muted-foreground font-normal">(escolha pelo menos uma)</span></Label>
+                <PlayerTagsSelector selected={editTags} onChange={setEditTags} />
+              </div>
               <div className="flex gap-2">
                 <Button variant="gold" onClick={handleSave} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
                 <Button variant="outline" onClick={() => setEditing(false)}>Cancelar</Button>

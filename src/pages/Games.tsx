@@ -366,19 +366,7 @@ const Games = () => {
 
           {/* RPG */}
           <TabsContent value="rpg">
-            <div className="flex flex-wrap gap-3 mb-5 items-center justify-between">
-              <div className="flex flex-wrap items-center gap-2">
-                {isAdmin && (
-                  <>
-                    <Button variant="outline" size="sm" onClick={() => setAddSystemOpen(true)}>
-                      <Plus className="h-4 w-4 mr-1" /> Adicionar Sistema
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => setAddAdventureOpen(true)} disabled={rpgSystems.length === 0}>
-                      <Plus className="h-4 w-4 mr-1" /> Adicionar Aventura
-                    </Button>
-                  </>
-                )}
-              </div>
+            <div className="mb-4">
               <GamesSummaryPanel
                 totalGames={rpgSystems.length}
                 activeCount={activeSystemIds.size}
@@ -388,6 +376,16 @@ const Games = () => {
                 activeTooltip="Sistemas com Aventura, Season ou Torneio ativo."
               />
             </div>
+            {isAdmin && (
+              <div className="flex flex-wrap items-center gap-2 mb-5">
+                <Button variant="outline" size="sm" onClick={() => setAddSystemOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1" /> Adicionar Sistema
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => setAddAdventureOpen(true)} disabled={rpgSystems.length === 0}>
+                  <Plus className="h-4 w-4 mr-1" /> Adicionar Aventura
+                </Button>
+              </div>
+            )}
 
             {rpgSystems.length === 0 ? (
               <Card className="bg-card border-border">

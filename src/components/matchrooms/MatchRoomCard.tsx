@@ -18,6 +18,7 @@ import NewMatchBotcFlow from "@/components/matches/NewMatchBotcFlow";
 import MatchResultModal from "@/components/matches/MatchResultModal";
 import { EntitySheet } from "@/components/shared/EntitySheet";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import SessionResultDialog from "@/components/rpg/SessionResultDialog";
 
 interface RoomPlayer {
   id: string;
@@ -39,6 +40,8 @@ interface MatchRoom {
   blood_script_id?: string | null;
   result_id?: string | null;
   result_type?: string | null;
+  room_type?: string | null;
+  campaign_id?: string | null;
   game: { id: string; name: string; image_url: string | null };
 }
 
@@ -283,6 +286,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const gameImageUrl = room.game?.image_url || scriptImageUrl;
   const showImage = !!gameImageUrl && !imgFailed;
   const isBotC = !!room.blood_script_id;
+  const isRpg = room.room_type === "rpg" && !!room.campaign_id;
 
   return (
     <>
@@ -428,11 +432,25 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
       <EntitySheet
         open={matchFlowOpen}
         onOpenChange={setMatchFlowOpen}
-        title="Registrar Resultado"
-        description="Registre o resultado desta partida."
+        title={isRpg ? "Registrar Sessão" : "Registrar Resultado"}
+        description={isRpg ? "Recap, presença e eventos em destaque alimentam a Crônica da campanha." : "Registre o resultado desta partida."}
+        widthClass={isRpg ? "sm:max-w-2xl" : undefined}
       >
         <ErrorBoundary>
-          {isBotC ? (
+          {isRpg ? (
+            <SessionResultDialog
+              roomId={room.id}
+              campaignId={room.campaign_id!}
+              defaultTitle={room.title}
+              confirmedPlayers={confirmed.map(p => ({ player_id: p.player_id, name: displayName(p) }))}
+              onComplete={() => {
+                setMatchFlowOpen(false);
+                setHasResult(true);
+                setResultType("rpg");
+                onUpdate();
+              }}
+            />
+          ) : isBotC ? (
             <NewMatchBotcFlow onComplete={handleResultComplete} />
           ) : (
             <NewMatchFlow

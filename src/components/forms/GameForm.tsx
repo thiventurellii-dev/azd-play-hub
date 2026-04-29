@@ -79,21 +79,30 @@ const GameForm = ({ game, isAdminMode = false, onSuccess }: Props) => {
         parsedFactions = factions.split(",").map((f) => f.trim()).filter(Boolean);
       }
 
-      const { error } = await supabase
-        .from("games")
-        .update({
-          name,
-          slug: slug || null,
-          image_url: imageUrl || null,
-          rules_url: rulesUrl || null,
-          video_url: videoUrl || null,
-          min_players: minP ? parseInt(minP) : null,
-          max_players: maxP ? parseInt(maxP) : null,
-          factions: parsedFactions,
-          description: description.trim() || null,
-          category: category.trim() || null,
-        } as any)
-        .eq("id", game.id);
+      const basePayload: any = {
+        name,
+        slug: slug || null,
+        image_url: imageUrl || null,
+        rules_url: rulesUrl || null,
+        video_url: videoUrl || null,
+        min_players: minP ? parseInt(minP) : null,
+        max_players: maxP ? parseInt(maxP) : null,
+        factions: parsedFactions,
+        description: description.trim() || null,
+        category: category.trim() || null,
+      };
+
+      let { error } = await supabase.from("games").update(basePayload).eq("id", game.id);
+
+      // Fallback: if the external DB doesn't have description/category yet, retry without them
+      if (error && /column .*(description|category)/i.test(error.message)) {
+        const { description: _d, category: _c, ...fallback } = basePayload;
+        const retry = await supabase.from("games").update(fallback).eq("id", game.id);
+        error = retry.error;
+        if (!error) {
+          toast.warning("Descrição/categoria não salvas: rode a migração SQL no banco externo.");
+        }
+      }
       if (error) throw error;
 
       // Save scoring schema

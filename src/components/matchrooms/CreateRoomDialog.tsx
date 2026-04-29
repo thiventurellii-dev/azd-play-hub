@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { CalendarPlus } from "lucide-react";
-import { EntitySheet } from "@/components/shared/EntitySheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import MatchRoomForm from "@/components/forms/MatchRoomForm";
 
 interface Props {
@@ -16,16 +22,22 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
       <Button variant="gold" className="min-h-[44px] w-full sm:w-[200px] px-3" onClick={() => setOpen(true)}>
         <CalendarPlus className="h-4 w-4 mr-1 shrink-0" /> Agendar Partida
       </Button>
-      <EntitySheet
-        open={open}
-        onOpenChange={setOpen}
-        title="Nova Sala de Partida"
-        description="Crie uma sala para agendar uma partida com outros jogadores."
-      >
-        <MatchRoomForm
-          onSuccess={() => { setOpen(false); onCreated(); }}
-        />
-      </EntitySheet>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Nova Sala de Partida</DialogTitle>
+            <DialogDescription>
+              Crie uma sala para agendar uma partida com outros jogadores.
+            </DialogDescription>
+          </DialogHeader>
+          <MatchRoomForm
+            onSuccess={() => {
+              setOpen(false);
+              onCreated();
+            }}
+          />
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

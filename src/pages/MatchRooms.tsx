@@ -10,7 +10,7 @@ import CreateRoomDialog from "@/components/matchrooms/CreateRoomDialog";
 import NewMatchFlow from "@/components/matches/NewMatchFlow";
 import { Calendar, ClipboardList, Filter, X, SlidersHorizontal, Star, Gamepad2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EntitySheet } from "@/components/shared/EntitySheet";
@@ -628,24 +628,25 @@ const MatchRooms = () => {
       </Dialog>
 
       {/* Manual result registration */}
-      <EntitySheet
-        open={matchFlowOpen}
-        onOpenChange={setMatchFlowOpen}
-        title="Registrar Resultado"
-        description="Registre o resultado de uma partida."
-      >
-        <ErrorBoundary>
-          <NewMatchFlow
-            prefilledGameId={prefill?.gameId}
-            prefilledPlayers={prefill?.players}
-            prefilledDate={prefill?.date}
-            onComplete={() => {
-              setMatchFlowOpen(false);
-              fetchRooms();
-            }}
-          />
-        </ErrorBoundary>
-      </EntitySheet>
+      <Dialog open={matchFlowOpen} onOpenChange={setMatchFlowOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Registrar Resultado</DialogTitle>
+            <DialogDescription>Registre o resultado de uma partida.</DialogDescription>
+          </DialogHeader>
+          <ErrorBoundary>
+            <NewMatchFlow
+              prefilledGameId={prefill?.gameId}
+              prefilledPlayers={prefill?.players}
+              prefilledDate={prefill?.date}
+              onComplete={() => {
+                setMatchFlowOpen(false);
+                fetchRooms();
+              }}
+            />
+          </ErrorBoundary>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

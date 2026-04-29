@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { useMutation } from "@tanstack/react-query";
+import { slugify } from "@/lib/slugify";
 
 export interface RpgAdventureData {
   id: string;
@@ -14,6 +15,7 @@ export interface RpgAdventureData {
   tag: "official" | "homebrew";
   image_url: string | null;
   system_id: string;
+  slug?: string | null;
 }
 
 interface Props {
@@ -41,12 +43,13 @@ const RpgAdventureForm = ({ adventure, systems: externalSystems, onSuccess }: Pr
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const payload = {
+      const payload: any = {
         name,
         description: desc || null,
         tag,
         image_url: imageUrl || null,
         system_id: systemId,
+        slug: slugify(name),
       };
       if (isCreate) {
         const { error } = await supabase.from("rpg_adventures").insert(payload as any);

@@ -32,6 +32,7 @@ import Install from "./pages/Install.tsx";
 import Communities from "./pages/Communities.tsx";
 import CommunityDetail from "./pages/CommunityDetail.tsx";
 import TopicDetail from "./pages/TopicDetail.tsx";
+import RpgAdventureDetail from "./pages/RpgAdventureDetail.tsx";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,7 @@ const App = () => (
                 <Route path="/seasons/:id" element={<ProtectedRoute><SeasonDetail /></ProtectedRoute>} />
                 <Route path="/games" element={<ProtectedRoute><Games /></ProtectedRoute>} />
                 <Route path="/jogos/:slug" element={<ProtectedRoute><GameDetail /></ProtectedRoute>} />
+                <Route path="/aventuras/:slug" element={<ProtectedRoute><RpgAdventureDetail /></ProtectedRoute>} />
                 <Route path="/scripts/:slug" element={<ProtectedRoute><ScriptDetail /></ProtectedRoute>} />
                 <Route path="/players" element={<ProtectedRoute><Players /></ProtectedRoute>} />
                 <Route path="/perfil/:nickname" element={<ProtectedRoute><PlayerProfile /></ProtectedRoute>} />

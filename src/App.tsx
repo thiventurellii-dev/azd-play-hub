@@ -33,6 +33,9 @@ import Communities from "./pages/Communities.tsx";
 import CommunityDetail from "./pages/CommunityDetail.tsx";
 import TopicDetail from "./pages/TopicDetail.tsx";
 import RpgAdventureDetail from "./pages/RpgAdventureDetail.tsx";
+import RpgCampaigns from "./pages/RpgCampaigns.tsx";
+import RpgCampaignDetail from "./pages/RpgCampaignDetail.tsx";
+import RpgCampaignInvite from "./pages/RpgCampaignInvite.tsx";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +60,9 @@ const App = () => (
                 <Route path="/games" element={<ProtectedRoute><Games /></ProtectedRoute>} />
                 <Route path="/jogos/:slug" element={<ProtectedRoute><GameDetail /></ProtectedRoute>} />
                 <Route path="/aventuras/:slug" element={<ProtectedRoute><RpgAdventureDetail /></ProtectedRoute>} />
+                <Route path="/campanhas" element={<ProtectedRoute><RpgCampaigns /></ProtectedRoute>} />
+                <Route path="/campanhas/convite/:token" element={<ProtectedRoute><RpgCampaignInvite /></ProtectedRoute>} />
+                <Route path="/campanhas/:slug" element={<ProtectedRoute><RpgCampaignDetail /></ProtectedRoute>} />
                 <Route path="/scripts/:slug" element={<ProtectedRoute><ScriptDetail /></ProtectedRoute>} />
                 <Route path="/players" element={<ProtectedRoute><Players /></ProtectedRoute>} />
                 <Route path="/perfil/:nickname" element={<ProtectedRoute><PlayerProfile /></ProtectedRoute>} />

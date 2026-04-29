@@ -182,6 +182,7 @@ const RecentMatchCardCompact = ({ m }: { m: RecentMatchItem }) => {
               +{m.opponents.length - 5}
             </div>
           )}
+          </div>
         </div>
       )}
     </div>

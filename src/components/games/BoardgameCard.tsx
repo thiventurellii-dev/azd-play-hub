@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Users, Clock, ExternalLink, Video, MoreHorizontal, BarChart3, Pencil, Flag } from "lucide-react";
+import { Users, Clock, ExternalLink, Video, MoreHorizontal, BarChart3, Pencil, Flag, Calendar } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
 
@@ -38,6 +38,7 @@ interface BoardgameCardProps {
 
 const BoardgameCard = ({
   game,
+  seasons,
   avgDuration,
   matchCount = 0,
   hasActiveSeason = false,

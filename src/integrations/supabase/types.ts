@@ -1037,6 +1037,27 @@ export type Database = {
           },
         ]
       }
+      profile_tags: {
+        Row: {
+          created_at: string
+          id: string
+          tag: Database["public"]["Enums"]["player_tag"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          tag: Database["public"]["Enums"]["player_tag"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          tag?: Database["public"]["Enums"]["player_tag"]
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1146,6 +1167,7 @@ export type Database = {
           id: string
           image_url: string | null
           name: string
+          slug: string | null
           system_id: string
           tag: Database["public"]["Enums"]["rpg_adventure_tag"]
         }
@@ -1155,6 +1177,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           name: string
+          slug?: string | null
           system_id: string
           tag?: Database["public"]["Enums"]["rpg_adventure_tag"]
         }
@@ -1164,6 +1187,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           name?: string
+          slug?: string | null
           system_id?: string
           tag?: Database["public"]["Enums"]["rpg_adventure_tag"]
         }
@@ -1185,6 +1209,7 @@ export type Database = {
           image_url: string | null
           name: string
           rules_url: string | null
+          slug: string | null
           video_url: string | null
         }
         Insert: {
@@ -1194,6 +1219,7 @@ export type Database = {
           image_url?: string | null
           name: string
           rules_url?: string | null
+          slug?: string | null
           video_url?: string | null
         }
         Update: {
@@ -1203,6 +1229,7 @@ export type Database = {
           image_url?: string | null
           name?: string
           rules_url?: string | null
+          slug?: string | null
           video_url?: string | null
         }
         Relationships: []
@@ -1463,6 +1490,12 @@ export type Database = {
         | "finished"
         | "cancelled"
       match_room_type: "boardgame" | "botc" | "rpg"
+      player_tag:
+        | "boardgamer"
+        | "blood"
+        | "storyteller"
+        | "aventureiro"
+        | "mestre"
       rpg_adventure_tag: "official" | "homebrew"
       season_type: "boardgame" | "blood"
     }
@@ -1605,6 +1638,13 @@ export const Constants = {
         "cancelled",
       ],
       match_room_type: ["boardgame", "botc", "rpg"],
+      player_tag: [
+        "boardgamer",
+        "blood",
+        "storyteller",
+        "aventureiro",
+        "mestre",
+      ],
       rpg_adventure_tag: ["official", "homebrew"],
       season_type: ["boardgame", "blood"],
     },

@@ -408,6 +408,30 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
             </SelectContent>
           </Select>
         </div>
+      ) : isRpg ? (
+        <div>
+          <Label>Campanha *</Label>
+          {userCampaigns.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
+              Você ainda não mestra nenhuma campanha.{" "}
+              <a href="/campanhas" className="text-gold hover:underline">Criar campanha</a>
+            </div>
+          ) : (
+            <Select value={selectedCampaignId} onValueChange={setSelectedCampaignId}>
+              <SelectTrigger><SelectValue placeholder="Selecione a campanha" /></SelectTrigger>
+              <SelectContent>
+                {userCampaigns.map(c => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          {selectedCampaign && (
+            <p className="text-[11px] text-muted-foreground mt-1">
+              O título será preenchido automaticamente como "Sessão N — {selectedCampaign.name}".
+            </p>
+          )}
+        </div>
       ) : (
         <div>
           <Label>Jogo *</Label>

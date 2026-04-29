@@ -52,7 +52,7 @@ const useFormOptions = (enabled: boolean, userId?: string) =>
     queryKey: ["match-room-form-options", userId],
     queryFn: async () => {
       const sb: any = supabase;
-      const [gamesRes, scriptsRes, tagsRes, seasonsRes, communitiesRes] = await Promise.all([
+      const [gamesRes, scriptsRes, tagsRes, seasonsRes, communitiesRes, campaignsRes] = await Promise.all([
         supabase.from("games").select("id, name, slug, max_players").order("name"),
         supabase.from("blood_scripts").select("id, name").order("name"),
         supabase.from("room_tags").select("id, name").order("name"),
@@ -64,6 +64,14 @@ const useFormOptions = (enabled: boolean, userId?: string) =>
               .eq("user_id", userId)
               .eq("status", "active")
           : Promise.resolve({ data: [] }),
+        userId
+          ? sb
+              .from("rpg_campaigns")
+              .select("id, name, status, master_id, adventure_id")
+              .eq("master_id", userId)
+              .in("status", ["planning", "active"])
+              .order("created_at", { ascending: false })
+          : Promise.resolve({ data: [] }),
       ]);
       return {
         games: (gamesRes.data ?? []) as Game[],
@@ -73,6 +81,7 @@ const useFormOptions = (enabled: boolean, userId?: string) =>
         communities: ((communitiesRes.data ?? []) as any[])
           .map((r) => r.communities)
           .filter(Boolean) as { id: string; name: string; slug: string }[],
+        campaigns: (campaignsRes.data ?? []) as { id: string; name: string; status: string; adventure_id: string | null }[],
       };
     },
     enabled,
@@ -101,7 +110,7 @@ const categoryCards = [
   {
     id: "rpg" as const,
     label: "RPG",
-    description: "Em breve",
+    description: "Sessão de campanha",
     icon: Sword,
     iconColor: "text-purple-400",
     borderHover: "hover:border-purple-500/60",
@@ -120,6 +129,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
   const availableTags = useMemo(() => options?.tags ?? [], [options?.tags]);
   const seasons = useMemo(() => options?.seasons ?? [], [options?.seasons]);
   const userCommunities = useMemo(() => options?.communities ?? [], [options?.communities]);
+  const userCampaigns = useMemo(() => options?.campaigns ?? [], [options?.campaigns]);
 
   const [category, setCategory] = useState<"boardgame" | "botc" | "rpg" | "">("");
   const [gameId, setGameId] = useState("");
@@ -136,6 +146,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
   const [communityOnly, setCommunityOnly] = useState(false);
   const [platform, setPlatform] = useState("");
   const [status, setStatus] = useState("");
+  const [selectedCampaignId, setSelectedCampaignId] = useState("");
 
   useEffect(() => {
     if (!room) return;
@@ -177,11 +188,30 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
     if (game?.max_players) setMaxPlayers(String(game.max_players));
   }, [gameId, games, isEdit]);
 
+  // Auto-título para RPG: "Sessão N - Nome da campanha"
+  useEffect(() => {
+    if (isEdit || category !== "rpg" || !selectedCampaignId) return;
+    const camp = userCampaigns.find(c => c.id === selectedCampaignId);
+    if (!camp) return;
+    (async () => {
+      const { count } = await supabase
+        .from("match_rooms")
+        .select("id", { count: "exact", head: true })
+        .eq("campaign_id", selectedCampaignId);
+      const n = (count || 0) + 1;
+      setTitle(`Sessão ${n} — ${camp.name}`);
+      setMaxPlayers("8");
+    })();
+  }, [selectedCampaignId, category, isEdit, userCampaigns]);
+
   const isBotC = category === "botc";
+  const isRpg = category === "rpg";
   const botcGame = games.find(g => g.slug === "blood-on-the-clocktower");
+  const rpgGame = games.find(g => g.slug === "rpg-generico" || g.slug === "rpg-generic" || g.name?.toLowerCase() === "rpg");
+  const selectedCampaign = userCampaigns.find(c => c.id === selectedCampaignId);
 
   const filteredGames = games.filter(g => {
-    if (category === "boardgame") return g.slug !== "blood-on-the-clocktower";
+    if (category === "boardgame") return g.slug !== "blood-on-the-clocktower" && g.slug !== "rpg-generico" && g.slug !== "rpg-generic";
     return true;
   });
 
@@ -202,7 +232,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
         ? new Date(`${scheduledDate}T${scheduledTime}`).toISOString()
         : new Date(`${scheduledDate}T00:00:00`).toISOString();
 
-      let finalGameId = isBotC ? (botcGame?.id ?? "") : gameId;
+      let finalGameId = isBotC ? (botcGame?.id ?? "") : isRpg ? (rpgGame?.id ?? "") : gameId;
 
       if (isBotC && !finalGameId) {
         const { data: newGame } = await supabase.from("games").insert({
@@ -211,6 +241,15 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
           min_players: 5,
           max_players: 20,
         }).select("id").single();
+        if (newGame) finalGameId = newGame.id;
+      }
+      if (isRpg && !finalGameId) {
+        const { data: newGame } = await supabase.from("games").insert({
+          name: "RPG",
+          slug: "rpg-generico",
+          min_players: 2,
+          max_players: 10,
+        } as any).select("id").single();
         if (newGame) finalGameId = newGame.id;
       }
       if (!finalGameId) throw new Error("Jogo não encontrado");
@@ -262,6 +301,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
             community_only: !!selectedCommunityId && communityOnly,
             room_type: category || 'boardgame',
             platform: platform || null,
+            campaign_id: isRpg ? (selectedCampaignId || null) : null,
           } as any)
           .select()
           .single();
@@ -301,6 +341,11 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
     if (isBotC) {
       if (!selectedScriptId || !title || !scheduledDate) {
         toast.error("Preencha os campos obrigatórios (Script, Título, Data)");
+        return;
+      }
+    } else if (isRpg) {
+      if (!selectedCampaignId || !title || !scheduledDate) {
+        toast.error("Selecione uma campanha, título e data");
         return;
       }
     } else {
@@ -362,6 +407,30 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
               {bloodScripts.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
             </SelectContent>
           </Select>
+        </div>
+      ) : isRpg ? (
+        <div>
+          <Label>Campanha *</Label>
+          {userCampaigns.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
+              Você ainda não mestra nenhuma campanha.{" "}
+              <a href="/campanhas" className="text-gold hover:underline">Criar campanha</a>
+            </div>
+          ) : (
+            <Select value={selectedCampaignId} onValueChange={setSelectedCampaignId}>
+              <SelectTrigger><SelectValue placeholder="Selecione a campanha" /></SelectTrigger>
+              <SelectContent>
+                {userCampaigns.map(c => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          {selectedCampaign && (
+            <p className="text-[11px] text-muted-foreground mt-1">
+              O título será preenchido automaticamente como "Sessão N — {selectedCampaign.name}".
+            </p>
+          )}
         </div>
       ) : (
         <div>

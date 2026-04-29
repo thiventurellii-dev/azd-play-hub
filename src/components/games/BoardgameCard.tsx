@@ -52,9 +52,13 @@ const BoardgameCard = ({
   const canEditGame = canEdit("boardgame", { role, userId: user?.id ?? null });
   const goToDetail = () => game.slug && navigate(`/jogos/${game.slug}`);
 
-  const category = (game as any).category || tags[0] || null;
+  const HIDDEN_CHIP_TAGS = new Set(["estrategia", "familia"]);
+  const normalizeTag = (t: string) =>
+    t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const visibleTags = tags.filter((t) => !HIDDEN_CHIP_TAGS.has(normalizeTag(t)));
+  const category = (game as any).category || visibleTags[0] || tags[0] || null;
   const description = (game as any).description as string | null | undefined;
-  const mechanics = tags.slice(0, 4);
+  const mechanics = visibleTags.slice(0, 4);
   const playerRange =
     game.min_players || game.max_players ? `${game.min_players ?? "?"}–${game.max_players ?? "?"}` : null;
 
@@ -66,10 +70,10 @@ const BoardgameCard = ({
     >
       <article
         onClick={goToDetail}
-        className="group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl bg-card transition-all duration-300 ring-1 ring-border/40 hover:ring-gold/30 hover:-translate-y-0.5 shadow-[0_4px_20px_-12px_rgba(0,0,0,0.6)] hover:shadow-[0_12px_36px_-12px_rgba(255,184,0,0.18)]"
+        className="group relative isolate flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl bg-card transform-gpu [backface-visibility:hidden] [-webkit-mask-image:-webkit-radial-gradient(white,black)] transition-all duration-300 ring-1 ring-border/40 hover:ring-gold/30 hover:-translate-y-0.5 shadow-[0_4px_20px_-12px_rgba(0,0,0,0.6)] hover:shadow-[0_12px_36px_-12px_rgba(255,184,0,0.18)]"
       >
         {/* COVER */}
-        <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-secondary via-card to-background">
+        <div className="relative aspect-[16/10] w-full overflow-hidden rounded-t-2xl bg-gradient-to-br from-secondary via-card to-background">
           {game.image_url ? (
             <img
               src={game.image_url}

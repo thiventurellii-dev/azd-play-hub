@@ -286,6 +286,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
   const gameImageUrl = room.game?.image_url || scriptImageUrl;
   const showImage = !!gameImageUrl && !imgFailed;
   const isBotC = !!room.blood_script_id;
+  const isRpg = room.room_type === "rpg" && !!room.campaign_id;
 
   return (
     <>

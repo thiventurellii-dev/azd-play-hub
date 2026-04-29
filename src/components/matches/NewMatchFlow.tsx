@@ -339,7 +339,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
   if (!category) {
     return (
       <div className="space-y-4">
-        <p className="text-sm text-muted-foreground">Escolha a categoria da partida:</p>
+        <p className="text-sm text-muted-foreground">Escolha a categoria:</p>
         <div className="grid gap-4 sm:grid-cols-2">
           <button type="button" onClick={() => setCategory('boardgame')} className="flex flex-col items-center justify-center p-6 rounded-lg border-2 border-border hover:border-gold/60 text-center transition-all group aspect-[3/4]">
             <Gamepad2 className="h-12 w-12 mb-3 text-gold group-hover:scale-110 transition-transform" />
@@ -352,9 +352,6 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
             <p className="text-xs text-muted-foreground mt-1">BotC</p>
           </button>
         </div>
-        <p className="text-xs text-muted-foreground text-center pt-2">
-          Sessões de RPG são registradas a partir da própria sala da campanha (botão <strong className="text-foreground">Inserir Resultado</strong> na sala finalizada).
-        </p>
       </div>
     );
   }

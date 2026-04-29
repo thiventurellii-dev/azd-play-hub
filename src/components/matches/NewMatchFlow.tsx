@@ -375,13 +375,24 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
   if (category === 'rpg') {
     return (
       <Card className="bg-card border-border">
-        <CardHeader><CardTitle>RPG</CardTitle></CardHeader>
-        <CardContent className="text-center py-12">
-          <Sword className="h-12 w-12 mx-auto mb-4 text-purple-400" />
-          <p className="text-muted-foreground">Registro de sessões de RPG em breve!</p>
-          <Button variant="outline" className="mt-4" onClick={() => setCategory('')}>
-            <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
-          </Button>
+        <CardHeader><CardTitle>Sessão de RPG</CardTitle></CardHeader>
+        <CardContent className="space-y-4 py-6">
+          <div className="flex flex-col items-center text-center gap-3">
+            <Sword className="h-10 w-10 text-purple-400" />
+            <p className="text-sm text-muted-foreground max-w-md">
+              No AzD, cada sessão de RPG é uma <strong className="text-foreground">sala de partida finalizada</strong> vinculada
+              a uma campanha. Pra registrar, agende a sala (pode ser pra agora) e encerre clicando em{' '}
+              <strong className="text-foreground">Inserir Resultado</strong> — isso abre o formulário com recap, presença e momentos marcantes.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2 justify-center">
+            <Button variant="gold" onClick={() => { window.location.href = '/partidas'; }}>
+              Ir para Partidas
+            </Button>
+            <Button variant="outline" onClick={() => setCategory('')}>
+              <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );

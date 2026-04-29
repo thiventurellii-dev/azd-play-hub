@@ -52,11 +52,12 @@ const BoardgameCard = ({
   const canEditGame = canEdit("boardgame", { role, userId: user?.id ?? null });
   const goToDetail = () => game.slug && navigate(`/jogos/${game.slug}`);
 
-  const HIDDEN_CHIP_TAGS = new Set(["estrategia", "familia"]);
+  const CATEGORY_TAGS = new Set(["estrategia", "familia", "social", "tematico"]);
   const normalizeTag = (t: string) =>
     t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  const visibleTags = tags.filter((t) => !HIDDEN_CHIP_TAGS.has(normalizeTag(t)));
-  const category = (game as any).category || visibleTags[0] || tags[0] || null;
+  const visibleTags = tags.filter((t) => !CATEGORY_TAGS.has(normalizeTag(t)));
+  const categoryTag = tags.find((t) => CATEGORY_TAGS.has(normalizeTag(t)));
+  const category = (game as any).category || categoryTag || null;
   const description = (game as any).description as string | null | undefined;
   const mechanics = visibleTags.slice(0, 4);
   const playerRange =

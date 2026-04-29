@@ -10,6 +10,8 @@ import AdventureInterestCard from '@/components/rpg/AdventureInterestCard';
 import AdventureIntensityBars from '@/components/rpg/AdventureIntensityBars';
 import AdventureMasterNotes from '@/components/rpg/AdventureMasterNotes';
 import AdventureSidebar from '@/components/rpg/AdventureSidebar';
+import { EntityEditButton } from '@/components/shared/EntityEditButton';
+import RpgAdventureForm from '@/components/forms/RpgAdventureForm';
 
 const RpgAdventureDetail = () => {
   const { slug } = useParams<{ slug: string }>();

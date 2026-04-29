@@ -7,17 +7,17 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { useNotification } from '@/components/NotificationDialog';
 import { Pencil, Lock, Camera, Mail } from 'lucide-react';
-import { brazilianStates, citiesByState, pronounsOptions, countryCodes, formatPhone, unformatPhone } from '@/lib/brazil-data';
+import { brazilianStates, formatPhone } from '@/lib/brazil-data';
 import FriendsList from '@/components/friendlist/FriendsList';
 import XpBadge from '@/components/shared/XpBadge';
 import { useProfileCompletion } from '@/hooks/useProfileCompletion';
-import PlayerTagsSelector, { PlayerTagsBadges, PlayerTag } from '@/components/profile/PlayerTagsSelector';
-import { useProfileTags, saveProfileTags } from '@/hooks/useProfileTags';
+import { PlayerTagsBadges, PlayerTag } from '@/components/profile/PlayerTagsSelector';
+import { useProfileTags } from '@/hooks/useProfileTags';
 import { MyCampaignsCard } from '@/components/rpg/MyCampaignsCard';
+import { EditProfileDialog } from '@/components/profile/EditProfileDialog';
 
 const Profile = () => {
   const { user, role } = useAuth();
@@ -26,7 +26,6 @@ const Profile = () => {
   const [editing, setEditing] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const [form, setForm] = useState({ name: '', nickname: '', phone: '', country_code: '+55', state: '', city: '', birth_date: '', gender: '', pronouns: '', email: '' });
-  const [saving, setSaving] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -34,15 +33,12 @@ const Profile = () => {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { tags: playerTags, setTags: setPlayerTags } = useProfileTags(user?.id);
-  const [editTags, setEditTags] = useState<PlayerTag[]>([]);
 
   // Email change
   const [changingEmail, setChangingEmail] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const [savingEmail, setSavingEmail] = useState(false);
   const [emailChangeRequested, setEmailChangeRequested] = useState(false);
-
-  const cities = citiesByState[form.state] || [];
 
   useEffect(() => {
     if (!user) return;
@@ -65,40 +61,11 @@ const Profile = () => {
     });
   }, [user]);
 
-  const handleSave = async () => {
-    if (!user) return;
-    if (!form.name || !form.nickname || !form.phone || !form.state || !form.city || !form.birth_date || !form.gender || !form.pronouns) {
-      return notify('error', 'Preencha todos os campos obrigatórios');
-    }
-    if (editTags.length === 0) {
-      return notify('error', 'Escolha pelo menos uma tag de jogador');
-    }
-    setSaving(true);
-    const { error } = await supabase.from('profiles').update({
-      name: form.name,
-      nickname: form.nickname,
-      phone: unformatPhone(form.phone),
-      country_code: form.country_code,
-      state: form.state,
-      city: form.city,
-      birth_date: form.birth_date,
-      gender: form.gender,
-      pronouns: form.pronouns,
-    } as any).eq('id', user.id);
-    if (!error) {
-      try {
-        await saveProfileTags(user.id, editTags);
-        setPlayerTags(editTags);
-      } catch (e: any) {
-        setSaving(false);
-        return notify('error', 'Erro ao salvar tags: ' + (e.message || ''));
-      }
-    }
-    setSaving(false);
-    if (error) return notify('error', error.message);
-    notify('success', 'Perfil atualizado!');
-    setEditing(false);
-    setProfile({ ...profile, ...form, phone: unformatPhone(form.phone) });
+  // Save handler now lives in EditProfileDialog. The dialog calls onSaved with
+  // the updated profile + tags so we can refresh local state without a refetch.
+  const handleProfileSaved = (updated: any, newTags: PlayerTag[]) => {
+    setProfile({ ...profile, ...updated });
+    setPlayerTags(newTags);
   };
 
   const handleChangePassword = async () => {
@@ -197,7 +164,15 @@ const Profile = () => {
               </div>
               <div>
                 <CardTitle>{profile?.name || 'Sem nome'}</CardTitle>
-                {profile?.nickname && <p className="text-sm text-muted-foreground">@{profile.nickname}</p>}
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  {profile?.nickname && <span>@{profile.nickname}</span>}
+                  {profile?.pronouns && pronounsLabels[profile.pronouns] && (
+                    <>
+                      <span className="opacity-50">•</span>
+                      <span>{pronounsLabels[profile.pronouns]}</span>
+                    </>
+                  )}
+                </div>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                   {role === 'admin' && <Badge variant="default">Admin</Badge>}
                   <PlayerTagsBadges tags={playerTags} />
@@ -209,17 +184,15 @@ const Profile = () => {
               </div>
             </div>
             <div className="flex flex-col gap-1.5 sm:flex-row sm:gap-2">
-              {!editing && (
-                <Button variant="outline" size="sm" onClick={() => { setEditTags(playerTags); setEditing(true); }}>
-                  <Pencil className="h-4 w-4 mr-1" /> Editar Perfil
-                </Button>
-              )}
-              {!changingPassword && !editing && (
+              <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+                <Pencil className="h-4 w-4 mr-1" /> Editar Perfil
+              </Button>
+              {!changingPassword && (
                 <Button variant="outline" size="sm" onClick={() => setChangingPassword(true)}>
                   <Lock className="h-4 w-4 mr-1" /> Resetar Senha
                 </Button>
               )}
-              {!changingEmail && !editing && !changingPassword && (
+              {!changingEmail && !changingPassword && (
                 <Button variant="outline" size="sm" onClick={() => { setChangingEmail(true); setNewEmail(''); setEmailChangeRequested(false); }}>
                   <Mail className="h-4 w-4 mr-1" /> Alterar E-mail
                 </Button>
@@ -228,109 +201,16 @@ const Profile = () => {
           </div>
         </CardHeader>
         <CardContent>
-          {editing ? (
-            <div className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Nickname *</Label>
-                  <Input value={form.nickname} onChange={e => setForm({ ...form, nickname: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Nome Completo *</Label>
-                  <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>E-mail</Label>
-                <Input value={form.email} disabled className="opacity-60" />
-                <p className="text-xs text-muted-foreground">Use o botão "Alterar E-mail" para mudar</p>
-              </div>
-              <div className="space-y-2">
-                <Label>Telefone *</Label>
-                <div className="flex gap-2">
-                  <Select value={form.country_code} onValueChange={v => setForm({ ...form, country_code: v })}>
-                    <SelectTrigger className="w-[110px]"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {countryCodes.map(c => <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    value={form.phone}
-                    onChange={e => setForm({ ...form, phone: formatPhone(e.target.value) })}
-                    placeholder="(11) 99999-9999"
-                    className="flex-1"
-                  />
-                </div>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Estado *</Label>
-                  <Select value={form.state} onValueChange={v => setForm({ ...form, state: v, city: '' })}>
-                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    <SelectContent>
-                      {brazilianStates.map(s => <SelectItem key={s.uf} value={s.uf}>{s.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Cidade *</Label>
-                  <Select value={form.city} onValueChange={v => setForm({ ...form, city: v })} disabled={!form.state}>
-                    <SelectTrigger><SelectValue placeholder={form.state ? 'Selecione' : 'Selecione o estado'} /></SelectTrigger>
-                    <SelectContent>
-                      {cities.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Data de Nascimento *</Label>
-                  <Input type="date" value={form.birth_date} onChange={e => setForm({ ...form, birth_date: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Gênero *</Label>
-                  <Select value={form.gender} onValueChange={v => setForm({ ...form, gender: v })}>
-                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="masculino">Masculino</SelectItem>
-                      <SelectItem value="feminino">Feminino</SelectItem>
-                      <SelectItem value="nao_binario">Não-binário</SelectItem>
-                      <SelectItem value="outro">Outro</SelectItem>
-                      <SelectItem value="prefiro_nao_dizer">Prefiro não dizer</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Como devo me referir a você? *</Label>
-                <Select value={form.pronouns} onValueChange={v => setForm({ ...form, pronouns: v })}>
-                  <SelectTrigger><SelectValue placeholder="Selecione seus pronomes" /></SelectTrigger>
-                  <SelectContent>
-                    {pronounsOptions.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Como você joga? * <span className="text-xs text-muted-foreground font-normal">(escolha pelo menos uma)</span></Label>
-                <PlayerTagsSelector selected={editTags} onChange={setEditTags} />
-              </div>
-              <div className="flex gap-2">
-                <Button variant="gold" onClick={handleSave} disabled={saving}>{saving ? 'Salvando...' : 'Salvar'}</Button>
-                <Button variant="outline" onClick={() => setEditing(false)}>Cancelar</Button>
-              </div>
-            </div>
-          ) : (
-            <div className="grid gap-3 sm:grid-cols-2 text-sm">
-              <div><span className="text-muted-foreground">E-mail:</span> <span className="font-medium">{profile?.email || user?.email}</span></div>
-              <div><span className="text-muted-foreground">Telefone:</span> <span className="font-medium">{profile?.country_code} {profile?.phone ? formatPhone(profile.phone) : '—'}</span></div>
-              <div><span className="text-muted-foreground">Estado:</span> <span className="font-medium">{brazilianStates.find(s => s.uf === profile?.state)?.name || profile?.state || '—'}</span></div>
-              <div><span className="text-muted-foreground">Cidade:</span> <span className="font-medium">{profile?.city || '—'}</span></div>
-              <div><span className="text-muted-foreground">Nascimento:</span> <span className="font-medium">{profile?.birth_date ? new Date(profile.birth_date + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</span></div>
-              <div><span className="text-muted-foreground">Gênero:</span> <span className="font-medium">{genderLabels[profile?.gender] || '—'}</span></div>
-              <div><span className="text-muted-foreground">Pronomes:</span> <span className="font-medium">{pronounsLabels[profile?.pronouns] || '—'}</span></div>
-              <div><span className="text-muted-foreground">Membro desde:</span> <span className="font-medium">{user?.created_at ? new Date(user.created_at).toLocaleDateString('pt-BR') : '—'}</span></div>
-            </div>
-          )}
+          <div className="grid gap-3 sm:grid-cols-2 text-sm">
+            <div><span className="text-muted-foreground">E-mail:</span> <span className="font-medium">{profile?.email || user?.email}</span></div>
+            <div><span className="text-muted-foreground">Telefone:</span> <span className="font-medium">{profile?.country_code} {profile?.phone ? formatPhone(profile.phone) : '—'}</span></div>
+            <div><span className="text-muted-foreground">Estado:</span> <span className="font-medium">{brazilianStates.find(s => s.uf === profile?.state)?.name || profile?.state || '—'}</span></div>
+            <div><span className="text-muted-foreground">Cidade:</span> <span className="font-medium">{profile?.city || '—'}</span></div>
+            <div><span className="text-muted-foreground">Nascimento:</span> <span className="font-medium">{profile?.birth_date ? new Date(profile.birth_date + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</span></div>
+            <div><span className="text-muted-foreground">Gênero:</span> <span className="font-medium">{genderLabels[profile?.gender] || '—'}</span></div>
+            <div><span className="text-muted-foreground">Pronomes:</span> <span className="font-medium">{pronounsLabels[profile?.pronouns] || '—'}</span></div>
+            <div><span className="text-muted-foreground">Membro desde:</span> <span className="font-medium">{user?.created_at ? new Date(user.created_at).toLocaleDateString('pt-BR') : '—'}</span></div>
+          </div>
 
           {/* Email change section */}
           {changingEmail && (
@@ -399,6 +279,17 @@ const Profile = () => {
       <div className="mt-6">
         <FriendsList />
       </div>
+
+      {user && (
+        <EditProfileDialog
+          open={editing}
+          onOpenChange={setEditing}
+          userId={user.id}
+          initialProfile={profile}
+          initialTags={playerTags}
+          onSaved={handleProfileSaved}
+        />
+      )}
     </div>
   );
 };

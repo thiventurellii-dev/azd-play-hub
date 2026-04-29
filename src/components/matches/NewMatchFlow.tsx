@@ -32,12 +32,13 @@ interface Props {
   prefilledGameId?: string;
   prefilledPlayers?: string[];
   prefilledDate?: string;
+  prefilledCategory?: 'boardgame' | 'botc';
   onComplete?: (matchId?: string) => void;
 }
 
-const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComplete }: Props) => {
+const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, prefilledCategory, onComplete }: Props) => {
   const { notify } = useNotification();
-  const [category, setCategory] = useState<'boardgame' | 'botc' | 'rpg' | ''>('');
+  const [category, setCategory] = useState<'boardgame' | 'botc' | 'rpg' | ''>(prefilledCategory || '');
   const [step, setStep] = useState(1);
 
   // Step 1

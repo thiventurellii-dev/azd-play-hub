@@ -124,22 +124,51 @@ const Games = () => {
 
           {/* Boardgames */}
           <TabsContent value="boardgame">
-            <div className="flex flex-wrap gap-3 mb-5 items-center justify-between">
-              <div className="flex flex-wrap items-center gap-3">
-                {allTags.length > 0 && (
-                  <Select value={tagFilter} onValueChange={setTagFilter}>
-                    <SelectTrigger className="w-[160px]"><SelectValue placeholder="Filtrar por tag" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Todas as tags</SelectItem>
-                      {allTags.map((t) => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                )}
-                {user && (
-                  <Button variant="outline" size="sm" onClick={() => setAddOpen(true)}>
-                    <Plus className="h-4 w-4 mr-1" /> Adicionar Jogo
-                  </Button>
-                )}
+            <div className="flex flex-col gap-3 mb-5 md:flex-row md:items-center md:justify-between">
+              <div className="rounded-lg border border-border bg-card/40 p-2.5 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Filter className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0 ml-1" />
+                  {allTags.length > 0 && (
+                    <Select value={tagFilter} onValueChange={setTagFilter}>
+                      <SelectTrigger
+                        className={cn(
+                          "h-8 w-auto min-w-[160px] text-xs",
+                          tagFilter !== "all" && "text-gold border-gold/40",
+                        )}
+                      >
+                        <SelectValue placeholder="Filtrar por tag" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todas as tags</SelectItem>
+                        {allTags
+                          .filter((t) => !["estratégia", "estrategia", "família", "familia"].includes(t.name.toLowerCase()))
+                          .map((t) => (
+                            <SelectItem key={t.id} value={t.name}>
+                              {t.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  {tagFilter !== "all" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
+                      onClick={() => setTagFilter("all")}
+                    >
+                      <X className="h-3 w-3" /> Limpar
+                    </Button>
+                  )}
+                  {user && (
+                    <>
+                      <div className="hidden sm:block w-px h-5 bg-border mx-1" />
+                      <Button variant="outline" size="sm" className="h-8" onClick={() => setAddOpen(true)}>
+                        <Plus className="h-4 w-4 mr-1" /> Adicionar Jogo
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
               <GamesSummaryPanel
                 totalGames={games.length}

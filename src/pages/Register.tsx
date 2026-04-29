@@ -11,6 +11,9 @@ import logo from '@/assets/azd-logo.png';
 import { useNotification } from '@/components/NotificationDialog';
 import { brazilianStates, citiesByState, pronounsOptions, countryCodes, formatPhone, unformatPhone } from '@/lib/brazil-data';
 import { Mail } from 'lucide-react';
+import PlayerTagsSelector, { PlayerTag } from '@/components/profile/PlayerTagsSelector';
+import { saveProfileTags } from '@/hooks/useProfileTags';
+import { Label as LabelComp } from '@/components/ui/label';
 
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
 

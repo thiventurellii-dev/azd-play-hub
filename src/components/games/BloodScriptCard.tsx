@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Users, Calendar, MoreHorizontal, BarChart3, Pencil } from "lucide-react";
+import { Users, Calendar, MoreHorizontal, BarChart3, Pencil, Heart, Skull } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import EditBloodScriptDialog from "@/components/blood/EditBloodScriptDialog";
@@ -110,13 +110,13 @@ const BloodScriptCard = ({ script, characters, seasons, index, onUpdated }: Bloo
 
           <div className="flex-1" />
 
-          {/* Quick stats */}
-          <div className="flex items-center justify-between rounded-lg bg-background/40 px-3 py-2 ring-1 ring-border/30">
-            <Stat icon={Users} value={characters.length} label="pers." />
-            <div className="h-6 w-px bg-border/50" />
-            <Stat value={`👼 ${goodChars.length}`} />
-            <div className="h-6 w-px bg-border/50" />
-            <Stat value={`😈 ${evilChars.length}`} />
+          {/* Quick stats — personagens · bons · maus */}
+          <div className="flex items-end justify-between rounded-lg bg-background/40 px-3 py-2.5 ring-1 ring-border/30">
+            <StatBlock value={characters.length} label="Personagens" icon={Users} highlight />
+            <div className="h-8 w-px bg-border/50" />
+            <StatBlock value={goodChars.length} label="Bons" icon={Heart} />
+            <div className="h-8 w-px bg-border/50" />
+            <StatBlock value={evilChars.length} label="Maus" icon={Skull} />
           </div>
 
           {/* Seasons */}
@@ -148,11 +148,24 @@ const BloodScriptCard = ({ script, characters, seasons, index, onUpdated }: Bloo
   );
 };
 
-const Stat = ({ icon: Icon, value, label }: { icon?: any; value: string | number; label?: string }) => (
-  <div className="flex items-center gap-1.5 min-w-0">
-    {Icon && <Icon className="h-3.5 w-3.5 text-gold/60 shrink-0" />}
-    <span className="text-xs font-semibold text-foreground">{value}</span>
-    {label && <span className="text-[10px] text-muted-foreground">{label}</span>}
+const StatBlock = ({
+  icon: Icon,
+  value,
+  label,
+  highlight = false,
+}: {
+  icon: any;
+  value: string | number;
+  label: string;
+  highlight?: boolean;
+}) => (
+  <div className="flex flex-1 flex-col items-center gap-0.5 min-w-0 text-center">
+    <span className={`text-sm font-bold leading-tight ${highlight ? "text-gold" : "text-foreground"}`}>
+      {value}
+    </span>
+    <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
+      <Icon className="h-3 w-3" /> {label}
+    </span>
   </div>
 );
 

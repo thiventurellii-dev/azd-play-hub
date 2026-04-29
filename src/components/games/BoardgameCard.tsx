@@ -52,11 +52,12 @@ const BoardgameCard = ({
   const canEditGame = canEdit("boardgame", { role, userId: user?.id ?? null });
   const goToDetail = () => game.slug && navigate(`/jogos/${game.slug}`);
 
-  const HIDDEN_CHIP_TAGS = new Set(["estrategia", "familia"]);
+  const CATEGORY_TAGS = new Set(["estrategia", "familia", "social", "tematico"]);
   const normalizeTag = (t: string) =>
     t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-  const visibleTags = tags.filter((t) => !HIDDEN_CHIP_TAGS.has(normalizeTag(t)));
-  const category = (game as any).category || visibleTags[0] || tags[0] || null;
+  const visibleTags = tags.filter((t) => !CATEGORY_TAGS.has(normalizeTag(t)));
+  const categoryTag = tags.find((t) => CATEGORY_TAGS.has(normalizeTag(t)));
+  const category = (game as any).category || categoryTag || null;
   const description = (game as any).description as string | null | undefined;
   const mechanics = visibleTags.slice(0, 4);
   const playerRange =
@@ -138,7 +139,7 @@ const BoardgameCard = ({
         <div className="flex flex-1 flex-col gap-3 p-4">
           {/* Category */}
           {category && (
-            <p className="text-xs text-muted-foreground/90 -mt-1">{category}</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-gold -mt-1">{category}</p>
           )}
 
           {/* Mechanics chips */}
@@ -169,7 +170,7 @@ const BoardgameCard = ({
           <div className="flex items-end justify-between rounded-lg bg-background/40 px-3 py-2.5 ring-1 ring-border/30">
             <StatBlock value={playerRange ?? "—"} label="Jogadores" icon={Users} />
             <div className="h-8 w-px bg-border/50" />
-            <StatBlock value={`+${matchCount}`} label="Partidas" icon={BarChart3} highlight />
+            <StatBlock value={`${matchCount}`} label="Partidas" icon={BarChart3} highlight />
             <div className="h-8 w-px bg-border/50" />
             <StatBlock value={avgDuration ? `${avgDuration}m` : "—"} label="Duração média" icon={Clock} />
           </div>

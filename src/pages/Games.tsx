@@ -43,6 +43,11 @@ const Games = () => {
   const gameTagMap = data?.gameTagMap || {};
 
   const [tagFilter, setTagFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+
+  const CATEGORIES = ["Estratégia", "Família", "Social", "Temático"];
+  const normalizeTag = (t: string) =>
+    t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
   const [addOpen, setAddOpen] = useState(false);
   const [newName, setNewName] = useState("");
@@ -59,9 +64,20 @@ const Games = () => {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["games-page-data"] });
 
   const filteredGames = useMemo(() => {
-    if (tagFilter === "all") return games;
-    return games.filter((g: any) => (gameTagMap[g.id] || []).includes(tagFilter));
-  }, [games, tagFilter, gameTagMap]);
+    let list = games;
+    if (categoryFilter) {
+      const target = normalizeTag(categoryFilter);
+      list = list.filter((g: any) => {
+        const cat = (g as any).category;
+        if (cat && normalizeTag(cat) === target) return true;
+        return (gameTagMap[g.id] || []).some((t) => normalizeTag(t) === target);
+      });
+    }
+    if (tagFilter !== "all") {
+      list = list.filter((g: any) => (gameTagMap[g.id] || []).includes(tagFilter));
+    }
+    return list;
+  }, [games, tagFilter, categoryFilter, gameTagMap]);
 
   // Blood KPIs
   const activeScriptsCount = useMemo(
@@ -107,8 +123,17 @@ const Games = () => {
 
   return (
     <div className="container py-10">
-      <div className="mb-2"><h1 className="text-2xl md:text-3xl font-bold">Jogos</h1></div>
-      <p className="text-muted-foreground mb-8">Coleção de jogos da comunidade AzD</p>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-8">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">Jogos</h1>
+          <p className="text-muted-foreground">Coleção de jogos da comunidade AzD</p>
+        </div>
+        {user && (
+          <Button variant="gold" size="sm" className="h-9" onClick={() => setAddOpen(true)}>
+            <Plus className="h-4 w-4 mr-1.5" /> Adicionar Jogo
+          </Button>
+        )}
+      </div>
 
       {isLoading ? (
         <div className="flex justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-2 border-gold border-t-transparent" /></div>
@@ -128,6 +153,27 @@ const Games = () => {
               <div className="rounded-lg border border-border bg-card/40 p-2.5 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Filter className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0 ml-1" />
+                  <div className="flex flex-wrap gap-1.5">
+                    {CATEGORIES.map((cat) => {
+                      const active = categoryFilter === cat;
+                      return (
+                        <Button
+                          key={cat}
+                          type="button"
+                          variant={active ? "secondary" : "outline"}
+                          size="sm"
+                          className={cn(
+                            "h-8 px-3 rounded-full text-xs",
+                            active && "border-gold/50 text-gold",
+                          )}
+                          onClick={() => setCategoryFilter(active ? null : cat)}
+                        >
+                          {cat}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  <div className="hidden sm:block w-px h-5 bg-border mx-1" />
                   {allTags.length > 0 && (
                     <Select value={tagFilter} onValueChange={setTagFilter}>
                       <SelectTrigger
@@ -141,7 +187,7 @@ const Games = () => {
                       <SelectContent>
                         <SelectItem value="all">Todas as tags</SelectItem>
                         {allTags
-                          .filter((t) => !["estratégia", "estrategia", "família", "familia"].includes(t.name.toLowerCase()))
+                          .filter((t) => !["estratégia", "estrategia", "família", "familia", "social", "temático", "tematico"].includes(t.name.toLowerCase()))
                           .map((t) => (
                             <SelectItem key={t.id} value={t.name}>
                               {t.name}
@@ -150,23 +196,15 @@ const Games = () => {
                       </SelectContent>
                     </Select>
                   )}
-                  {tagFilter !== "all" && (
+                  {(tagFilter !== "all" || categoryFilter) && (
                     <Button
                       variant="ghost"
                       size="sm"
                       className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
-                      onClick={() => setTagFilter("all")}
+                      onClick={() => { setTagFilter("all"); setCategoryFilter(null); }}
                     >
                       <X className="h-3 w-3" /> Limpar
                     </Button>
-                  )}
-                  {user && (
-                    <>
-                      <div className="hidden sm:block w-px h-5 bg-border mx-1" />
-                      <Button variant="outline" size="sm" className="h-8" onClick={() => setAddOpen(true)}>
-                        <Plus className="h-4 w-4 mr-1" /> Adicionar Jogo
-                      </Button>
-                    </>
                   )}
                 </div>
               </div>

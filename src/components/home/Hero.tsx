@@ -9,10 +9,20 @@ interface HeroProps {
 }
 
 export const Hero = ({ compact = false, subtitle, children }: HeroProps) => (
-  <section className="relative flex flex-col items-center justify-center px-4 text-center overflow-hidden py-16 sm:py-20 md:py-24 lg:py-32"
+  <section className="relative flex flex-col items-center justify-center px-4 text-center overflow-hidden bg-background py-16 sm:py-20 md:py-24 lg:py-32"
     style={compact ? { paddingTop: "3rem", paddingBottom: "3rem" } : undefined}
   >
-    <div className="absolute inset-0 bg-gradient-to-b from-gold/5 via-transparent to-transparent" />
+    {!compact && (
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[680px] h-[680px] max-w-[90vw] max-h-[90vw] rounded-full"
+        style={{
+          background:
+            "radial-gradient(circle, hsl(43 100% 50% / 0.18) 0%, hsl(43 100% 50% / 0.06) 30%, transparent 65%)",
+          filter: "blur(20px)",
+        }}
+      />
+    )}
     <motion.div
       initial={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}

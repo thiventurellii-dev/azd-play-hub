@@ -836,53 +836,94 @@ const PlayerProfile = () => {
 
       {/* ======================= SEASON + ATIVIDADE ======================= */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Season atual */}
+        {/* Seasons (carousel se houver mais de uma) */}
         <Card className="bg-card border-border">
           <CardContent className="pt-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Trophy className="h-5 w-5 text-gold" />
-              <h2 className="text-lg font-semibold">Season atual</h2>
-            </div>
-            {seasonCtx ? (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-bold">{seasonCtx.name}</span>
-                  <Badge className="bg-gold/15 text-gold border-gold/30 hover:bg-gold/15">Ativa</Badge>
-                </div>
-                {daysLeft !== null && daysLeft > 0 && (
-                  <p className="text-xs text-muted-foreground">Termina em {daysLeft} {daysLeft === 1 ? "dia" : "dias"}</p>
-                )}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-lg border border-border bg-background/40 p-3">
-                    <div className="text-xs text-muted-foreground">Sua posição</div>
-                    <div className="text-2xl font-bold text-gold tabular-nums">
-                      #{seasonCtx.position}
-                      <span className="text-sm text-muted-foreground font-normal"> de {seasonCtx.total}</span>
-                    </div>
-                  </div>
-                  <div className="rounded-lg border border-border bg-background/40 p-3">
-                    <div className="text-xs text-muted-foreground">MMR atual</div>
-                    <div className="text-2xl font-bold tabular-nums">{Math.round(seasonCtx.current_mmr)}</div>
-                  </div>
-                </div>
-                <div>
-                  <div className="relative h-2 rounded-full bg-secondary overflow-hidden">
-                    <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-700 via-gold to-amber-300 rounded-full" style={{ width: `${seasonProgress}%` }} />
-                    <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-3 w-3 rounded-full bg-gold border-2 border-background shadow" style={{ left: `${seasonProgress}%` }} />
-                  </div>
-                  <div className="flex items-center justify-between text-[10px] text-muted-foreground mt-1.5 tabular-nums">
-                    <span>{Math.round(seasonCtx.min_mmr)}</span>
-                    <span className="text-gold font-semibold">{Math.round(seasonCtx.current_mmr)}</span>
-                    <span>{Math.round(seasonCtx.max_mmr)}</span>
-                  </div>
-                </div>
-                <Button variant="outline" size="sm" className="w-full" asChild>
-                  <Link to={`/seasons/${seasonCtx.id}`}>Ver ranking completo <ChevronRight className="h-3 w-3 ml-1" /></Link>
-                </Button>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-gold" />
+                <h2 className="text-lg font-semibold">
+                  {seasonsList.length > 1 ? "Seasons" : "Season"}
+                </h2>
               </div>
+              {seasonsList.length > 1 && (
+                <span className="text-[11px] text-muted-foreground">
+                  {seasonsList.length} temporadas
+                </span>
+              )}
+            </div>
+            {seasonsList.length > 0 ? (
+              <Carousel opts={{ align: "start" }} className="w-full">
+                <CarouselContent>
+                  {seasonsList.map((s) => {
+                    const progress = seasonProgressOf(s);
+                    const left = daysLeftOf(s);
+                    const isActive = s.status === "active";
+                    return (
+                      <CarouselItem key={s.id} className="basis-full">
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold">{s.name}</span>
+                            <Badge
+                              className={cn(
+                                "border",
+                                isActive
+                                  ? "bg-gold/15 text-gold border-gold/30 hover:bg-gold/15"
+                                  : "bg-muted text-muted-foreground border-border hover:bg-muted",
+                              )}
+                            >
+                              {isActive ? "Ativa" : s.status === "finished" ? "Encerrada" : s.status}
+                            </Badge>
+                          </div>
+                          {isActive && left !== null && left > 0 && (
+                            <p className="text-xs text-muted-foreground">
+                              Termina em {left} {left === 1 ? "dia" : "dias"}
+                            </p>
+                          )}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="rounded-lg border border-border bg-background/40 p-3">
+                              <div className="text-xs text-muted-foreground">Sua posição</div>
+                              <div className="text-2xl font-bold text-gold tabular-nums">
+                                #{s.position}
+                                <span className="text-sm text-muted-foreground font-normal"> de {s.total}</span>
+                              </div>
+                            </div>
+                            <div className="rounded-lg border border-border bg-background/40 p-3">
+                              <div className="text-xs text-muted-foreground">MMR {isActive ? "atual" : "final"}</div>
+                              <div className="text-2xl font-bold tabular-nums">{Math.round(s.current_mmr)}</div>
+                            </div>
+                          </div>
+                          <div>
+                            <div className="relative h-2 rounded-full bg-secondary overflow-hidden">
+                              <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-700 via-gold to-amber-300 rounded-full" style={{ width: `${progress}%` }} />
+                              <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-3 w-3 rounded-full bg-gold border-2 border-background shadow" style={{ left: `${progress}%` }} />
+                            </div>
+                            <div className="flex items-center justify-between text-[10px] text-muted-foreground mt-1.5 tabular-nums">
+                              <span>{Math.round(s.min_mmr)}</span>
+                              <span className="text-gold font-semibold">{Math.round(s.current_mmr)}</span>
+                              <span>{Math.round(s.max_mmr)}</span>
+                            </div>
+                          </div>
+                          <Button variant="outline" size="sm" className="w-full" asChild>
+                            <Link to={`/seasons/${s.id}`}>
+                              Ver ranking completo <ChevronRight className="h-3 w-3 ml-1" />
+                            </Link>
+                          </Button>
+                        </div>
+                      </CarouselItem>
+                    );
+                  })}
+                </CarouselContent>
+                {seasonsList.length > 1 && (
+                  <>
+                    <CarouselPrevious className="-left-3" />
+                    <CarouselNext className="-right-3" />
+                  </>
+                )}
+              </Carousel>
             ) : (
               <p className="text-sm text-muted-foreground py-6 text-center">
-                Sem participação em uma season ativa.
+                Sem participação em seasons ainda.
               </p>
             )}
           </CardContent>

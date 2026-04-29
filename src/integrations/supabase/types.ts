@@ -496,7 +496,9 @@ export type Database = {
       }
       games: {
         Row: {
+          category: string | null
           created_at: string
+          description: string | null
           factions: Json | null
           id: string
           image_url: string | null
@@ -508,7 +510,9 @@ export type Database = {
           video_url: string | null
         }
         Insert: {
+          category?: string | null
           created_at?: string
+          description?: string | null
           factions?: Json | null
           id?: string
           image_url?: string | null
@@ -520,7 +524,9 @@ export type Database = {
           video_url?: string | null
         }
         Update: {
+          category?: string | null
           created_at?: string
+          description?: string | null
           factions?: Json | null
           id?: string
           image_url?: string | null

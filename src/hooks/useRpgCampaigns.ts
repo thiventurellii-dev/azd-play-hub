@@ -34,19 +34,19 @@ export const useRpgCampaigns = () => {
           advIds.length
             ? supabase
                 .from('rpg_adventures')
-                .select('id, name, slug, image_url')
+                .select('id, name, slug, image_url, system_id')
                 .in('id', advIds)
             : Promise.resolve({ data: [] as any[] }),
           supabase
             .from('rpg_campaign_players')
-            .select('campaign_id, status')
+            .select('campaign_id, status, player_id')
             .in(
               'campaign_id',
               list.map((c) => c.id),
             ),
           supabase
             .from('match_rooms')
-            .select('campaign_id')
+            .select('campaign_id, scheduled_at, status')
             .in(
               'campaign_id',
               list.map((c) => c.id),
@@ -58,25 +58,40 @@ export const useRpgCampaigns = () => {
       );
       const advMap = new Map((advs || []).map((a: any) => [a.id, a]));
       const partyCount = new Map<string, number>();
+      const myMembership = new Map<string, import('@/types/rpg').RpgCampaignPlayerStatus>();
       (members || []).forEach((m: any) => {
         if (m.status === 'accepted') {
           partyCount.set(m.campaign_id, (partyCount.get(m.campaign_id) || 0) + 1);
         }
+        if (user?.id && m.player_id === user.id) {
+          myMembership.set(m.campaign_id, m.status as import('@/types/rpg').RpgCampaignPlayerStatus);
+        }
       });
       const sessionCount = new Map<string, number>();
+      const lastSession = new Map<string, string>();
       (sessions || []).forEach((s: any) => {
-        if (s.campaign_id) {
-          sessionCount.set(s.campaign_id, (sessionCount.get(s.campaign_id) || 0) + 1);
+        if (!s.campaign_id) return;
+        sessionCount.set(s.campaign_id, (sessionCount.get(s.campaign_id) || 0) + 1);
+        const prev = lastSession.get(s.campaign_id);
+        if (s.scheduled_at && (!prev || s.scheduled_at > prev)) {
+          lastSession.set(s.campaign_id, s.scheduled_at);
         }
       });
 
-      return list.map((c) => ({
-        ...c,
-        master: profMap.get(c.master_id) ?? null,
-        adventure: c.adventure_id ? (advMap.get(c.adventure_id) as any) ?? null : null,
-        party_count: partyCount.get(c.id) || 0,
-        session_count: sessionCount.get(c.id) || 0,
-      }));
+      return list.map((c) => {
+        const last = lastSession.get(c.id);
+        return {
+          ...c,
+          master: profMap.get(c.master_id) ?? null,
+          adventure: c.adventure_id ? (advMap.get(c.adventure_id) as any) ?? null : null,
+          party_count: partyCount.get(c.id) || 0,
+          session_count: sessionCount.get(c.id) || 0,
+          my_membership_status: myMembership.get(c.id) ?? null,
+          is_master: !!user?.id && c.master_id === user.id,
+          last_activity_at:
+            last && last > c.updated_at ? last : c.updated_at,
+        };
+      });
     },
   });
 };

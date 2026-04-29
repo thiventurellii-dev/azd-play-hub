@@ -17,6 +17,7 @@ import XpBadge from '@/components/shared/XpBadge';
 import { useProfileCompletion } from '@/hooks/useProfileCompletion';
 import PlayerTagsSelector, { PlayerTagsBadges, PlayerTag } from '@/components/profile/PlayerTagsSelector';
 import { useProfileTags, saveProfileTags } from '@/hooks/useProfileTags';
+import { MyCampaignsCard } from '@/components/rpg/MyCampaignsCard';
 
 const Profile = () => {
   const { user, role } = useAuth();
@@ -392,6 +393,8 @@ const Profile = () => {
           )}
         </CardContent>
       </Card>
+
+      <MyCampaignsCard />
 
       <div className="mt-6">
         <FriendsList />

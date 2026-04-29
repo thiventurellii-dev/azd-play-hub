@@ -111,7 +111,16 @@ export interface PublicProfileLite {
 
 export interface RpgCampaignSummary extends RpgCampaign {
   master?: PublicProfileLite | null;
-  adventure?: { id: string; name: string; slug: string | null; image_url: string | null } | null;
+  adventure?: {
+    id: string;
+    name: string;
+    slug: string | null;
+    image_url: string | null;
+    system_id?: string | null;
+  } | null;
   party_count?: number;
   session_count?: number;
+  my_membership_status?: RpgCampaignPlayerStatus | null;
+  is_master?: boolean;
+  last_activity_at?: string;
 }

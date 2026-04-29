@@ -18,7 +18,7 @@ const testimonials = [
   },
   {
     text: "Disputar e ganhar as seasons é muito bom, mas o melhor mesmo é o papo depois das partidas. Esses são os momentos que me ficam guardados.",
-    initials: "GS",
+    initials: "TV",
     name: "Thiago V.",
     role: "Membro desde 2012 · 1º lugar S1",
     bg: "hsl(43 60% 28%)",

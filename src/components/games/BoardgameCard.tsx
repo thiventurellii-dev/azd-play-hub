@@ -52,8 +52,9 @@ const BoardgameCard = ({
   const canEditGame = canEdit("boardgame", { role, userId: user?.id ?? null });
   const goToDetail = () => game.slug && navigate(`/jogos/${game.slug}`);
 
-  const category = tags[0];
-  const mechanics = tags.slice(1, 5);
+  const category = (game as any).category || tags[0] || null;
+  const description = (game as any).description as string | null | undefined;
+  const mechanics = tags.slice(0, 4);
   const playerRange =
     game.min_players || game.max_players ? `${game.min_players ?? "?"}–${game.max_players ?? "?"}` : null;
 

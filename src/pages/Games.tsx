@@ -109,28 +109,46 @@ const Games = () => {
 
           {/* Boardgames */}
           <TabsContent value="boardgame">
-            <div className="flex flex-wrap gap-3 mb-4 items-center">
-              {allTags.length > 0 && (
-                <Select value={tagFilter} onValueChange={setTagFilter}>
-                  <SelectTrigger className="w-[160px]"><SelectValue placeholder="Filtrar por tag" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todas as tags</SelectItem>
-                    {allTags.map((t) => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              )}
-              {user && (
-                <Button variant="outline" size="sm" onClick={() => setAddOpen(true)}>
-                  <Plus className="h-4 w-4 mr-1" /> Adicionar Jogo
-                </Button>
-              )}
+            <div className="flex flex-wrap gap-3 mb-5 items-center justify-between">
+              <div className="flex flex-wrap items-center gap-3">
+                {allTags.length > 0 && (
+                  <Select value={tagFilter} onValueChange={setTagFilter}>
+                    <SelectTrigger className="w-[160px]"><SelectValue placeholder="Filtrar por tag" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas as tags</SelectItem>
+                      {allTags.map((t) => <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                )}
+                {user && (
+                  <Button variant="outline" size="sm" onClick={() => setAddOpen(true)}>
+                    <Plus className="h-4 w-4 mr-1" /> Adicionar Jogo
+                  </Button>
+                )}
+              </div>
+              <GamesSummaryPanel
+                totalGames={games.length}
+                activeCount={activeSeasonGameIds.size}
+                totalMatches={Object.values(matchCounts).reduce((a: number, b: number) => a + b, 0)}
+                totalPlaytimeMin={totalPlaytime}
+              />
             </div>
             {filteredGames.length === 0 ? (
               <Card className="bg-card border-border"><CardContent className="py-12 text-center text-muted-foreground">Nenhum jogo encontrado.</CardContent></Card>
             ) : (
-              <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
                 {filteredGames.map((g: any, i: number) => (
-                  <BoardgameCard key={g.id} game={g} seasons={gameSeasons[g.id] || []} avgDuration={avgDurations[g.id]} tags={gameTagMap[g.id] || []} index={i} onUpdated={invalidate} />
+                  <BoardgameCard
+                    key={g.id}
+                    game={g}
+                    seasons={gameSeasons[g.id] || []}
+                    avgDuration={avgDurations[g.id]}
+                    matchCount={matchCounts[g.id] || 0}
+                    hasActiveSeason={activeSeasonGameIds.has(g.id)}
+                    tags={gameTagMap[g.id] || []}
+                    index={i}
+                    onUpdated={invalidate}
+                  />
                 ))}
               </div>
             )}

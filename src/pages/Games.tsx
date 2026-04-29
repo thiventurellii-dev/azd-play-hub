@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Sword, Filter, X, ArrowUpDown, Dices } from "lucide-react";
+import { Plus, Sword, Filter, X, ArrowUpDown, Gamepad2 } from "lucide-react";
 import { fetchUserFavorites } from "@/hooks/useFavorite";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";

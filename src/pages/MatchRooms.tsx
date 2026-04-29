@@ -10,7 +10,7 @@ import CreateRoomDialog from "@/components/matchrooms/CreateRoomDialog";
 import NewMatchFlow from "@/components/matches/NewMatchFlow";
 import { Calendar, ClipboardList, Filter, X, SlidersHorizontal, Star, Gamepad2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EntitySheet } from "@/components/shared/EntitySheet";

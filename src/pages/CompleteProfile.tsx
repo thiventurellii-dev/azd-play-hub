@@ -30,6 +30,7 @@ const CompleteProfile = () => {
     pronouns: '',
   });
   const [saving, setSaving] = useState(false);
+  const { tags: playerTags, setTags: setPlayerTags } = useProfileTags(user?.id);
 
   const cities = useMemo(() => citiesByState[form.state] || [], [form.state]);
 

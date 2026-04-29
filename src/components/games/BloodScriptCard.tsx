@@ -120,10 +120,15 @@ const BloodScriptCard = ({ script, characters, seasons, index, onUpdated }: Bloo
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem onClick={goToDetail}>
                     <BarChart3 className="h-3.5 w-3.5 mr-2" /> Ver detalhes
                   </DropdownMenuItem>
+                  {activeSeason && (
+                    <DropdownMenuItem onClick={() => navigate(`/seasons/${activeSeason.season_id}`)}>
+                      <Calendar className="h-3.5 w-3.5 mr-2 text-violet-400" /> Ver Season
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={() => setEditOpen(true)}>
                     <Pencil className="h-3.5 w-3.5 mr-2" /> Editar script
                   </DropdownMenuItem>

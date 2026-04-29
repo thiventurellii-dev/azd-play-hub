@@ -52,7 +52,7 @@ const useFormOptions = (enabled: boolean, userId?: string) =>
     queryKey: ["match-room-form-options", userId],
     queryFn: async () => {
       const sb: any = supabase;
-      const [gamesRes, scriptsRes, tagsRes, seasonsRes, communitiesRes] = await Promise.all([
+      const [gamesRes, scriptsRes, tagsRes, seasonsRes, communitiesRes, campaignsRes] = await Promise.all([
         supabase.from("games").select("id, name, slug, max_players").order("name"),
         supabase.from("blood_scripts").select("id, name").order("name"),
         supabase.from("room_tags").select("id, name").order("name"),
@@ -64,6 +64,14 @@ const useFormOptions = (enabled: boolean, userId?: string) =>
               .eq("user_id", userId)
               .eq("status", "active")
           : Promise.resolve({ data: [] }),
+        userId
+          ? sb
+              .from("rpg_campaigns")
+              .select("id, name, status, master_id, adventure_id")
+              .eq("master_id", userId)
+              .in("status", ["planning", "active"])
+              .order("created_at", { ascending: false })
+          : Promise.resolve({ data: [] }),
       ]);
       return {
         games: (gamesRes.data ?? []) as Game[],
@@ -73,6 +81,7 @@ const useFormOptions = (enabled: boolean, userId?: string) =>
         communities: ((communitiesRes.data ?? []) as any[])
           .map((r) => r.communities)
           .filter(Boolean) as { id: string; name: string; slug: string }[],
+        campaigns: (campaignsRes.data ?? []) as { id: string; name: string; status: string; adventure_id: string | null }[],
       };
     },
     enabled,

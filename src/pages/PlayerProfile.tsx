@@ -253,10 +253,10 @@ const PlayerProfile = () => {
       // ========= Communities =========
       const { data: memberships } = await supabase
         .from("community_members" as any)
-        .select("community_id, created_at")
+        .select("community_id, joined_at")
         .eq("user_id", prof.id)
         .eq("status", "active")
-        .order("created_at", { ascending: false });
+        .order("joined_at", { ascending: false });
       let commList: CommunityItem[] = [];
       let commActivity: ActivityItem[] = [];
       if (memberships && memberships.length > 0) {
@@ -271,7 +271,7 @@ const PlayerProfile = () => {
         setCommunities(commList);
         commActivity = (memberships as any[]).slice(0, 8).map((m) => ({
           kind: "community",
-          date: m.created_at,
+          date: m.joined_at,
           title: `Entrou em ${cMap[m.community_id]?.name || "Comunidade"}`,
         }));
         setCommunitiesActivity(commActivity);

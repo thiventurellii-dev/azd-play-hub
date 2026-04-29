@@ -5,7 +5,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Trophy, TrendingUp, Hash, Flame, Armchair, Swords, Users } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
-interface MatchLite { id: string; played_at: string; }
+interface MatchLite {
+  id: string;
+  played_at: string;
+}
 interface ResultLite {
   match_id: string;
   player_id: string;
@@ -83,7 +86,19 @@ const WinRateDonut = ({ wins, losses }: { wins: number; losses: number }) => {
 };
 
 // Faction tile with mini-donut
-const FactionTile = ({ name, games, wins, winPct, color }: { name: string; games: number; wins: number; winPct: number; color: string }) => {
+const FactionTile = ({
+  name,
+  games,
+  wins,
+  winPct,
+  color,
+}: {
+  name: string;
+  games: number;
+  wins: number;
+  winPct: number;
+  color: string;
+}) => {
   const r = 18;
   const c = 2 * Math.PI * r;
   const dash = c * (winPct / 100);
@@ -110,7 +125,9 @@ const FactionTile = ({ name, games, wins, winPct, color }: { name: string; games
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium truncate">{name}</p>
-        <p className="text-[11px] text-muted-foreground tabular-nums">{wins}/{games} {games === 1 ? "partida" : "partidas"}</p>
+        <p className="text-[11px] text-muted-foreground tabular-nums">
+          {wins}/{games} {games === 1 ? "partida" : "partidas"}
+        </p>
       </div>
     </div>
   );
@@ -152,7 +169,9 @@ const SeatTable = ({ seats }: { seats: { seat: number; games: number; wins: numb
           );
         })}
       </div>
-      <p className="text-[11px] text-muted-foreground">{max} {max === 1 ? "assento" : "assentos"} • cor mais forte = win rate maior</p>
+      <p className="text-[11px] text-muted-foreground">
+        {max} {max === 1 ? "assento" : "assentos"} •{" "}
+      </p>
     </div>
   );
 };
@@ -251,7 +270,12 @@ export const GamePersonalStatsPanel = ({ matches, results, playerMap, avatarMap 
       if (r.position === 1) seatStats[s].wins++;
     }
     const seats = Object.entries(seatStats)
-      .map(([seat, s]) => ({ seat: parseInt(seat), games: s.games, wins: s.wins, winPct: s.games > 0 ? Math.round((s.wins / s.games) * 100) : 0 }))
+      .map(([seat, s]) => ({
+        seat: parseInt(seat),
+        games: s.games,
+        wins: s.wins,
+        winPct: s.games > 0 ? Math.round((s.wins / s.games) * 100) : 0,
+      }))
       .sort((a, b) => a.seat - b.seat);
 
     // Position distribution (1st, 2nd, 3rd, 4th+)
@@ -292,7 +316,20 @@ export const GamePersonalStatsPanel = ({ matches, results, playerMap, avatarMap 
       .sort((a, b) => b.games - a.games)
       .slice(0, 8);
 
-    return { games, wins, losses, winPct, avgScore, bestScore, bestStreak, currentStreak, factions, seats, positions, topOpponents };
+    return {
+      games,
+      wins,
+      losses,
+      winPct,
+      avgScore,
+      bestScore,
+      bestStreak,
+      currentStreak,
+      factions,
+      seats,
+      positions,
+      topOpponents,
+    };
   }, [playerId, results, matches, playerMap, avatarMap]);
 
   // Selected player display data
@@ -311,8 +348,12 @@ export const GamePersonalStatsPanel = ({ matches, results, playerMap, avatarMap 
                   {selectedPlayer && (
                     <span className="inline-flex items-center gap-2">
                       <Avatar className="h-5 w-5">
-                        {selectedPlayer.avatar_url && <AvatarImage src={selectedPlayer.avatar_url} alt={selectedPlayer.name} />}
-                        <AvatarFallback className="text-[9px] bg-secondary">{selectedPlayer.name.charAt(0).toUpperCase()}</AvatarFallback>
+                        {selectedPlayer.avatar_url && (
+                          <AvatarImage src={selectedPlayer.avatar_url} alt={selectedPlayer.name} />
+                        )}
+                        <AvatarFallback className="text-[9px] bg-secondary">
+                          {selectedPlayer.name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
                       </Avatar>
                       {selectedPlayer.name}
                     </span>
@@ -325,7 +366,9 @@ export const GamePersonalStatsPanel = ({ matches, results, playerMap, avatarMap 
                     <span className="inline-flex items-center gap-2">
                       <Avatar className="h-5 w-5">
                         {p.avatar_url && <AvatarImage src={p.avatar_url} alt={p.name} />}
-                        <AvatarFallback className="text-[9px] bg-secondary">{p.name.charAt(0).toUpperCase()}</AvatarFallback>
+                        <AvatarFallback className="text-[9px] bg-secondary">
+                          {p.name.charAt(0).toUpperCase()}
+                        </AvatarFallback>
                       </Avatar>
                       {p.name}
                     </span>
@@ -356,14 +399,28 @@ export const GamePersonalStatsPanel = ({ matches, results, playerMap, avatarMap 
               <CardContent className="py-5 flex flex-col items-center justify-center gap-2 h-full">
                 <WinRateDonut wins={stats.wins} losses={stats.losses} />
                 <div className="flex gap-3 text-[11px]">
-                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-gold" /> {stats.wins} vit</span>
-                  <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-secondary" /> {stats.losses} der</span>
+                  <span className="flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-gold" /> {stats.wins} vit
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-secondary" /> {stats.losses} der
+                  </span>
                 </div>
               </CardContent>
             </Card>
             <StatCard icon={Hash} value={stats.games} label="Partidas" />
-            <StatCard icon={TrendingUp} value={stats.avgScore} label="Pontuação média" sub={`Recorde: ${stats.bestScore}`} />
-            <StatCard icon={Flame} value={stats.bestStreak} label="Maior sequência" sub={`Atual: ${stats.currentStreak}`} />
+            <StatCard
+              icon={TrendingUp}
+              value={stats.avgScore}
+              label="Pontuação média"
+              sub={`Recorde: ${stats.bestScore}`}
+            />
+            <StatCard
+              icon={Flame}
+              value={stats.bestStreak}
+              label="Maior sequência"
+              sub={`Atual: ${stats.currentStreak}`}
+            />
             <StatCard icon={Trophy} value={stats.wins} label="Vitórias" sub={`${stats.winPct}% win rate`} />
           </div>
 
@@ -376,16 +433,29 @@ export const GamePersonalStatsPanel = ({ matches, results, playerMap, avatarMap 
               </div>
               <div className="grid grid-cols-4 gap-3">
                 {stats.positions.map((p, i) => {
-                  const colors = ["hsl(var(--gold))", "hsl(217 91% 60%)", "hsl(25 95% 55%)", "hsl(var(--muted-foreground))"];
+                  const colors = [
+                    "hsl(var(--gold))",
+                    "hsl(217 91% 60%)",
+                    "hsl(25 95% 55%)",
+                    "hsl(var(--muted-foreground))",
+                  ];
                   return (
-                    <div key={p.label} className="rounded-lg border border-border bg-secondary/20 p-3 flex flex-col items-center text-center gap-2">
+                    <div
+                      key={p.label}
+                      className="rounded-lg border border-border bg-secondary/20 p-3 flex flex-col items-center text-center gap-2"
+                    >
                       <div className="flex items-baseline gap-1">
                         <span className="text-2xl font-bold tabular-nums">{p.count}</span>
                         <span className="text-[10px] text-muted-foreground tabular-nums">/ {stats.games}</span>
                       </div>
-                      <p className="text-xs font-semibold" style={{ color: colors[i] }}>{p.label}</p>
+                      <p className="text-xs font-semibold" style={{ color: colors[i] }}>
+                        {p.label}
+                      </p>
                       <div className="w-full h-1.5 rounded-full bg-secondary overflow-hidden">
-                        <div className="h-full rounded-full transition-all" style={{ width: `${p.pct}%`, background: colors[i] }} />
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{ width: `${p.pct}%`, background: colors[i] }}
+                        />
                       </div>
                       <p className="text-[10px] text-muted-foreground tabular-nums">{p.pct}%</p>
                     </div>
@@ -415,17 +485,23 @@ export const GamePersonalStatsPanel = ({ matches, results, playerMap, avatarMap 
                         <div key={o.id} className="flex items-center gap-3 text-sm">
                           <Avatar className="h-7 w-7 flex-shrink-0">
                             {o.avatar_url && <AvatarImage src={o.avatar_url} alt={o.name} />}
-                            <AvatarFallback className="text-[10px] bg-secondary">{o.name.charAt(0).toUpperCase()}</AvatarFallback>
+                            <AvatarFallback className="text-[10px] bg-secondary">
+                              {o.name.charAt(0).toUpperCase()}
+                            </AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2 mb-1">
                               <span className="font-medium truncate">{o.name}</span>
                               <span className="text-xs text-muted-foreground tabular-nums flex-shrink-0">
-                                <span className="font-semibold text-foreground">{o.games}</span> partidas · {o.wins}V · {o.losses}D · <span className="text-gold font-semibold">{o.winPct}%</span>
+                                <span className="font-semibold text-foreground">{o.games}</span> partidas · {o.wins}V ·{" "}
+                                {o.losses}D · <span className="text-gold font-semibold">{o.winPct}%</span>
                               </span>
                             </div>
                             <div className="h-2 rounded-full bg-secondary overflow-hidden">
-                              <div className="h-full rounded-full bg-gradient-to-r from-gold/80 to-gold transition-all" style={{ width: `${pct}%` }} />
+                              <div
+                                className="h-full rounded-full bg-gradient-to-r from-gold/80 to-gold transition-all"
+                                style={{ width: `${pct}%` }}
+                              />
                             </div>
                           </div>
                         </div>

@@ -64,9 +64,20 @@ const Games = () => {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["games-page-data"] });
 
   const filteredGames = useMemo(() => {
-    if (tagFilter === "all") return games;
-    return games.filter((g: any) => (gameTagMap[g.id] || []).includes(tagFilter));
-  }, [games, tagFilter, gameTagMap]);
+    let list = games;
+    if (categoryFilter) {
+      const target = normalizeTag(categoryFilter);
+      list = list.filter((g: any) => {
+        const cat = (g as any).category;
+        if (cat && normalizeTag(cat) === target) return true;
+        return (gameTagMap[g.id] || []).some((t) => normalizeTag(t) === target);
+      });
+    }
+    if (tagFilter !== "all") {
+      list = list.filter((g: any) => (gameTagMap[g.id] || []).includes(tagFilter));
+    }
+    return list;
+  }, [games, tagFilter, categoryFilter, gameTagMap]);
 
   // Blood KPIs
   const activeScriptsCount = useMemo(

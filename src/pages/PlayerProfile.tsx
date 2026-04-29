@@ -9,13 +9,12 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from "recharts";
 import {
   Trophy, Gamepad2, ArrowLeft, Calendar, Clock, Award, Pencil, Lock, CalendarIcon,
-  Users, MessagesSquare, MapPin, Sparkles, BarChart3, ChevronRight,
+  Users, MessagesSquare, MapPin, Sparkles, ChevronRight,
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import FriendButton from "@/components/friendlist/FriendButton";
@@ -29,7 +28,9 @@ import {
 import { Camera } from "lucide-react";
 import XpBadge from "@/components/shared/XpBadge";
 import DateBlock from "@/components/shared/DateBlock";
-import RecentMatchCard, { RecentMatchItem } from "@/components/profile/RecentMatchCard";
+import { RecentMatchItem } from "@/components/profile/RecentMatchCard";
+import RecentMatchCardCompact from "@/components/profile/RecentMatchCardCompact";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { cn } from "@/lib/utils";
 
 const CHART_COLORS = [
@@ -62,8 +63,9 @@ const PlayerProfile = () => {
   const [communities, setCommunities] = useState<CommunityItem[]>([]);
   const [communitiesActivity, setCommunitiesActivity] = useState<ActivityItem[]>([]);
   const [friendsCount, setFriendsCount] = useState(0);
-  const [seasonCtx, setSeasonCtx] = useState<SeasonContext | null>(null);
+  const [seasonsList, setSeasonsList] = useState<SeasonContext[]>([]);
   const [recentMatches, setRecentMatches] = useState<RecentMatchItem[]>([]);
+  const [lastMatchDate, setLastMatchDate] = useState<string | null>(null);
 
   const [botcStats, setBotcStats] = useState<{ gamesPlayed: number; winsGood: number; winsEvil: number; storytellerGames: number } | null>(null);
   const [botcPartners, setBotcPartners] = useState<{ name: string; goodGames: number; evilGames: number; goodWins: number; evilWins: number }[]>([]);
@@ -123,6 +125,7 @@ const PlayerProfile = () => {
         const { data: games } = await supabase.from("games").select("id, name, slug, image_url").in("id", gameIds);
         for (const g of games || []) gameMap[g.id] = g;
         for (const m of matches || []) matchesById[m.id] = m;
+        if (matches && matches.length > 0) setLastMatchDate(matches[0].played_at);
 
         setStats({ totalGames: results.length, uniqueGames: gameIds.length });
 
@@ -249,10 +252,10 @@ const PlayerProfile = () => {
       // ========= Communities =========
       const { data: memberships } = await supabase
         .from("community_members" as any)
-        .select("community_id, created_at")
+        .select("community_id, joined_at")
         .eq("user_id", prof.id)
         .eq("status", "active")
-        .order("created_at", { ascending: false });
+        .order("joined_at", { ascending: false });
       let commList: CommunityItem[] = [];
       let commActivity: ActivityItem[] = [];
       if (memberships && memberships.length > 0) {
@@ -267,7 +270,7 @@ const PlayerProfile = () => {
         setCommunities(commList);
         commActivity = (memberships as any[]).slice(0, 8).map((m) => ({
           kind: "community",
-          date: m.created_at,
+          date: m.joined_at,
           title: `Entrou em ${cMap[m.community_id]?.name || "Comunidade"}`,
         }));
         setCommunitiesActivity(commActivity);
@@ -281,38 +284,49 @@ const PlayerProfile = () => {
         .eq("status", "accepted");
       setFriendsCount(fCount || 0);
 
-      // ========= Season atual =========
-      const { data: activeSeasons } = await supabase
-        .from("seasons")
-        .select("id, name, status, end_date, type")
-        .eq("type", "boardgame" as any)
-        .eq("status", "active" as any)
-        .order("start_date", { ascending: false })
-        .limit(1);
-      const activeSeason = (activeSeasons || [])[0] as any;
-      if (activeSeason) {
-        const { data: ratings } = await supabase
-          .from("mmr_ratings")
-          .select("player_id, current_mmr")
-          .eq("season_id", activeSeason.id)
-          .order("current_mmr", { ascending: false });
-        if (ratings && ratings.length > 0) {
-          const idx = ratings.findIndex((r: any) => r.player_id === prof.id);
-          if (idx >= 0) {
-            const mmrs = ratings.map((r: any) => Number(r.current_mmr));
-            setSeasonCtx({
-              id: activeSeason.id,
-              name: activeSeason.name,
-              status: activeSeason.status,
-              end_date: activeSeason.end_date,
-              position: idx + 1,
-              total: ratings.length,
-              current_mmr: Number((ratings[idx] as any).current_mmr),
-              min_mmr: Math.min(...mmrs),
-              max_mmr: Math.max(...mmrs),
-            });
-          }
+      // ========= Seasons (todas em que o jogador participou) =========
+      const { data: playerRatings } = await supabase
+        .from("mmr_ratings")
+        .select("season_id, current_mmr")
+        .eq("player_id", prof.id);
+      if (playerRatings && playerRatings.length > 0) {
+        const seasonIds = [...new Set(playerRatings.map((r: any) => r.season_id))];
+        const { data: seasonsData } = await supabase
+          .from("seasons")
+          .select("id, name, status, end_date, start_date, type")
+          .in("id", seasonIds)
+          .eq("type", "boardgame" as any)
+          .order("start_date", { ascending: false });
+        const list: SeasonContext[] = [];
+        for (const s of (seasonsData || []) as any[]) {
+          const { data: allRatings } = await supabase
+            .from("mmr_ratings")
+            .select("player_id, current_mmr")
+            .eq("season_id", s.id)
+            .order("current_mmr", { ascending: false });
+          if (!allRatings || allRatings.length === 0) continue;
+          const idx = allRatings.findIndex((r: any) => r.player_id === prof.id);
+          if (idx < 0) continue;
+          const mmrs = allRatings.map((r: any) => Number(r.current_mmr));
+          list.push({
+            id: s.id,
+            name: s.name,
+            status: s.status,
+            end_date: s.end_date,
+            position: idx + 1,
+            total: allRatings.length,
+            current_mmr: Number((allRatings[idx] as any).current_mmr),
+            min_mmr: Math.min(...mmrs),
+            max_mmr: Math.max(...mmrs),
+          });
         }
+        // Active first, then by recency
+        list.sort((a, b) => {
+          if (a.status === "active" && b.status !== "active") return -1;
+          if (b.status === "active" && a.status !== "active") return 1;
+          return 0;
+        });
+        setSeasonsList(list);
       }
 
       // ========= BotC stats (mantido) =========
@@ -481,18 +495,19 @@ const PlayerProfile = () => {
   const location = [profile?.city, stateName].filter(Boolean).join(", ");
   const memberSince = profile?.created_at ? new Date(profile.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" }) : null;
 
-  const seasonProgress = (() => {
-    if (!seasonCtx) return 0;
-    const range = seasonCtx.max_mmr - seasonCtx.min_mmr;
+  const seasonProgressOf = (s: SeasonContext) => {
+    const range = s.max_mmr - s.min_mmr;
     if (range <= 0) return 50;
-    return Math.round(((seasonCtx.current_mmr - seasonCtx.min_mmr) / range) * 100);
-  })();
+    return Math.round(((s.current_mmr - s.min_mmr) / range) * 100);
+  };
+  const daysLeftOf = (s: SeasonContext) => {
+    if (!s.end_date) return null;
+    return Math.ceil((new Date(s.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  };
 
-  const daysLeft = (() => {
-    if (!seasonCtx?.end_date) return null;
-    const diff = Math.ceil((new Date(seasonCtx.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-    return diff;
-  })();
+  const lastMatchLabel = lastMatchDate
+    ? new Date(lastMatchDate).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
+    : null;
 
   const chartConfig = opponents.reduce(
     (acc, opp, i) => {
@@ -563,14 +578,7 @@ const PlayerProfile = () => {
                     </Badge>
                     <XpBadge userId={profile.id} variant="compact" />
                   </div>
-                  <div className="mt-3 flex flex-col sm:flex-row gap-3 sm:gap-4 text-xs text-muted-foreground items-center sm:items-start justify-center sm:justify-start">
-                    {memberSince && (
-                      <span className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5 text-gold" /> Desde {memberSince}</span>
-                    )}
-                    {location && (
-                      <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-gold" /> {location}</span>
-                    )}
-                  </div>
+                  {/* (informações de membro/local foram movidas para a barra inferior do header) */}
                   <div className="mt-3 max-w-[300px] mx-auto sm:mx-0">
                     <XpBadge userId={profile.id} variant="full" />
                   </div>
@@ -593,6 +601,39 @@ const PlayerProfile = () => {
                 ))}
               </div>
             </div>
+
+            {/* Info row (estilo da imagem: divididas por borda) */}
+            {(memberSince || location || lastMatchLabel) && (
+              <div className="mt-6 pt-5 border-t border-border/60 grid grid-cols-2 md:grid-cols-3 gap-px bg-border/50 rounded-lg overflow-hidden">
+                {memberSince && (
+                  <div className="bg-card px-4 py-3 flex items-start gap-3">
+                    <Calendar className="h-4 w-4 text-gold mt-0.5 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <div className="text-[11px] text-muted-foreground uppercase tracking-wider">Membro desde</div>
+                      <div className="text-sm font-semibold mt-0.5">{memberSince}</div>
+                    </div>
+                  </div>
+                )}
+                {location && (
+                  <div className="bg-card px-4 py-3 flex items-start gap-3">
+                    <MapPin className="h-4 w-4 text-gold mt-0.5 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <div className="text-[11px] text-muted-foreground uppercase tracking-wider">Localização</div>
+                      <div className="text-sm font-semibold mt-0.5 truncate">{location}</div>
+                    </div>
+                  </div>
+                )}
+                {lastMatchLabel && (
+                  <div className="bg-card px-4 py-3 flex items-start gap-3">
+                    <Clock className="h-4 w-4 text-gold mt-0.5 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <div className="text-[11px] text-muted-foreground uppercase tracking-wider">Última partida</div>
+                      <div className="text-sm font-semibold mt-0.5">{lastMatchLabel}</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Action buttons */}
             <div className="mt-5 flex items-center gap-2 justify-center lg:justify-end flex-wrap">
@@ -794,53 +835,94 @@ const PlayerProfile = () => {
 
       {/* ======================= SEASON + ATIVIDADE ======================= */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Season atual */}
+        {/* Seasons (carousel se houver mais de uma) */}
         <Card className="bg-card border-border">
           <CardContent className="pt-6">
-            <div className="flex items-center gap-2 mb-4">
-              <Trophy className="h-5 w-5 text-gold" />
-              <h2 className="text-lg font-semibold">Season atual</h2>
-            </div>
-            {seasonCtx ? (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-bold">{seasonCtx.name}</span>
-                  <Badge className="bg-gold/15 text-gold border-gold/30 hover:bg-gold/15">Ativa</Badge>
-                </div>
-                {daysLeft !== null && daysLeft > 0 && (
-                  <p className="text-xs text-muted-foreground">Termina em {daysLeft} {daysLeft === 1 ? "dia" : "dias"}</p>
-                )}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-lg border border-border bg-background/40 p-3">
-                    <div className="text-xs text-muted-foreground">Sua posição</div>
-                    <div className="text-2xl font-bold text-gold tabular-nums">
-                      #{seasonCtx.position}
-                      <span className="text-sm text-muted-foreground font-normal"> de {seasonCtx.total}</span>
-                    </div>
-                  </div>
-                  <div className="rounded-lg border border-border bg-background/40 p-3">
-                    <div className="text-xs text-muted-foreground">MMR atual</div>
-                    <div className="text-2xl font-bold tabular-nums">{Math.round(seasonCtx.current_mmr)}</div>
-                  </div>
-                </div>
-                <div>
-                  <div className="relative h-2 rounded-full bg-secondary overflow-hidden">
-                    <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-700 via-gold to-amber-300 rounded-full" style={{ width: `${seasonProgress}%` }} />
-                    <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-3 w-3 rounded-full bg-gold border-2 border-background shadow" style={{ left: `${seasonProgress}%` }} />
-                  </div>
-                  <div className="flex items-center justify-between text-[10px] text-muted-foreground mt-1.5 tabular-nums">
-                    <span>{Math.round(seasonCtx.min_mmr)}</span>
-                    <span className="text-gold font-semibold">{Math.round(seasonCtx.current_mmr)}</span>
-                    <span>{Math.round(seasonCtx.max_mmr)}</span>
-                  </div>
-                </div>
-                <Button variant="outline" size="sm" className="w-full" asChild>
-                  <Link to={`/seasons/${seasonCtx.id}`}>Ver ranking completo <ChevronRight className="h-3 w-3 ml-1" /></Link>
-                </Button>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-gold" />
+                <h2 className="text-lg font-semibold">
+                  {seasonsList.length > 1 ? "Seasons" : "Season"}
+                </h2>
               </div>
+              {seasonsList.length > 1 && (
+                <span className="text-[11px] text-muted-foreground">
+                  {seasonsList.length} temporadas
+                </span>
+              )}
+            </div>
+            {seasonsList.length > 0 ? (
+              <Carousel opts={{ align: "start" }} className="w-full">
+                <CarouselContent>
+                  {seasonsList.map((s) => {
+                    const progress = seasonProgressOf(s);
+                    const left = daysLeftOf(s);
+                    const isActive = s.status === "active";
+                    return (
+                      <CarouselItem key={s.id} className="basis-full">
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold">{s.name}</span>
+                            <Badge
+                              className={cn(
+                                "border",
+                                isActive
+                                  ? "bg-gold/15 text-gold border-gold/30 hover:bg-gold/15"
+                                  : "bg-muted text-muted-foreground border-border hover:bg-muted",
+                              )}
+                            >
+                              {isActive ? "Ativa" : s.status === "finished" ? "Encerrada" : s.status}
+                            </Badge>
+                          </div>
+                          {isActive && left !== null && left > 0 && (
+                            <p className="text-xs text-muted-foreground">
+                              Termina em {left} {left === 1 ? "dia" : "dias"}
+                            </p>
+                          )}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="rounded-lg border border-border bg-background/40 p-3">
+                              <div className="text-xs text-muted-foreground">Sua posição</div>
+                              <div className="text-2xl font-bold text-gold tabular-nums">
+                                #{s.position}
+                                <span className="text-sm text-muted-foreground font-normal"> de {s.total}</span>
+                              </div>
+                            </div>
+                            <div className="rounded-lg border border-border bg-background/40 p-3">
+                              <div className="text-xs text-muted-foreground">MMR {isActive ? "atual" : "final"}</div>
+                              <div className="text-2xl font-bold tabular-nums">{Math.round(s.current_mmr)}</div>
+                            </div>
+                          </div>
+                          <div>
+                            <div className="relative h-2 rounded-full bg-secondary overflow-hidden">
+                              <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-700 via-gold to-amber-300 rounded-full" style={{ width: `${progress}%` }} />
+                              <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-3 w-3 rounded-full bg-gold border-2 border-background shadow" style={{ left: `${progress}%` }} />
+                            </div>
+                            <div className="flex items-center justify-between text-[10px] text-muted-foreground mt-1.5 tabular-nums">
+                              <span>{Math.round(s.min_mmr)}</span>
+                              <span className="text-gold font-semibold">{Math.round(s.current_mmr)}</span>
+                              <span>{Math.round(s.max_mmr)}</span>
+                            </div>
+                          </div>
+                          <Button variant="outline" size="sm" className="w-full" asChild>
+                            <Link to={`/seasons/${s.id}`}>
+                              Ver ranking completo <ChevronRight className="h-3 w-3 ml-1" />
+                            </Link>
+                          </Button>
+                        </div>
+                      </CarouselItem>
+                    );
+                  })}
+                </CarouselContent>
+                {seasonsList.length > 1 && (
+                  <>
+                    <CarouselPrevious className="-left-3" />
+                    <CarouselNext className="-right-3" />
+                  </>
+                )}
+              </Carousel>
             ) : (
               <p className="text-sm text-muted-foreground py-6 text-center">
-                Sem participação em uma season ativa.
+                Sem participação em seasons ainda.
               </p>
             )}
           </CardContent>
@@ -924,9 +1006,20 @@ const PlayerProfile = () => {
               <Trophy className="h-5 w-5 text-gold" />
               <h2 className="text-lg font-semibold">Partidas recentes</h2>
             </div>
-            <div className="space-y-2">
-              {recentMatches.map((m) => <RecentMatchCard key={m.match_id} m={m} />)}
-            </div>
+            <Carousel opts={{ align: "start", slidesToScroll: "auto" }} className="w-full">
+              <CarouselContent className="-ml-3">
+                {recentMatches.map((m) => (
+                  <CarouselItem
+                    key={m.match_id}
+                    className="pl-3 basis-[78%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5"
+                  >
+                    <RecentMatchCardCompact m={m} />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="-left-3" />
+              <CarouselNext className="-right-3" />
+            </Carousel>
           </CardContent>
         </Card>
       )}
@@ -965,150 +1058,7 @@ const PlayerProfile = () => {
         </div>
       </div>
 
-      {/* ======================= ESTATÍSTICAS DETALHADAS ======================= */}
-      {(gamePerformance.length > 0 || botcStats || opponents.length > 0) && (
-        <Card className="bg-card border-border">
-          <CardContent className="pt-2 pb-2">
-            <Accordion type="single" collapsible>
-              <AccordionItem value="stats" className="border-none">
-                <AccordionTrigger className="hover:no-underline">
-                  <div className="flex items-center gap-2">
-                    <BarChart3 className="h-5 w-5 text-gold" />
-                    <span className="text-lg font-semibold">Estatísticas detalhadas</span>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent>
-                  <div className="space-y-6 pt-2">
-                    {opponents.length > 0 && (
-                      <div>
-                        <h3 className="text-sm font-semibold mb-3">Principais Jogadores</h3>
-                        <ChartContainer config={chartConfig} className="h-[250px]">
-                          <BarChart data={opponents} layout="vertical">
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                            <XAxis type="number" allowDecimals={false} tick={{ fill: "hsl(var(--muted-foreground))" }} />
-                            <YAxis dataKey="name" type="category" width={100} tick={{ fill: "hsl(var(--muted-foreground))" }} />
-                            <ChartTooltip content={<ChartTooltipContent />} />
-                            <Bar dataKey="games" radius={[0, 4, 4, 0]} fill="hsl(var(--gold))">
-                              {opponents.map((_, idx) => (
-                                <rect key={idx} fill={CHART_COLORS[idx % CHART_COLORS.length]} />
-                              ))}
-                            </Bar>
-                          </BarChart>
-                        </ChartContainer>
-                      </div>
-                    )}
-
-                    {gamePerformance.length > 0 && (
-                      <div>
-                        <h3 className="text-sm font-semibold mb-3">Performance por Jogo</h3>
-                        <div className="overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Jogo</TableHead>
-                                <TableHead className="text-center">Partidas</TableHead>
-                                <TableHead className="text-center">Vitórias</TableHead>
-                                <TableHead className="text-center">% Vitória</TableHead>
-                                <TableHead className="text-center">Média</TableHead>
-                                <TableHead className="text-center">Recorde</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {gamePerformance.map((gp) => (
-                                <TableRow key={gp.game_id}>
-                                  <TableCell className="font-medium">
-                                    {gp.game_slug ? (
-                                      <Link to={`/jogos/${gp.game_slug}`} className="hover:text-gold transition-colors">{gp.game_name}</Link>
-                                    ) : gp.game_name}
-                                  </TableCell>
-                                  <TableCell className="text-center">{gp.games}</TableCell>
-                                  <TableCell className="text-center">{gp.wins}</TableCell>
-                                  <TableCell className="text-center">{gp.winPct}%</TableCell>
-                                  <TableCell className="text-center">{gp.avgScore}</TableCell>
-                                  <TableCell className="text-center font-bold text-gold">{gp.best}</TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </div>
-                    )}
-
-                    {botcStats && (
-                      <div className="space-y-4">
-                        <h3 className="text-sm font-semibold">Blood on the Clocktower</h3>
-                        <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
-                          {[
-                            { label: "Partidas", value: botcStats.gamesPlayed, icon: "🩸" },
-                            { label: "Vitórias (Bem)", value: botcStats.winsGood, icon: "🛡️" },
-                            { label: "Vitórias (Mal)", value: botcStats.winsEvil, icon: "💀" },
-                            { label: "Narrador", value: botcStats.storytellerGames, icon: "📖" },
-                          ].map((s, i) => (
-                            <div key={i} className="rounded-lg border border-border bg-background/40 p-3 text-center">
-                              <p className="text-xl mb-1">{s.icon}</p>
-                              <p className="text-xl font-bold">{s.value}</p>
-                              <p className="text-[10px] text-muted-foreground">{s.label}</p>
-                            </div>
-                          ))}
-                        </div>
-
-                        {botcPartners.length > 0 && (
-                          <div>
-                            <h4 className="text-xs font-semibold mb-2 text-muted-foreground uppercase tracking-wider">Parceiros de partida</h4>
-                            <div className="h-[300px]">
-                              <BarChart
-                                data={botcPartners}
-                                layout="vertical"
-                                width={700}
-                                height={280}
-                                margin={{ left: 80, right: 20, top: 5, bottom: 5 }}
-                              >
-                                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                                <XAxis type="number" allowDecimals={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-                                <YAxis dataKey="name" type="category" width={75} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-                                <RechartsTooltip content={<BotcPartnerTooltip />} />
-                                <Legend formatter={(value: string) => value === 'goodGames' ? '🛡️ Bem' : '💀 Mal'} wrapperStyle={{ fontSize: 12 }} />
-                                <Bar dataKey="goodGames" stackId="a" fill="hsl(210, 70%, 55%)" name="goodGames" />
-                                <Bar dataKey="evilGames" stackId="a" fill="hsl(0, 60%, 50%)" radius={[0, 4, 4, 0]} name="evilGames" />
-                              </BarChart>
-                            </div>
-                          </div>
-                        )}
-
-                        {botcCharPerf.length > 0 && (
-                          <div>
-                            <h4 className="text-xs font-semibold mb-2 text-muted-foreground uppercase tracking-wider">Performance por personagem</h4>
-                            <div className="overflow-x-auto">
-                              <Table>
-                                <TableHeader>
-                                  <TableRow>
-                                    <TableHead>Personagem</TableHead>
-                                    <TableHead className="text-center">Vezes Jogado</TableHead>
-                                    <TableHead className="text-center">% Vitória</TableHead>
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {botcCharPerf.map((cp) => (
-                                    <TableRow key={cp.name}>
-                                      <TableCell className="font-medium">{cp.name}</TableCell>
-                                      <TableCell className="text-center">{cp.games}</TableCell>
-                                      <TableCell className="text-center">{cp.winPct}%</TableCell>
-                                    </TableRow>
-                                  ))}
-                                </TableBody>
-                              </Table>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </CardContent>
-        </Card>
-      )}
+      {/* (Estatísticas Detalhadas removidas — disponíveis nos slugs de Jogo/Season) */}
     </div>
   );
 };

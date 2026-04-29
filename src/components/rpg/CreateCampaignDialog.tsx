@@ -26,12 +26,21 @@ import { useNavigate } from 'react-router-dom';
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Pré-seleciona uma aventura quando o dialog é aberto a partir dela. */
+  defaultAdventureId?: string;
+  /** Esconde o seletor de aventura — útil quando já vem fixado pelo contexto. */
+  lockAdventure?: boolean;
 }
 
-export const CreateCampaignDialog = ({ open, onOpenChange }: Props) => {
+export const CreateCampaignDialog = ({
+  open,
+  onOpenChange,
+  defaultAdventureId,
+  lockAdventure,
+}: Props) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [adventureId, setAdventureId] = useState<string | undefined>(undefined);
+  const [adventureId, setAdventureId] = useState<string | undefined>(defaultAdventureId);
   const [adventures, setAdventures] = useState<{ id: string; name: string }[]>([]);
   const [isPublic, setIsPublic] = useState(true);
   const [openJoin, setOpenJoin] = useState(false);
@@ -42,12 +51,14 @@ export const CreateCampaignDialog = ({ open, onOpenChange }: Props) => {
 
   useEffect(() => {
     if (!open) return;
+    if (defaultAdventureId) setAdventureId(defaultAdventureId);
+    if (lockAdventure) return; // não precisa carregar lista
     supabase
       .from('rpg_adventures')
       .select('id, name')
       .order('name')
       .then(({ data }) => setAdventures((data as any) || []));
-  }, [open]);
+  }, [open, defaultAdventureId, lockAdventure]);
 
   const reset = () => {
     setName('');

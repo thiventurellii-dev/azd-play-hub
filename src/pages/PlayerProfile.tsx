@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabaseExternal";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,38 +7,43 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from "recharts";
-import { Trophy, Gamepad2, ArrowLeft, Calendar, Clock, Award, Pencil, Lock, ChevronLeft, ChevronRight, CalendarIcon } from "lucide-react";
+import {
+  Trophy, Gamepad2, ArrowLeft, Calendar, Clock, Award, Pencil, Lock, CalendarIcon,
+  Users, MessagesSquare, MapPin, Sparkles, BarChart3, ChevronRight,
+} from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { motion, AnimatePresence } from "framer-motion";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { motion } from "framer-motion";
 import FriendButton from "@/components/friendlist/FriendButton";
 import FriendsList from "@/components/friendlist/FriendsList";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotification } from "@/components/NotificationDialog";
 import {
-  brazilianStates,
-  citiesByState,
-  pronounsOptions,
-  countryCodes,
-  formatPhone,
-  unformatPhone,
+  brazilianStates, citiesByState, pronounsOptions, countryCodes,
+  formatPhone, unformatPhone,
 } from "@/lib/brazil-data";
 import { Camera } from "lucide-react";
-import { useRef } from "react";
 import XpBadge from "@/components/shared/XpBadge";
+import DateBlock from "@/components/shared/DateBlock";
+import RecentMatchCard, { RecentMatchItem } from "@/components/profile/RecentMatchCard";
+import { cn } from "@/lib/utils";
 
 const CHART_COLORS = [
-  "hsl(43, 100%, 50%)",
-  "hsl(200, 80%, 55%)",
-  "hsl(150, 60%, 45%)",
-  "hsl(340, 70%, 55%)",
-  "hsl(270, 60%, 55%)",
-  "hsl(25, 85%, 55%)",
-  "hsl(180, 60%, 45%)",
-  "hsl(0, 70%, 55%)",
+  "hsl(43, 100%, 50%)", "hsl(200, 80%, 55%)", "hsl(150, 60%, 45%)", "hsl(340, 70%, 55%)",
+  "hsl(270, 60%, 55%)", "hsl(25, 85%, 55%)", "hsl(180, 60%, 45%)", "hsl(0, 70%, 55%)",
 ];
+
+interface AchievementItem { name: string; description: string | null; granted_at: string | null; }
+interface CommunityItem { id: string; slug: string; name: string; logo_url: string | null; }
+interface SeasonContext {
+  id: string; name: string; status: string; end_date: string | null;
+  position: number; total: number; current_mmr: number; min_mmr: number; max_mmr: number;
+}
+interface ActivityItem { kind: "achievement" | "community"; date: string; title: string; subtitle?: string; }
 
 const PlayerProfile = () => {
   const { nickname } = useParams();
@@ -48,18 +53,21 @@ const PlayerProfile = () => {
   const [profile, setProfile] = useState<any>(null);
   const [role, setRole] = useState<string>("player");
   const [loading, setLoading] = useState(true);
+
   const [stats, setStats] = useState({ totalGames: 0, uniqueGames: 0 });
   const [gamePerformance, setGamePerformance] = useState<any[]>([]);
   const [opponents, setOpponents] = useState<{ name: string; games: number; wins: number }[]>([]);
   const [upcomingRooms, setUpcomingRooms] = useState<any[]>([]);
-  const [achievements, setAchievements] = useState<{ icon: string; name: string; description: string | null }[]>([]);
+  const [achievements, setAchievements] = useState<AchievementItem[]>([]);
+  const [communities, setCommunities] = useState<CommunityItem[]>([]);
+  const [communitiesActivity, setCommunitiesActivity] = useState<ActivityItem[]>([]);
+  const [friendsCount, setFriendsCount] = useState(0);
+  const [seasonCtx, setSeasonCtx] = useState<SeasonContext | null>(null);
+  const [recentMatches, setRecentMatches] = useState<RecentMatchItem[]>([]);
+
   const [botcStats, setBotcStats] = useState<{ gamesPlayed: number; winsGood: number; winsEvil: number; storytellerGames: number } | null>(null);
   const [botcPartners, setBotcPartners] = useState<{ name: string; goodGames: number; evilGames: number; goodWins: number; evilWins: number }[]>([]);
   const [botcCharPerf, setBotcCharPerf] = useState<{ name: string; games: number; wins: number; winPct: number }[]>([]);
-
-  // Category carousel
-  const allCategories = ['boardgame', 'botc', 'rpg'] as const;
-  const [categoryIdx, setCategoryIdx] = useState(0);
 
   // Edit profile state
   const [editing, setEditing] = useState(false);
@@ -94,25 +102,34 @@ const PlayerProfile = () => {
       const { data: roleData } = await supabase.from("user_roles").select("role").eq("user_id", prof.id).maybeSingle();
       if (roleData) setRole(roleData.role);
 
-      // Match results (boardgames)
+      // ========= Match results (boardgames) =========
       const { data: results } = await supabase
-        .from("match_results").select("match_id, position, score").eq("player_id", prof.id);
-      if (!results || results.length === 0) {
-        setStats({ totalGames: 0, uniqueGames: 0 });
-      } else {
+        .from("match_results")
+        .select("match_id, position, score, mmr_change")
+        .eq("player_id", prof.id);
+
+      let matchesById: Record<string, any> = {};
+      let gameMap: Record<string, any> = {};
+      let allResultsData: any[] = [];
+
+      if (results && results.length > 0) {
         const matchIds = [...new Set(results.map((r) => r.match_id))];
         const { data: matches } = await supabase
-          .from("matches").select("id, game_id, played_at").in("id", matchIds).order("played_at", { ascending: false });
+          .from("matches")
+          .select("id, game_id, played_at, season_id")
+          .in("id", matchIds)
+          .order("played_at", { ascending: false });
         const gameIds = [...new Set((matches || []).map((m) => m.game_id))];
-        const { data: games } = await supabase.from("games").select("id, name, slug").in("id", gameIds);
-        const gameMap: Record<string, any> = {};
+        const { data: games } = await supabase.from("games").select("id, name, slug, image_url").in("id", gameIds);
         for (const g of games || []) gameMap[g.id] = g;
+        for (const m of matches || []) matchesById[m.id] = m;
+
         setStats({ totalGames: results.length, uniqueGames: gameIds.length });
 
         // Performance by game
         const perfMap: Record<string, { games: number; wins: number; totalScore: number; best: number }> = {};
         for (const r of results) {
-          const m = (matches || []).find((m) => m.id === r.match_id);
+          const m = matchesById[r.match_id];
           if (!m) continue;
           const gid = m.game_id;
           if (!perfMap[gid]) perfMap[gid] = { games: 0, wins: 0, totalScore: 0, best: 0 };
@@ -125,6 +142,7 @@ const PlayerProfile = () => {
           Object.entries(perfMap)
             .map(([gid, s]) => ({
               game_id: gid, game_name: gameMap[gid]?.name || "?", game_slug: gameMap[gid]?.slug || null,
+              image_url: gameMap[gid]?.image_url || null,
               ...s, winPct: s.games > 0 ? Math.round((s.wins / s.games) * 100) : 0,
               avgScore: s.games > 0 ? Math.round(s.totalScore / s.games) : 0,
             }))
@@ -134,6 +152,7 @@ const PlayerProfile = () => {
         // Opponents
         const { data: allResults } = await supabase
           .from("match_results").select("match_id, player_id, position").in("match_id", matchIds);
+        allResultsData = allResults || [];
         const oppMap: Record<string, { games: number; wins: number }> = {};
         for (const r of allResults || []) {
           if (r.player_id === prof.id) continue;
@@ -145,16 +164,45 @@ const PlayerProfile = () => {
         const oppIds = Object.keys(oppMap);
         const { data: oppProfiles } = await supabase.rpc("get_public_profiles", { p_ids: oppIds });
         const oppNameMap: Record<string, string> = {};
-        for (const p of oppProfiles || []) oppNameMap[p.id] = (p as any).nickname || p.name;
+        const oppAvatarMap: Record<string, string | null> = {};
+        for (const p of oppProfiles || []) {
+          oppNameMap[p.id] = (p as any).nickname || p.name;
+          oppAvatarMap[p.id] = (p as any).avatar_url || null;
+        }
         setOpponents(
           Object.entries(oppMap)
             .map(([pid, s]) => ({ name: oppNameMap[pid] || "?", ...s }))
             .sort((a, b) => b.games - a.games)
             .slice(0, 8),
         );
+
+        // ========= Recent matches (last 8) com cor =========
+        const sorted = [...results].sort((a, b) => {
+          const ma = matchesById[a.match_id]; const mb = matchesById[b.match_id];
+          return new Date(mb?.played_at || 0).getTime() - new Date(ma?.played_at || 0).getTime();
+        }).slice(0, 8);
+
+        const recent: RecentMatchItem[] = sorted.map((r) => {
+          const m = matchesById[r.match_id];
+          const opps = (allResults || [])
+            .filter((ar) => ar.match_id === r.match_id && ar.player_id !== prof.id)
+            .map((ar) => ({ name: oppNameMap[ar.player_id] || "?", avatar_url: oppAvatarMap[ar.player_id] || null }));
+          return {
+            match_id: r.match_id,
+            game_name: gameMap[m?.game_id]?.name || "?",
+            game_slug: gameMap[m?.game_id]?.slug || null,
+            played_at: m?.played_at || new Date().toISOString(),
+            is_competitive: !!m?.season_id,
+            position: r.position ?? null,
+            score: r.score ?? null,
+            mmr_change: r.mmr_change ?? null,
+            opponents: opps,
+          };
+        });
+        setRecentMatches(recent);
       }
 
-      // Upcoming rooms
+      // ========= Upcoming rooms =========
       const { data: roomPlayers } = await supabase.from("match_room_players").select("room_id").eq("player_id", prof.id);
       if (roomPlayers && roomPlayers.length > 0) {
         const roomIds = roomPlayers.map((rp) => rp.room_id);
@@ -164,22 +212,110 @@ const PlayerProfile = () => {
           .gte("scheduled_at", new Date().toISOString()).order("scheduled_at").limit(5);
         if (rooms) {
           const roomGameIds = [...new Set(rooms.map((r) => r.game_id))];
-          const { data: roomGames } = await supabase.from("games").select("id, name").in("id", roomGameIds);
-          const rgMap: Record<string, string> = {};
-          for (const g of roomGames || []) rgMap[g.id] = g.name;
-          setUpcomingRooms(rooms.map((r) => ({ ...r, game_name: rgMap[r.game_id] || "?" })));
+          const { data: roomGames } = await supabase.from("games").select("id, name, slug").in("id", roomGameIds);
+          const rgMap: Record<string, any> = {};
+          for (const g of roomGames || []) rgMap[g.id] = g;
+          setUpcomingRooms(rooms.map((r) => ({
+            ...r,
+            game_name: rgMap[r.game_id]?.name || "?",
+            game_slug: rgMap[r.game_id]?.slug || null,
+          })));
         }
       }
 
-      // Achievements
-      const { data: playerAchs } = await supabase.from("player_achievements").select("achievement_id").eq("player_id", prof.id);
+      // ========= Achievements =========
+      const { data: playerAchs } = await supabase
+        .from("player_achievements")
+        .select("achievement_id, granted_at")
+        .eq("player_id", prof.id)
+        .order("granted_at", { ascending: false });
+      let achList: AchievementItem[] = [];
       if (playerAchs && playerAchs.length > 0) {
         const achIds = playerAchs.map((a: any) => a.achievement_id);
-        const { data: achDefs } = await supabase.from("achievement_definitions").select("name, description, icon").in("id", achIds);
-        setAchievements((achDefs || []) as any[]);
+        const { data: achDefs } = await supabase
+          .from("achievement_definitions")
+          .select("id, name, description")
+          .in("id", achIds);
+        const defMap: Record<string, any> = {};
+        for (const d of achDefs || []) defMap[d.id] = d;
+        achList = playerAchs.map((pa: any) => ({
+          name: defMap[pa.achievement_id]?.name || "Conquista",
+          description: defMap[pa.achievement_id]?.description || null,
+          granted_at: pa.granted_at || null,
+        }));
+        setAchievements(achList);
       }
 
-      // BotC stats
+      // ========= Communities =========
+      const { data: memberships } = await supabase
+        .from("community_members" as any)
+        .select("community_id, created_at")
+        .eq("user_id", prof.id)
+        .eq("status", "active")
+        .order("created_at", { ascending: false });
+      let commList: CommunityItem[] = [];
+      let commActivity: ActivityItem[] = [];
+      if (memberships && memberships.length > 0) {
+        const cIds = (memberships as any[]).map((m) => m.community_id);
+        const { data: comms } = await supabase
+          .from("communities" as any)
+          .select("id, slug, name, logo_url")
+          .in("id", cIds);
+        const cMap: Record<string, CommunityItem> = {};
+        for (const c of (comms || []) as any[]) cMap[c.id] = c;
+        commList = (memberships as any[]).map((m) => cMap[m.community_id]).filter(Boolean);
+        setCommunities(commList);
+        commActivity = (memberships as any[]).slice(0, 8).map((m) => ({
+          kind: "community",
+          date: m.created_at,
+          title: `Entrou em ${cMap[m.community_id]?.name || "Comunidade"}`,
+        }));
+        setCommunitiesActivity(commActivity);
+      }
+
+      // ========= Friends count =========
+      const { count: fCount } = await supabase
+        .from("friendships")
+        .select("id", { count: "exact", head: true })
+        .or(`user_id.eq.${prof.id},friend_id.eq.${prof.id}`)
+        .eq("status", "accepted");
+      setFriendsCount(fCount || 0);
+
+      // ========= Season atual =========
+      const { data: activeSeasons } = await supabase
+        .from("seasons")
+        .select("id, name, status, end_date, type")
+        .eq("type", "boardgame" as any)
+        .eq("status", "active" as any)
+        .order("start_date", { ascending: false })
+        .limit(1);
+      const activeSeason = (activeSeasons || [])[0] as any;
+      if (activeSeason) {
+        const { data: ratings } = await supabase
+          .from("mmr_ratings")
+          .select("player_id, current_mmr")
+          .eq("season_id", activeSeason.id)
+          .order("current_mmr", { ascending: false });
+        if (ratings && ratings.length > 0) {
+          const idx = ratings.findIndex((r: any) => r.player_id === prof.id);
+          if (idx >= 0) {
+            const mmrs = ratings.map((r: any) => Number(r.current_mmr));
+            setSeasonCtx({
+              id: activeSeason.id,
+              name: activeSeason.name,
+              status: activeSeason.status,
+              end_date: activeSeason.end_date,
+              position: idx + 1,
+              total: ratings.length,
+              current_mmr: Number((ratings[idx] as any).current_mmr),
+              min_mmr: Math.min(...mmrs),
+              max_mmr: Math.max(...mmrs),
+            });
+          }
+        }
+      }
+
+      // ========= BotC stats (mantido) =========
       const { data: botcRatings } = await supabase
         .from('blood_mmr_ratings').select('games_played, wins_good, wins_evil, games_as_storyteller').eq('player_id', prof.id);
       if (botcRatings && botcRatings.length > 0) {
@@ -192,7 +328,6 @@ const PlayerProfile = () => {
         setBotcStats(totals);
       }
 
-      // BotC partners and character performance
       const { data: botcMatchPlayers } = await supabase
         .from('blood_match_players').select('match_id, player_id, character_id, team').eq('player_id', prof.id);
       if (botcMatchPlayers && botcMatchPlayers.length > 0) {
@@ -202,17 +337,14 @@ const PlayerProfile = () => {
         const winTeamMap: Record<string, string> = {};
         for (const bm of botcMatches || []) winTeamMap[bm.id] = bm.winning_team;
 
-        // All players in those matches
         const { data: allBotcPlayers } = await supabase
           .from('blood_match_players').select('match_id, player_id, team').in('match_id', botcMatchIds);
 
-        // Partner stats
         const partnerMap: Record<string, { goodGames: number; evilGames: number; goodWins: number; evilWins: number }> = {};
         for (const bp of allBotcPlayers || []) {
           if (bp.player_id === prof.id) continue;
           const myEntry = botcMatchPlayers.find(m => m.match_id === bp.match_id);
           if (!myEntry) continue;
-          // Same match
           if (!partnerMap[bp.player_id]) partnerMap[bp.player_id] = { goodGames: 0, evilGames: 0, goodWins: 0, evilWins: 0 };
           const won = winTeamMap[bp.match_id] === myEntry.team;
           if (myEntry.team === 'good') {
@@ -236,7 +368,6 @@ const PlayerProfile = () => {
           );
         }
 
-        // Character performance
         const charIds = [...new Set(botcMatchPlayers.map(bp => bp.character_id))];
         const { data: charDefs } = await supabase.from('blood_characters').select('id, name').in('id', charIds);
         const charNameMap: Record<string, string> = {};
@@ -263,18 +394,15 @@ const PlayerProfile = () => {
     fetchProfile();
   }, [nickname, user]);
 
-  // Determine available categories (only show if data exists)
-  const availableCategories = allCategories.filter(cat => {
-    if (cat === 'boardgame') return stats.totalGames > 0;
-    if (cat === 'botc') return botcStats !== null && botcStats.gamesPlayed > 0;
-    if (cat === 'rpg') return false; // no RPG stats yet
-    return false;
-  });
-
-  const currentCategory = availableCategories[categoryIdx % availableCategories.length] || null;
-  const categoryLabels: Record<string, string> = {
-    boardgame: '🎲 Boardgames', botc: '🩸 Blood on the Clocktower', rpg: '🎭 RPG',
-  };
+  // Activity feed (achievements + communities)
+  const activityFeed = useMemo<ActivityItem[]>(() => {
+    const items: ActivityItem[] = [];
+    for (const a of achievements) {
+      if (a.granted_at) items.push({ kind: "achievement", date: a.granted_at, title: `Conquistou “${a.name}”`, subtitle: a.description || undefined });
+    }
+    for (const c of communitiesActivity) items.push(c);
+    return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 8);
+  }, [achievements, communitiesActivity]);
 
   const handleSaveProfile = async () => {
     if (!user || !isOwnProfile) return;
@@ -348,6 +476,24 @@ const PlayerProfile = () => {
     );
   }
 
+  // ===== Helpers de UI =====
+  const stateName = brazilianStates.find((s) => s.uf === profile?.state)?.name || profile?.state;
+  const location = [profile?.city, stateName].filter(Boolean).join(", ");
+  const memberSince = profile?.created_at ? new Date(profile.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" }) : null;
+
+  const seasonProgress = (() => {
+    if (!seasonCtx) return 0;
+    const range = seasonCtx.max_mmr - seasonCtx.min_mmr;
+    if (range <= 0) return 50;
+    return Math.round(((seasonCtx.current_mmr - seasonCtx.min_mmr) / range) * 100);
+  })();
+
+  const daysLeft = (() => {
+    if (!seasonCtx?.end_date) return null;
+    const diff = Math.ceil((new Date(seasonCtx.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+    return diff;
+  })();
+
   const chartConfig = opponents.reduce(
     (acc, opp, i) => {
       acc[opp.name] = { label: opp.name, color: CHART_COLORS[i % CHART_COLORS.length] };
@@ -356,7 +502,6 @@ const PlayerProfile = () => {
     { games: { label: "Partidas Juntos - ", color: CHART_COLORS[0] } } as Record<string, any>,
   );
 
-  // Custom tooltip for BotC partners
   const BotcPartnerTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload) return null;
     const good = payload.find((p: any) => p.dataKey === 'goodGames');
@@ -375,54 +520,82 @@ const PlayerProfile = () => {
   };
 
   return (
-    <div className="container py-10 space-y-8 max-w-4xl">
-      {/* Header */}
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <Card className="bg-card border-border">
-          <CardContent className="pt-6 flex flex-col sm:flex-row items-center gap-6">
-            <div className="relative group cursor-pointer flex-shrink-0" onClick={() => isOwnProfile && fileInputRef.current?.click()}>
-              {profile.avatar_url ? (
-                <img src={profile.avatar_url} alt="Avatar" className="h-20 w-20 rounded-full object-cover" />
-              ) : (
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-secondary text-gold font-bold text-3xl">
-                  {(profile.nickname || profile.name || "?").charAt(0).toUpperCase()}
+    <div className="container py-10 space-y-6 max-w-6xl">
+      {/* ======================= HERO HEADER ======================= */}
+      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
+        <Card className="overflow-hidden bg-gradient-to-br from-card via-card to-secondary/40 border-border">
+          <CardContent className="p-6">
+            <div className="flex flex-col lg:flex-row gap-6">
+              {/* Avatar */}
+              <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 flex-1">
+                <div className="relative group cursor-pointer flex-shrink-0" onClick={() => isOwnProfile && fileInputRef.current?.click()}>
+                  <div className="absolute -inset-1 rounded-full bg-gradient-to-br from-gold/40 to-amber-600/20 blur-sm" />
+                  {profile.avatar_url ? (
+                    <img src={profile.avatar_url} alt="Avatar" className="relative h-24 w-24 rounded-full object-cover border-2 border-gold/60" />
+                  ) : (
+                    <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-secondary text-gold font-bold text-3xl border-2 border-gold/60">
+                      {(profile.nickname || profile.name || "?").charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  {isOwnProfile && (
+                    <>
+                      <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Camera className="h-5 w-5 text-white" />
+                      </div>
+                      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploadingAvatar} />
+                    </>
+                  )}
                 </div>
-              )}
-              {isOwnProfile && (
-                <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Camera className="h-5 w-5 text-white" />
+
+                <div className="flex-1 text-center sm:text-left min-w-0">
+                  <div className="flex items-center gap-2 justify-center sm:justify-start flex-wrap">
+                    <h1 className="text-2xl sm:text-3xl font-bold">{profile.name}</h1>
+                    {profile.steam_id && (
+                      <a href={`https://steamcommunity.com/profiles/${profile.steam_id}`} target="_blank" rel="noopener noreferrer" title="Perfil Steam" className="text-muted-foreground hover:text-foreground transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.911c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.727L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.627 0 12-5.373 12-12S18.605 0 11.979 0z"/></svg>
+                      </a>
+                    )}
+                  </div>
+                  {profile.nickname && <p className="text-gold text-sm">@{profile.nickname}</p>}
+                  <div className="flex items-center gap-2 justify-center sm:justify-start mt-2 flex-wrap">
+                    <Badge variant={role === "admin" ? "default" : "secondary"}>
+                      {role === "admin" ? "Admin" : "Player"}
+                    </Badge>
+                    <XpBadge userId={profile.id} variant="compact" />
+                  </div>
+                  <div className="mt-3 flex flex-col sm:flex-row gap-3 sm:gap-4 text-xs text-muted-foreground items-center sm:items-start justify-center sm:justify-start">
+                    {memberSince && (
+                      <span className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5 text-gold" /> Desde {memberSince}</span>
+                    )}
+                    {location && (
+                      <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-gold" /> {location}</span>
+                    )}
+                  </div>
+                  <div className="mt-3 max-w-[300px] mx-auto sm:mx-0">
+                    <XpBadge userId={profile.id} variant="full" />
+                  </div>
                 </div>
-              )}
-              {isOwnProfile && (
-                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploadingAvatar} />
-              )}
-            </div>
-            <div className="flex-1 text-center sm:text-left">
-              <div className="flex items-center gap-2 justify-center sm:justify-start">
-                <h1 className="text-2xl font-bold">{profile.name}</h1>
-                {profile.steam_id && (
-                  <a href={`https://steamcommunity.com/profiles/${profile.steam_id}`} target="_blank" rel="noopener noreferrer" title="Perfil Steam" className="text-muted-foreground hover:text-foreground transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M11.979 0C5.678 0 .511 4.86.022 11.037l6.432 2.658c.545-.371 1.203-.59 1.912-.59.063 0 .125.004.188.006l2.861-4.142V8.91c0-2.495 2.028-4.524 4.524-4.524 2.494 0 4.524 2.031 4.524 4.527s-2.03 4.525-4.524 4.525h-.105l-4.076 2.911c0 .052.004.105.004.159 0 1.875-1.515 3.396-3.39 3.396-1.635 0-3.016-1.173-3.331-2.727L.436 15.27C1.862 20.307 6.486 24 11.979 24c6.627 0 12-5.373 12-12S18.605 0 11.979 0zM7.54 18.21l-1.473-.61c.262.543.714.999 1.314 1.25.054.023.108.043.162.063a2.41 2.41 0 001.07.155 2.410 2.410 0 002.003-1.066c.267-.4.395-.855.382-1.312-.011-.459-.157-.906-.422-1.305a2.408 2.408 0 00-1.305-.955 2.42 2.42 0 00-1.641.076l1.522.63c.891.369 1.316 1.395.948 2.289-.369.891-1.396 1.313-2.285.944l-.275-.115v.001zm11.139-9.372a3.017 3.017 0 00-3.015-3.015 3.02 3.02 0 00-3.015 3.015 3.02 3.02 0 003.015 3.015 3.017 3.017 0 003.015-3.015zm-5.425-.013c0-1.329 1.084-2.412 2.413-2.412 1.327 0 2.41 1.084 2.41 2.412 0 1.33-1.084 2.413-2.41 2.413-1.33 0-2.413-1.084-2.413-2.413z"/>
-                    </svg>
-                  </a>
-                )}
               </div>
-              {profile.nickname && <p className="text-gold">@{profile.nickname}</p>}
-              <div className="flex items-center gap-2 justify-center sm:justify-start mt-2 flex-wrap">
-                <Badge variant={role === "admin" ? "default" : "secondary"}>
-                  {role === "admin" ? "Admin" : "Player"}
-                </Badge>
-                <XpBadge userId={profile.id} variant="compact" />
-                <span className="text-xs text-muted-foreground">
-                  Desde {new Date(profile.created_at).toLocaleDateString("pt-BR")}
-                </span>
-              </div>
-              <div className="mt-3 max-w-[260px] mx-auto sm:mx-0">
-                <XpBadge userId={profile.id} variant="full" />
+
+              {/* KPIs */}
+              <div className="grid grid-cols-4 gap-2 lg:gap-3 lg:min-w-[420px] lg:self-center">
+                {[
+                  { icon: Gamepad2, label: "Partidas", value: stats.totalGames },
+                  { icon: Award, label: "Conquistas", value: achievements.length },
+                  { icon: MessagesSquare, label: "Comunidades", value: communities.length },
+                  { icon: Users, label: "Amigos", value: friendsCount },
+                ].map((k, i) => (
+                  <div key={i} className="rounded-xl border border-border bg-background/40 px-3 py-3 text-center">
+                    <k.icon className="h-4 w-4 mx-auto text-gold mb-1" />
+                    <div className="text-2xl font-bold tabular-nums">{k.value}</div>
+                    <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{k.label}</div>
+                  </div>
+                ))}
               </div>
             </div>
-            <div className="flex items-center gap-2 flex-wrap justify-center">
+
+            {/* Action buttons */}
+            <div className="mt-5 flex items-center gap-2 justify-center lg:justify-end flex-wrap">
               {isOwnProfile ? (
                 <>
                   {!editing && <Button variant="outline" size="sm" onClick={() => setEditing(true)}><Pencil className="h-4 w-4 mr-1" /> Editar Perfil</Button>}
@@ -436,7 +609,7 @@ const PlayerProfile = () => {
         </Card>
       </motion.div>
 
-      {/* Edit Profile Form */}
+      {/* ======================= EDIT FORMS ======================= */}
       {isOwnProfile && editing && (
         <Card className="bg-card border-border">
           <CardContent className="pt-6 space-y-4">
@@ -496,27 +669,6 @@ const PlayerProfile = () => {
               </Select>
             </div>
             <Separator />
-            <div className="space-y-2">
-              <Label>Integração Steam</Label>
-              {profile.steam_id ? (
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="gap-1">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.08 3.16 9.42 7.63 11.17l3.69-5.27a3.48 3.48 0 01-.32-1.46c0-1.93 1.57-3.5 3.5-3.5s3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5c-.5 0-.97-.11-1.4-.3L9.84 24c.7.1 1.42.15 2.16.15 6.63 0 12-5.37 12-12S18.63 0 12 0z"/></svg>
-                    Vinculada: {profile.steam_id}
-                  </Badge>
-                </div>
-              ) : (
-                <Button variant="outline" size="sm" onClick={async () => {
-                  const returnTo = `${window.location.origin}/auth/steam/callback`;
-                  const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/steam-auth?action=login&return_to=${encodeURIComponent(returnTo)}`);
-                  const json = await resp.json();
-                  if (json.url) window.location.href = json.url;
-                }} className="gap-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.08 3.16 9.42 7.63 11.17l3.69-5.27a3.48 3.48 0 01-.32-1.46c0-1.93 1.57-3.5 3.5-3.5s3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5c-.5 0-.97-.11-1.4-.3L9.84 24c.7.1 1.42.15 2.16.15 6.63 0 12-5.37 12-12S18.63 0 12 0z"/></svg>
-                  Vincular Steam
-                </Button>
-              )}
-            </div>
             <div className="flex gap-2">
               <Button variant="gold" onClick={handleSaveProfile} disabled={saving}>{saving ? "Salvando..." : "Salvar"}</Button>
               <Button variant="outline" onClick={() => setEditing(false)}>Cancelar</Button>
@@ -525,7 +677,6 @@ const PlayerProfile = () => {
         </Card>
       )}
 
-      {/* Change Password Form */}
       {isOwnProfile && changingPassword && (
         <Card className="bg-card border-border">
           <CardContent className="pt-6 space-y-4">
@@ -540,89 +691,297 @@ const PlayerProfile = () => {
         </Card>
       )}
 
-      {/* Category Carousel */}
-      {availableCategories.length > 0 && (
-        <div className="space-y-4">
-          {/* Carousel header */}
-          <div className="flex items-center justify-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 rounded-full hover:bg-gold/10 hover:text-gold transition-all"
-              onClick={() => setCategoryIdx((prev) => (prev - 1 + availableCategories.length) % availableCategories.length)}
-              disabled={availableCategories.length <= 1}
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-            <AnimatePresence mode="wait">
-              <motion.h2
-                key={currentCategory}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
-                className="text-xl font-bold text-center min-w-[250px]"
-              >
-                {currentCategory ? categoryLabels[currentCategory] : ''}
-              </motion.h2>
-            </AnimatePresence>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 rounded-full hover:bg-gold/10 hover:text-gold transition-all"
-              onClick={() => setCategoryIdx((prev) => (prev + 1) % availableCategories.length)}
-              disabled={availableCategories.length <= 1}
-            >
-              <ChevronRight className="h-5 w-5" />
-            </Button>
-          </div>
-
-          {/* Dots */}
-          {availableCategories.length > 1 && (
-            <div className="flex justify-center gap-2">
-              {availableCategories.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setCategoryIdx(i)}
-                  className={`h-2 w-2 rounded-full transition-all ${i === categoryIdx % availableCategories.length ? 'bg-gold w-4' : 'bg-muted-foreground/30'}`}
-                />
+      {/* ======================= CONQUISTAS ======================= */}
+      {achievements.length > 0 && (
+        <Card className="bg-card border-border">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <Award className="h-5 w-5 text-gold" /> Conquistas
+              </h2>
+              {achievements.length > 5 && (
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="sm" className="text-gold hover:text-gold">
+                      Ver todas <ChevronRight className="h-3 w-3 ml-0.5" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader><DialogTitle>Todas as conquistas ({achievements.length})</DialogTitle></DialogHeader>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {achievements.map((a, i) => (
+                        <div key={i} className="rounded-lg border border-border p-3">
+                          <div className="font-semibold text-sm">{a.name}</div>
+                          {a.description && <div className="text-xs text-muted-foreground mt-1">{a.description}</div>}
+                          {a.granted_at && (
+                            <div className="text-[10px] text-gold mt-2">
+                              Conquistada em {new Date(a.granted_at).toLocaleDateString("pt-BR")}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              {achievements.slice(0, 5).map((a, i) => (
+                <div key={i} className="rounded-lg border border-border bg-background/40 p-3 hover:border-gold/40 transition-colors">
+                  <div className="font-semibold text-sm leading-snug">{a.name}</div>
+                  {a.description && <div className="text-xs text-muted-foreground mt-1 line-clamp-2">{a.description}</div>}
+                  {a.granted_at && (
+                    <div className="text-[10px] text-gold mt-2">
+                      Conquistada em {new Date(a.granted_at).toLocaleDateString("pt-BR")}
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
-          )}
+          </CardContent>
+        </Card>
+      )}
 
-          {/* Category content */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentCategory}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-4"
-            >
-              {currentCategory === 'boardgame' && (
-                <>
-                  <div className="grid gap-4 grid-cols-2">
-                    {[
-                      { icon: Trophy, label: "Total de Partidas", value: stats.totalGames },
-                      { icon: Gamepad2, label: "Jogos Diferentes", value: stats.uniqueGames },
-                    ].map((s, i) => (
-                      <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-                        <Card className="bg-card border-border">
-                          <CardContent className="pt-6 text-center">
-                            <s.icon className="h-6 w-6 mx-auto text-gold mb-2" />
-                            <p className="text-2xl font-bold">{s.value}</p>
-                            <p className="text-xs text-muted-foreground">{s.label}</p>
-                          </CardContent>
-                        </Card>
-                      </motion.div>
-                    ))}
+      {/* ======================= JOGOS EM DESTAQUE ======================= */}
+      {gamePerformance.length > 0 && (
+        <Card className="bg-card border-border">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 mb-1">
+              <Gamepad2 className="h-5 w-5 text-gold" />
+              <h2 className="text-lg font-semibold">Jogos em destaque</h2>
+            </div>
+            <p className="text-xs text-muted-foreground mb-4">Os jogos com mais partidas e suas estatísticas</p>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {gamePerformance.slice(0, 4).map((gp) => (
+                <Link
+                  key={gp.game_id}
+                  to={gp.game_slug ? `/jogos/${gp.game_slug}` : "#"}
+                  className="group rounded-xl overflow-hidden border border-border bg-background/40 hover:border-gold/50 transition-all"
+                >
+                  <div className="relative h-32 bg-secondary overflow-hidden">
+                    {gp.image_url ? (
+                      <img src={gp.image_url} alt={gp.game_name} className="h-full w-full object-cover group-hover:scale-105 transition-transform" />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center text-gold/40">
+                        <Gamepad2 className="h-10 w-10" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    <div className="absolute bottom-2 left-3 right-3">
+                      <div className="font-semibold text-sm text-white drop-shadow line-clamp-1">{gp.game_name}</div>
+                      <div className="text-[10px] text-white/80">{gp.games} partidas</div>
+                    </div>
                   </div>
+                  <div className="p-3 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Win Rate</span>
+                      <span className="font-bold text-gold tabular-nums">{gp.winPct}%</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
+                      <div className="h-full bg-gradient-to-r from-gold to-amber-400" style={{ width: `${gp.winPct}%` }} />
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Recorde</span>
+                      <span className="font-bold tabular-nums">{gp.best}</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-                  {opponents.length > 0 && (
-                    <Card className="bg-card border-border">
-                      <CardContent className="pt-6">
-                        <h2 className="text-lg font-semibold mb-4">Principais Jogadores</h2>
+      {/* ======================= SEASON + ATIVIDADE ======================= */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Season atual */}
+        <Card className="bg-card border-border">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Trophy className="h-5 w-5 text-gold" />
+              <h2 className="text-lg font-semibold">Season atual</h2>
+            </div>
+            {seasonCtx ? (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold">{seasonCtx.name}</span>
+                  <Badge className="bg-gold/15 text-gold border-gold/30 hover:bg-gold/15">Ativa</Badge>
+                </div>
+                {daysLeft !== null && daysLeft > 0 && (
+                  <p className="text-xs text-muted-foreground">Termina em {daysLeft} {daysLeft === 1 ? "dia" : "dias"}</p>
+                )}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg border border-border bg-background/40 p-3">
+                    <div className="text-xs text-muted-foreground">Sua posição</div>
+                    <div className="text-2xl font-bold text-gold tabular-nums">
+                      #{seasonCtx.position}
+                      <span className="text-sm text-muted-foreground font-normal"> de {seasonCtx.total}</span>
+                    </div>
+                  </div>
+                  <div className="rounded-lg border border-border bg-background/40 p-3">
+                    <div className="text-xs text-muted-foreground">MMR atual</div>
+                    <div className="text-2xl font-bold tabular-nums">{Math.round(seasonCtx.current_mmr)}</div>
+                  </div>
+                </div>
+                <div>
+                  <div className="relative h-2 rounded-full bg-secondary overflow-hidden">
+                    <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-700 via-gold to-amber-300 rounded-full" style={{ width: `${seasonProgress}%` }} />
+                    <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 h-3 w-3 rounded-full bg-gold border-2 border-background shadow" style={{ left: `${seasonProgress}%` }} />
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] text-muted-foreground mt-1.5 tabular-nums">
+                    <span>{Math.round(seasonCtx.min_mmr)}</span>
+                    <span className="text-gold font-semibold">{Math.round(seasonCtx.current_mmr)}</span>
+                    <span>{Math.round(seasonCtx.max_mmr)}</span>
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" className="w-full" asChild>
+                  <Link to={`/seasons/${seasonCtx.id}`}>Ver ranking completo <ChevronRight className="h-3 w-3 ml-1" /></Link>
+                </Button>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground py-6 text-center">
+                Sem participação em uma season ativa.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Atividade recente */}
+        <Card className="bg-card border-border">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="h-5 w-5 text-gold" />
+              <h2 className="text-lg font-semibold">Atividade recente</h2>
+            </div>
+            {activityFeed.length > 0 ? (
+              <div className="space-y-2">
+                {activityFeed.map((a, i) => (
+                  <div key={i} className="flex items-start gap-3 p-2 rounded-lg hover:bg-secondary/40 transition-colors">
+                    <div className={cn(
+                      "h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0",
+                      a.kind === "achievement" ? "bg-gold/15 text-gold" : "bg-blue-500/15 text-blue-400",
+                    )}>
+                      {a.kind === "achievement" ? <Award className="h-4 w-4" /> : <MessagesSquare className="h-4 w-4" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium leading-snug">{a.title}</p>
+                      {a.subtitle && <p className="text-xs text-muted-foreground line-clamp-1">{a.subtitle}</p>}
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        {new Date(a.date).toLocaleDateString("pt-BR")}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground py-6 text-center">Sem atividade recente.</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ======================= PRÓXIMAS PARTIDAS ======================= */}
+      <Card className="bg-card border-border">
+        <CardContent className="pt-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Calendar className="h-5 w-5 text-gold" />
+            <h2 className="text-lg font-semibold">Próximas partidas</h2>
+          </div>
+          {upcomingRooms.length > 0 ? (
+            <div className="space-y-2">
+              {upcomingRooms.map((r) => {
+                const d = new Date(r.scheduled_at);
+                return (
+                  <div key={r.id} className="flex items-center gap-3 rounded-lg border border-border bg-background/40 p-3 hover:border-gold/40 transition-colors">
+                    <DateBlock date={r.scheduled_at} />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm truncate">{r.title}</p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Gamepad2 className="h-3 w-3 text-gold" /> {r.game_name}
+                        <span>·</span>
+                        <Clock className="h-3 w-3" />
+                        {d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="text-[10px]">
+                      {r.status === "open" ? "Aberta" : "Cheia"}
+                    </Badge>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground py-6 text-center">Nenhuma partida agendada.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ======================= PARTIDAS RECENTES ======================= */}
+      {recentMatches.length > 0 && (
+        <Card className="bg-card border-border">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Trophy className="h-5 w-5 text-gold" />
+              <h2 className="text-lg font-semibold">Partidas recentes</h2>
+            </div>
+            <div className="space-y-2">
+              {recentMatches.map((m) => <RecentMatchCard key={m.match_id} m={m} />)}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ======================= COMUNIDADES + AMIGOS ======================= */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card className="bg-card border-border">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <MessagesSquare className="h-5 w-5 text-gold" />
+              <h2 className="text-lg font-semibold">Comunidades</h2>
+            </div>
+            {communities.length > 0 ? (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {communities.slice(0, 6).map((c) => (
+                  <Link key={c.id} to={`/comunidades/${c.slug}`} className="flex items-center gap-3 p-2 rounded-lg border border-border bg-background/40 hover:border-gold/40 transition-colors">
+                    {c.logo_url ? (
+                      <img src={c.logo_url} alt={c.name} className="h-10 w-10 rounded-lg object-cover" />
+                    ) : (
+                      <div className="h-10 w-10 rounded-lg bg-secondary flex items-center justify-center text-gold font-bold">
+                        {c.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <span className="font-medium text-sm truncate flex-1">{c.name}</span>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground py-6 text-center">Não participa de nenhuma comunidade ainda.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <div>
+          <FriendsList userId={profile?.id} />
+        </div>
+      </div>
+
+      {/* ======================= ESTATÍSTICAS DETALHADAS ======================= */}
+      {(gamePerformance.length > 0 || botcStats || opponents.length > 0) && (
+        <Card className="bg-card border-border">
+          <CardContent className="pt-2 pb-2">
+            <Accordion type="single" collapsible>
+              <AccordionItem value="stats" className="border-none">
+                <AccordionTrigger className="hover:no-underline">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5 text-gold" />
+                    <span className="text-lg font-semibold">Estatísticas detalhadas</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-6 pt-2">
+                    {opponents.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold mb-3">Principais Jogadores</h3>
                         <ChartContainer config={chartConfig} className="h-[250px]">
                           <BarChart data={opponents} layout="vertical">
                             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -636,14 +995,12 @@ const PlayerProfile = () => {
                             </Bar>
                           </BarChart>
                         </ChartContainer>
-                      </CardContent>
-                    </Card>
-                  )}
+                      </div>
+                    )}
 
-                  {gamePerformance.length > 0 && (
-                    <Card className="bg-card border-border">
-                      <CardContent className="pt-6">
-                        <h2 className="text-lg font-semibold mb-4">Performance por Jogo</h2>
+                    {gamePerformance.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold mb-3">Performance por Jogo</h3>
                         <div className="overflow-x-auto">
                           <Table>
                             <TableHeader>
@@ -674,143 +1031,81 @@ const PlayerProfile = () => {
                             </TableBody>
                           </Table>
                         </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </>
-              )}
+                      </div>
+                    )}
 
-              {currentCategory === 'botc' && botcStats && (
-                <>
-                  <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
-                    {[
-                      { label: "Partidas", value: botcStats.gamesPlayed, icon: "🩸" },
-                      { label: "Vitórias (Bem)", value: botcStats.winsGood, icon: "🛡️" },
-                      { label: "Vitórias (Mal)", value: botcStats.winsEvil, icon: "💀" },
-                      { label: "Narrador", value: botcStats.storytellerGames, icon: "📖" },
-                    ].map((s, i) => (
-                      <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}>
-                        <Card className="bg-card border-border">
-                          <CardContent className="pt-6 text-center">
-                            <p className="text-2xl mb-1">{s.icon}</p>
-                            <p className="text-2xl font-bold">{s.value}</p>
-                            <p className="text-xs text-muted-foreground">{s.label}</p>
-                          </CardContent>
-                        </Card>
-                      </motion.div>
-                    ))}
-                  </div>
-
-                  {/* Partners segmented bar chart */}
-                  {botcPartners.length > 0 && (
-                    <Card className="bg-card border-border">
-                      <CardContent className="pt-6">
-                        <h2 className="text-lg font-semibold mb-4">Parceiros de Partida</h2>
-                        <div className="h-[300px]">
-                          <BarChart
-                            data={botcPartners}
-                            layout="vertical"
-                            width={700}
-                            height={280}
-                            margin={{ left: 80, right: 20, top: 5, bottom: 5 }}
-                          >
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                            <XAxis type="number" allowDecimals={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-                            <YAxis dataKey="name" type="category" width={75} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-                            <RechartsTooltip content={<BotcPartnerTooltip />} />
-                            <Legend
-                              formatter={(value: string) => value === 'goodGames' ? '🛡️ Bem' : '💀 Mal'}
-                              wrapperStyle={{ fontSize: 12 }}
-                            />
-                            <Bar dataKey="goodGames" stackId="a" fill="hsl(210, 70%, 55%)" radius={[0, 0, 0, 0]} name="goodGames" />
-                            <Bar dataKey="evilGames" stackId="a" fill="hsl(0, 60%, 50%)" radius={[0, 4, 4, 0]} name="evilGames" />
-                          </BarChart>
+                    {botcStats && (
+                      <div className="space-y-4">
+                        <h3 className="text-sm font-semibold">Blood on the Clocktower</h3>
+                        <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
+                          {[
+                            { label: "Partidas", value: botcStats.gamesPlayed, icon: "🩸" },
+                            { label: "Vitórias (Bem)", value: botcStats.winsGood, icon: "🛡️" },
+                            { label: "Vitórias (Mal)", value: botcStats.winsEvil, icon: "💀" },
+                            { label: "Narrador", value: botcStats.storytellerGames, icon: "📖" },
+                          ].map((s, i) => (
+                            <div key={i} className="rounded-lg border border-border bg-background/40 p-3 text-center">
+                              <p className="text-xl mb-1">{s.icon}</p>
+                              <p className="text-xl font-bold">{s.value}</p>
+                              <p className="text-[10px] text-muted-foreground">{s.label}</p>
+                            </div>
+                          ))}
                         </div>
-                      </CardContent>
-                    </Card>
-                  )}
 
-                  {/* Character performance table */}
-                  {botcCharPerf.length > 0 && (
-                    <Card className="bg-card border-border">
-                      <CardContent className="pt-6">
-                        <h2 className="text-lg font-semibold mb-4">Performance por Personagem</h2>
-                        <div className="overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow>
-                                <TableHead>Personagem</TableHead>
-                                <TableHead className="text-center">Vezes Jogado</TableHead>
-                                <TableHead className="text-center">% Vitória</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {botcCharPerf.map((cp) => (
-                                <TableRow key={cp.name}>
-                                  <TableCell className="font-medium">{cp.name}</TableCell>
-                                  <TableCell className="text-center">{cp.games}</TableCell>
-                                  <TableCell className="text-center">{cp.winPct}%</TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
-                </>
-              )}
-            </motion.div>
-          </AnimatePresence>
-        </div>
-      )}
+                        {botcPartners.length > 0 && (
+                          <div>
+                            <h4 className="text-xs font-semibold mb-2 text-muted-foreground uppercase tracking-wider">Parceiros de partida</h4>
+                            <div className="h-[300px]">
+                              <BarChart
+                                data={botcPartners}
+                                layout="vertical"
+                                width={700}
+                                height={280}
+                                margin={{ left: 80, right: 20, top: 5, bottom: 5 }}
+                              >
+                                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                <XAxis type="number" allowDecimals={false} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
+                                <YAxis dataKey="name" type="category" width={75} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
+                                <RechartsTooltip content={<BotcPartnerTooltip />} />
+                                <Legend formatter={(value: string) => value === 'goodGames' ? '🛡️ Bem' : '💀 Mal'} wrapperStyle={{ fontSize: 12 }} />
+                                <Bar dataKey="goodGames" stackId="a" fill="hsl(210, 70%, 55%)" name="goodGames" />
+                                <Bar dataKey="evilGames" stackId="a" fill="hsl(0, 60%, 50%)" radius={[0, 4, 4, 0]} name="evilGames" />
+                              </BarChart>
+                            </div>
+                          </div>
+                        )}
 
-      {/* No stats at all */}
-      {availableCategories.length === 0 && (
-        <Card className="bg-card border-border">
-          <CardContent className="py-12 text-center text-muted-foreground">
-            <p>Nenhuma partida registrada ainda.</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Achievements */}
-      {achievements.length > 0 && (
-        <Card className="bg-card border-border">
-          <CardContent className="pt-6">
-            <h2 className="text-lg font-semibold mb-4 flex items-center gap-2"><Award className="h-5 w-5 text-gold" /> Conquistas</h2>
-            <div className="flex flex-wrap gap-2">
-              {achievements.map((a, i) => (
-                <Badge key={i} variant="outline" className="text-sm py-1.5 px-3 border-gold/30">{a.icon} {a.name}</Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <FriendsList userId={profile?.id} />
-
-      {upcomingRooms.length > 0 && (
-        <Card className="bg-card border-border">
-          <CardContent className="pt-6">
-            <h2 className="text-lg font-semibold mb-4">Próximas Partidas</h2>
-            <div className="space-y-2">
-              {upcomingRooms.map((r) => {
-                const d = new Date(r.scheduled_at);
-                return (
-                  <div key={r.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
-                    <div>
-                      <p className="font-medium">{r.title}</p>
-                      <p className="text-sm text-muted-foreground">🎮 {r.game_name}</p>
-                    </div>
-                    <div className="text-right text-sm text-muted-foreground">
-                      <p className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {d.toLocaleDateString("pt-BR")}</p>
-                      <p className="flex items-center gap-1"><Clock className="h-3 w-3" /> {d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</p>
-                    </div>
+                        {botcCharPerf.length > 0 && (
+                          <div>
+                            <h4 className="text-xs font-semibold mb-2 text-muted-foreground uppercase tracking-wider">Performance por personagem</h4>
+                            <div className="overflow-x-auto">
+                              <Table>
+                                <TableHeader>
+                                  <TableRow>
+                                    <TableHead>Personagem</TableHead>
+                                    <TableHead className="text-center">Vezes Jogado</TableHead>
+                                    <TableHead className="text-center">% Vitória</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {botcCharPerf.map((cp) => (
+                                    <TableRow key={cp.name}>
+                                      <TableCell className="font-medium">{cp.name}</TableCell>
+                                      <TableCell className="text-center">{cp.games}</TableCell>
+                                      <TableCell className="text-center">{cp.winPct}%</TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
-                );
-              })}
-            </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </CardContent>
         </Card>
       )}

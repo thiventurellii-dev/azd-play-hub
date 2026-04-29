@@ -1,121 +1,148 @@
-# Redesign das Seasons
+## Reformular Página de Perfil do Jogador
 
-## Visão geral
+Reorganizar `src/pages/PlayerProfile.tsx` em uma estrutura visual moderna inspirada no mock-up, adaptada ao contexto AzD. O carrossel atual de categorias (boardgame/BotC) e tabelas legadas serão removidos. Conteúdo do BotC e performance por jogo serão preservados em uma seção secundária mais abaixo (não aparece no mock, mas é dado importante já existente).
 
-Reformular `Seasons.tsx` (lista) e `SeasonDetail.tsx` (detalhe) seguindo os mockups, mantendo toda a lógica atual (boardgame/blood, criar/editar admin, MMR).
+### Estrutura nova (de cima para baixo)
 
----
+```
+┌────────────────────────────────────────────────────────────────┐
+│ HERO HEADER                                                    │
+│ Avatar | Nome + @nick + steam/badges | KPIs (4): Partidas,    │
+│ Conquistas, Comunidades, Amigos                                │
+│ Bio (se houver) · Membro desde · Localização · XP             │
+│ [Editar Perfil] [Resetar Senha]  ou  [FriendButton]           │
+└────────────────────────────────────────────────────────────────┘
 
-## 1. Migration: capa da season
+┌─ Conquistas ─────────────────────── Ver todas ────────────────┐
+│ Cards horizontais (texto apenas, sem ícones específicos)      │
+│ Nome · Descrição · Data de conquista                          │
+└────────────────────────────────────────────────────────────────┘
 
-Adicionar uma única coluna:
-- `seasons.cover_url text NULL`
+┌─ Jogos em destaque ───────────────────────────────────────────┐
+│ Cards (cover + nome + partidas + winrate + progress bar)      │
+│ Top N jogos ordenados por # partidas                          │
+└────────────────────────────────────────────────────────────────┘
 
-Helper de UI: se `cover_url` vazio, cair para `games.image_url` do primeiro `season_games` (boardgame) ou `blood_scripts.image_url` do primeiro `season_blood_scripts` (blood). Já temos esses dados em `useSeasonsData`.
+┌─ Season atual (col 1) ─────┬─ Atividade recente (col 2) ─────┐
+│ Nome + status (Ativa/...)  │ Lista única (sem tabs):          │
+│ Termina em X dias          │ - Conquistas obtidas             │
+│ #posição de N · MMR atual  │ - Comunidades entradas           │
+│ Barra com tier (sem prata) │ - Partidas (NÃO incluir aqui)    │
+│ → faixa min/atual/max      │ Item: ícone + texto + data       │
+│ [Ver ranking completo]     │                                  │
+└────────────────────────────┴──────────────────────────────────┘
 
-Atualizar `Seasons.tsx` (form Criar/Editar) para incluir um campo "Imagem de capa (URL)" opcional.
+┌─ Próximas Partidas ───────────────────────────────────────────┐
+│ Lista das match_rooms agendadas (já existe upcomingRooms)     │
+│ Card: data (DateBlock) · jogo · título · status · vagas       │
+└────────────────────────────────────────────────────────────────┘
 
----
+┌─ Partidas recentes ───────────────── Ver todas ──────────────┐
+│ Cards horizontais coloridos por resultado:                    │
+│  - Competitiva ganhou MMR  → borda/bg verde                   │
+│  - Competitiva perdeu MMR → borda/bg vermelho                 │
+│  - Casual venceu          → borda/bg amarelo (gold)           │
+│  - Casual não venceu      → borda/bg cinza                    │
+│ Conteúdo: jogo · data · "vs jogadores" · score · ΔMMR         │
+└────────────────────────────────────────────────────────────────┘
 
-## 2. `Seasons.tsx` — página de lista
+┌─ Comunidades ─────────────┬─ Amigos ──────────────────────────┐
+│ Cards das comunidades     │ <FriendsList userId={profile.id}/>│
+│ que o jogador participa   │ (componente existente)            │
+└───────────────────────────┴───────────────────────────────────┘
 
-Estrutura nova (top-down):
+┌─ Estatísticas detalhadas (colapsável / accordion) ───────────┐
+│ Mantém: Performance por jogo, Principais oponentes (chart),  │
+│ BotC stats + parceiros + personagens (se houver dados)        │
+└───────────────────────────────────────────────────────────────┘
 
-1. **Header** — título "Seasons", subtítulo "Competições oficiais da comunidade", botão "Criar Season" (admin) à direita, botão secundário "Entenda como funciona" (abre dialog curto explicando MMR/ranking — copy curta).
-2. **Tabs `Abertas` / `Encerradas`** com contagem (`active+upcoming` vs `finished`).
-3. **Calendário das Seasons** (novo componente `SeasonsTimeline.tsx`):
-   - Visualizações: `Semana` / `Mês` / `Trimestre` (default Trimestre), com nav `‹ Hoje ›`.
-   - Renderiza barras horizontais por season usando `start_date`/`end_date`, posicionadas via cálculo de % no range visível.
-   - Linha "Hoje" tracejada vertical.
-   - **Cor da barra**: cinza (`muted`) se o usuário logado **não tem partida** na season; senão cor por status (gold=ativa, purple=em breve, green=em andamento curto/intertemporada, blue=futura, gray=encerrada — usar paleta do mockup mas mapeada aos tokens).
-   - Participação calculada uma vez via query: união de `match_results.player_id = user.id JOIN matches ON season_id` e `blood_match_players.player_id = user.id JOIN blood_matches ON season_id` → `Set<seasonId>`. Exposto por novo hook `useUserSeasonParticipation()`.
-   - Legenda na base com bolinhas das cores.
-4. **Seasons Ativas (N)** — grid 3 colunas de cards grandes com capa à esquerda (80–110px), nome + badge de status, jogo/script vinculado, datas, premiação total e contagem de participantes (count distinct de `mmr_ratings.player_id`/`blood_mmr_ratings.player_id` por season — adicionar ao `useSeasonsData`). Card todo clicável.
-5. **Seasons Encerradas** — **collapsible** (`@/components/ui/collapsible`), fechado por padrão, mostrando linhas compactas (uma por season) com: ícone, nome, badge "Finalizada", jogo, datas, campeão (1º colocado do ranking — pegar do `mmr_ratings`/`blood_mmr_ratings` ordenado), premiação total. Clicável → detalhe.
-
-Manter o dialog Criar/Editar atual + adicionar campo `cover_url`.
-
----
-
-## 3. `SeasonDetail.tsx` — página de detalhe
-
-Layout em duas colunas (desktop ≥ lg): **sidebar esquerda 280px** + **conteúdo direita**. No mobile vira coluna única.
-
-### Header (topo, full-width)
-- Link "← Voltar para Seasons".
-- Linha 1: nome grande, badge tipo (Boardgame/Blood), badge status.
-- Linha 2: ícone do jogo/script + nome do jogo/script vinculado.
-- Linha 3: datas + "(N dias restantes)" se ativa, badge "Temporada oficial", badge "Ranking público".
-- Botões à direita: **Compartilhar** (copia URL atual via `navigator.clipboard`, toast) e **Convidar jogadores** (botão visual; onClick mostra toast "Em breve" — placeholder).
-
-### Sidebar esquerda
-- Capa (imagem grande arredondada, usa `cover_url` ou fallback).
-- Card "Premiação Total" com R$ X total e mini-cards 1º/2º/3º (boardgame) ou 1º-3º/4º-6º/7º-10º (blood).
-- Bloco "Sistema de pontuação: MMR Global / Formato: Competitivo / Partidas válidas: Jogos ranqueados / Critério de desempate: Maior win rate, depois MMR" (estático por enquanto, copy fixa).
-- Botão "Regulamento da temporada" → link externo (placeholder `#` por enquanto, ou rota `/rules`).
-
-### KPIs (4 cards no topo do conteúdo)
-1. **Participantes** — `count(distinct player_id)` em `mmr_ratings`/`blood_mmr_ratings` da season. Link "Ver todos" abre tab Ranking.
-2. **Partidas realizadas** — `count(matches)` ou `count(blood_matches)`. Link "Ver partidas" abre tab Partidas.
-3. **Win Rate médio** — média de `wins/games_played` entre rankings com `games_played > 0`.
-4. **MMR médio** — média de `current_mmr` (boardgame) ou `total_points` (blood).
-
-### Tabs (substituir Tabs atual)
-`Ranking` | `Partidas` | `Estatísticas` | `Jogos` (boardgame só) | `Histórico`
-
-- **Ranking** (default): tabela atual à esquerda + painel "Estatísticas da temporada" à direita (ver abaixo). Em mobile, painel vira card abaixo.
-- **Partidas**: lista atual já existente.
-- **Estatísticas**: tela cheia com tudo do painel + gráficos maiores.
-- **Jogos**: tab atual (só boardgame).
-- **Histórico**: feed cronológico simples (últimas 20 partidas em ordem reversa, formato similar a "Últimas partidas").
-
-### Painel "Estatísticas da temporada" (lateral direita do Ranking)
-
-Computado client-side a partir das matches já carregadas:
-
-a. **Facções mais jogadas** (boardgame): agrupa `match_results.faction` (não-nulo) por season → barras horizontais com % e contagem. Top 5. Para Blood: usa `blood_match_players` agrupado por `team` (Mal/Bem/Storyteller).
-b. **Jogadores com mais vitórias**: top 3 por `wins` (avatar + nick + número).
-c. **Maior win rate**: top 3 por `wins/games_played` (mínimo 3 partidas).
-d. **Outras estatísticas** (4 mini-cards):
-   - Maior sequência de vitórias: itera matches por jogador em ordem cronológica, calcula maior streak de `position=1`.
-   - Maior sequência de derrotas: idem, streak sem `position=1` (com pelo menos 1 partida).
-   - Partida mais longa: `max(duration_minutes)` + nomes dos 2 primeiros colocados.
-   - Maior pontuação: `max(score)` em `match_results` + nick do jogador.
-
-### "Últimas partidas" (abaixo do Ranking)
-
-Card resumo das 5 mais recentes: data/hora · jogador A vs jogador B (1º colocado vs 2º) · resultado verde/vermelho · variação de MMR. Link "Ver todas" abre tab Partidas.
-
----
-
-## Estrutura técnica
-
-```text
-src/
-  pages/
-    Seasons.tsx                  (refatorado)
-    SeasonDetail.tsx             (refatorado, dividido em subcomponentes)
-  components/seasons/
-    SeasonsTimeline.tsx          (novo)
-    SeasonCardLarge.tsx          (novo, ativas)
-    SeasonRowFinished.tsx        (novo, collapsible)
-    SeasonHeader.tsx             (novo)
-    SeasonSidebar.tsx            (novo)
-    SeasonKpis.tsx               (novo)
-    SeasonStatsPanel.tsx         (novo)
-    SeasonRecentMatches.tsx      (novo)
-  hooks/
-    useSeasonsData.ts            (estende: cover_url, participants_count, champion_name)
-    useUserSeasonParticipation.ts (novo)
-    useSeasonStats.ts            (novo, computa KPIs e stats agregados)
+┌─ Forms de edição (Editar Perfil, Senha) ─ inalterados ──────┐
+└──────────────────────────────────────────────────────────────┘
 ```
 
-Tokens: usar `text-gold`, `bg-card`, `border-border`, `text-muted-foreground`. Cores extras (purple/green/blue/red) vêm do tailwind padrão mas com opacidade `/20` `/30` no estilo do projeto.
+### Detalhes por seção
 
----
+**1. Header**
 
-## Fora do escopo
+- Remover indicador de Status (Online).
+- KPIs: Partidas (`stats.totalGames`), Conquistas (`achievements.length`), Comunidades (count nova), Amigos (count nova).
+- Adicionar duas queries leves: `community_members` (count) e `friendships` (count `accepted` envolvendo o `profile.id`).
+- Mostrar localização (cidade/estado) e data de criação como linhas auxiliares.
 
-- Implementar de fato o "Convidar jogadores" (fica como toast "Em breve").
-- Edição inline de regulamento (link estático).
-- Drag/zoom real na timeline (usaremos botões Semana/Mês/Trimestre + ‹/›).
+**2. Conquistas**
+
+- Sem ícones. Cards com `name`, `description`, e data via nova consulta a `player_achievements.created_at` (campo precisa ser selecionado junto). Top 5 + link "Ver todas" (modal/dialog simples listando todas).
+
+**3. Jogos em destaque**
+
+- Reaproveita `gamePerformance` já calculado.
+- Mostrar até 4 jogos com mais partidas. Card inclui cover (`games.cover_url` se existir — adicionar ao select), partidas, winrate e barra de progresso de winrate.
+
+**4. Season atual**
+
+- Buscar season ativa (`seasons` onde `is_active`/`status = 'active'`) e a participação do jogador (`mmr_ratings` filtrado por season+player).
+- Calcular posição (`rank`) entre todos jogadores da season por MMR.
+- "Termina em X dias" via `end_date`.
+- Em vez de medalhas (Bronze/Prata/Ouro), mostrar barra simples: min MMR · MMR atual · max MMR da season + posição #X de N.
+- Botão "Ver ranking completo" → `/seasons/:slug`.
+
+**5. Atividade recente**
+
+- Sem TabTriggers. Lista única, máximo 8 itens, ordenada por data desc.
+- Fontes:
+  - `player_achievements` (com `achievement_definitions` join) → "Conquistou *Nome*"
+  - `community_members` (created_at) → "Entrou em *Comunidade*"
+- NÃO incluir partidas (separadas em sua própria seção).
+
+**6. Próximas Partidas (NOVA)**
+
+- Reusa `upcomingRooms` já buscado. Renderizar como lista com `DateBlock` + nome do jogo + título + vagas.
+- Se vazio: estado neutro "Nenhuma partida agendada".
+
+**7. Partidas recentes (NOVA, com cores)**
+
+- Buscar últimas 8 partidas do jogador a partir de `match_results` + `matches` (já temos resultados, faltam `mmr_change` e `season_id`).
+- Adicionar `mmr_change` ao select de `match_results` e `season_id` ao select de `matches`.
+- Lógica de cor por card:
+  - `season_id != null` (competitiva):
+    - `mmr_change > 0` → verde (border-green-500/50, bg verde tênue)
+    - `mmr_change <= 0` → vermelho
+  - `season_id == null` (casual):
+    - `position === 1` → amarelo (gold)
+    - else → cinza
+- Card mostra: jogo, data (DateBlock), oponentes (avatares pequenos), score do jogador, "+X.XX MMR" / "−X.XX MMR" (apenas competitiva), badge Vitória/Derrota/Empate.
+
+**8. Comunidades**
+
+- Nova query: `community_members` ativos do jogador + join `communities` (id, name, slug, avatar_url).
+- Renderizar até 6 mini-cards clicáveis para `/comunidades/:slug`.
+
+**9. Amigos**
+
+- Reusar `<FriendsList userId={profile.id} />` já existente, somente leitura quando não é o próprio perfil.
+
+**10. Estatísticas detalhadas (accordion colapsado por padrão)**
+
+- Mantém Performance por jogo, Principais oponentes (gráfico) e bloco BotC inteiro. Evita perder funcionalidade existente sem poluir o topo.
+
+### Notas técnicas
+
+- Arquivo único alterado: `src/pages/PlayerProfile.tsx` (refactor extenso). Forms de Edit/Password permanecem como estão, apenas reposicionados.
+- Componente reutilizável: `src/components/shared/DateBlock.tsx` (já existe).
+- Novo componente local `RecentMatchCard` dentro do arquivo (ou criar `src/components/profile/RecentMatchCard.tsx` se ficar muito grande) com a lógica de coloração.
+- Usar `Accordion` (`@/components/ui/accordion`) para a seção de estatísticas detalhadas.
+- Manter remoção do indicador "Online" (não há campo de presença).
+- Remover o carrossel de categorias (`availableCategories`, `categoryIdx`, navegação left/right) e a tabela "Performance por Jogo" / chart de oponentes da posição central — movidos para o accordion final.
+- Não tocar em `Profile.tsx` (página privada de edição) nesta iteração — escopo é a página pública/perfil do jogador. Confirmar com o usuário se também deve atualizar.
+
+### Arquivos
+
+- **Editar:** `src/pages/PlayerProfile.tsx`
+- **Possivelmente criar:** `src/components/profile/RecentMatchCard.tsx` (se a função render ficar grande)
+- **Reusa:** `src/components/shared/DateBlock.tsx`, `src/components/friendlist/FriendsList.tsx`, `src/components/ui/accordion.tsx`
+
+### Pontos a confirmar
+
+1. Manter no accordion as seções legadas (BotC, Performance por jogo, Principais oponentes) ou remover de vez?
+2. "Conquistas" — mostrar apenas as últimas 5 com botão "Ver todas" abrindo dialog, ou já listar todas como grid expandível?
+3. A página `Profile.tsx` (rota `/perfil` de edição) deve receber o mesmo tratamento ou só `PlayerProfile.tsx` (`/perfil/:nickname`)?

@@ -1,13 +1,13 @@
 import { useNavigate } from "react-router-dom";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Users, Calendar, MoreHorizontal, BarChart3, Pencil, Heart, Skull } from "lucide-react";
+import { Users, Calendar, MoreHorizontal, BarChart3, Pencil, Heart, Skull, Flag } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import EditBloodScriptDialog from "@/components/blood/EditBloodScriptDialog";
@@ -48,12 +48,28 @@ const BloodScriptCard = ({ script, characters, seasons, index, onUpdated }: Bloo
   const scriptSlug = script.slug || script.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
   const goToDetail = () => navigate(`/scripts/${scriptSlug}`);
   const hasActiveSeason = seasons.some((s) => s.status === "active");
+  const hasActiveTournament = false; // placeholder for future tournament model
+  const activeSeason = seasons.find((s) => s.status === "active");
 
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.04 }}>
       <article
         onClick={goToDetail}
-        className="group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl bg-card transition-all duration-300 ring-1 ring-border/40 hover:ring-destructive/30 hover:-translate-y-0.5 shadow-[0_4px_20px_-12px_rgba(0,0,0,0.6)] hover:shadow-[0_12px_36px_-12px_rgba(220,38,38,0.18)]"
+        style={
+          hasActiveTournament
+            ? { boxShadow: "0 0 0 1px hsl(45 100% 60% / 0.35), 0 10px 32px -10px hsl(45 100% 55% / 0.45)" }
+            : hasActiveSeason
+              ? { boxShadow: "0 0 0 1px hsl(265 85% 65% / 0.32), 0 10px 32px -10px hsl(265 85% 60% / 0.45)" }
+              : undefined
+        }
+        className={cn(
+          "group relative isolate flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl bg-card transform-gpu [backface-visibility:hidden] transition-all duration-300 ring-1 hover:-translate-y-0.5",
+          hasActiveTournament
+            ? "ring-amber-400/50 hover:ring-amber-400/70"
+            : hasActiveSeason
+              ? "ring-violet-500/50 hover:ring-violet-400/70"
+              : "ring-border/40 hover:ring-destructive/30 shadow-[0_4px_20px_-12px_rgba(0,0,0,0.6)] hover:shadow-[0_12px_36px_-12px_rgba(220,38,38,0.18)]",
+        )}
       >
         {/* COVER */}
         <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-secondary via-card to-background">
@@ -71,8 +87,27 @@ const BloodScriptCard = ({ script, characters, seasons, index, onUpdated }: Bloo
           <div className="pointer-events-none absolute inset-0 shadow-[inset_0_0_60px_rgba(0,0,0,0.55)]" />
 
           <div className="absolute inset-x-0 top-0 flex items-start justify-between p-2.5 z-10">
-            <div className="opacity-70 transition-opacity group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
-              <FavoriteButton entityType="blood_script" entityId={script.id} size="sm" />
+            <div className="flex items-center gap-1.5">
+              <div className="opacity-70 transition-opacity group-hover:opacity-100" onClick={(e) => e.stopPropagation()}>
+                <FavoriteButton entityType="blood_script" entityId={script.id} size="sm" />
+              </div>
+              {hasActiveTournament ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 backdrop-blur-sm px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-200 ring-1 ring-amber-400/40 shadow-[0_0_12px_-2px_hsl(45_100%_55%/0.5)]">
+                  <Flag className="h-3 w-3" /> Torneio
+                </span>
+              ) : hasActiveSeason ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (activeSeason) navigate(`/seasons/${activeSeason.season_id}`);
+                  }}
+                  className="inline-flex items-center gap-1 rounded-full bg-violet-500/20 backdrop-blur-sm px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-violet-200 ring-1 ring-violet-400/40 shadow-[0_0_12px_-2px_hsl(265_85%_60%/0.5)] hover:bg-violet-500/30 hover:ring-violet-400/60 transition-colors"
+                  title={activeSeason?.season_name ? `Ver ${activeSeason.season_name}` : "Ver Season"}
+                >
+                  <Flag className="h-3 w-3" /> Season
+                </button>
+              ) : null}
             </div>
             <div onClick={(e) => e.stopPropagation()}>
               <DropdownMenu>
@@ -85,10 +120,15 @@ const BloodScriptCard = ({ script, characters, seasons, index, onUpdated }: Bloo
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem onClick={goToDetail}>
                     <BarChart3 className="h-3.5 w-3.5 mr-2" /> Ver detalhes
                   </DropdownMenuItem>
+                  {activeSeason && (
+                    <DropdownMenuItem onClick={() => navigate(`/seasons/${activeSeason.season_id}`)}>
+                      <Calendar className="h-3.5 w-3.5 mr-2 text-violet-400" /> Ver Season
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={() => setEditOpen(true)}>
                     <Pencil className="h-3.5 w-3.5 mr-2" /> Editar script
                   </DropdownMenuItem>
@@ -119,21 +159,7 @@ const BloodScriptCard = ({ script, characters, seasons, index, onUpdated }: Bloo
             <StatBlock value={evilChars.length} label="Maus" icon={Skull} />
           </div>
 
-          {/* Seasons */}
-          {seasons.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {hasActiveSeason && (
-                <Badge variant="outline" className="border-indigo-500/25 bg-indigo-500/10 text-indigo-300 text-[10px] uppercase tracking-wider">
-                  <Calendar className="h-3 w-3 mr-1" /> Season Ativa
-                </Badge>
-              )}
-              {seasons.slice(0, 2).map((ss) => (
-                <Badge key={ss.season_id} variant="outline" className="text-[10px] border-border/60 text-muted-foreground">
-                  {ss.season_name}
-                </Badge>
-              ))}
-            </div>
-          )}
+          {/* Active context now shown via card border + flag in cover */}
         </div>
 
         <EditBloodScriptDialog

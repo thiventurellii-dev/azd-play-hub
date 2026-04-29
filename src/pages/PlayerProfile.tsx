@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabaseExternal";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from "recharts";
@@ -11,8 +12,6 @@ import {
   Trophy, Gamepad2, ArrowLeft, Calendar, Clock, Award, Pencil, Lock, CalendarIcon,
   Users, MessagesSquare, MapPin, Sparkles, ChevronRight,
 } from "lucide-react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -21,10 +20,7 @@ import FriendButton from "@/components/friendlist/FriendButton";
 import FriendsList from "@/components/friendlist/FriendsList";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotification } from "@/components/NotificationDialog";
-import {
-  brazilianStates, citiesByState, pronounsOptions, countryCodes,
-  formatPhone, unformatPhone,
-} from "@/lib/brazil-data";
+import { brazilianStates, formatPhone } from "@/lib/brazil-data";
 import { Camera } from "lucide-react";
 import XpBadge from "@/components/shared/XpBadge";
 import DateBlock from "@/components/shared/DateBlock";
@@ -32,6 +28,9 @@ import { RecentMatchItem } from "@/components/profile/RecentMatchCard";
 import RecentMatchCardCompact from "@/components/profile/RecentMatchCardCompact";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { cn } from "@/lib/utils";
+import { EditProfileDialog } from "@/components/profile/EditProfileDialog";
+import { PlayerTagsBadges } from "@/components/profile/PlayerTagsSelector";
+import { useProfileTags } from "@/hooks/useProfileTags";
 
 const CHART_COLORS = [
   "hsl(43, 100%, 50%)", "hsl(200, 80%, 55%)", "hsl(150, 60%, 45%)", "hsl(340, 70%, 55%)",
@@ -73,20 +72,15 @@ const PlayerProfile = () => {
 
   // Edit profile state
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({
-    name: "", nickname: "", phone: "", country_code: "+55",
-    state: "", city: "", birth_date: "", gender: "", pronouns: "", email: "",
-  });
-  const [saving, setSaving] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [savingPassword, setSavingPassword] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { tags: playerTags, setTags: setPlayerTags } = useProfileTags(profile?.id);
 
   const isOwnProfile = user && profile && user.id === profile.id;
-  const cities = citiesByState[form.state] || [];
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -94,13 +88,6 @@ const PlayerProfile = () => {
         .from("profiles").select("*").eq("nickname", nickname as string).maybeSingle();
       if (!prof) { setLoading(false); return; }
       setProfile(prof);
-      setForm({
-        name: prof.name || "", nickname: (prof as any).nickname || "",
-        phone: formatPhone((prof as any).phone || ""), country_code: (prof as any).country_code || "+55",
-        state: (prof as any).state || "", city: (prof as any).city || "",
-        birth_date: (prof as any).birth_date || "", gender: (prof as any).gender || "",
-        pronouns: (prof as any).pronouns || "", email: (prof as any).email || "",
-      });
       const { data: roleData } = await supabase.from("user_roles").select("role").eq("user_id", prof.id).maybeSingle();
       if (roleData) setRole(roleData.role);
 
@@ -418,23 +405,20 @@ const PlayerProfile = () => {
     return items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 8);
   }, [achievements, communitiesActivity]);
 
-  const handleSaveProfile = async () => {
-    if (!user || !isOwnProfile) return;
-    if (!form.name || !form.nickname || !form.phone || !form.state || !form.city || !form.birth_date || !form.gender || !form.pronouns) {
-      return notify("error", "Preencha todos os campos obrigatórios");
+  const pronounsLabels: Record<string, string> = {
+    "ele/dele": "Ele/Dele",
+    "ela/dela": "Ela/Dela",
+    "elu/delu": "Elu/Delu",
+    prefiro_nao_dizer: "Prefiro não dizer",
+  };
+
+  const handleProfileSaved = (updated: any, newTags: any[]) => {
+    setProfile((current: any) => ({ ...current, ...updated }));
+    setPlayerTags(newTags);
+
+    if (updated.nickname && updated.nickname !== nickname) {
+      navigate(`/perfil/${updated.nickname}`, { replace: true });
     }
-    setSaving(true);
-    const { error } = await supabase.from("profiles").update({
-      name: form.name, nickname: form.nickname, phone: unformatPhone(form.phone),
-      country_code: form.country_code, state: form.state, city: form.city,
-      birth_date: form.birth_date, gender: form.gender, pronouns: form.pronouns, email: form.email,
-    } as any).eq("id", user.id);
-    setSaving(false);
-    if (error) return notify("error", error.message);
-    notify("success", "Perfil atualizado!");
-    setEditing(false);
-    setProfile({ ...profile, ...form, phone: unformatPhone(form.phone) });
-    if (form.nickname !== nickname) navigate(`/perfil/${form.nickname}`, { replace: true });
   };
 
   const handleChangePassword = async () => {
@@ -571,11 +555,18 @@ const PlayerProfile = () => {
                       </a>
                     )}
                   </div>
-                  {profile.nickname && <p className="text-gold text-sm">@{profile.nickname}</p>}
+                  {(profile.nickname || profile.pronouns) && (
+                    <div className="flex items-center gap-2 justify-center sm:justify-start flex-wrap text-sm text-muted-foreground">
+                      {profile.nickname && <span className="text-gold">@{profile.nickname}</span>}
+                      {profile.nickname && profile.pronouns && <span className="opacity-50">•</span>}
+                      {profile.pronouns && <span>{pronounsLabels[profile.pronouns] || profile.pronouns}</span>}
+                    </div>
+                  )}
                   <div className="flex items-center gap-2 justify-center sm:justify-start mt-2 flex-wrap">
                     <Badge variant={role === "admin" ? "default" : "secondary"}>
                       {role === "admin" ? "Admin" : "Player"}
                     </Badge>
+                    <PlayerTagsBadges tags={playerTags} />
                     <XpBadge userId={profile.id} variant="compact" />
                   </div>
                   {/* (informações de membro/local foram movidas para a barra inferior do header) */}
@@ -649,74 +640,6 @@ const PlayerProfile = () => {
           </CardContent>
         </Card>
       </motion.div>
-
-      {/* ======================= EDIT FORMS ======================= */}
-      {isOwnProfile && editing && (
-        <Card className="bg-card border-border">
-          <CardContent className="pt-6 space-y-4">
-            <h2 className="text-lg font-semibold">Editar Perfil</h2>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2"><Label>Nickname *</Label><Input value={form.nickname} onChange={(e) => setForm({ ...form, nickname: e.target.value })} /></div>
-              <div className="space-y-2"><Label>Nome Completo *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-            </div>
-            <div className="space-y-2"><Label>E-mail</Label><Input value={form.email} disabled className="opacity-60" /></div>
-            <div className="space-y-2">
-              <Label>Telefone *</Label>
-              <div className="flex gap-2">
-                <Select value={form.country_code} onValueChange={(v) => setForm({ ...form, country_code: v })}>
-                  <SelectTrigger className="w-[110px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>{countryCodes.map((c) => <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>)}</SelectContent>
-                </Select>
-                <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: formatPhone(e.target.value) })} placeholder="(11) 99999-9999" className="flex-1" />
-              </div>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label>Estado *</Label>
-                <Select value={form.state} onValueChange={(v) => setForm({ ...form, state: v, city: "" })}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>{brazilianStates.map((s) => <SelectItem key={s.uf} value={s.uf}>{s.name}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Cidade *</Label>
-                <Select value={form.city} onValueChange={(v) => setForm({ ...form, city: v })} disabled={!form.state}>
-                  <SelectTrigger><SelectValue placeholder={form.state ? "Selecione" : "Selecione o estado"} /></SelectTrigger>
-                  <SelectContent>{cities.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2"><Label>Data de Nascimento *</Label><div className="relative"><Input type="date" value={form.birth_date} onChange={(e) => setForm({ ...form, birth_date: e.target.value })} className="pr-10" /><CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" /></div></div>
-              <div className="space-y-2">
-                <Label>Gênero *</Label>
-                <Select value={form.gender} onValueChange={(v) => setForm({ ...form, gender: v })}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="masculino">Masculino</SelectItem>
-                    <SelectItem value="feminino">Feminino</SelectItem>
-                    <SelectItem value="nao_binario">Não-binário</SelectItem>
-                    <SelectItem value="outro">Outro</SelectItem>
-                    <SelectItem value="prefiro_nao_dizer">Prefiro não dizer</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Pronomes *</Label>
-              <Select value={form.pronouns} onValueChange={(v) => setForm({ ...form, pronouns: v })}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent>{pronounsOptions.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <Separator />
-            <div className="flex gap-2">
-              <Button variant="gold" onClick={handleSaveProfile} disabled={saving}>{saving ? "Salvando..." : "Salvar"}</Button>
-              <Button variant="outline" onClick={() => setEditing(false)}>Cancelar</Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {isOwnProfile && changingPassword && (
         <Card className="bg-card border-border">
@@ -1057,6 +980,17 @@ const PlayerProfile = () => {
           <FriendsList userId={profile?.id} />
         </div>
       </div>
+
+      {isOwnProfile && profile && user && (
+        <EditProfileDialog
+          open={editing}
+          onOpenChange={setEditing}
+          userId={user.id}
+          initialProfile={profile}
+          initialTags={playerTags}
+          onSaved={handleProfileSaved}
+        />
+      )}
 
       {/* (Estatísticas Detalhadas removidas — disponíveis nos slugs de Jogo/Season) */}
     </div>

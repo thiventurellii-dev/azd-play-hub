@@ -11,6 +11,8 @@ import { DatePickerField } from '@/components/ui/date-picker-field';
 import logo from '@/assets/azd-logo.png';
 import { useNotification } from '@/components/NotificationDialog';
 import { brazilianStates, citiesByState, pronounsOptions, countryCodes, formatPhone, unformatPhone } from '@/lib/brazil-data';
+import PlayerTagsSelector, { PlayerTag } from '@/components/profile/PlayerTagsSelector';
+import { useProfileTags, saveProfileTags } from '@/hooks/useProfileTags';
 
 const CompleteProfile = () => {
   const { user, setProfileCompleted } = useAuth();

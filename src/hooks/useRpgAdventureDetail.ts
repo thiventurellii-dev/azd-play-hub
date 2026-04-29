@@ -43,15 +43,23 @@ export const useRpgAdventureDetail = (slug?: string) => {
     queryKey: ['rpg-adventure', slug],
     enabled: !!slug,
     queryFn: async (): Promise<AdventureDetail | null> => {
-      // Try by slug first; fallback to id
-      let { data, error } = await supabase
+      const key = slug as string;
+      // 1) try exact slug match
+      let { data } = await supabase
         .from('rpg_adventures')
         .select('*')
-        .eq('slug', slug as string)
+        .eq('slug', key)
         .maybeSingle();
-      if (error || !data) {
-        const r = await supabase.from('rpg_adventures').select('*').eq('id', slug as string).maybeSingle();
+      // 2) try by id (uuid fallback)
+      if (!data) {
+        const r = await supabase.from('rpg_adventures').select('*').eq('id', key).maybeSingle();
         data = r.data as any;
+      }
+      // 3) fallback: fetch all and match by slugified name (covers legacy rows without slug)
+      if (!data) {
+        const { data: all } = await supabase.from('rpg_adventures').select('*');
+        const { slugify } = await import('@/lib/slugify');
+        data = (all || []).find((a: any) => slugify(a.name) === key) as any;
       }
       if (!data) return null;
       const adv = data as any as AdventureDetail;

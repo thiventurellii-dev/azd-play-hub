@@ -394,6 +394,8 @@ const Profile = () => {
         </CardContent>
       </Card>
 
+      <MyCampaignsCard />
+
       <div className="mt-6">
         <FriendsList />
       </div>

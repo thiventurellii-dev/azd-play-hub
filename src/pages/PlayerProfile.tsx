@@ -64,8 +64,9 @@ const PlayerProfile = () => {
   const [communities, setCommunities] = useState<CommunityItem[]>([]);
   const [communitiesActivity, setCommunitiesActivity] = useState<ActivityItem[]>([]);
   const [friendsCount, setFriendsCount] = useState(0);
-  const [seasonCtx, setSeasonCtx] = useState<SeasonContext | null>(null);
+  const [seasonsList, setSeasonsList] = useState<SeasonContext[]>([]);
   const [recentMatches, setRecentMatches] = useState<RecentMatchItem[]>([]);
+  const [lastMatchDate, setLastMatchDate] = useState<string | null>(null);
 
   const [botcStats, setBotcStats] = useState<{ gamesPlayed: number; winsGood: number; winsEvil: number; storytellerGames: number } | null>(null);
   const [botcPartners, setBotcPartners] = useState<{ name: string; goodGames: number; evilGames: number; goodWins: number; evilWins: number }[]>([]);

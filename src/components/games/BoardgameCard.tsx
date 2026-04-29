@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Users, Clock, ExternalLink, Video, MoreHorizontal, BarChart3, Pencil } from "lucide-react";
+import { Users, Clock, ExternalLink, Video, MoreHorizontal, BarChart3, Pencil, Flag } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
 
@@ -71,7 +71,13 @@ const BoardgameCard = ({
     >
       <article
         onClick={goToDetail}
-        className="group relative isolate flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl bg-card transform-gpu [backface-visibility:hidden] [-webkit-mask-image:-webkit-radial-gradient(white,black)] transition-all duration-300 ring-1 ring-border/40 hover:ring-gold/30 hover:-translate-y-0.5 shadow-[0_4px_20px_-12px_rgba(0,0,0,0.6)] hover:shadow-[0_12px_36px_-12px_rgba(255,184,0,0.18)]"
+        className={`group relative isolate flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl bg-card transform-gpu [backface-visibility:hidden] [-webkit-mask-image:-webkit-radial-gradient(white,black)] transition-all duration-300 ring-1 hover:-translate-y-0.5 ${
+          hasActiveTournament
+            ? "ring-amber-400/40 shadow-[0_0_0_1px_hsl(45_100%_60%/0.15),0_8px_28px_-10px_hsl(45_100%_55%/0.35)] hover:ring-amber-400/60 hover:shadow-[0_0_0_1px_hsl(45_100%_60%/0.25),0_14px_40px_-10px_hsl(45_100%_55%/0.45)]"
+            : hasActiveSeason
+              ? "ring-violet-500/40 shadow-[0_0_0_1px_hsl(265_85%_65%/0.12),0_8px_28px_-10px_hsl(265_85%_60%/0.32)] hover:ring-violet-400/60 hover:shadow-[0_0_0_1px_hsl(265_85%_65%/0.22),0_14px_40px_-10px_hsl(265_85%_60%/0.42)]"
+              : "ring-border/40 hover:ring-gold/30 shadow-[0_4px_20px_-12px_rgba(0,0,0,0.6)] hover:shadow-[0_12px_36px_-12px_rgba(255,184,0,0.18)]"
+        }`}
       >
         {/* COVER */}
         <div className="relative aspect-[16/10] w-full overflow-hidden rounded-t-2xl bg-gradient-to-br from-secondary via-card to-background">

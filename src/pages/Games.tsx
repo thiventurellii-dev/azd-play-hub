@@ -123,8 +123,17 @@ const Games = () => {
 
   return (
     <div className="container py-10">
-      <div className="mb-2"><h1 className="text-2xl md:text-3xl font-bold">Jogos</h1></div>
-      <p className="text-muted-foreground mb-8">Coleção de jogos da comunidade AzD</p>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-8">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">Jogos</h1>
+          <p className="text-muted-foreground">Coleção de jogos da comunidade AzD</p>
+        </div>
+        {user && (
+          <Button variant="gold" size="sm" className="h-9" onClick={() => setAddOpen(true)}>
+            <Plus className="h-4 w-4 mr-1.5" /> Adicionar Jogo
+          </Button>
+        )}
+      </div>
 
       {isLoading ? (
         <div className="flex justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-2 border-gold border-t-transparent" /></div>

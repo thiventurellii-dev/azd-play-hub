@@ -129,6 +129,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
   const availableTags = useMemo(() => options?.tags ?? [], [options?.tags]);
   const seasons = useMemo(() => options?.seasons ?? [], [options?.seasons]);
   const userCommunities = useMemo(() => options?.communities ?? [], [options?.communities]);
+  const userCampaigns = useMemo(() => options?.campaigns ?? [], [options?.campaigns]);
 
   const [category, setCategory] = useState<"boardgame" | "botc" | "rpg" | "">("");
   const [gameId, setGameId] = useState("");
@@ -145,6 +146,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
   const [communityOnly, setCommunityOnly] = useState(false);
   const [platform, setPlatform] = useState("");
   const [status, setStatus] = useState("");
+  const [selectedCampaignId, setSelectedCampaignId] = useState("");
 
   useEffect(() => {
     if (!room) return;

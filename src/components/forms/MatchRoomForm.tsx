@@ -189,10 +189,13 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
   }, [gameId, games, isEdit]);
 
   const isBotC = category === "botc";
+  const isRpg = category === "rpg";
   const botcGame = games.find(g => g.slug === "blood-on-the-clocktower");
+  const rpgGame = games.find(g => g.slug === "rpg-generico" || g.slug === "rpg-generic" || g.name?.toLowerCase() === "rpg");
+  const selectedCampaign = userCampaigns.find(c => c.id === selectedCampaignId);
 
   const filteredGames = games.filter(g => {
-    if (category === "boardgame") return g.slug !== "blood-on-the-clocktower";
+    if (category === "boardgame") return g.slug !== "blood-on-the-clocktower" && g.slug !== "rpg-generico" && g.slug !== "rpg-generic";
     return true;
   });
 

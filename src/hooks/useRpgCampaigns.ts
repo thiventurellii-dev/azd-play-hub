@@ -58,13 +58,13 @@ export const useRpgCampaigns = () => {
       );
       const advMap = new Map((advs || []).map((a: any) => [a.id, a]));
       const partyCount = new Map<string, number>();
-      const myMembership = new Map<string, string>();
+      const myMembership = new Map<string, import('@/types/rpg').RpgCampaignPlayerStatus>();
       (members || []).forEach((m: any) => {
         if (m.status === 'accepted') {
           partyCount.set(m.campaign_id, (partyCount.get(m.campaign_id) || 0) + 1);
         }
         if (user?.id && m.player_id === user.id) {
-          myMembership.set(m.campaign_id, m.status);
+          myMembership.set(m.campaign_id, m.status as import('@/types/rpg').RpgCampaignPlayerStatus);
         }
       });
       const sessionCount = new Map<string, number>();

@@ -1,11 +1,21 @@
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Clock, ExternalLink, Video, Calendar } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Users, Clock, ExternalLink, Video, MoreHorizontal, BarChart3, Pencil } from "lucide-react";
 import { motion } from "framer-motion";
+import { useState } from "react";
 import { EntityEditButton } from "@/components/shared/EntityEditButton";
 import GameForm, { type GameFormData } from "@/components/forms/GameForm";
 import { FavoriteButton } from "@/components/shared/FavoriteButton";
+import { useAuth } from "@/contexts/AuthContext";
+import { canEdit } from "@/utils/permissions";
+import { EntitySheet } from "@/components/shared/EntitySheet";
 
 interface SeasonLink {
   season_id: string;
@@ -13,113 +23,266 @@ interface SeasonLink {
   status: string;
 }
 
-const statusColors: Record<string, string> = {
-  active: "bg-green-500/20 text-green-400 border-green-500/30",
-  upcoming: "bg-blue-500/20 text-blue-400 border-blue-500/30",
-  finished: "bg-muted text-muted-foreground border-border",
-};
-
 interface BoardgameCardProps {
   game: GameFormData;
   seasons: SeasonLink[];
   avgDuration?: number;
+  matchCount?: number;
+  hasActiveSeason?: boolean;
+  hasActiveTournament?: boolean;
   tags: string[];
   index: number;
   onUpdated: () => void;
 }
 
-const BoardgameCard = ({ game, seasons, avgDuration, tags, index, onUpdated }: BoardgameCardProps) => {
+const BoardgameCard = ({
+  game,
+  avgDuration,
+  matchCount = 0,
+  hasActiveSeason = false,
+  hasActiveTournament = false,
+  tags,
+  index,
+  onUpdated,
+}: BoardgameCardProps) => {
   const navigate = useNavigate();
+  const { user, role } = useAuth();
+  const [editOpen, setEditOpen] = useState(false);
+
+  const canEditGame = canEdit("boardgame", { role, userId: user?.id ?? null });
+  const goToDetail = () => game.slug && navigate(`/jogos/${game.slug}`);
+
+  const category = tags[0];
+  const mechanics = tags.slice(1, 5);
+  const playerRange =
+    game.min_players || game.max_players ? `${game.min_players ?? "?"}–${game.max_players ?? "?"}` : null;
 
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }}>
-      <Card className="bg-card border-border hover:border-gold/20 transition-colors h-full flex flex-col relative group">
-        <div className="absolute top-3 left-3 z-10">
-          <FavoriteButton entityType="game" entityId={game.id} size="sm" />
-        </div>
-        <CardContent
-          className="py-5 space-y-4 flex-1 flex flex-col cursor-pointer"
-          onClick={() => (game.slug ? navigate(`/jogos/${game.slug}`) : undefined)}
-        >
-          <div className="flex items-start gap-4">
-            {game.image_url ? (
-              <img src={game.image_url} alt={game.name} className="h-16 w-16 rounded-lg object-cover flex-shrink-0" />
-            ) : (
-              <div className="h-16 w-16 rounded-lg bg-secondary flex items-center justify-center text-gold font-bold text-2xl flex-shrink-0">
-                {game.name.charAt(0)}
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <h3 className="text-lg font-bold">{game.name}</h3>
-              <div className="flex items-center gap-3 mt-1 flex-wrap">
-                {(game.min_players || game.max_players) && (
-                  <p className="text-sm text-muted-foreground flex items-center gap-1">
-                    <Users className="h-4 w-4" /> {game.min_players || "?"}–{game.max_players || "?"}
-                  </p>
-                )}
-                {avgDuration && (
-                  <p className="text-sm text-muted-foreground flex items-center gap-1">
-                    <Clock className="h-4 w-4" /> ~{avgDuration} min
-                  </p>
-                )}
-              </div>
-              {tags.length > 0 && (
-                <div className="flex gap-1 mt-1 flex-wrap">
-                  {tags.map((t) => (
-                    <Badge key={t} variant="outline" className="text-[10px] py-0">
-                      {t}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-              {(game.rules_url || game.video_url) && (
-                <div className="flex gap-2 mt-2 flex-wrap">
-                  {game.rules_url && (
-                    <a href={game.rules_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
-                      <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1 py-0.5 px-2 text-[10px]">
-                        <ExternalLink className="h-3 w-3" /> Regras
-                      </Badge>
-                    </a>
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.04 }}
+    >
+      <article
+        onClick={goToDetail}
+        className="group relative flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl bg-card transition-all duration-300 ring-1 ring-border/40 hover:ring-gold/30 hover:-translate-y-0.5 shadow-[0_4px_20px_-12px_rgba(0,0,0,0.6)] hover:shadow-[0_12px_36px_-12px_rgba(255,184,0,0.18)]"
+      >
+        {/* COVER */}
+        <div className="relative aspect-[16/10] w-full overflow-hidden bg-gradient-to-br from-secondary via-card to-background">
+          {game.image_url ? (
+            <img
+              src={game.image_url}
+              alt={game.name}
+              loading="lazy"
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-6xl font-bold text-gold/30">{game.name.charAt(0)}</span>
+            </div>
+          )}
+
+          {/* Gradient overlay for readability */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/10 to-card" />
+          {/* Subtle vignette */}
+          <div className="pointer-events-none absolute inset-0 shadow-[inset_0_0_60px_rgba(0,0,0,0.55)]" />
+
+          {/* Top floating actions */}
+          <div className="absolute inset-x-0 top-0 flex items-start justify-between p-2.5 z-10">
+            <div
+              className="opacity-70 transition-opacity group-hover:opacity-100"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <FavoriteButton entityType="game" entityId={game.id} size="sm" />
+            </div>
+
+            <div onClick={(e) => e.stopPropagation()}>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-full bg-black/30 backdrop-blur-sm hover:bg-black/50 text-white/80 hover:text-white opacity-70 group-hover:opacity-100 transition-opacity"
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-44">
+                  <DropdownMenuItem onClick={goToDetail}>
+                    <BarChart3 className="h-3.5 w-3.5 mr-2" /> Ver detalhes
+                  </DropdownMenuItem>
+                  {canEditGame && (
+                    <DropdownMenuItem onClick={() => setEditOpen(true)}>
+                      <Pencil className="h-3.5 w-3.5 mr-2" /> Editar jogo
+                    </DropdownMenuItem>
                   )}
-                  {game.video_url && (
-                    <a href={game.video_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
-                      <Badge variant="outline" className="cursor-pointer hover:border-gold/50 gap-1 py-0.5 px-2 text-[10px]">
-                        <Video className="h-3 w-3" /> Vídeo
-                      </Badge>
-                    </a>
-                  )}
-                </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+
+          {/* Title overlay on cover bottom */}
+          <div className="absolute inset-x-0 bottom-0 p-4 z-10">
+            <div className="flex items-end justify-between gap-3">
+              <h3 className="text-xl font-bold leading-tight text-white drop-shadow-md line-clamp-2">
+                {game.name}
+              </h3>
+              {category && (
+                <Badge
+                  variant="outline"
+                  className="shrink-0 border-white/20 bg-black/40 backdrop-blur-sm text-[10px] text-white/90 uppercase tracking-wider"
+                >
+                  {category}
+                </Badge>
               )}
             </div>
           </div>
-          <div className="flex-1" />
-          {seasons.length > 0 ? (
-            <div className="border-t border-border pt-3">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
-                <Calendar className="h-3 w-3" /> Seasons
-              </p>
-              <div className="flex gap-2 flex-wrap">
-                {seasons.map((s) => (
-                  <Badge key={s.season_id} className={`${statusColors[s.status] || "bg-muted text-muted-foreground border-border"} text-xs`}>
-                    {s.season_name}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="border-t border-border pt-3">
-              <p className="text-xs text-muted-foreground italic">Nenhuma season vinculada</p>
+        </div>
+
+        {/* BODY */}
+        <div className="flex flex-1 flex-col gap-3 p-4">
+          {/* Meta row */}
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            {playerRange && (
+              <span className="inline-flex items-center gap-1">
+                <Users className="h-3.5 w-3.5" /> {playerRange}
+              </span>
+            )}
+            {avgDuration && (
+              <>
+                <span className="text-border">·</span>
+                <span className="inline-flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5" /> ~{avgDuration} min
+                </span>
+              </>
+            )}
+          </div>
+
+          {/* Mechanics */}
+          {mechanics.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {mechanics.map((m) => (
+                <span
+                  key={m}
+                  className="rounded-full bg-secondary/60 px-2 py-0.5 text-[10px] text-muted-foreground"
+                >
+                  {m}
+                </span>
+              ))}
             </div>
           )}
-        </CardContent>
-        <div className="absolute bottom-3 right-3 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10" onClick={(e) => e.stopPropagation()}>
-          <EntityEditButton entityType="boardgame" title="Editar Jogo" widthClass="sm:max-w-2xl">
-            {(onClose) => <GameForm game={game} onSuccess={() => { onClose(); onUpdated(); }} />}
-          </EntityEditButton>
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* Quick stats */}
+          <div className="flex items-center justify-between rounded-lg bg-background/40 px-3 py-2 ring-1 ring-border/30">
+            <Stat icon={Users} value={playerRange ?? "—"} />
+            <div className="h-6 w-px bg-border/50" />
+            <Stat icon={BarChart3} value={matchCount} label="partidas" />
+            <div className="h-6 w-px bg-border/50" />
+            <Stat icon={Clock} value={avgDuration ? `${avgDuration}m` : "—"} />
+          </div>
+
+          {/* Active context */}
+          {(hasActiveSeason || hasActiveTournament) && (
+            <div className="flex flex-wrap gap-1.5">
+              {hasActiveSeason && (
+                <Badge
+                  variant="outline"
+                  className="border-indigo-500/25 bg-indigo-500/10 text-indigo-300 text-[10px] uppercase tracking-wider"
+                >
+                  Season Ativa
+                </Badge>
+              )}
+              {hasActiveTournament && (
+                <Badge
+                  variant="outline"
+                  className="border-emerald-500/25 bg-emerald-500/10 text-emerald-300 text-[10px] uppercase tracking-wider"
+                >
+                  Torneio Ativo
+                </Badge>
+              )}
+            </div>
+          )}
+
+          {/* Action links */}
+          {(game.rules_url || game.video_url) && (
+            <div className="flex items-center gap-1 -mx-1 pt-1 border-t border-border/40">
+              {game.rules_url && (
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <a
+                    href={game.rules_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <ExternalLink className="h-3 w-3 mr-1" /> Regras
+                  </a>
+                </Button>
+              )}
+              {game.video_url && (
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <a
+                    href={game.video_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Video className="h-3 w-3 mr-1" /> Vídeo
+                  </a>
+                </Button>
+              )}
+            </div>
+          )}
         </div>
-      </Card>
+
+        {/* Edit sheet (controlled by dropdown) */}
+        {canEditGame && (
+          <EntitySheet
+            open={editOpen}
+            onOpenChange={setEditOpen}
+            title="Editar Jogo"
+            widthClass="sm:max-w-2xl"
+          >
+            <GameForm
+              game={game}
+              onSuccess={() => {
+                setEditOpen(false);
+                onUpdated();
+              }}
+            />
+          </EntitySheet>
+        )}
+      </article>
     </motion.div>
   );
 };
+
+const Stat = ({
+  icon: Icon,
+  value,
+  label,
+}: {
+  icon: any;
+  value: string | number;
+  label?: string;
+}) => (
+  <div className="flex items-center gap-1.5 min-w-0">
+    <Icon className="h-3.5 w-3.5 text-gold/60 shrink-0" />
+    <span className="text-xs font-semibold text-foreground">{value}</span>
+    {label && <span className="text-[10px] text-muted-foreground">{label}</span>}
+  </div>
+);
 
 export default BoardgameCard;

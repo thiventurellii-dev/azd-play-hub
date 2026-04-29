@@ -32,6 +32,8 @@ const Profile = () => {
   const [savingPassword, setSavingPassword] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { tags: playerTags, setTags: setPlayerTags } = useProfileTags(user?.id);
+  const [editTags, setEditTags] = useState<PlayerTag[]>([]);
 
   // Email change
   const [changingEmail, setChangingEmail] = useState(false);

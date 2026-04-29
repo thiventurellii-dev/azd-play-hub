@@ -159,21 +159,7 @@ const BloodScriptCard = ({ script, characters, seasons, index, onUpdated }: Bloo
             <StatBlock value={evilChars.length} label="Maus" icon={Skull} />
           </div>
 
-          {/* Seasons */}
-          {seasons.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {hasActiveSeason && (
-                <Badge variant="outline" className="border-indigo-500/25 bg-indigo-500/10 text-indigo-300 text-[10px] uppercase tracking-wider">
-                  <Calendar className="h-3 w-3 mr-1" /> Season Ativa
-                </Badge>
-              )}
-              {seasons.slice(0, 2).map((ss) => (
-                <Badge key={ss.season_id} variant="outline" className="text-[10px] border-border/60 text-muted-foreground">
-                  {ss.season_name}
-                </Badge>
-              ))}
-            </div>
-          )}
+          {/* Active context now shown via card border + flag in cover */}
         </div>
 
         <EditBloodScriptDialog

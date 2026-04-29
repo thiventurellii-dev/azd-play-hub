@@ -42,6 +42,10 @@ interface MatchRoom {
   result_type?: string | null;
   room_type?: string | null;
   campaign_id?: string | null;
+  session_number?: number | null;
+  session_title?: string | null;
+  session_recap?: string | null;
+  duration_minutes?: number | null;
   game: { id: string; name: string; image_url: string | null };
 }
 

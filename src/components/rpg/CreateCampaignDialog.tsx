@@ -63,7 +63,7 @@ export const CreateCampaignDialog = ({
   const reset = () => {
     setName('');
     setDescription('');
-    setAdventureId(undefined);
+    setAdventureId(defaultAdventureId);
     setIsPublic(true);
     setOpenJoin(false);
     setMaxPlayers(6);

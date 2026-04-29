@@ -101,7 +101,7 @@ const categoryCards = [
   {
     id: "rpg" as const,
     label: "RPG",
-    description: "Em breve",
+    description: "Sessão de campanha",
     icon: Sword,
     iconColor: "text-purple-400",
     borderHover: "hover:border-purple-500/60",

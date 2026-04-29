@@ -65,7 +65,7 @@ const GamesSummaryPanel = ({
   const hours = Math.round(totalPlaytimeMin / 60);
   return (
     <TooltipProvider delayDuration={150}>
-      <div className="rounded-xl bg-card/60 border border-border/40 px-4 py-2.5 flex items-center gap-5 backdrop-blur-sm">
+      <div className="rounded-xl bg-card/60 border border-border/40 px-4 py-2.5 inline-flex items-center gap-5 backdrop-blur-sm">
         <Stat icon={Dices} value={totalGames} label={totalLabel} />
         <div className="h-7 w-px bg-border/60" />
         <Stat icon={Zap} value={activeCount} label="ativos" tooltip={activeTooltip} />

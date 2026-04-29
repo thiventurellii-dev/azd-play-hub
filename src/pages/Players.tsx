@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { motion } from 'framer-motion';
 import FriendButton from '@/components/friendlist/FriendButton';
-import { Search } from 'lucide-react';
+import { Search, Users } from 'lucide-react';
 import { usePlayersData } from '@/hooks/usePlayersData';
 
 const Players = () => {
@@ -21,10 +21,15 @@ const Players = () => {
 
   return (
     <div className="container py-10">
-      <div className="mb-2">
-        <h1 className="text-2xl md:text-3xl font-bold">Jogadores</h1>
+      <div className="flex items-start gap-3 mb-6">
+        <div className="h-12 w-12 rounded-lg bg-gold/15 border border-gold/30 flex items-center justify-center flex-shrink-0">
+          <Users className="h-6 w-6 text-gold" />
+        </div>
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold">Jogadores</h1>
+          <p className="text-sm text-muted-foreground">Membros da comunidade AzD</p>
+        </div>
       </div>
-      <p className="text-muted-foreground mb-4">Membros da comunidade AzD</p>
 
       <div className="relative mb-6 max-w-sm">
         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />

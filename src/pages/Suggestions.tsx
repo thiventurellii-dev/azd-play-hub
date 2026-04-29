@@ -41,11 +41,13 @@ const Suggestions = () => {
 
   return (
     <div className="container py-10 max-w-2xl">
-      <div className="flex items-center gap-3 mb-6">
-        <Lightbulb className="h-8 w-8 text-gold" />
+      <div className="flex items-start gap-3 mb-6">
+        <div className="h-12 w-12 rounded-lg bg-gold/15 border border-gold/30 flex items-center justify-center flex-shrink-0">
+          <Lightbulb className="h-6 w-6 text-gold" />
+        </div>
         <div>
-          <h1 className="text-3xl font-bold">Sugestões</h1>
-          <p className="text-muted-foreground mt-1">Envie sua sugestão para a comunidade AzD</p>
+          <h1 className="text-2xl md:text-3xl font-bold">Sugestões</h1>
+          <p className="text-sm text-muted-foreground">Envie sua sugestão para a comunidade AzD</p>
         </div>
       </div>
 

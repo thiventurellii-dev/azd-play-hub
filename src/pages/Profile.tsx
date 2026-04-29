@@ -284,6 +284,17 @@ const Profile = () => {
       <div className="mt-6">
         <FriendsList />
       </div>
+
+      {user && (
+        <EditProfileDialog
+          open={editing}
+          onOpenChange={setEditing}
+          userId={user.id}
+          initialProfile={profile}
+          initialTags={playerTags}
+          onSaved={handleProfileSaved}
+        />
+      )}
     </div>
   );
 };

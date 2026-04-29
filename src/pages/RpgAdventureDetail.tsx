@@ -21,6 +21,9 @@ const RpgAdventureDetail = () => {
   const navigate = useNavigate();
   const { adventure, isLoading, interests, hasInterest, isMestre, toggleInterest } =
     useRpgAdventureDetail(slug);
+  const { data: isMestreFlag } = useIsMestre();
+  const { data: allCampaigns = [] } = useRpgCampaigns();
+  const [createOpen, setCreateOpen] = useState(false);
 
   if (isLoading) {
     return (

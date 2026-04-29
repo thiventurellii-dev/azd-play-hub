@@ -460,6 +460,7 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
                 prefilledGameId={room.game?.id}
                 prefilledPlayers={confirmed.map(p => p.player_id)}
                 prefilledDate={room.scheduled_at?.slice(0, 10)}
+                prefilledCategory="boardgame"
                 onComplete={handleResultComplete}
               />
             )}

@@ -3,7 +3,7 @@ import { fadeUp } from "@/lib/animations";
 import brassCover from "@/assets/brass-birmingham-cover.png";
 import arnakCover from "@/assets/ruins-of-arnak-cover.png";
 import bloodCover from "@/assets/blood-on-the-clocktower-cover.jpg";
-import rpgCover from "@/assets/rpg-d20.webp";
+import rpgCover from "@/assets/pathfinder-rpg-cover.jpg";
 
 const games = [
   {

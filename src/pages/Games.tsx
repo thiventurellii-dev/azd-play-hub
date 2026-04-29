@@ -188,7 +188,7 @@ const Games = () => {
 
           {/* Boardgames */}
           <TabsContent value="boardgame">
-            <div className="mb-4">
+            <div className="mb-4 flex justify-center">
               <GamesSummaryPanel
                 totalGames={games.length}
                 activeCount={activeSeasonGameIds.size}
@@ -322,7 +322,7 @@ const Games = () => {
 
           {/* Blood Scripts */}
           <TabsContent value="blood">
-            <div className="mb-4">
+            <div className="mb-4 flex justify-center">
               <GamesSummaryPanel
                 totalGames={bloodScripts.length}
                 activeCount={activeScriptsCount}
@@ -371,7 +371,7 @@ const Games = () => {
 
           {/* RPG */}
           <TabsContent value="rpg">
-            <div className="mb-4">
+            <div className="mb-4 flex justify-center">
               <GamesSummaryPanel
                 totalGames={rpgSystems.length}
                 activeCount={activeSystemIds.size}

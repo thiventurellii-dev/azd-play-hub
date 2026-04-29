@@ -65,17 +65,27 @@ const fetchGamesData = async () => {
     }
   }
 
-  // Avg durations
+  // Avg durations + match counts + total playtime
   const avgDurations: Record<string, number> = {};
+  const matchCounts: Record<string, number> = {};
+  let totalPlaytime = 0;
   const durMap: Record<string, { total: number; count: number }> = {};
   for (const m of matchesRes.data || []) {
+    matchCounts[m.game_id] = (matchCounts[m.game_id] || 0) + 1;
     if (m.duration_minutes) {
+      totalPlaytime += m.duration_minutes;
       if (!durMap[m.game_id]) durMap[m.game_id] = { total: 0, count: 0 };
       durMap[m.game_id].total += m.duration_minutes;
       durMap[m.game_id].count += 1;
     }
   }
   for (const [gid, d] of Object.entries(durMap)) avgDurations[gid] = Math.round(d.total / d.count);
+
+  // Games with an active season
+  const activeSeasonGameIds = new Set<string>();
+  for (const [gid, links] of Object.entries(gameSeasons)) {
+    if (links.some((l) => l.status === "active")) activeSeasonGameIds.add(gid);
+  }
 
   return {
     games,
@@ -86,6 +96,9 @@ const fetchGamesData = async () => {
     gameSeasons,
     scriptSeasons,
     avgDurations,
+    matchCounts,
+    totalPlaytime,
+    activeSeasonGameIds,
     rpgSystems: rpgSysRes.data || [],
     rpgAdventures: rpgAdvRes.data || [],
   };

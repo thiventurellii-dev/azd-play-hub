@@ -1,98 +1,96 @@
-# Slug da Aventura RPG — `/aventuras/:slug`
+## Redesign de /games — Boardgames
 
-Concordo com a sugestão: **Interesse** vai para o header (CTA principal), pois é a ação mais comum e gera engajamento. Mestre fica com botões secundários.
+Foco: substituir o `BoardgameCard` atual (avatar pequeno + lista) por um card cinematográfico com capa em destaque e meta hierárquica, e adicionar um painel resumo no topo da página.
 
-## 1. Migração — campos novos + tabela de interesses
+Escopo: **apenas a aba Boardgames**. Blood e RPG ficam intocados nesta rodada (podem ganhar o mesmo tratamento depois).
 
-**`rpg_adventures`** (adicionar colunas opcionais que o mockup pede):
-- `tagline` text — frase curta sob o título
-- `level_min` int, `level_max` int
-- `players_min` int, `players_max` int
-- `duration_hours_min` int, `duration_hours_max` int
-- `tone` text — ex: "Sombrio · Gótico"
-- `genres` text[] — ex: ["Horror", "Mistério"]
-- `intensity` jsonb — `{combate, misterio, exploracao, roleplay, perigo}` em escala 0–4
-- `about_long` text — descrição longa
-- `highlights` jsonb — array `[{title, description}]`
-- `master_notes` jsonb — `{prep, hooks, variations, secrets}`
-- `materials` jsonb — `[{label, value}]` (PDF, mapas, etc)
-- `materials_url` text — link "Baixar materiais"
+---
 
-**Nova tabela `rpg_adventure_interests`**:
-- `id uuid pk`, `adventure_id uuid fk`, `user_id uuid fk`, `created_at timestamptz`
-- `unique(adventure_id, user_id)`
-- RLS: SELECT público (autenticados), INSERT/DELETE só do próprio usuário
+### 1. Estatísticas extras no hook
 
-Campanhas e "aventureiros que jogaram" ficam como **placeholders visuais** nesta entrega — virão na Fase 3/4 do plano original.
+Em `useGamesData.ts` adicionar:
+- `matchCounts: Record<gameId, number>` — total de partidas por jogo
+- `totalPlaytime: number` (em min) — soma global
+- `activeSeasonGameIds: Set<string>` — jogos com season `active`
+- (torneios não existem como entidade — vou usar season `active` como contexto. "Torneio" fica preparado mas oculto até existir o conceito.)
 
-## 2. Rota e página
+### 2. Novo `BoardgameCard.tsx` (reescrita)
 
-- Adicionar rota `/aventuras/:slug` em `App.tsx` (protegida) → `pages/RpgAdventureDetail.tsx`
-- Em `Games.tsx` (tab RPG) e em `RpgAdventureCard` existente: card vira `Link` para `/aventuras/${slug}`
-- Helper `slugify` para gerar slugs ao criar/editar aventura no `RpgAdventureForm`
-
-## 3. Layout da página (baseado no mockup, com Interesse no header)
+Estrutura:
 
 ```text
-[← Voltar para aventuras]
-
-┌─────────────────────────────────────────────────────────┐
-│ HEADER — grid: capa(140px) | conteúdo | INTERESSE box   │
-│ ┌─────┐  Nome ★                          ┌─────────────┐│
-│ │capa │  tagline                          │ INTERESSE   ││
-│ │     │  [sistema][oficial][gêneros]      │ ❤ 3 querem  ││
-│ │     │                                   │ [JM DI MA]  ││
-│ │     │  [♥ Tenho interesse] (gold, big)  │ [Confirmar] ││
-│ │     │  [Criar campanha] [Marcar sessão] └─────────────┘│
-│ │     │  ↑ visíveis só para mestres                      │
-│ └─────┘                                                  │
-└─────────────────────────────────────────────────────────┘
-
-[5 barras: Combate · Mistério · Exploração · Roleplay · Perigo]
-[Nível | Jogadores | Duração | Tom]
-
-┌─────────────────── 1fr ───────────────────┐ ┌─ 220px ─┐
-│ Sobre a aventura                          │ │ Stats   │
-│ O que torna especial (grid 2x2)           │ │ Top GMs │
-│ Notas para o Mestre (accordion)           │ │ Compat. │
-│ Campanhas (placeholder “em breve”)        │ │ Inclui  │
-│ Aventureiros que jogaram (placeholder)    │ │         │
-└───────────────────────────────────────────┘ └─────────┘
+┌─────────────────────────────────┐
+│  ★            ⋯  ← header float │
+│                                 │
+│      [COVER: ~55% altura]       │
+│       gradiente top→bottom      │
+│  ─── fade para card ───         │
+│                                 │
+│  Catan                  [pill]  │ ← título grande + categoria
+│  4–6 jogadores · ~75 min        │ ← meta com ícones
+│                                 │
+│  [worker placement] [economia]  │ ← chips de mecânicas
+│                                 │
+│  Curta descrição truncada em    │ ← 1–2 linhas
+│  duas linhas...                 │
+│                                 │
+│  ─────────────────────────────  │
+│  👥 4–6   🎲 27   ⏱ 75min       │ ← stats inline
+│                                 │
+│  [SEASON ATIVA]                 │ ← só se relevante
+│                                 │
+│  Regras  ·  Vídeo               │ ← ghost links
+└─────────────────────────────────┘
 ```
 
-**Decisão de UX sobre o "Interesse"**:
-- Versão **desktop**: card de interesse fica fixado no canto superior direito do header (mais proeminente que apenas um botão), mostrando contador + avatares + botão grande "Tenho interesse / Remover interesse"
-- Versão **mobile**: o card colapsa e o botão `Tenho interesse` aparece em destaque dentro do header
-- Botões de mestre (`Criar campanha`, `Marcar sessão`) ficam abaixo, com aviso "visível apenas para mestres" — só renderizados se o usuário tem tag `mestre`
+Detalhes técnicos:
+- Container: `rounded-2xl overflow-hidden bg-card` + `shadow-[0_4px_20px_-8px_rgba(0,0,0,0.5)]`, hover `-translate-y-0.5` + `shadow-[0_8px_30px_-8px_rgba(255,184,0,0.15)]`
+- Capa: `aspect-[16/10]` com `<img>` absoluto + 2 overlays (`bg-gradient-to-b from-black/30 via-transparent to-card`) e vinheta sutil via `shadow-inner`
+- Sem capa: bloco `bg-gradient-to-br from-secondary to-card` com inicial em fonte grande, mesma altura
+- Título sobreposto na base da capa para hierarquia mais forte
+- Mecânicas/tags vêm de `tags[]` (já existe) — primeira tag vira "categoria" (pill grande), restantes viram chips
+- Descrição: nova fonte de dado? **Não temos campo `description` em `games`** — vou usar truncamento dos chips ou ocultar a seção se não houver. Recomendo adicionar `description` à tabela `games` numa migração futura (não nesta).
+- Stats bottom: jogadores, partidas (`matchCounts[id]`), duração média
+- Badge contextual: só renderiza se `activeSeasonGameIds.has(id)` → pill `bg-indigo-500/10 text-indigo-300 border-indigo-500/20` "SEASON ATIVA"
+- Ações: ⋯ (menu via `DropdownMenu` com Editar/Ver detalhe) e ★ (FavoriteButton já existente) com `opacity-60 hover:opacity-100`
+- Botões Regras/Vídeo: `Button variant="ghost" size="sm"` inline na base
+- Card inteiro clicável (Link para `/jogos/:slug`); ações internas usam `e.stopPropagation()`
 
-## 4. Componentes novos
+### 3. Painel resumo no topo de `/games`
 
-- `pages/RpgAdventureDetail.tsx` — página principal
-- `components/rpg/AdventureInterestCard.tsx` — card destacado do header com toggle de interesse + contador + avatares (realtime opcional via refetch)
-- `components/rpg/AdventureIntensityBars.tsx` — 5 barras de intensidade
-- `components/rpg/AdventureMasterNotes.tsx` — accordion (Dicas, Ganchos, Variações, Segredos com aviso de spoiler)
-- `components/rpg/AdventureSidebar.tsx` — stats placeholder + compatibilidade + materiais
-- `hooks/useRpgAdventureDetail.ts` — fetch da aventura por slug + sistema + contagem/lista de interessados + check `hasMestre`
+Componente novo `GamesSummaryPanel.tsx` — barra horizontal compacta no canto direito do header da aba:
 
-## 5. Botões de mestre (placeholders funcionais)
+```text
+🎲 12 jogos   ⚡ 3 ativos   📊 247 partidas   ⏱ 312h jogadas
+```
 
-- `Criar campanha` → toast "Em breve — Fase 3 do roadmap" (ou abre Dialog vazio com aviso)
-- `Marcar sessão` → reaproveita `CreateRoomDialog` pré-preenchendo o jogo RPG e a aventura quando possível; se não der, mostra toast "Em breve"
+Visual: `rounded-xl bg-card/60 border border-border/40 px-4 py-2 flex gap-6` — números em `text-foreground font-semibold`, labels em `text-muted-foreground text-xs`.
 
-Decido por toast "Em breve" para ambos nesta entrega, evitando código half-baked. A integração real vem na Fase 3.
+Posicionamento: dentro de `TabsContent value="boardgame"`, ao lado dos filtros (filtro à esquerda, painel à direita via `justify-between`).
 
-## 6. Visual / detalhes estéticos
+### 4. Grid
 
-- Paleta atual do projeto (gold + dark) preservada — substituir os roxos do mockup por **gold** (`#FFB800`) como accent principal e usar `secondary` no lugar do roxo `#c4a8ff` para manter consistência com o resto do AzD
-- Capa com gradiente dourado sutil quando não houver imagem
-- Hover sutil nos cards (lift + border gold/30)
-- Skeleton loading state durante fetch
-- Mobile-first: header colapsa em coluna única, sidebar vira seção abaixo
+Manter `grid gap-6 md:grid-cols-2 xl:grid-cols-3` (já está bom). Apenas ajustar gap para `gap-5` para ritmo visual mais apertado.
 
-## Fora de escopo desta entrega
+### 5. Sem mudanças
 
-- Sistema completo de campanhas (fica para Fase 3)
-- Lista real de "aventureiros que jogaram" (depende de matches RPG concluídos — Fase 4)
-- Convite/aprovação de jogadores em campanha (Fase 3)
+- Aba Blood — intocada
+- Aba RPG — intocada
+- Dialogs de adicionar — intactos
+- Permissões/Edit button — mantido (movido para dentro do menu ⋯)
 
-Confirma este escopo? Após o ok, executo a migração e implemento tudo.
+---
+
+### Arquivos
+
+**Editados:**
+- `src/components/games/BoardgameCard.tsx` — reescrita
+- `src/hooks/useGamesData.ts` — adicionar matchCounts, totalPlaytime, activeSeasonGameIds
+- `src/pages/Games.tsx` — passar novos dados, integrar painel
+
+**Criados:**
+- `src/components/games/GamesSummaryPanel.tsx`
+
+### Pontos a confirmar
+1. **Descrição curta**: o campo não existe na tabela `games`. Posso (a) ocultar a seção quando vazia e adicionar coluna `description` numa migração futura, ou (b) já adicionar a coluna agora. Vou de (a) — mais seguro, sem mexer no banco externo nesta rodada.
+2. **"Torneio Ativo"**: não existe entidade Tournament. Vou só implementar "SEASON ATIVA" agora; o slot fica pronto para Tournament quando existir.

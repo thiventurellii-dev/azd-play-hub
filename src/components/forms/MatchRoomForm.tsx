@@ -232,7 +232,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
         ? new Date(`${scheduledDate}T${scheduledTime}`).toISOString()
         : new Date(`${scheduledDate}T00:00:00`).toISOString();
 
-      let finalGameId = isBotC ? (botcGame?.id ?? "") : gameId;
+      let finalGameId = isBotC ? (botcGame?.id ?? "") : isRpg ? (rpgGame?.id ?? "") : gameId;
 
       if (isBotC && !finalGameId) {
         const { data: newGame } = await supabase.from("games").insert({
@@ -241,6 +241,15 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
           min_players: 5,
           max_players: 20,
         }).select("id").single();
+        if (newGame) finalGameId = newGame.id;
+      }
+      if (isRpg && !finalGameId) {
+        const { data: newGame } = await supabase.from("games").insert({
+          name: "RPG",
+          slug: "rpg-generico",
+          min_players: 2,
+          max_players: 10,
+        } as any).select("id").single();
         if (newGame) finalGameId = newGame.id;
       }
       if (!finalGameId) throw new Error("Jogo não encontrado");

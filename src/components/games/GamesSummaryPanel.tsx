@@ -68,7 +68,7 @@ const GamesSummaryPanel = ({
       <div className="rounded-xl bg-card/60 border border-border/40 px-4 py-2.5 inline-flex items-center gap-5 backdrop-blur-sm">
         <Stat icon={Dices} value={totalGames} label={totalLabel} />
         <div className="h-7 w-px bg-border/60" />
-        <Stat icon={Zap} value={activeCount} label="ativos" tooltip={activeTooltip} />
+        <Stat icon={Zap} value={activeCount} label="competitivos" tooltip={activeTooltip} />
         <div className="h-7 w-px bg-border/60" />
         <Stat icon={BarChart3} value={totalMatches} label="partidas" />
         <div className="h-7 w-px bg-border/60" />

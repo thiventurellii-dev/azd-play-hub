@@ -193,6 +193,24 @@ export const SessionResultDialog = ({
   const [events, setEvents] = useState<EventDraft[]>([]);
   const [xpOpen, setXpOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [resolvedCampaignName, setResolvedCampaignName] = useState<string | null>(
+    campaignName ?? null,
+  );
+
+  // Resolve nome da campanha se não veio via prop
+  useEffect(() => {
+    if (campaignName) {
+      setResolvedCampaignName(campaignName);
+      return;
+    }
+    if (!campaignId) return;
+    supabase
+      .from('rpg_campaigns')
+      .select('name')
+      .eq('id', campaignId)
+      .maybeSingle()
+      .then(({ data }) => setResolvedCampaignName((data as any)?.name ?? null));
+  }, [campaignId, campaignName]);
 
   // Carrega party (personagens) da campanha
   useEffect(() => {

@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Sword, Filter, X, ArrowUpDown, Dices } from "lucide-react";
+import { Plus, Sword, Filter, X, ArrowUpDown, Gamepad2 } from "lucide-react";
 import { fetchUserFavorites } from "@/hooks/useFavorite";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -160,7 +160,7 @@ const Games = () => {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-8">
         <div className="flex items-start gap-3">
           <div className="h-12 w-12 rounded-lg bg-gold/15 border border-gold/30 flex items-center justify-center flex-shrink-0">
-            <Dices className="h-6 w-6 text-gold" />
+            <Gamepad2 className="h-6 w-6 text-gold" />
           </div>
           <div>
             <h1 className="text-2xl md:text-3xl font-bold">Jogos</h1>

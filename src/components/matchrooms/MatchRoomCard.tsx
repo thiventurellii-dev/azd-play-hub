@@ -42,6 +42,10 @@ interface MatchRoom {
   result_type?: string | null;
   room_type?: string | null;
   campaign_id?: string | null;
+  session_number?: number | null;
+  session_title?: string | null;
+  session_recap?: string | null;
+  duration_minutes?: number | null;
   game: { id: string; name: string; image_url: string | null };
 }
 
@@ -428,43 +432,57 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
         />
       )}
 
-      {/* Inline match registration flow */}
       <Dialog open={matchFlowOpen} onOpenChange={setMatchFlowOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{isRpg ? "Registrar Sessão" : "Registrar Resultado"}</DialogTitle>
-            <DialogDescription>
-              {isRpg
-                ? "Recap, presença e eventos em destaque alimentam a Crônica da campanha."
-                : "Registre o resultado desta partida."}
-            </DialogDescription>
-          </DialogHeader>
-          <ErrorBoundary>
-            {isRpg ? (
-              <SessionResultDialog
-                roomId={room.id}
-                campaignId={room.campaign_id!}
-                defaultTitle={room.title}
-                confirmedPlayers={confirmed.map(p => ({ player_id: p.player_id, name: displayName(p) }))}
-                onComplete={() => {
-                  setMatchFlowOpen(false);
-                  setHasResult(true);
-                  setResultType("rpg");
-                  onUpdate();
-                }}
-              />
-            ) : isBotC ? (
-              <NewMatchBotcFlow onComplete={handleResultComplete} />
-            ) : (
-              <NewMatchFlow
-                prefilledGameId={room.game?.id}
-                prefilledPlayers={confirmed.map(p => p.player_id)}
-                prefilledDate={room.scheduled_at?.slice(0, 10)}
-                prefilledCategory="boardgame"
-                onComplete={handleResultComplete}
-              />
-            )}
-          </ErrorBoundary>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          {isRpg ? (
+            <>
+              <DialogHeader className="sr-only">
+                <DialogTitle>Inserir resultado da sessão</DialogTitle>
+                <DialogDescription>
+                  Recap, presença e eventos em destaque alimentam a Crônica da campanha.
+                </DialogDescription>
+              </DialogHeader>
+              <ErrorBoundary>
+                <SessionResultDialog
+                  roomId={room.id}
+                  campaignId={room.campaign_id!}
+                  defaultTitle={room.session_title || room.title}
+                  initialRecap={room.session_recap}
+                  initialDuration={room.duration_minutes}
+                  initialSessionNumber={room.session_number}
+                  scheduledAt={room.scheduled_at}
+                  confirmedPlayers={confirmed.map(p => ({ player_id: p.player_id, name: displayName(p) }))}
+                  onComplete={() => {
+                    setMatchFlowOpen(false);
+                    setHasResult(true);
+                    setResultType("rpg");
+                    onUpdate();
+                  }}
+                  onCancel={() => setMatchFlowOpen(false)}
+                />
+              </ErrorBoundary>
+            </>
+          ) : (
+            <>
+              <DialogHeader>
+                <DialogTitle>Registrar Resultado</DialogTitle>
+                <DialogDescription>Registre o resultado desta partida.</DialogDescription>
+              </DialogHeader>
+              <ErrorBoundary>
+                {isBotC ? (
+                  <NewMatchBotcFlow onComplete={handleResultComplete} />
+                ) : (
+                  <NewMatchFlow
+                    prefilledGameId={room.game?.id}
+                    prefilledPlayers={confirmed.map(p => p.player_id)}
+                    prefilledDate={room.scheduled_at?.slice(0, 10)}
+                    prefilledCategory="boardgame"
+                    onComplete={handleResultComplete}
+                  />
+                )}
+              </ErrorBoundary>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </>

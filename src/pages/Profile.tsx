@@ -69,6 +69,9 @@ const Profile = () => {
     if (!form.name || !form.nickname || !form.phone || !form.state || !form.city || !form.birth_date || !form.gender || !form.pronouns) {
       return notify('error', 'Preencha todos os campos obrigatórios');
     }
+    if (editTags.length === 0) {
+      return notify('error', 'Escolha pelo menos uma tag de jogador');
+    }
     setSaving(true);
     const { error } = await supabase.from('profiles').update({
       name: form.name,
@@ -81,6 +84,15 @@ const Profile = () => {
       gender: form.gender,
       pronouns: form.pronouns,
     } as any).eq('id', user.id);
+    if (!error) {
+      try {
+        await saveProfileTags(user.id, editTags);
+        setPlayerTags(editTags);
+      } catch (e: any) {
+        setSaving(false);
+        return notify('error', 'Erro ao salvar tags: ' + (e.message || ''));
+      }
+    }
     setSaving(false);
     if (error) return notify('error', error.message);
     notify('success', 'Perfil atualizado!');

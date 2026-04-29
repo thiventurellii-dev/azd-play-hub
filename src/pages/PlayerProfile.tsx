@@ -1007,9 +1007,20 @@ const PlayerProfile = () => {
               <Trophy className="h-5 w-5 text-gold" />
               <h2 className="text-lg font-semibold">Partidas recentes</h2>
             </div>
-            <div className="space-y-2">
-              {recentMatches.map((m) => <RecentMatchCard key={m.match_id} m={m} />)}
-            </div>
+            <Carousel opts={{ align: "start", slidesToScroll: "auto" }} className="w-full">
+              <CarouselContent className="-ml-3">
+                {recentMatches.map((m) => (
+                  <CarouselItem
+                    key={m.match_id}
+                    className="pl-3 basis-[78%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4 xl:basis-1/5"
+                  >
+                    <RecentMatchCardCompact m={m} />
+                  </CarouselItem>
+                ))}
+              </CarouselContent>
+              <CarouselPrevious className="-left-3" />
+              <CarouselNext className="-right-3" />
+            </Carousel>
           </CardContent>
         </Card>
       )}

@@ -15,6 +15,8 @@ import { brazilianStates, citiesByState, pronounsOptions, countryCodes, formatPh
 import FriendsList from '@/components/friendlist/FriendsList';
 import XpBadge from '@/components/shared/XpBadge';
 import { useProfileCompletion } from '@/hooks/useProfileCompletion';
+import PlayerTagsSelector, { PlayerTagsBadges, PlayerTag } from '@/components/profile/PlayerTagsSelector';
+import { useProfileTags, saveProfileTags } from '@/hooks/useProfileTags';
 
 const Profile = () => {
   const { user, role } = useAuth();

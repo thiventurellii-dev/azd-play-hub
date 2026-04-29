@@ -22,6 +22,7 @@ const Register = () => {
     nickname: '', name: '', email: '', password: '', confirmPassword: '',
     phone: '', country_code: '+55', state: '', city: '', birth_date: '', gender: '', pronouns: '',
   });
+  const [playerTags, setPlayerTags] = useState<PlayerTag[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const navigate = useNavigate();

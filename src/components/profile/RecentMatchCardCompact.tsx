@@ -139,7 +139,10 @@ const RecentMatchCardCompact = ({ m }: { m: RecentMatchItem }) => {
 
         {m.score !== null && (
           <div className="flex items-center gap-1.5 mt-2 text-sm font-bold tabular-nums">
-            <span className={meta_.accent}>{m.score}</span>
+            <span className={meta_.accent}>
+              {m.score}
+              <span className="text-[10px] font-normal text-muted-foreground ml-0.5">pts.</span>
+            </span>
             {m.position && (
               <span className="text-[10px] text-muted-foreground font-normal ml-auto">
                 {m.position}º lugar
@@ -150,7 +153,11 @@ const RecentMatchCardCompact = ({ m }: { m: RecentMatchItem }) => {
       </div>
 
       {m.opponents.length > 0 && (
-        <div className="relative flex -space-x-1.5 mt-3">
+        <div className="relative flex items-center gap-2 mt-3">
+          <span className="text-[9px] uppercase tracking-wider text-muted-foreground/70 font-semibold">
+            vs
+          </span>
+          <div className="flex -space-x-1.5">
           {m.opponents.slice(0, 5).map((o, i) =>
             o.avatar_url ? (
               <img

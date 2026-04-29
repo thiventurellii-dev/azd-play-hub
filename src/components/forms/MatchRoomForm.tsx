@@ -362,7 +362,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
     return (
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">Escolha a categoria:</p>
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="flex flex-wrap justify-center gap-4">
           {categoryCards.map(card => {
             const Icon = card.icon;
             return (
@@ -373,7 +373,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
                   setCategory(card.id);
                   if (card.id === "botc") setMaxPlayers("15");
                 }}
-                className={`flex flex-col items-center justify-center p-6 rounded-lg border-2 border-border ${card.borderHover} text-center transition-all group aspect-[3/4]`}
+                className={`flex flex-col items-center justify-center p-6 rounded-lg border-2 border-border ${card.borderHover} text-center transition-all group w-[200px] aspect-[3/4]`}
               >
                 <Icon className={`h-12 w-12 mb-3 ${card.iconColor} group-hover:scale-110 transition-transform`} />
                 <p className="font-semibold text-sm">{card.label}</p>

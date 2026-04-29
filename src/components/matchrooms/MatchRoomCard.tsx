@@ -432,11 +432,24 @@ const MatchRoomCard = ({ room, onUpdate }: Props) => {
       <EntitySheet
         open={matchFlowOpen}
         onOpenChange={setMatchFlowOpen}
-        title="Registrar Resultado"
-        description="Registre o resultado desta partida."
+        title={isRpg ? "Registrar Sessão" : "Registrar Resultado"}
+        description={isRpg ? "Recap, presença e eventos em destaque alimentam a Crônica da campanha." : "Registre o resultado desta partida."}
+        widthClass={isRpg ? "sm:max-w-2xl" : undefined}
       >
         <ErrorBoundary>
-          {isBotC ? (
+          {isRpg ? (
+            <SessionResultDialog
+              roomId={room.id}
+              campaignId={room.campaign_id!}
+              confirmedPlayerIds={confirmed.map(p => p.player_id)}
+              onComplete={() => {
+                setMatchFlowOpen(false);
+                setHasResult(true);
+                setResultType("rpg");
+                onUpdate();
+              }}
+            />
+          ) : isBotC ? (
             <NewMatchBotcFlow onComplete={handleResultComplete} />
           ) : (
             <NewMatchFlow

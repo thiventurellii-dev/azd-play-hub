@@ -122,11 +122,22 @@ const BoardgameCard = ({
                 <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/20 backdrop-blur-sm px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-200 ring-1 ring-amber-400/40 shadow-[0_0_12px_-2px_hsl(45_100%_55%/0.5)]">
                   <Flag className="h-3 w-3" /> Torneio
                 </span>
-              ) : hasActiveSeason ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-violet-500/20 backdrop-blur-sm px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-violet-200 ring-1 ring-violet-400/40 shadow-[0_0_12px_-2px_hsl(265_85%_60%/0.5)]">
-                  <Flag className="h-3 w-3" /> Season
-                </span>
-              ) : null}
+              ) : hasActiveSeason ? (() => {
+                const activeSeason = seasons.find((s) => s.status === "active");
+                return (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (activeSeason) navigate(`/seasons/${activeSeason.season_id}`);
+                    }}
+                    className="inline-flex items-center gap-1 rounded-full bg-violet-500/20 backdrop-blur-sm px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-violet-200 ring-1 ring-violet-400/40 shadow-[0_0_12px_-2px_hsl(265_85%_60%/0.5)] hover:bg-violet-500/30 hover:ring-violet-400/60 transition-colors"
+                    title={activeSeason?.season_name ? `Ver ${activeSeason.season_name}` : "Ver Season"}
+                  >
+                    <Flag className="h-3 w-3" /> Season
+                  </button>
+                );
+              })() : null}
             </div>
 
             <div onClick={(e) => e.stopPropagation()}>

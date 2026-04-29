@@ -372,6 +372,8 @@ const Games = () => {
 
           {/* RPG */}
           <TabsContent value="rpg">
+            <CampaignsHighlight />
+
             <div className="mb-4 flex justify-center">
               <GamesSummaryPanel
                 totalGames={rpgSystems.length}

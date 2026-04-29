@@ -123,21 +123,23 @@ export const CreateCampaignDialog = ({
               rows={3}
             />
           </div>
-          <div>
-            <Label>Aventura (opcional)</Label>
-            <Select value={adventureId} onValueChange={setAdventureId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione uma aventura" />
-              </SelectTrigger>
-              <SelectContent>
-                {adventures.map((a) => (
-                  <SelectItem key={a.id} value={a.id}>
-                    {a.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {!lockAdventure && (
+            <div>
+              <Label>Aventura (opcional)</Label>
+              <Select value={adventureId} onValueChange={setAdventureId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma aventura" />
+                </SelectTrigger>
+                <SelectContent>
+                  {adventures.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div>
             <Label>URL da imagem de capa</Label>
             <Input

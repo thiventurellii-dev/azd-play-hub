@@ -13,7 +13,7 @@ import { brazilianStates, citiesByState, pronounsOptions, countryCodes, formatPh
 import { Mail } from 'lucide-react';
 import PlayerTagsSelector, { PlayerTag } from '@/components/profile/PlayerTagsSelector';
 import { saveProfileTags } from '@/hooks/useProfileTags';
-import { Label as LabelComp } from '@/components/ui/label';
+
 
 const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
 

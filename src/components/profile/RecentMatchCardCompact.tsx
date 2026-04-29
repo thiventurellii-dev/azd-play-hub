@@ -3,38 +3,52 @@ import { cn } from "@/lib/utils";
 import { Trophy, Skull, Minus } from "lucide-react";
 import type { RecentMatchItem } from "./RecentMatchCard";
 
-const meta = (m: RecentMatchItem) => {
+type Meta = {
+  wrap: string;
+  glow: string;
+  edge: string;
+  accent: string;
+  icon: typeof Trophy;
+};
+
+const meta = (m: RecentMatchItem): Meta => {
   if (m.is_competitive) {
     const delta = Number(m.mmr_change || 0);
-    if (delta > 0)
+    if (delta > 0) {
+      // Vitória competitiva — verde atmosférico
       return {
-        wrap: "border-green-500/40 bg-gradient-to-b from-green-500/10 to-green-500/[0.02] hover:border-green-500/60",
-        badge: "bg-green-500/15 text-green-400 border-green-500/40",
-        accent: "text-green-400",
-        label: "Vitória",
+        wrap: "border-green-900/40 bg-[radial-gradient(ellipse_at_top_right,_hsl(150_60%_12%/0.55),_hsl(220_8%_5%)_70%)]",
+        glow: "bg-[radial-gradient(circle_at_25%_30%,_hsl(150_70%_45%/0.10),_transparent_60%)]",
+        edge: "bg-gradient-to-b from-green-400/30 via-green-500/10 to-transparent",
+        accent: "text-green-300/90",
         icon: Trophy,
       };
+    }
+    // Derrota competitiva — vermelho profundo
     return {
-      wrap: "border-red-500/40 bg-gradient-to-b from-red-500/10 to-red-500/[0.02] hover:border-red-500/60",
-      badge: "bg-red-500/15 text-red-400 border-red-500/40",
-      accent: "text-red-400",
-      label: "Derrota",
+      wrap: "border-red-900/40 bg-[radial-gradient(ellipse_at_top_right,_hsl(355_55%_14%/0.65),_hsl(220_8%_5%)_70%)]",
+      glow: "bg-[radial-gradient(circle_at_70%_70%,_hsl(355_70%_40%/0.12),_transparent_65%)]",
+      edge: "bg-gradient-to-b from-red-400/35 via-red-500/12 to-transparent",
+      accent: "text-red-300/90",
       icon: Skull,
     };
   }
-  if (m.position === 1)
+  if (m.position === 1) {
+    // Vitória casual — amarelo atmosférico
     return {
-      wrap: "border-gold/40 bg-gradient-to-b from-gold/10 to-gold/[0.02] hover:border-gold/60",
-      badge: "bg-gold/15 text-gold border-gold/40",
-      accent: "text-gold",
-      label: "Vitória",
+      wrap: "border-yellow-900/40 bg-[radial-gradient(ellipse_at_top_right,_hsl(45_55%_12%/0.55),_hsl(220_8%_5%)_70%)]",
+      glow: "bg-[radial-gradient(circle_at_25%_30%,_hsl(45_85%_50%/0.10),_transparent_60%)]",
+      edge: "bg-gradient-to-b from-yellow-300/30 via-yellow-500/10 to-transparent",
+      accent: "text-yellow-200/90",
       icon: Trophy,
     };
+  }
+  // Casual derrota — cinza dessaturado
   return {
-    wrap: "border-border bg-gradient-to-b from-muted/30 to-transparent hover:border-muted-foreground/40",
-    badge: "bg-muted text-muted-foreground border-border",
+    wrap: "border-border/60 bg-[linear-gradient(180deg,_hsl(220_6%_11%),_hsl(220_8%_6%))]",
+    glow: "",
+    edge: "bg-gradient-to-b from-muted-foreground/10 to-transparent",
     accent: "text-muted-foreground",
-    label: "Casual",
     icon: Minus,
   };
 };
@@ -48,20 +62,25 @@ const RecentMatchCardCompact = ({ m }: { m: RecentMatchItem }) => {
   return (
     <div
       className={cn(
-        "rounded-xl border p-4 transition-all min-h-[180px] flex flex-col",
+        "relative overflow-hidden rounded-xl border p-4 transition-all min-h-[180px] flex flex-col",
+        "hover:border-foreground/20",
         meta_.wrap,
       )}
     >
-      <div className="flex items-center justify-between mb-3">
-        <span
-          className={cn(
-            "inline-flex items-center gap-1 text-[10px] font-semibold px-2.5 py-1 rounded-full border",
-            meta_.badge,
-          )}
-        >
-          <Icon className="h-3 w-3" />
-          {meta_.label}
-        </span>
+      {/* Edge accent light */}
+      <div
+        className={cn(
+          "pointer-events-none absolute top-0 left-0 h-full w-[2px] opacity-70",
+          meta_.edge,
+        )}
+      />
+      {/* Soft ambient glow */}
+      {meta_.glow && (
+        <div className={cn("pointer-events-none absolute inset-0", meta_.glow)} />
+      )}
+
+      <div className="relative flex items-center justify-between mb-3">
+        <Icon className={cn("h-4 w-4", meta_.accent)} />
         {m.is_competitive && m.mmr_change !== null && (
           <span className={cn("text-[11px] font-bold tabular-nums", meta_.accent)}>
             {delta >= 0 ? "+" : ""}
@@ -70,7 +89,7 @@ const RecentMatchCardCompact = ({ m }: { m: RecentMatchItem }) => {
         )}
       </div>
 
-      <div className="flex-1">
+      <div className="relative flex-1">
         {m.game_slug ? (
           <Link
             to={`/jogos/${m.game_slug}`}
@@ -85,16 +104,8 @@ const RecentMatchCardCompact = ({ m }: { m: RecentMatchItem }) => {
         )}
         <div className="text-[11px] text-muted-foreground mt-1 tabular-nums">{date}</div>
 
-        {m.opponents.length > 0 && (
-          <div className="text-[11px] text-muted-foreground mt-2 truncate">
-            vs. {m.opponents.slice(0, 2).map((o) => o.name).join(", ")}
-            {m.opponents.length > 2 && ` +${m.opponents.length - 2}`}
-          </div>
-        )}
-
         {m.score !== null && (
           <div className="flex items-center gap-1.5 mt-2 text-sm font-bold tabular-nums">
-            <Icon className={cn("h-3.5 w-3.5", meta_.accent)} />
             <span className={meta_.accent}>{m.score}</span>
             {m.position && (
               <span className="text-[10px] text-muted-foreground font-normal ml-auto">
@@ -106,7 +117,7 @@ const RecentMatchCardCompact = ({ m }: { m: RecentMatchItem }) => {
       </div>
 
       {m.opponents.length > 0 && (
-        <div className="flex -space-x-1.5 mt-3">
+        <div className="relative flex -space-x-1.5 mt-3">
           {m.opponents.slice(0, 5).map((o, i) =>
             o.avatar_url ? (
               <img

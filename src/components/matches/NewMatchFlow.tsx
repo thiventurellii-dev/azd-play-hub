@@ -32,12 +32,13 @@ interface Props {
   prefilledGameId?: string;
   prefilledPlayers?: string[];
   prefilledDate?: string;
+  prefilledCategory?: 'boardgame' | 'botc';
   onComplete?: (matchId?: string) => void;
 }
 
-const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComplete }: Props) => {
+const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, prefilledCategory, onComplete }: Props) => {
   const { notify } = useNotification();
-  const [category, setCategory] = useState<'boardgame' | 'botc' | 'rpg' | ''>('');
+  const [category, setCategory] = useState<'boardgame' | 'botc' | 'rpg' | ''>(prefilledCategory || '');
   const [step, setStep] = useState(1);
 
   // Step 1
@@ -395,9 +396,11 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, onComp
 
   return (
     <div className="space-y-4">
-      <Button variant="outline" size="sm" onClick={() => setCategory('')}>
-        <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
-      </Button>
+      {!prefilledCategory && (
+        <Button variant="outline" size="sm" onClick={() => setCategory('')}>
+          <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
+        </Button>
+      )}
       <Card className="bg-card border-border">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">

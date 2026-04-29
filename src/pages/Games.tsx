@@ -271,12 +271,12 @@ const Games = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  {(tagFilter !== "all" || categoryFilter || sortBy !== "name") && (
+                  {(tagFilter !== "all" || categoryFilter || sortBy !== "name" || activityFilter !== "all") && (
                     <Button
                       variant="ghost"
                       size="sm"
                       className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground gap-1"
-                      onClick={() => { setTagFilter("all"); setCategoryFilter(null); setSortBy("name"); }}
+                      onClick={() => { setTagFilter("all"); setCategoryFilter(null); setSortBy("name"); setActivityFilter("all"); }}
                     >
                       <X className="h-3 w-3" /> Limpar
                     </Button>

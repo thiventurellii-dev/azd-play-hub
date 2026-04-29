@@ -189,6 +189,10 @@ const Register = () => {
                 <SelectContent>{pronounsOptions.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label>Como você joga? * <span className="text-xs text-muted-foreground font-normal">(escolha pelo menos uma)</span></Label>
+              <PlayerTagsSelector selected={playerTags} onChange={setPlayerTags} />
+            </div>
             <Button type="submit" variant="gold" className="w-full" disabled={loading}>
               {loading ? 'Criando conta...' : 'Faça parte da comunidade'}
             </Button>

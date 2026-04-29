@@ -169,7 +169,15 @@ const Profile = () => {
               </div>
               <div>
                 <CardTitle>{profile?.name || 'Sem nome'}</CardTitle>
-                {profile?.nickname && <p className="text-sm text-muted-foreground">@{profile.nickname}</p>}
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  {profile?.nickname && <span>@{profile.nickname}</span>}
+                  {profile?.pronouns && pronounsLabels[profile.pronouns] && (
+                    <>
+                      <span className="opacity-50">•</span>
+                      <span>{pronounsLabels[profile.pronouns]}</span>
+                    </>
+                  )}
+                </div>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                   {role === 'admin' && <Badge variant="default">Admin</Badge>}
                   <PlayerTagsBadges tags={playerTags} />
@@ -181,17 +189,15 @@ const Profile = () => {
               </div>
             </div>
             <div className="flex flex-col gap-1.5 sm:flex-row sm:gap-2">
-              {!editing && (
-                <Button variant="outline" size="sm" onClick={() => { setEditTags(playerTags); setEditing(true); }}>
-                  <Pencil className="h-4 w-4 mr-1" /> Editar Perfil
-                </Button>
-              )}
-              {!changingPassword && !editing && (
+              <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
+                <Pencil className="h-4 w-4 mr-1" /> Editar Perfil
+              </Button>
+              {!changingPassword && (
                 <Button variant="outline" size="sm" onClick={() => setChangingPassword(true)}>
                   <Lock className="h-4 w-4 mr-1" /> Resetar Senha
                 </Button>
               )}
-              {!changingEmail && !editing && !changingPassword && (
+              {!changingEmail && !changingPassword && (
                 <Button variant="outline" size="sm" onClick={() => { setChangingEmail(true); setNewEmail(''); setEmailChangeRequested(false); }}>
                   <Mail className="h-4 w-4 mr-1" /> Alterar E-mail
                 </Button>
@@ -200,6 +206,17 @@ const Profile = () => {
           </div>
         </CardHeader>
         <CardContent>
+          <div className="grid gap-3 sm:grid-cols-2 text-sm">
+            <div><span className="text-muted-foreground">E-mail:</span> <span className="font-medium">{profile?.email || user?.email}</span></div>
+            <div><span className="text-muted-foreground">Telefone:</span> <span className="font-medium">{profile?.country_code} {profile?.phone ? formatPhone(profile.phone) : '—'}</span></div>
+            <div><span className="text-muted-foreground">Estado:</span> <span className="font-medium">{brazilianStates.find(s => s.uf === profile?.state)?.name || profile?.state || '—'}</span></div>
+            <div><span className="text-muted-foreground">Cidade:</span> <span className="font-medium">{profile?.city || '—'}</span></div>
+            <div><span className="text-muted-foreground">Nascimento:</span> <span className="font-medium">{profile?.birth_date ? new Date(profile.birth_date + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</span></div>
+            <div><span className="text-muted-foreground">Gênero:</span> <span className="font-medium">{genderLabels[profile?.gender] || '—'}</span></div>
+            <div><span className="text-muted-foreground">Pronomes:</span> <span className="font-medium">{pronounsLabels[profile?.pronouns] || '—'}</span></div>
+            <div><span className="text-muted-foreground">Membro desde:</span> <span className="font-medium">{user?.created_at ? new Date(user.created_at).toLocaleDateString('pt-BR') : '—'}</span></div>
+          </div>
+
           {editing ? (
             <div className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">

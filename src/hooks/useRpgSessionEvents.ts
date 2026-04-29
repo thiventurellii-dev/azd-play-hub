@@ -55,7 +55,13 @@ export const EVENT_TYPE_LABELS: Record<RpgSessionEventType, string> = {
   legendary_item: 'Item lendário',
   important_npc: 'NPC importante',
   betrayal: 'Traição',
-  achievement: 'Conquista',
+  achievement: 'Momento heróico',
+  alliance: 'Aliança',
+  rivalry: 'Rivalidade',
+  revelation: 'Revelação',
+  discovery: 'Descoberta',
+  defeat: 'Derrota',
+  moral_dilemma: 'Dilema moral',
 };
 
 export const EVENT_TYPES: RpgSessionEventType[] = [
@@ -66,4 +72,10 @@ export const EVENT_TYPES: RpgSessionEventType[] = [
   'important_npc',
   'betrayal',
   'achievement',
+  'alliance',
+  'rivalry',
+  'revelation',
+  'discovery',
+  'defeat',
+  'moral_dilemma',
 ];

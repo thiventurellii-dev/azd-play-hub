@@ -188,6 +188,22 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
     if (game?.max_players) setMaxPlayers(String(game.max_players));
   }, [gameId, games, isEdit]);
 
+  // Auto-título para RPG: "Sessão N - Nome da campanha"
+  useEffect(() => {
+    if (isEdit || category !== "rpg" || !selectedCampaignId) return;
+    const camp = userCampaigns.find(c => c.id === selectedCampaignId);
+    if (!camp) return;
+    (async () => {
+      const { count } = await supabase
+        .from("match_rooms")
+        .select("id", { count: "exact", head: true })
+        .eq("campaign_id", selectedCampaignId);
+      const n = (count || 0) + 1;
+      setTitle(`Sessão ${n} — ${camp.name}`);
+      setMaxPlayers("8");
+    })();
+  }, [selectedCampaignId, category, isEdit, userCampaigns]);
+
   const isBotC = category === "botc";
   const isRpg = category === "rpg";
   const botcGame = games.find(g => g.slug === "blood-on-the-clocktower");

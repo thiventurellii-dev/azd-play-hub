@@ -51,7 +51,7 @@ export const LandingSeasonsSection = () => (
   <SplitSection
     id="seasons"
     tag="Seasons Competitivas"
-    title={<>Dispute.<br />Suba no <span className="text-gold">ranking.</span><br />Se torne lendário!</>}
+    title={<>Dispute.<br />Suba no <span className="text-gold">Ranking.</span><br />Se torne lendário!</>}
     body="Cada season tem início, fim e premiação. Suas partidas valem pontos MMR que determinam sua posição no ranking — quanto mais você joga, mais você evolui."
     features={[
       "Sistema de MMR com variação por posição e pontuação",

@@ -295,6 +295,8 @@ const Profile = () => {
           onSaved={handleProfileSaved}
         />
       )}
+
+      <ClaimGuestDialog open={claiming} onOpenChange={setClaiming} />
     </div>
   );
 };

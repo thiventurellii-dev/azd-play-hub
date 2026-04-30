@@ -60,6 +60,7 @@ const menuGroups: MenuGroup[] = [
     items: [
       { value: "logs", label: "Logs de Atividade", icon: ScrollText },
       { value: "proposals", label: "Propostas de Edição", icon: GitPullRequest },
+      { value: "claims", label: "Vínculos de Convidados", icon: UserCheck },
     ],
   },
 ];

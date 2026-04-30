@@ -682,24 +682,53 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="space-y-3">
             <div>
               <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Jogo *</label>
-              <Select value={gameId} onValueChange={setGameId}>
-                <SelectTrigger className="mt-1.5">
-                  <SelectValue placeholder="Selecione o jogo" />
-                </SelectTrigger>
-                <SelectContent>
+              {gameId && selectedGame ? (
+                <div className="mt-1.5 flex items-center gap-3 rounded-lg border border-border/40 bg-background/40 p-2.5">
+                  <div className="h-12 w-12 rounded-md bg-secondary overflow-hidden flex-shrink-0">
+                    {selectedGame.image_url ? (
+                      <img src={selectedGame.image_url} alt={selectedGame.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground">
+                        {selectedGame.name.slice(0, 4).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-sm truncate">{selectedGame.name}</p>
+                    {selectedGame.max_players && (
+                      <p className="text-[11px] text-muted-foreground">até {selectedGame.max_players} jog.</p>
+                    )}
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setGameId("")} className="text-xs">
+                    Trocar
+                  </Button>
+                </div>
+              ) : (
+                <div className="mt-1.5 grid grid-cols-2 sm:grid-cols-4 gap-2 max-h-[260px] overflow-y-auto">
                   {filteredGames.map((g) => (
-                    <SelectItem key={g.id} value={g.id}>
-                      {g.name}
-                      {g.max_players ? (
-                        <span className="text-muted-foreground"> · até {g.max_players} jog.</span>
-                      ) : null}
-                    </SelectItem>
+                    <button
+                      key={g.id}
+                      type="button"
+                      onClick={() => setGameId(g.id)}
+                      className="group rounded-lg border border-border/40 bg-background/40 p-2 hover:border-gold/50 hover:bg-gold/5 transition text-left"
+                    >
+                      <div className="aspect-square rounded-md bg-secondary overflow-hidden mb-1.5">
+                        {g.image_url ? (
+                          <img src={g.image_url} alt={g.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
+                            {g.name.slice(0, 4).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-[11px] font-medium truncate">{g.name}</p>
+                    </button>
                   ))}
-                </SelectContent>
-              </Select>
+                </div>
+              )}
             </div>
             <div>
               <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Título *</label>

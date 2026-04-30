@@ -1,21 +1,15 @@
 # Project Memory
 
 ## Core
-
 Dark theme, bg black (#0A0A0A), gold accents (#FFB800). Font: Inter.
 Community name: Amizade (AzD). Board game ranking with ELO/MMR.
-Lovable Cloud enabled. Roles in user_roles table (admin/player).
+App lê dados da instância EXTERNA (npinawelxdtsrcvzzvvs) via src/lib/supabaseExternal.ts. Lovable Cloud existe mas não é a fonte de dados. Migrações novas precisam ser aplicadas manualmente no SQL Editor externo.
 Logo: src/assets/azd-logo.png (white on black, use invert class).
-Public routes: /, /about, /login, /register, /complete-profile. All others protected.
-Uses external Supabase DB — always validate changes against it (see constraints/external-db).
+Badges: SEMPRE texto branco (text-white). Diferenciar por border/bg, nunca por cor de texto.
 
 ## Memories
-
 - [Design tokens](mem://design/tokens) — Dark theme with gold/amber accents, semantic tokens
-- [Database schema](mem://features/schema) — profiles, user_roles, seasons, games, matches, match_results, mmr_ratings, match_rooms, match_room_players, friendships, match_room_comments
+- [Badges](mem://design/badges) — Regra: todas as badges com texto branco
+- [Database schema](mem://features/schema) — profiles, user_roles, seasons, games, matches, match_results, mmr_ratings
 - [Auth flow](mem://features/auth) — Email+password, auto profile+role on signup, admin promotion via panel
-- [Blood scoring](mem://features/blood-scoring) — BotC scoring system with recalculation
-- [Match rooms](mem://features/match-rooms) — Salas de partida com realtime, waitlist, WhatsApp invite, webhook placeholder
-- [Navbar structure](mem://features/navbar) — Dropdowns: Competitivo (Seasons, Torneios), Acervo (Regras, Coleção, Materiais), Nossas Redes. Partidas link direto com Calendar icon. Mobile: accordion.
-- [Entity edit pattern](mem://features/entity-edit-pattern) — EditActionButton and EntityEditButton reusable patterns
-- [External DB constraint](mem://constraints/external-db) — Always validate changes against the external Supabase DB, not Lovable Cloud
+- [RPG Campaigns](mem://features/rpg-campaigns) — Campanhas, personagens, mural, convites, timeline ligada a match_rooms

@@ -457,7 +457,7 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
               {((room.tags && room.tags.length > 0) || avgMmr !== null) && (
                 <div className="flex flex-wrap gap-1 mb-2">
                   {room.season_id && (
-                    <Badge variant="outline" className="text-[10px] py-0 px-1.5 border-blue-500/40 text-blue-400 bg-blue-500/10">
+                    <Badge variant="outline" className="text-[10px] py-0 px-1.5 border-blue-500/40 text-white bg-blue-500/10">
                       Competitivo
                     </Badge>
                   )}
@@ -473,10 +473,10 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
                           key={t}
                           variant="outline"
                           className={cn(
-                            "text-[10px] py-0 px-1.5",
+                            "text-[10px] py-0 px-1.5 text-white",
                             isHighlight
-                              ? "border-emerald-400/60 text-emerald-300 bg-emerald-500/10 shadow-[0_0_8px_-2px_hsl(var(--domain-positive)/0.5)]"
-                              : "border-gold/30 text-gold/80 bg-gold/5",
+                              ? "border-emerald-400/60 bg-emerald-500/10 shadow-[0_0_8px_-2px_hsl(var(--domain-positive)/0.5)]"
+                              : "border-gold/30 bg-gold/5",
                           )}
                         >
                           {t}
@@ -484,7 +484,7 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
                       );
                     })}
                   {avgMmr !== null && (
-                    <Badge variant="outline" className="text-[10px] py-0 px-1.5 border-blue-500/40 text-blue-400 bg-blue-500/10 gap-1">
+                    <Badge variant="outline" className="text-[10px] py-0 px-1.5 border-blue-500/40 text-white bg-blue-500/10 gap-1">
                       <TrendingUp className="h-2.5 w-2.5" /> MMR médio: {avgMmr}
                     </Badge>
                   )}

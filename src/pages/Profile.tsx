@@ -199,6 +199,9 @@ const Profile = () => {
                   <Mail className="h-4 w-4 mr-1" /> Alterar E-mail
                 </Button>
               )}
+              <Button variant="outline" size="sm" onClick={() => setClaiming(true)}>
+                <UserCheck className="h-4 w-4 mr-1" /> Reivindicar Convidado
+              </Button>
             </div>
           </div>
         </CardHeader>

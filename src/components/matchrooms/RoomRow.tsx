@@ -258,7 +258,9 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
   const isBotC = !!room.blood_script_id;
   const isRpg = room.room_type === "rpg" && !!room.campaign_id;
   const isRpgMaster = isRpg && !!user && (campaignMasterId === user.id);
-  const canInsertResult = isRpg ? (isRpgMaster || isAdmin) : true;
+  const canInsertResult = isRpg
+    ? (isRpgMaster || isAdmin)
+    : (isCreator || isAdmin || isInRoom);
 
   const date = new Date(room.scheduled_at);
   const formattedDate = date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });

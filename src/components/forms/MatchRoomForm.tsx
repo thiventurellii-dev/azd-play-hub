@@ -109,7 +109,7 @@ const useFormOptions = (enabled: boolean, userId?: string) =>
     queryFn: async () => {
       const sb: any = supabase;
       const [gamesRes, scriptsRes, tagsRes, seasonsRes, communitiesRes, campaignsRes] = await Promise.all([
-        supabase.from("games").select("id, name, slug, max_players").order("name"),
+        supabase.from("games").select("id, name, slug, max_players, image_url").order("name"),
         supabase.from("blood_scripts").select("id, name").order("name"),
         supabase.from("room_tags").select("id, name").order("name"),
         supabase.from("seasons").select("id, name, status, type").in("status", ["active", "upcoming"]).order("name"),

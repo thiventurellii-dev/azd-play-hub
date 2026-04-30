@@ -228,7 +228,7 @@ const categoryCards: Array<{
   {
     id: "botc",
     label: "Blood on the Clocktower",
-    description: "Um Jogo de Dedução social",
+    description: "Jogo de Dedução Social",
     icon: Skull,
     color: "text-red-400",
     border: "hover:border-red-500/60 hover:bg-red-500/5",

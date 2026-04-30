@@ -20,6 +20,7 @@ interface Game {
   name: string;
   slug: string | null;
   max_players: number | null;
+  image_url: string | null;
 }
 interface BloodScript {
   id: string;

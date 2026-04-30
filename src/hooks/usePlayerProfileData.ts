@@ -275,7 +275,7 @@ export const usePlayerProfileData = (nickname?: string) =>
         const roomIds = (roomPlayers as any[]).map((rp) => rp.room_id);
         const { data: rooms } = await supabase
           .from("match_rooms")
-          .select("id, title, scheduled_at, status, game_id, max_players, is_public, room_type")
+          .select("id, title, scheduled_at, status, game_id, max_players, room_type")
           .in("id", roomIds)
           .in("status", ["open", "full"])
           .gte("scheduled_at", new Date().toISOString())
@@ -310,7 +310,7 @@ export const usePlayerProfileData = (nickname?: string) =>
               game_id: r.game_id,
               game_name: rgMap[r.game_id]?.name || "?",
               game_slug: rgMap[r.game_id]?.slug || null,
-              is_public: r.is_public ?? true,
+              is_public: true, // match_rooms não tem flag de privacidade hoje
               max_players: r.max_players ?? 0,
               confirmed_count: confMap[r.id] || 0,
               room_type: r.room_type ?? null,

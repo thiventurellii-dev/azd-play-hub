@@ -129,7 +129,7 @@ export const useProfileRpgData = (profileId?: string) =>
       const { data: sessions } = allCampIds.length
         ? await supabase
             .from("match_rooms")
-            .select("id, campaign_id, scheduled_at, status, duration_minutes")
+            .select("id, campaign_id, scheduled_at, status")
             .in("campaign_id", allCampIds)
         : { data: [] as any[] };
 
@@ -143,7 +143,7 @@ export const useProfileRpgData = (profileId?: string) =>
         if (!cid) continue;
         if ((s as any).status === "finished") {
           sessionCount[cid] = (sessionCount[cid] || 0) + 1;
-          totalMinutes[cid] = (totalMinutes[cid] || 0) + Number((s as any).duration_minutes || 240);
+          totalMinutes[cid] = (totalMinutes[cid] || 0) + 240; // estimativa: 4h por sessão
         }
         const at = (s as any).scheduled_at;
         if (at && new Date(at).getTime() > now && (s as any).status !== "finished") {

@@ -13,11 +13,21 @@ import { Trash2, UserPlus, Upload, Image, Pencil, Search, ChevronDown, ChevronUp
 import NewMatchFlow from '@/components/matches/NewMatchFlow';
 import EditMatchDialog from '@/components/matches/EditMatchDialog';
 import { recalculateSeasonGameMmr } from '@/lib/mmrRecalculation';
+import { fetchUnclaimedGuests, type GuestPlayer } from '@/lib/guestPlayers';
 
 interface Season { id: string; name: string; }
 interface Game { id: string; name: string; }
-interface Player { id: string; name: string; nickname?: string; }
-interface MatchResult { player_id: string; position: number; score: number; is_first_player: boolean; }
+interface Player { id: string; name: string; nickname?: string; is_guest?: boolean; }
+interface MatchResult { player_id: string; is_guest: boolean; position: number; score: number; is_first_player: boolean; }
+
+// Encode/decode helpers for combined select values (profile vs guest share UUID space)
+const encodePlayerValue = (id: string, isGuest: boolean) => `${isGuest ? 'g' : 'p'}:${id}`;
+const decodePlayerValue = (v: string): { id: string; is_guest: boolean } => {
+  if (!v) return { id: '', is_guest: false };
+  if (v.startsWith('g:')) return { id: v.slice(2), is_guest: true };
+  if (v.startsWith('p:')) return { id: v.slice(2), is_guest: false };
+  return { id: v, is_guest: false }; // legacy
+};
 interface MatchRecord {
   id: string;
   played_at: string;

@@ -37,6 +37,7 @@ export interface UserRankPosition {
   position: number;
   current_mmr: number;
   mmr_change: number | null;
+  position_change: number | null;
 }
 
 export interface SocialLink {

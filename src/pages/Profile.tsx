@@ -19,6 +19,7 @@ import { useProfileTags } from '@/hooks/useProfileTags';
 import { MyCampaignsCard } from '@/components/rpg/MyCampaignsCard';
 import { EditProfileDialog } from '@/components/profile/EditProfileDialog';
 import { ClaimGuestDialog } from '@/components/profile/ClaimGuestDialog';
+import { PostSignupGuestMatchDialog } from '@/components/profile/PostSignupGuestMatchDialog';
 
 const Profile = () => {
   const { user, role } = useAuth();
@@ -26,6 +27,7 @@ const Profile = () => {
   useProfileCompletion();
   const [editing, setEditing] = useState(false);
   const [claiming, setClaiming] = useState(false);
+  const [autoMatchOpen, setAutoMatchOpen] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const [form, setForm] = useState({ name: '', nickname: '', phone: '', country_code: '+55', state: '', city: '', birth_date: '', gender: '', pronouns: '', email: '' });
   const [changingPassword, setChangingPassword] = useState(false);
@@ -60,6 +62,19 @@ const Profile = () => {
           email: (data as any).email || user.email || '',
         });
       }
+    });
+  }, [user]);
+
+  // Auto-sugestão de reivindicação de guests (uma vez por usuário)
+  useEffect(() => {
+    if (!user) return;
+    const key = `azd:guest-match-checked:${user.id}`;
+    if (localStorage.getItem(key)) return;
+    supabase.rpc('find_matching_guests', { p_profile_id: user.id }).then(({ data, error }) => {
+      if (error) { console.warn('find_matching_guests error', error); return; }
+      const matches = (data as any[]) || [];
+      if (matches.length > 0) setAutoMatchOpen(true);
+      localStorage.setItem(key, '1');
     });
   }, [user]);
 
@@ -297,6 +312,13 @@ const Profile = () => {
       )}
 
       <ClaimGuestDialog open={claiming} onOpenChange={setClaiming} />
+      {user && (
+        <PostSignupGuestMatchDialog
+          open={autoMatchOpen}
+          onOpenChange={setAutoMatchOpen}
+          profileId={user.id}
+        />
+      )}
     </div>
   );
 };

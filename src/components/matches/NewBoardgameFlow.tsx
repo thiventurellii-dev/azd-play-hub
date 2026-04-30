@@ -821,7 +821,7 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
               </PopoverContent>
             </Popover>
           )}
-          {prefilledCommunityId && communityMemberIds.length > 0 && (
+          {selectedCommunityId && communityMemberIds.length > 0 && (
             <Popover open={communityOpen} onOpenChange={(o) => { setCommunityOpen(o); if (!o) setSelectedCommunityToAdd(new Set()); }}>
               <PopoverTrigger asChild>
                 <button

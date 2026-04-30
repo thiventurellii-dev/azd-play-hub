@@ -129,6 +129,12 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
   }, [room.blood_script_id]);
 
   useEffect(() => {
+    if (!room.campaign_id) { setCampaignMasterId(null); return; }
+    supabase.from("rpg_campaigns").select("master_id").eq("id", room.campaign_id).maybeSingle()
+      .then(({ data }) => setCampaignMasterId((data as any)?.master_id ?? null));
+  }, [room.campaign_id]);
+
+  useEffect(() => {
     if (room.result_id) {
       setResultId(room.result_id);
       setResultType(room.result_type || null);

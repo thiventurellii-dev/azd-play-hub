@@ -350,6 +350,33 @@ const MatchRooms = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rooms, dayRooms, effectiveFavIds, favoriteScriptIds, selectedDate, gameFilter, typeFilters, experienceFilters]);
 
+  // Quando o jogador filtra por jogo, mostramos todas as salas abertas daquele jogo agrupadas por data
+  const gameFilterRoomsByDay = useMemo(() => {
+    if (gameFilter === "all") return [];
+    const today = dayStart(new Date());
+    const filtered = rooms
+      .filter((r) => r.game?.id === gameFilter)
+      .filter((r) => r.status === "open" || r.status === "full")
+      .filter((r) => new Date(r.scheduled_at) >= today)
+      .filter(passesTagFilters)
+      .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
+
+    const groups = new Map<string, { date: Date; rooms: MatchRoom[] }>();
+    for (const r of filtered) {
+      const d = dayStart(new Date(r.scheduled_at));
+      const key = d.toISOString();
+      if (!groups.has(key)) groups.set(key, { date: d, rooms: [] });
+      groups.get(key)!.rooms.push(r);
+    }
+    return Array.from(groups.values());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rooms, gameFilter, typeFilters, experienceFilters]);
+
+  const filteredGameName = useMemo(() => {
+    if (gameFilter === "all") return null;
+    return rooms.find((r) => r.game?.id === gameFilter)?.game?.name ?? null;
+  }, [rooms, gameFilter]);
+
   const toggleArrayFilter = (value: string, setter: Dispatch<SetStateAction<string[]>>) => {
     setter((cur) => (cur.includes(value) ? cur.filter((i) => i !== value) : [...cur, value]));
   };

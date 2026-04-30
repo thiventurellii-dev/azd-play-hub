@@ -14,10 +14,26 @@ import { sendMatchNotification } from "@/lib/matchNotification";
 
 /* ── Types ─────────────────────────────────────────── */
 
-interface Game { id: string; name: string; slug: string | null; max_players: number | null }
-interface BloodScript { id: string; name: string }
-interface RoomTag { id: string; name: string }
-interface Season { id: string; name: string; status: string; type: string }
+interface Game {
+  id: string;
+  name: string;
+  slug: string | null;
+  max_players: number | null;
+}
+interface BloodScript {
+  id: string;
+  name: string;
+}
+interface RoomTag {
+  id: string;
+  name: string;
+}
+interface Season {
+  id: string;
+  name: string;
+  status: string;
+  type: string;
+}
 
 export interface MatchRoomData {
   id: string;
@@ -33,13 +49,7 @@ export interface MatchRoomData {
   game: { id: string; name: string; image_url: string | null };
 }
 
-const PLATFORM_OPTIONS = [
-  "Presencial",
-  "Tabletop Simulator",
-  "BoardGame Arena",
-  "Discord",
-  "Outro Online",
-];
+const PLATFORM_OPTIONS = ["Presencial", "Tabletop Simulator", "BoardGame Arena", "Foundry", "Outro Online"];
 
 interface MatchRoomFormProps {
   room?: MatchRoomData | null;
@@ -78,10 +88,17 @@ const useFormOptions = (enabled: boolean, userId?: string) =>
         scripts: (scriptsRes.data ?? []) as BloodScript[],
         tags: (tagsRes.data ?? []) as RoomTag[],
         seasons: (seasonsRes.data ?? []) as Season[],
-        communities: ((communitiesRes.data ?? []) as any[])
-          .map((r) => r.communities)
-          .filter(Boolean) as { id: string; name: string; slug: string }[],
-        campaigns: (campaignsRes.data ?? []) as { id: string; name: string; status: string; adventure_id: string | null }[],
+        communities: ((communitiesRes.data ?? []) as any[]).map((r) => r.communities).filter(Boolean) as {
+          id: string;
+          name: string;
+          slug: string;
+        }[],
+        campaigns: (campaignsRes.data ?? []) as {
+          id: string;
+          name: string;
+          status: string;
+          adventure_id: string | null;
+        }[],
       };
     },
     enabled,
@@ -163,7 +180,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
     setCommunityOnly(!!room.community_only);
     setPlatform(room.platform ?? "");
     setStatus("");
-    const game = games.find(g => g.id === room.game?.id);
+    const game = games.find((g) => g.id === room.game?.id);
     if (game?.slug === "blood-on-the-clocktower") {
       setCategory("botc");
     } else {
@@ -178,20 +195,20 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
       .select("tag_id")
       .eq("room_id", room.id)
       .then(({ data }) => {
-        if (data) setSelectedTagIds(data.map(t => t.tag_id));
+        if (data) setSelectedTagIds(data.map((t) => t.tag_id));
       });
   }, [room?.id]);
 
   useEffect(() => {
     if (isEdit) return;
-    const game = games.find(g => g.id === gameId);
+    const game = games.find((g) => g.id === gameId);
     if (game?.max_players) setMaxPlayers(String(game.max_players));
   }, [gameId, games, isEdit]);
 
   // Auto-título para RPG: "Sessão N - Nome da campanha"
   useEffect(() => {
     if (isEdit || category !== "rpg" || !selectedCampaignId) return;
-    const camp = userCampaigns.find(c => c.id === selectedCampaignId);
+    const camp = userCampaigns.find((c) => c.id === selectedCampaignId);
     if (!camp) return;
     (async () => {
       const { count } = await supabase
@@ -206,23 +223,27 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
 
   const isBotC = category === "botc";
   const isRpg = category === "rpg";
-  const botcGame = games.find(g => g.slug === "blood-on-the-clocktower");
-  const rpgGame = games.find(g => g.slug === "rpg-generico" || g.slug === "rpg-generic" || g.name?.toLowerCase() === "rpg");
-  const selectedCampaign = userCampaigns.find(c => c.id === selectedCampaignId);
+  const botcGame = games.find((g) => g.slug === "blood-on-the-clocktower");
+  const rpgGame = games.find(
+    (g) => g.slug === "rpg-generico" || g.slug === "rpg-generic" || g.name?.toLowerCase() === "rpg",
+  );
+  const selectedCampaign = userCampaigns.find((c) => c.id === selectedCampaignId);
 
-  const filteredGames = games.filter(g => {
-    if (category === "boardgame") return g.slug !== "blood-on-the-clocktower" && g.slug !== "rpg-generico" && g.slug !== "rpg-generic";
+  const filteredGames = games.filter((g) => {
+    if (category === "boardgame")
+      return g.slug !== "blood-on-the-clocktower" && g.slug !== "rpg-generico" && g.slug !== "rpg-generic";
     return true;
   });
 
-  const filteredSeasons = category === "boardgame"
-    ? seasons.filter(s => s.type === "boardgame" && s.status === "active")
-    : category === "botc"
-      ? seasons.filter(s => s.type === "blood" && s.status === "active")
-      : [];
+  const filteredSeasons =
+    category === "boardgame"
+      ? seasons.filter((s) => s.type === "boardgame" && s.status === "active")
+      : category === "botc"
+        ? seasons.filter((s) => s.type === "blood" && s.status === "active")
+        : [];
 
   const toggleTag = (tagId: string) =>
-    setSelectedTagIds(prev => prev.includes(tagId) ? prev.filter(id => id !== tagId) : [...prev, tagId]);
+    setSelectedTagIds((prev) => (prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]));
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -235,12 +256,16 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
       let finalGameId = isBotC ? (botcGame?.id ?? "") : isRpg ? (rpgGame?.id ?? "") : gameId;
 
       if (isBotC && !finalGameId) {
-        const { data: newGame } = await supabase.from("games").insert({
-          name: "Blood on the Clocktower",
-          slug: "blood-on-the-clocktower",
-          min_players: 5,
-          max_players: 20,
-        }).select("id").single();
+        const { data: newGame } = await supabase
+          .from("games")
+          .insert({
+            name: "Blood on the Clocktower",
+            slug: "blood-on-the-clocktower",
+            min_players: 5,
+            max_players: 20,
+          })
+          .select("id")
+          .single();
         if (newGame) finalGameId = newGame.id;
       }
       if (isRpg && !finalGameId) {
@@ -254,12 +279,16 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
         if (existing?.id) {
           finalGameId = existing.id;
         } else {
-          const { data: newGame } = await supabase.from("games").insert({
-            name: "RPG",
-            slug: "rpg-generico",
-            min_players: 2,
-            max_players: 10,
-          } as any).select("id").single();
+          const { data: newGame } = await supabase
+            .from("games")
+            .insert({
+              name: "RPG",
+              slug: "rpg-generico",
+              min_players: 2,
+              max_players: 10,
+            } as any)
+            .select("id")
+            .single();
           if (newGame) finalGameId = newGame.id;
         }
       }
@@ -267,7 +296,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
 
       let finalDescription = description || null;
       if (isBotC && selectedScriptId && !isEdit) {
-        const scriptName = bloodScripts.find(s => s.id === selectedScriptId)?.name;
+        const scriptName = bloodScripts.find((s) => s.id === selectedScriptId)?.name;
         finalDescription = `[Script: ${scriptName}]${description ? `\n${description}` : ""}`;
       }
 
@@ -281,9 +310,11 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
           season_id: selectedSeasonId || null,
           community_id: selectedCommunityId || null,
           community_only: !!selectedCommunityId && communityOnly,
-          room_type: category || 'boardgame',
+          room_type: category || "boardgame",
           platform: platform || null,
-          ...(isAdminMode && status ? { status: status as "open" | "full" | "in_progress" | "finished" | "cancelled" } : {}),
+          ...(isAdminMode && status
+            ? { status: status as "open" | "full" | "in_progress" | "finished" | "cancelled" }
+            : {}),
         };
 
         const { error } = await supabase.from("match_rooms").update(updatePayload).eq("id", room.id);
@@ -291,9 +322,9 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
 
         await supabase.from("match_room_tag_links").delete().eq("room_id", room.id);
         if (selectedTagIds.length > 0) {
-          await supabase.from("match_room_tag_links").insert(
-            selectedTagIds.map(tagId => ({ room_id: room.id, tag_id: tagId }))
-          );
+          await supabase
+            .from("match_room_tag_links")
+            .insert(selectedTagIds.map((tagId) => ({ room_id: room.id, tag_id: tagId })));
         }
       } else {
         const { data, error } = await supabase
@@ -310,21 +341,21 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
             season_id: selectedSeasonId || null,
             community_id: selectedCommunityId || null,
             community_only: !!selectedCommunityId && communityOnly,
-            room_type: category || 'boardgame',
+            room_type: category || "boardgame",
             platform: platform || null,
-            campaign_id: isRpg ? (selectedCampaignId || null) : null,
+            campaign_id: isRpg ? selectedCampaignId || null : null,
           } as any)
           .select()
           .single();
         if (error) throw error;
 
         if (selectedTagIds.length > 0) {
-          await supabase.from("match_room_tag_links").insert(
-            selectedTagIds.map(tagId => ({ room_id: data.id, tag_id: tagId }))
-          );
+          await supabase
+            .from("match_room_tag_links")
+            .insert(selectedTagIds.map((tagId) => ({ room_id: data.id, tag_id: tagId })));
         }
 
-        const game = games.find(g => g.id === finalGameId);
+        const game = games.find((g) => g.id === finalGameId);
         sendMatchNotification({
           event: "match_created",
           room_id: data.id,
@@ -374,7 +405,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">Escolha a categoria:</p>
         <div className="flex flex-wrap justify-center gap-4">
-          {categoryCards.map(card => {
+          {categoryCards.map((card) => {
             const Icon = card.icon;
             return (
               <button
@@ -398,13 +429,26 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
   }
 
   if (optionsLoading) {
-    return <div className="flex justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-gold border-t-transparent" /></div>;
+    return (
+      <div className="flex justify-center py-8">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-gold border-t-transparent" />
+      </div>
+    );
   }
 
   return (
     <div className="space-y-4">
       {!isEdit && (
-        <Button variant="ghost" size="sm" onClick={() => { setCategory(""); setGameId(""); setSelectedScriptId(""); }} className="mb-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            setCategory("");
+            setGameId("");
+            setSelectedScriptId("");
+          }}
+          className="mb-2"
+        >
           <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
         </Button>
       )}
@@ -413,9 +457,15 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
         <div>
           <Label>Script *</Label>
           <Select value={selectedScriptId} onValueChange={setSelectedScriptId}>
-            <SelectTrigger><SelectValue placeholder="Selecione o script" /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione o script" />
+            </SelectTrigger>
             <SelectContent>
-              {bloodScripts.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+              {bloodScripts.map((s) => (
+                <SelectItem key={s.id} value={s.id}>
+                  {s.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -425,14 +475,20 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
           {userCampaigns.length === 0 ? (
             <div className="rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
               Você ainda não mestra nenhuma campanha.{" "}
-              <a href="/campanhas" className="text-gold hover:underline">Criar campanha</a>
+              <a href="/campanhas" className="text-gold hover:underline">
+                Criar campanha
+              </a>
             </div>
           ) : (
             <Select value={selectedCampaignId} onValueChange={setSelectedCampaignId}>
-              <SelectTrigger><SelectValue placeholder="Selecione a campanha" /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a campanha" />
+              </SelectTrigger>
               <SelectContent>
-                {userCampaigns.map(c => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                {userCampaigns.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -445,7 +501,8 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
                 <span className="font-semibold text-foreground">Você</span>
               </div>
               <p className="text-[11px] text-muted-foreground mt-1">
-                Apenas o mestre poderá inserir o resultado desta sessão. Título preenchido como "Sessão N — {selectedCampaign.name}".
+                Apenas o mestre poderá inserir o resultado desta sessão. Título preenchido como "Sessão N —{" "}
+                {selectedCampaign.name}".
               </p>
             </div>
           )}
@@ -454,9 +511,15 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
         <div>
           <Label>Jogo *</Label>
           <Select value={gameId} onValueChange={setGameId}>
-            <SelectTrigger><SelectValue placeholder="Selecione o jogo" /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione o jogo" />
+            </SelectTrigger>
             <SelectContent>
-              {filteredGames.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}
+              {filteredGames.map((g) => (
+                <SelectItem key={g.id} value={g.id}>
+                  {g.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -464,7 +527,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
 
       <div>
         <Label>Título *</Label>
-        <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Ex: Partida de sábado" />
+        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Partida de sábado" />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -474,22 +537,28 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
         </div>
         <div>
           <Label>Hora</Label>
-          <Input type="time" value={scheduledTime} onChange={e => setScheduledTime(e.target.value)} />
+          <Input type="time" value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)} />
         </div>
       </div>
 
       <div>
         <Label>Vagas Máximas</Label>
-        <Input type="number" min="2" value={maxPlayers} onChange={e => setMaxPlayers(e.target.value)} />
+        <Input type="number" min="2" value={maxPlayers} onChange={(e) => setMaxPlayers(e.target.value)} />
       </div>
 
       <div>
         <Label>Local / Plataforma</Label>
-        <Select value={platform || "none"} onValueChange={v => setPlatform(v === "none" ? "" : v)}>
-          <SelectTrigger><SelectValue placeholder="Onde será jogado?" /></SelectTrigger>
+        <Select value={platform || "none"} onValueChange={(v) => setPlatform(v === "none" ? "" : v)}>
+          <SelectTrigger>
+            <SelectValue placeholder="Onde será jogado?" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="none">Não especificado</SelectItem>
-            {PLATFORM_OPTIONS.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+            {PLATFORM_OPTIONS.map((p) => (
+              <SelectItem key={p} value={p}>
+                {p}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -498,7 +567,9 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
         <div>
           <Label>Status (Admin)</Label>
           <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger><SelectValue placeholder="Manter atual" /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue placeholder="Manter atual" />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="open">Aberto</SelectItem>
               <SelectItem value="full">Lotado</SelectItem>
@@ -513,7 +584,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
       <div>
         <Label>Tags (nível da sala)</Label>
         <div className="flex flex-wrap gap-2 mt-1">
-          {availableTags.map(tag => {
+          {availableTags.map((tag) => {
             const isSelected = selectedTagIds.includes(tag.id);
             return (
               <button
@@ -537,11 +608,17 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
       {filteredSeasons.length > 0 && (
         <div>
           <Label>Temporada (competitivo - opcional)</Label>
-          <Select value={selectedSeasonId || "none"} onValueChange={v => setSelectedSeasonId(v === "none" ? "" : v)}>
-            <SelectTrigger><SelectValue placeholder="Nenhuma (casual)" /></SelectTrigger>
+          <Select value={selectedSeasonId || "none"} onValueChange={(v) => setSelectedSeasonId(v === "none" ? "" : v)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Nenhuma (casual)" />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">Nenhuma (casual)</SelectItem>
-              {filteredSeasons.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+              {filteredSeasons.map((s) => (
+                <SelectItem key={s.id} value={s.id}>
+                  {s.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -551,11 +628,20 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
         <div className="space-y-2">
           <div>
             <Label>Comunidade (opcional)</Label>
-            <Select value={selectedCommunityId || "none"} onValueChange={v => setSelectedCommunityId(v === "none" ? "" : v)}>
-              <SelectTrigger><SelectValue placeholder="Nenhuma" /></SelectTrigger>
+            <Select
+              value={selectedCommunityId || "none"}
+              onValueChange={(v) => setSelectedCommunityId(v === "none" ? "" : v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Nenhuma" />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">Nenhuma</SelectItem>
-                {userCommunities.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                {userCommunities.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -564,7 +650,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
               <input
                 type="checkbox"
                 checked={communityOnly}
-                onChange={e => setCommunityOnly(e.target.checked)}
+                onChange={(e) => setCommunityOnly(e.target.checked)}
                 className="h-4 w-4 rounded border-border accent-gold"
               />
               Exclusiva para membros da comunidade
@@ -575,7 +661,12 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
 
       <div>
         <Label>Descrição {!isEdit && "(opcional)"}</Label>
-        <Textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Observações sobre a partida..." rows={3} />
+        <Textarea
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="Observações sobre a partida..."
+          rows={3}
+        />
       </div>
 
       <Button variant="gold" className="w-full min-h-[44px]" onClick={handleSubmit} disabled={mutation.isPending}>

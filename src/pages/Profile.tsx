@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { useNotification } from '@/components/NotificationDialog';
-import { Pencil, Lock, Camera, Mail } from 'lucide-react';
+import { Pencil, Lock, Camera, Mail, UserCheck } from 'lucide-react';
 import { brazilianStates, formatPhone } from '@/lib/brazil-data';
 import FriendsList from '@/components/friendlist/FriendsList';
 import XpBadge from '@/components/shared/XpBadge';
@@ -18,12 +18,14 @@ import { PlayerTagsBadges, PlayerTag } from '@/components/profile/PlayerTagsSele
 import { useProfileTags } from '@/hooks/useProfileTags';
 import { MyCampaignsCard } from '@/components/rpg/MyCampaignsCard';
 import { EditProfileDialog } from '@/components/profile/EditProfileDialog';
+import { ClaimGuestDialog } from '@/components/profile/ClaimGuestDialog';
 
 const Profile = () => {
   const { user, role } = useAuth();
   const { notify } = useNotification();
   useProfileCompletion();
   const [editing, setEditing] = useState(false);
+  const [claiming, setClaiming] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const [form, setForm] = useState({ name: '', nickname: '', phone: '', country_code: '+55', state: '', city: '', birth_date: '', gender: '', pronouns: '', email: '' });
   const [changingPassword, setChangingPassword] = useState(false);
@@ -197,6 +199,9 @@ const Profile = () => {
                   <Mail className="h-4 w-4 mr-1" /> Alterar E-mail
                 </Button>
               )}
+              <Button variant="outline" size="sm" onClick={() => setClaiming(true)}>
+                <UserCheck className="h-4 w-4 mr-1" /> Reivindicar Convidado
+              </Button>
             </div>
           </div>
         </CardHeader>
@@ -290,6 +295,8 @@ const Profile = () => {
           onSaved={handleProfileSaved}
         />
       )}
+
+      <ClaimGuestDialog open={claiming} onOpenChange={setClaiming} />
     </div>
   );
 };

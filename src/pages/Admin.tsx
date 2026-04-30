@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Shield, Calendar, Users, Trophy, FileText, AtSign, Lightbulb, Award, ClipboardList, Swords, ChevronDown, PanelLeftClose, PanelLeftOpen, ScrollText, GitPullRequest } from "lucide-react";
+import { Shield, Calendar, Users, Trophy, FileText, AtSign, Lightbulb, Award, ClipboardList, Swords, ChevronDown, PanelLeftClose, PanelLeftOpen, ScrollText, GitPullRequest, UserCheck } from "lucide-react";
 import AdminSeasons from "@/components/admin/AdminSeasons";
 import AdminBloodMatches from "@/components/admin/AdminBloodMatches";
 import AdminBloodScripts from "@/components/admin/AdminBloodScripts";
@@ -12,6 +12,7 @@ import AdminAchievements from "@/components/admin/AdminAchievements";
 import AdminMatches from "@/components/admin/AdminMatches";
 import AdminLogs from "@/components/admin/AdminLogs";
 import AdminEditProposals from "@/components/admin/AdminEditProposals";
+import AdminClaimRequests from "@/components/admin/AdminClaimRequests";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -59,6 +60,7 @@ const menuGroups: MenuGroup[] = [
     items: [
       { value: "logs", label: "Logs de Atividade", icon: ScrollText },
       { value: "proposals", label: "Propostas de Edição", icon: GitPullRequest },
+      { value: "claims", label: "Vínculos de Convidados", icon: UserCheck },
     ],
   },
 ];
@@ -76,6 +78,7 @@ const contentMap: Record<string, React.ReactNode> = {
   suggestions: <AdminSuggestions />,
   logs: <AdminLogs />,
   proposals: <AdminEditProposals />,
+  claims: <AdminClaimRequests />,
 };
 
 const Admin = () => {

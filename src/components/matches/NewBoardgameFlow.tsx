@@ -620,8 +620,8 @@ const NewBoardgameFlow = ({
       const matchResults = filled.map((e) => {
         const pos = positionMap[e.player_id];
         const isGuest = e.is_guest;
-        const mmrBefore = isGuest ? null : mmrMap[e.player_id] || 1000;
-        const mmrChange = isGuest ? 0 : eloChanges[e.player_id] || 0;
+        const mmrBefore = mmrMap[e.player_id] ?? 1000;
+        const mmrChange = eloChanges[e.player_id] ?? 0;
         return {
           match_id: match.id,
           player_id: isGuest ? null : e.player_id,
@@ -630,7 +630,7 @@ const NewBoardgameFlow = ({
           score: e.total_score || 0,
           mmr_before: mmrBefore,
           mmr_change: mmrChange,
-          mmr_after: isGuest ? null : (mmrMap[e.player_id] || 1000) + mmrChange,
+          mmr_after: mmrBefore + mmrChange,
           seat_position: e.seat_position,
           faction: e.faction || null,
           is_new_player: false,

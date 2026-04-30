@@ -112,12 +112,26 @@ const AdminBloodMatches = () => {
     for (const s of (scriptsRes.data || [])) scriptMap[s.id] = s.name;
 
     const playerIds = [...new Set([
-      ...(matchData as any[]).map(m => m.storyteller_player_id),
-      ...((playersRes.data || []) as any[]).map(p => p.player_id),
+      ...(matchData as any[]).map(m => m.storyteller_player_id).filter(Boolean),
+      ...((playersRes.data || []) as any[]).map(p => p.player_id).filter(Boolean),
     ])];
-    const { data: profilesData } = await supabase.from('profiles').select('id, name, nickname').in('id', playerIds);
+    const ghostIds = [...new Set([
+      ...(matchData as any[]).map(m => m.storyteller_ghost_id).filter(Boolean),
+      ...((playersRes.data || []) as any[]).map(p => p.ghost_player_id).filter(Boolean),
+    ])];
+
+    const [profilesRes, ghostsRes] = await Promise.all([
+      playerIds.length > 0
+        ? supabase.from('profiles').select('id, name, nickname').in('id', playerIds)
+        : Promise.resolve({ data: [] as any[] }),
+      ghostIds.length > 0
+        ? supabase.from('ghost_players').select('id, display_name').in('id', ghostIds)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
     const profileMap: Record<string, string> = {};
-    for (const p of (profilesData || [])) profileMap[p.id] = (p as any).nickname || p.name;
+    for (const p of (profilesRes.data || [])) profileMap[(p as any).id] = (p as any).nickname || (p as any).name;
+    const ghostMap: Record<string, string> = {};
+    for (const g of (ghostsRes.data || [])) ghostMap[(g as any).id] = (g as any).display_name;
 
     const charIds = [...new Set(((playersRes.data || []) as any[]).map(p => p.character_id))];
     const { data: charsData } = charIds.length > 0
@@ -126,19 +140,32 @@ const AdminBloodMatches = () => {
     const charMap: Record<string, string> = {};
     for (const c of (charsData || [])) charMap[(c as any).id] = (c as any).name;
 
-    setMatches((matchData as any[]).map(m => ({
-      ...m,
-      season_name: seasonMap[m.season_id] || '?',
-      script_name: scriptMap[m.script_id] || '?',
-      storyteller_name: profileMap[m.storyteller_player_id] || '?',
-      players: ((playersRes.data || []) as any[])
-        .filter(p => p.match_id === m.id)
-        .map(p => ({
-          ...p,
-          player_name: profileMap[p.player_id] || '?',
-          character_name: charMap[p.character_id] || '?',
-        })),
-    })));
+    setMatches((matchData as any[]).map(m => {
+      const stIsGuest = !!m.storyteller_ghost_id;
+      const stName = stIsGuest
+        ? (ghostMap[m.storyteller_ghost_id] || 'Convidado')
+        : (profileMap[m.storyteller_player_id] || '?');
+      return {
+        ...m,
+        season_name: seasonMap[m.season_id] || '?',
+        script_name: scriptMap[m.script_id] || '?',
+        storyteller_name: stName,
+        storyteller_is_guest: stIsGuest,
+        players: ((playersRes.data || []) as any[])
+          .filter(p => p.match_id === m.id)
+          .map(p => {
+            const isGuest = !!p.ghost_player_id;
+            return {
+              ...p,
+              is_guest: isGuest,
+              player_name: isGuest
+                ? (ghostMap[p.ghost_player_id] || 'Convidado')
+                : (profileMap[p.player_id] || '?'),
+              character_name: charMap[p.character_id] || '?',
+            };
+          }),
+      };
+    }));
   };
 
   const scriptCharacters = characters.filter(c => c.script_id === scriptId);

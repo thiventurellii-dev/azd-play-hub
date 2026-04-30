@@ -10,10 +10,12 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useNotification } from "@/components/NotificationDialog";
-import { ChevronLeft, ChevronRight, Check, Trash2, UserPlus, Skull, Shield, ChevronsUpDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Trash2, UserPlus, Skull, Shield, ChevronsUpDown, UserCircle2 } from "lucide-react";
 import { DatePickerField } from "@/components/ui/date-picker-field";
 import { submitBloodMatch } from "@/lib/bloodRatings";
 import { cn } from "@/lib/utils";
+import AddGuestDialog from "@/components/players/AddGuestDialog";
+import { fetchUnclaimedGuests, type GuestPlayer } from "@/lib/guestPlayers";
 
 interface Season {
   id: string;
@@ -39,6 +41,7 @@ interface Player {
 }
 interface BloodPlayerEntry {
   player_id: string;
+  is_guest: boolean;
   character_id: string;
   team: "good" | "evil";
 }
@@ -55,6 +58,14 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
   const [scripts, setScripts] = useState<BloodScript[]>([]);
   const [characters, setCharacters] = useState<BloodCharacter[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [guests, setGuests] = useState<GuestPlayer[]>([]);
+  const [addGuestOpen, setAddGuestOpen] = useState(false);
+  // After creating a guest from a specific picker, route the selection back
+  const [pendingGuestTarget, setPendingGuestTarget] = useState<
+    | { kind: "storyteller" }
+    | { kind: "team"; team: "good" | "evil"; idx: number }
+    | null
+  >(null);
 
   const [seasonId, setSeasonId] = useState("");
   const [scriptId, setScriptId] = useState("");
@@ -64,11 +75,12 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
   const [platform, setPlatform] = useState("");
 
   const [storytellerId, setStorytellerId] = useState("");
+  const [storytellerIsGuest, setStorytellerIsGuest] = useState(false);
   const [evilPlayers, setEvilPlayers] = useState<BloodPlayerEntry[]>([
-    { player_id: "", character_id: "", team: "evil" },
+    { player_id: "", is_guest: false, character_id: "", team: "evil" },
   ]);
   const [goodPlayers, setGoodPlayers] = useState<BloodPlayerEntry[]>([
-    { player_id: "", character_id: "", team: "good" },
+    { player_id: "", is_guest: false, character_id: "", team: "good" },
   ]);
 
   const [winningTeam, setWinningTeam] = useState<"good" | "evil">("good");
@@ -100,6 +112,7 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
       );
       setCharacters((ch.data || []) as BloodCharacter[]);
       setPlayers((p.data || []) as Player[]);
+      fetchUnclaimedGuests().then(setGuests);
     };
     fetchBase();
   }, []);
@@ -111,28 +124,39 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
   const evilChars = scriptCharacters.filter((c) => c.team === "evil");
   const goodChars = scriptCharacters.filter((c) => c.team === "good");
 
+  // Build set of currently used ids (works for both profiles and guests since UUIDs don't collide)
   const allSelectedPlayerIds = [
     storytellerId,
     ...evilPlayers.map((p) => p.player_id),
     ...goodPlayers.map((p) => p.player_id),
   ].filter(Boolean);
 
+  const resolveName = (id: string, isGuest: boolean) => {
+    if (!id) return "";
+    if (isGuest) {
+      const g = guests.find((gg) => gg.id === id);
+      return g?.nickname || g?.name || "Convidado";
+    }
+    const p = players.find((pp) => pp.id === id);
+    return p?.nickname || p?.name || "?";
+  };
+
   const addPlayer = (team: "good" | "evil") => {
-    if (team === "evil") setEvilPlayers([...evilPlayers, { player_id: "", character_id: "", team: "evil" }]);
-    else setGoodPlayers([...goodPlayers, { player_id: "", character_id: "", team: "good" }]);
+    if (team === "evil") setEvilPlayers([...evilPlayers, { player_id: "", is_guest: false, character_id: "", team: "evil" }]);
+    else setGoodPlayers([...goodPlayers, { player_id: "", is_guest: false, character_id: "", team: "good" }]);
   };
   const removePlayer = (team: "good" | "evil", idx: number) => {
     if (team === "evil") setEvilPlayers(evilPlayers.filter((_, i) => i !== idx));
     else setGoodPlayers(goodPlayers.filter((_, i) => i !== idx));
   };
-  const updatePlayer = (team: "good" | "evil", idx: number, field: string, value: string) => {
+  const updatePlayer = (team: "good" | "evil", idx: number, patch: Partial<BloodPlayerEntry>) => {
     if (team === "evil") {
       const updated = [...evilPlayers];
-      (updated[idx] as any)[field] = value;
+      updated[idx] = { ...updated[idx], ...patch };
       setEvilPlayers(updated);
     } else {
       const updated = [...goodPlayers];
-      (updated[idx] as any)[field] = value;
+      updated[idx] = { ...updated[idx], ...patch };
       setGoodPlayers(updated);
     }
   };
@@ -153,20 +177,27 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
         playedAt: new Date(`${playedDate}T${playedTime}`).toISOString(),
         durationMinutes: parseInt(duration) || null,
         storytellerId,
+        storytellerIsGuest,
         winningTeam,
-        players: allP,
+        players: allP.map((p) => ({
+          player_id: p.player_id,
+          is_guest: p.is_guest,
+          character_id: p.character_id,
+          team: p.team,
+        })),
         victoryConditions: selectedVictoryConditions,
         platform: platform || null,
       });
       notify("success", "Partida de Blood registrada!");
       onComplete?.((createdMatch as any)?.id);
       setStep(1);
-      setEvilPlayers([{ player_id: "", character_id: "", team: "evil" }]);
-      setGoodPlayers([{ player_id: "", character_id: "", team: "good" }]);
+      setEvilPlayers([{ player_id: "", is_guest: false, character_id: "", team: "evil" }]);
+      setGoodPlayers([{ player_id: "", is_guest: false, character_id: "", team: "good" }]);
       setDuration("");
       setPlayedDate("");
       setPlayedTime("");
       setStorytellerId("");
+      setStorytellerIsGuest(false);
       setScriptId("");
       setSelectedVictoryConditions([]);
     } catch (err: any) {
@@ -178,48 +209,109 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
 
   const PlayerCombobox = ({
     value,
+    isGuest,
     onSelect,
     excludeIds,
     popoverKey,
+    onAddGuestClick,
   }: {
     value: string;
-    onSelect: (id: string) => void;
+    isGuest: boolean;
+    onSelect: (id: string, isGuest: boolean) => void;
     excludeIds: string[];
     popoverKey: string;
+    onAddGuestClick: () => void;
   }) => {
     const isOpen = playerPopovers[popoverKey] || false;
     const setOpen = (open: boolean) => setPlayerPopovers((prev) => ({ ...prev, [popoverKey]: open }));
-    const selected = players.find((p) => p.id === value);
+    const label = value ? resolveName(value, isGuest) : "Buscar jogador...";
+    const availableGuests = guests.filter((g) => !excludeIds.includes(g.id) || g.id === value);
     return (
       <Popover open={isOpen} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button variant="outline" role="combobox" className="justify-between w-full font-normal text-left">
-            {selected ? selected.nickname || selected.name : "Buscar jogador..."}
+            <span className="flex items-center gap-2 truncate">
+              {value && isGuest && <UserCircle2 className="h-4 w-4 text-amber-400 shrink-0" />}
+              <span className="truncate">{label}</span>
+            </span>
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[250px] p-0">
+        <PopoverContent className="w-[280px] p-0" align="start">
           <Command>
-            <CommandInput placeholder="Buscar jogador..." />
-            <CommandList>
+            <CommandInput placeholder="Buscar jogador ou convidado..." />
+            <CommandList
+              className="max-h-[260px] overflow-y-auto"
+              onWheel={(e) => e.stopPropagation()}
+            >
               <CommandEmpty>Nenhum jogador encontrado.</CommandEmpty>
-              <CommandGroup>
+              <CommandGroup heading="Jogadores">
                 {players.map((p) => (
                   <CommandItem
-                    key={p.id}
-                    value={p.nickname || p.name}
-                    disabled={excludeIds.includes(p.id) && p.id !== value}
+                    key={`p-${p.id}`}
+                    value={`${p.nickname || ""} ${p.name}`}
+                    disabled={excludeIds.includes(p.id) && !(value === p.id && !isGuest)}
                     onSelect={() => {
-                      onSelect(p.id);
+                      onSelect(p.id, false);
                       setOpen(false);
                     }}
+                    className="data-[selected=true]:bg-secondary/70"
                   >
-                    <Check className={cn("mr-2 h-4 w-4", value === p.id ? "opacity-100" : "opacity-0")} />
-                    {p.nickname || p.name}
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        !isGuest && value === p.id ? "opacity-100 text-gold" : "opacity-0",
+                      )}
+                    />
+                    <span className="truncate">{p.nickname || p.name}</span>
                   </CommandItem>
                 ))}
               </CommandGroup>
+              {availableGuests.length > 0 && (
+                <CommandGroup heading="Convidados">
+                  {availableGuests.map((g) => (
+                    <CommandItem
+                      key={`g-${g.id}`}
+                      value={`${g.nickname} ${g.name || ""} convidado guest`}
+                      onSelect={() => {
+                        onSelect(g.id, true);
+                        setOpen(false);
+                      }}
+                      className="data-[selected=true]:bg-secondary/70"
+                    >
+                      <Check
+                        className={cn(
+                          "mr-2 h-4 w-4",
+                          isGuest && value === g.id ? "opacity-100 text-gold" : "opacity-0",
+                        )}
+                      />
+                      <UserCircle2 className="mr-2 h-4 w-4 text-amber-400 shrink-0" />
+                      <span className="truncate">{g.nickname}</span>
+                      <Badge
+                        variant="outline"
+                        className="ml-auto text-[10px] border-amber-500/40 text-amber-300 bg-amber-500/10"
+                      >
+                        convidado
+                      </Badge>
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              )}
             </CommandList>
+            <div className="border-t border-border p-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start text-emerald-300 hover:text-emerald-200 hover:bg-emerald-500/10"
+                onClick={() => {
+                  setOpen(false);
+                  onAddGuestClick();
+                }}
+              >
+                <UserPlus className="h-4 w-4 mr-2" /> + Convidado
+              </Button>
+            </div>
           </Command>
         </PopoverContent>
       </Popover>
@@ -242,11 +334,16 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
           <div key={i} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] items-end">
             <PlayerCombobox
               value={ep.player_id}
-              onSelect={(v) => updatePlayer(team, i, "player_id", v)}
+              isGuest={ep.is_guest}
+              onSelect={(id, isGuest) => updatePlayer(team, i, { player_id: id, is_guest: isGuest })}
               excludeIds={allSelectedPlayerIds}
               popoverKey={`${team}-${i}`}
+              onAddGuestClick={() => {
+                setPendingGuestTarget({ kind: "team", team, idx: i });
+                setAddGuestOpen(true);
+              }}
             />
-            <Select value={ep.character_id} onValueChange={(v) => updatePlayer(team, i, "character_id", v)}>
+            <Select value={ep.character_id} onValueChange={(v) => updatePlayer(team, i, { character_id: v })}>
               <SelectTrigger>
                 <SelectValue placeholder="Personagem" />
               </SelectTrigger>
@@ -258,7 +355,7 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
                 ))}
               </SelectContent>
             </Select>
-            {playersList.length > 1 && (
+            {ep.player_id && (
               <Button variant="ghost" size="icon" onClick={() => removePlayer(team, i)}>
                 <Trash2 className="h-4 w-4 text-destructive" />
               </Button>
@@ -310,8 +407,8 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
                   value={scriptId}
                   onValueChange={(v) => {
                     setScriptId(v);
-                    setEvilPlayers([{ player_id: "", character_id: "", team: "evil" }]);
-                    setGoodPlayers([{ player_id: "", character_id: "", team: "good" }]);
+                    setEvilPlayers([{ player_id: "", is_guest: false, character_id: "", team: "evil" }]);
+                    setGoodPlayers([{ player_id: "", is_guest: false, character_id: "", team: "good" }]);
                     setSelectedVictoryConditions([]);
                   }}
                 >
@@ -377,9 +474,17 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
               <Label>Storyteller *</Label>
               <PlayerCombobox
                 value={storytellerId}
-                onSelect={setStorytellerId}
+                isGuest={storytellerIsGuest}
+                onSelect={(id, isGuest) => {
+                  setStorytellerId(id);
+                  setStorytellerIsGuest(isGuest);
+                }}
                 excludeIds={allSelectedPlayerIds}
                 popoverKey="storyteller"
+                onAddGuestClick={() => {
+                  setPendingGuestTarget({ kind: "storyteller" });
+                  setAddGuestOpen(true);
+                }}
               />
             </div>
             {renderPlayerSelectors("evil", evilPlayers, evilChars)}
@@ -468,14 +573,18 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
                   <span className="text-muted-foreground">Duração:</span> {duration} min
                 </p>
               )}
-              <p>
-                <span className="text-muted-foreground">Narrador:</span>{" "}
-                {players.find((p) => p.id === storytellerId)?.nickname ||
-                  players.find((p) => p.id === storytellerId)?.name}
+              <p className="flex items-center gap-2">
+                <span className="text-muted-foreground">Narrador:</span>
+                {storytellerIsGuest && <UserCircle2 className="h-4 w-4 text-amber-400" />}
+                <span>{resolveName(storytellerId, storytellerIsGuest)}</span>
+                {storytellerIsGuest && (
+                  <Badge variant="outline" className="text-[10px] border-amber-500/40 text-amber-300 bg-amber-500/10">
+                    convidado
+                  </Badge>
+                )}
               </p>
               <div className="space-y-1 mt-2">
                 {[...evilPlayers, ...goodPlayers].map((ep, i) => {
-                  const pl = players.find((p) => p.id === ep.player_id);
                   const ch = characters.find((c) => c.id === ep.character_id);
                   return (
                     <div
@@ -483,8 +592,17 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
                       className={`flex items-center gap-2 p-1.5 rounded ${ep.team === "evil" ? "bg-red-500/10" : "bg-blue-500/10"}`}
                     >
                       <span>{ep.team === "evil" ? "💀" : "🛡️"}</span>
-                      <span className="font-medium">{pl?.nickname || pl?.name}</span>
+                      {ep.is_guest && <UserCircle2 className="h-3.5 w-3.5 text-amber-400" />}
+                      <span className="font-medium">{resolveName(ep.player_id, ep.is_guest)}</span>
                       <span className="text-muted-foreground">— {ch?.name}</span>
+                      {ep.is_guest && (
+                        <Badge
+                          variant="outline"
+                          className="ml-auto text-[10px] border-amber-500/40 text-amber-300 bg-amber-500/10"
+                        >
+                          convidado
+                        </Badge>
+                      )}
                     </div>
                   );
                 })}
@@ -518,6 +636,25 @@ const NewMatchBotcFlow = ({ onComplete }: Props) => {
           </div>
         )}
       </CardContent>
+
+      <AddGuestDialog
+        open={addGuestOpen}
+        onOpenChange={(o) => {
+          setAddGuestOpen(o);
+          if (!o) setPendingGuestTarget(null);
+        }}
+        onCreated={(g) => {
+          setGuests((prev) => [g, ...prev]);
+          const target = pendingGuestTarget;
+          if (target?.kind === "storyteller") {
+            setStorytellerId(g.id);
+            setStorytellerIsGuest(true);
+          } else if (target?.kind === "team") {
+            updatePlayer(target.team, target.idx, { player_id: g.id, is_guest: true });
+          }
+          setPendingGuestTarget(null);
+        }}
+      />
     </Card>
   );
 };

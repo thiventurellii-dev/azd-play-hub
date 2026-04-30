@@ -218,6 +218,7 @@ const Seasons = () => {
                       key={s.id}
                       season={s}
                       index={i}
+                      colorIndex={colorMap[s.id] ?? 0}
                       linkedNames={linkedNames(s)}
                       isAdmin={isAdmin}
                       onEdit={() => openEdit(s)}

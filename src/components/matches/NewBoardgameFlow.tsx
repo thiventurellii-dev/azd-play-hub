@@ -10,7 +10,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { useNotification } from "@/components/NotificationDialog";
 import { DatePickerField } from "@/components/ui/date-picker-field";
-import { Check, ChevronDown, ChevronRight, Crown, Search, Trash2, Upload, UserPlus, Users, X } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, Crown, Search, Trash2, Upload, UserPlus, Users, X, UserCircle2 } from "lucide-react";
+import AddGuestDialog from "@/components/players/AddGuestDialog";
+import { fetchUnclaimedGuests, type GuestPlayer } from "@/lib/guestPlayers";
 
 interface Season {
   id: string;

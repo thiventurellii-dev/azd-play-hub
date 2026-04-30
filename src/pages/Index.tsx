@@ -114,7 +114,7 @@ const LoggedInIndex = () => {
                   {seasonContext && <p className="text-xs text-muted-foreground">{seasonContext}</p>}
 
                   {userRank ? (
-                    <div className="space-y-1">
+                    <div className="space-y-1 text-center">
                       <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Minha posição</p>
                       <p className="text-lg font-bold">{userRank.position}° lugar</p>
                       <p className="text-sm text-muted-foreground">{formatMmr(userRank.current_mmr)} MMR</p>

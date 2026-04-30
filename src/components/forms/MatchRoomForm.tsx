@@ -115,8 +115,8 @@ const useFormOptions = (enabled: boolean, userId?: string) =>
     queryKey: ["match-room-form-options", userId],
     queryFn: async () => {
       const sb: any = supabase;
-      const [gamesRes, scriptsRes, tagsRes, seasonsRes, communitiesRes, campaignsRes] = await Promise.all([
-        supabase.from("games").select("id, name, slug, max_players, image_url").order("name"),
+      const [gamesRes, scriptsRes, tagsRes, seasonsRes, communitiesRes, campaignsRes, recentMatchesRes, friendsRes] = await Promise.all([
+        supabase.from("games").select("id, name, slug, min_players, max_players, image_url").order("name"),
         supabase.from("blood_scripts").select("id, name").order("name"),
         supabase.from("room_tags").select("id, name").order("name"),
         supabase.from("seasons").select("id, name, status, type").in("status", ["active", "upcoming"]).order("name"),
@@ -135,7 +135,41 @@ const useFormOptions = (enabled: boolean, userId?: string) =>
               .in("status", ["planning", "active"])
               .order("created_at", { ascending: false })
           : Promise.resolve({ data: [] }),
+        supabase.from("matches").select("game_id, played_at").order("played_at", { ascending: false }).limit(500),
+        userId
+          ? supabase
+              .from("friendships")
+              .select("user_id, friend_id, status")
+              .eq("status", "accepted" as any)
+              .or(`user_id.eq.${userId},friend_id.eq.${userId}`)
+          : Promise.resolve({ data: [] }),
       ]);
+
+      // Recent games + counts
+      const counts: Record<string, number> = {};
+      const ordered: string[] = [];
+      for (const m of (recentMatchesRes.data || []) as any[]) {
+        const gid = m.game_id;
+        if (!gid) continue;
+        counts[gid] = (counts[gid] || 0) + 1;
+        if (!ordered.includes(gid)) ordered.push(gid);
+      }
+
+      // Friends
+      const friendIdSet = new Set<string>();
+      for (const f of (friendsRes.data || []) as any[]) {
+        if (f.user_id === userId) friendIdSet.add(f.friend_id);
+        else if (f.friend_id === userId) friendIdSet.add(f.user_id);
+      }
+      let friendProfiles: FriendProfile[] = [];
+      if (friendIdSet.size > 0) {
+        const { data: fp } = await supabase
+          .from("profiles")
+          .select("id, name, nickname, avatar_url")
+          .in("id", Array.from(friendIdSet));
+        friendProfiles = (fp || []) as FriendProfile[];
+      }
+
       return {
         games: (gamesRes.data ?? []) as Game[],
         scripts: (scriptsRes.data ?? []) as BloodScript[],
@@ -152,6 +186,9 @@ const useFormOptions = (enabled: boolean, userId?: string) =>
           status: string;
           adventure_id: string | null;
         }[],
+        gamePlayCounts: counts,
+        recentGameIds: ordered,
+        friends: friendProfiles,
       };
     },
     enabled,

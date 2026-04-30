@@ -320,6 +320,17 @@ const NewBoardgameFlow = ({
   const minPlayers = selectedGame?.min_players || 1;
   const maxPlayers = selectedGame?.max_players || 99;
 
+  // Resolve display name for an entry (supports profiles + guests)
+  const resolveEntryName = (e: Entry): string => {
+    if (!e.player_id) return "jogador";
+    if (e.is_guest) {
+      const g = guests.find((gg) => gg.id === e.player_id);
+      return g?.nickname || g?.name || "convidado";
+    }
+    const p = profiles.find((pp) => pp.id === e.player_id);
+    return p?.nickname || p?.name || "jogador";
+  };
+
   // Schema scorable fields (flat)
   const scorableFields: SchemaField[] = useMemo(() => {
     if (!scoringSchema) return [];

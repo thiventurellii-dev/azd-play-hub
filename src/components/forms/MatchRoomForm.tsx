@@ -532,6 +532,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
             room_type: category || "boardgame",
             platform: platform || null,
             campaign_id: isRpg ? selectedCampaignId || null : null,
+            accept_observers: acceptObservers,
           } as any)
           .select()
           .single();

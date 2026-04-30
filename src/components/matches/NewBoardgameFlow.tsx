@@ -81,11 +81,16 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
   const [friendsOpen, setFriendsOpen] = useState(false);
   const [selectedFriendsToAdd, setSelectedFriendsToAdd] = useState<Set<string>>(new Set());
 
-  // Community quick-add (only when prefilledCommunityId is set, e.g. from a community room)
+  // Community link + quick-add
+  const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(prefilledCommunityId || null);
+  const [userCommunities, setUserCommunities] = useState<{ id: string; name: string }[]>([]);
   const [communityName, setCommunityName] = useState<string | null>(null);
   const [communityMemberIds, setCommunityMemberIds] = useState<string[]>([]);
   const [communityOpen, setCommunityOpen] = useState(false);
   const [selectedCommunityToAdd, setSelectedCommunityToAdd] = useState<Set<string>>(new Set());
+
+  // Active-season games (which games belong to the active boardgame season)
+  const [activeSeasonGameIds, setActiveSeasonGameIds] = useState<string[]>([]);
 
   // Section 4 — Optional
   const [optionalOpen, setOptionalOpen] = useState(false);

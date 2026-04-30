@@ -915,22 +915,35 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
         {userCommunities.length > 0 && (
           <div>
             <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Comunidade</label>
-            <Select
-              value={selectedCommunityId || "none"}
-              onValueChange={(v) => setSelectedCommunityId(v === "none" ? "" : v)}
-            >
-              <SelectTrigger className="mt-1.5">
-                <SelectValue placeholder="Nenhuma" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Nenhuma</SelectItem>
-                {userCommunities.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {userCommunities.map((c) => {
+                const active = selectedCommunityId === c.id;
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => {
+                      if (active) {
+                        setSelectedCommunityId("");
+                        setCommunityOnly(false);
+                      } else {
+                        setSelectedCommunityId(c.id);
+                      }
+                    }}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-all",
+                      active
+                        ? "bg-purple-500/20 border-purple-400/60 text-purple-300 shadow-[0_0_12px_-2px_hsl(270_70%_60%/0.4)]"
+                        : "bg-muted/40 border-border text-muted-foreground hover:border-purple-400/40 hover:text-purple-300/80",
+                    )}
+                  >
+                    <Users className="h-3 w-3" />
                     {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                    {active && <X className="h-3 w-3 ml-0.5" />}
+                  </button>
+                );
+              })}
+            </div>
             {selectedCommunityId && (
               <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer mt-2 px-3 py-2 rounded-md bg-purple-500/5 border border-purple-500/20">
                 <Checkbox checked={communityOnly} onCheckedChange={(c) => setCommunityOnly(!!c)} />

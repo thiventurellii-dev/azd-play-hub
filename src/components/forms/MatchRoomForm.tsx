@@ -325,6 +325,9 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
   const [adminStatus, setAdminStatus] = useState("");
   const [selectedCampaignId, setSelectedCampaignId] = useState("");
   const [acceptObservers, setAcceptObservers] = useState(false);
+  const [gameSearch, setGameSearch] = useState("");
+  const [invitedFriendIds, setInvitedFriendIds] = useState<string[]>([]);
+  const [friendSearch, setFriendSearch] = useState("");
 
   /* hydrate edit */
   useEffect(() => {

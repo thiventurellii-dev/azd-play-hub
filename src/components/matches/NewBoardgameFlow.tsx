@@ -33,11 +33,15 @@ interface ScoringSchema { categories: { key: string; label: string; type?: strin
 
 interface Props {
   onComplete?: (matchId?: string) => void;
+  prefilledGameId?: string;
+  prefilledPlayers?: string[];
+  prefilledDate?: string;
+  hideHeader?: boolean;
 }
 
 const PLATFORMS = ['Presencial', 'Tabletop Simulator', 'BoardGame Arena', 'Discord', 'Outro Online'];
 
-const NewBoardgameFlow = ({ onComplete }: Props) => {
+const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefilledDate, hideHeader }: Props) => {
   const { notify } = useNotification();
 
   // Data
@@ -50,13 +54,13 @@ const NewBoardgameFlow = ({ onComplete }: Props) => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   // Section 1 — Game
-  const [gameId, setGameId] = useState('');
+  const [gameId, setGameId] = useState(prefilledGameId || '');
   const [gameSearch, setGameSearch] = useState('');
   const [scoringSchema, setScoringSchema] = useState<ScoringSchema | null>(null);
   const [gameFactions, setGameFactions] = useState<string[]>([]);
 
   // Section 2 — When
-  const [playedDate, setPlayedDate] = useState('');
+  const [playedDate, setPlayedDate] = useState(prefilledDate || '');
   const [playedTime, setPlayedTime] = useState('20:00');
   const [duration, setDuration] = useState('');
   const [platform, setPlatform] = useState('Presencial');
@@ -64,9 +68,17 @@ const NewBoardgameFlow = ({ onComplete }: Props) => {
   const [linkToSeason, setLinkToSeason] = useState(true);
 
   // Section 3 — Players
-  const [entries, setEntries] = useState<Entry[]>([emptyEntry(1)]);
+  const initialEntries: Entry[] = (prefilledPlayers && prefilledPlayers.length > 0)
+    ? prefilledPlayers.map((pid, i) => ({ player_id: pid, seat_position: i + 1, faction: '', total_score: null, scores: {}, scoring_open: false }))
+    : [emptyEntry(1)];
+  const [entries, setEntries] = useState<Entry[]>(initialEntries);
   const [showHelperHint, setShowHelperHint] = useState(true);
   const [openPicker, setOpenPicker] = useState<number | null>(null);
+
+  // Friends quick-add
+  const [friendIds, setFriendIds] = useState<string[]>([]);
+  const [friendsOpen, setFriendsOpen] = useState(false);
+  const [selectedFriendsToAdd, setSelectedFriendsToAdd] = useState<Set<string>>(new Set());
 
   // Section 4 — Optional
   const [optionalOpen, setOptionalOpen] = useState(false);
@@ -128,9 +140,26 @@ const NewBoardgameFlow = ({ onComplete }: Props) => {
       const recent = ordered.slice(0, 4).map(gid => allGames.find(g => g.id === gid)).filter(Boolean) as Game[];
       setRecentGames(recent);
 
-      // Default date = today
-      const today = new Date();
-      setPlayedDate(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`);
+      // Default date = today (only if not prefilled)
+      if (!prefilledDate) {
+        const today = new Date();
+        setPlayedDate(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`);
+      }
+
+      // Friends list
+      if (user?.id) {
+        const { data: fr } = await supabase
+          .from('friendships')
+          .select('user_id, friend_id, status')
+          .eq('status', 'accepted' as any)
+          .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
+        const ids = new Set<string>();
+        for (const f of (fr || []) as any[]) {
+          if (f.user_id === user.id) ids.add(f.friend_id);
+          else if (f.friend_id === user.id) ids.add(f.user_id);
+        }
+        setFriendIds(Array.from(ids));
+      }
     };
     fetchBase();
   }, []);
@@ -458,12 +487,14 @@ const NewBoardgameFlow = ({ onComplete }: Props) => {
   return (
     <div className="space-y-4 pb-24">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Registrar partida</h2>
-          <p className="text-sm text-muted-foreground">Boardgame · partida que já aconteceu</p>
+      {!hideHeader && (
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-foreground">Registrar partida</h2>
+            <p className="text-sm text-muted-foreground">Boardgame · partida que já aconteceu</p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Section 1 — Game */}
       <div className={`rounded-xl border ${sectionDoneClass(!!gameId)} bg-card/60 p-5 space-y-4`}>
@@ -637,12 +668,83 @@ const NewBoardgameFlow = ({ onComplete }: Props) => {
               <UserPlus className="h-3 w-3" /> + Eu
             </button>
           )}
+          {friendIds.length > 0 && (
+            <Popover open={friendsOpen} onOpenChange={(o) => { setFriendsOpen(o); if (!o) setSelectedFriendsToAdd(new Set()); }}>
+              <PopoverTrigger asChild>
+                <button
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[#ffb84a]/30 bg-[#ffb84a]/10 px-3 py-1 text-xs text-[#ffb84a] hover:bg-[#ffb84a]/20"
+                >
+                  <UserPlus className="h-3 w-3" /> + Amigos
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[280px] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Buscar amigo..." />
+                  <CommandList>
+                    <CommandEmpty>Nenhum amigo disponível.</CommandEmpty>
+                    <CommandGroup>
+                      {profiles
+                        .filter(p => friendIds.includes(p.id) && !entries.some(e => e.player_id === p.id))
+                        .map(p => {
+                          const checked = selectedFriendsToAdd.has(p.id);
+                          return (
+                            <CommandItem
+                              key={p.id}
+                              value={`${p.nickname || ''} ${p.name}`}
+                              onSelect={() => {
+                                setSelectedFriendsToAdd(prev => {
+                                  const next = new Set(prev);
+                                  if (next.has(p.id)) next.delete(p.id);
+                                  else next.add(p.id);
+                                  return next;
+                                });
+                              }}
+                            >
+                              <Checkbox checked={checked} className="mr-2 data-[state=checked]:bg-gold data-[state=checked]:border-gold" />
+                              <Avatar className="h-6 w-6 mr-2">
+                                <AvatarImage src={p.avatar_url || undefined} />
+                                <AvatarFallback className="text-[10px]">{(p.nickname || p.name).slice(0, 2).toUpperCase()}</AvatarFallback>
+                              </Avatar>
+                              {p.nickname || p.name}
+                            </CommandItem>
+                          );
+                        })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+                <div className="flex items-center justify-between gap-2 border-t border-border p-2">
+                  <span className="text-[11px] text-muted-foreground">{selectedFriendsToAdd.size} selecionado(s)</span>
+                  <Button
+                    size="sm"
+                    variant="gold"
+                    disabled={selectedFriendsToAdd.size === 0}
+                    onClick={() => {
+                      const ids = Array.from(selectedFriendsToAdd);
+                      setEntries(prev => {
+                        const next = [...prev];
+                        for (const fid of ids) {
+                          const empty = next.findIndex(e => !e.player_id);
+                          if (empty >= 0) next[empty] = { ...next[empty], player_id: fid };
+                          else next.push({ ...emptyEntry(next.length + 1), player_id: fid });
+                        }
+                        return next;
+                      });
+                      setSelectedFriendsToAdd(new Set());
+                      setFriendsOpen(false);
+                    }}
+                  >
+                    Adicionar
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
         </div>
 
         {/* Header row */}
-        <div className="grid grid-cols-[40px_1fr_auto_auto_auto] gap-2 text-[10px] uppercase tracking-wide text-muted-foreground px-2">
-          <div>Assento</div>
-          <div>Jogador</div>
+        <div className="grid grid-cols-[40px_1fr_auto_auto_auto] gap-3 text-[10px] uppercase tracking-wide text-muted-foreground px-2">
+          <div className="text-center">Assento</div>
+          <div className="pl-2">Jogador</div>
           {gameFactions.length > 0 && <div className="w-[110px]">Facção</div>}
           <div className="w-[80px] text-right">Pontuação</div>
           <div className="w-[60px] text-center">Posição</div>
@@ -657,7 +759,7 @@ const NewBoardgameFlow = ({ onComplete }: Props) => {
 
             return (
               <div key={i} className="space-y-2">
-                <div className="grid grid-cols-[40px_1fr_auto_auto_auto] items-center gap-2 rounded-lg border border-border/40 bg-background/40 px-2 py-2">
+                <div className="grid grid-cols-[40px_1fr_auto_auto_auto] items-center gap-3 rounded-lg border border-border/40 bg-background/40 px-2 py-2">
                   {/* Seat */}
                   <Input
                     type="number"

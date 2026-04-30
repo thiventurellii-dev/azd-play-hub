@@ -403,7 +403,13 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, prefil
           <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
         </Button>
       )}
-      <NewBoardgameFlow onComplete={onComplete} />
+      <NewBoardgameFlow
+        prefilledGameId={prefilledGameId}
+        prefilledPlayers={prefilledPlayers}
+        prefilledDate={prefilledDate}
+        hideHeader={!!prefilledCategory}
+        onComplete={onComplete}
+      />
     </div>
   );
 };

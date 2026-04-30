@@ -703,8 +703,13 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
           <button
             type="button"
             onClick={() => {
-              const last = pickerStats.last!;
-              const t = (last.room_type || "boardgame") as Category;
+              const last: any = pickerStats.last!;
+              const g = Array.isArray(last.game) ? last.game[0] : last.game;
+              const slug = g?.slug || "";
+              const name = (g?.name || "").toLowerCase();
+              let t: Category = "boardgame";
+              if (last.blood_script_id || slug === "blood-on-the-clocktower" || name.includes("blood")) t = "botc";
+              else if (last.campaign_id || last.room_type === "rpg" || slug === "rpg-generico") t = "rpg";
               setCategory(t);
               if (t === "botc") setMaxPlayers("15");
             }}

@@ -19,8 +19,15 @@ interface Game {
   id: string;
   name: string;
   slug: string | null;
+  min_players: number | null;
   max_players: number | null;
   image_url: string | null;
+}
+interface FriendProfile {
+  id: string;
+  name: string;
+  nickname: string | null;
+  avatar_url: string | null;
 }
 interface BloodScript {
   id: string;

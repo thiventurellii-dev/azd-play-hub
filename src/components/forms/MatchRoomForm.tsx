@@ -937,12 +937,79 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
           )}
         </div>
 
-        <label className="flex items-start gap-3 px-3 py-3 rounded-lg border border-border/40 bg-background/40 cursor-pointer">
+        {/* Convidar amigos — sempre visível, sem toggle */}
+        {!isEdit && friends.length > 0 && (
+          <div className="rounded-lg border border-border/40 bg-background/40 p-3 space-y-2.5">
+            <div className="flex items-center gap-2">
+              <UserPlus className="h-4 w-4 text-gold" />
+              <span className="text-xs uppercase tracking-wide text-muted-foreground font-semibold flex-1">
+                Convidar amigos
+              </span>
+              <span className="text-[11px] text-muted-foreground">
+                {invitedFriendIds.length}/{Math.max(parseInt(maxPlayers) || 0, 0)} vagas
+              </span>
+            </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={friendSearch}
+                onChange={(e) => setFriendSearch(e.target.value)}
+                placeholder="Buscar amigo..."
+                className="pl-9 h-8 text-sm"
+              />
+            </div>
+            <div className="flex flex-wrap gap-1.5 max-h-[180px] overflow-y-auto">
+              {filteredFriends.map((f) => {
+                const selected = invitedFriendIds.includes(f.id);
+                const initials = (f.nickname || f.name || "?").slice(0, 2).toUpperCase();
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() =>
+                      setInvitedFriendIds((prev) =>
+                        prev.includes(f.id) ? prev.filter((id) => id !== f.id) : [...prev, f.id],
+                      )
+                    }
+                    className={cn(
+                      "inline-flex items-center gap-1.5 pl-1 pr-2 py-0.5 rounded-full text-xs font-medium border transition-all",
+                      selected
+                        ? "bg-gold/20 border-gold/60 text-gold"
+                        : "bg-muted/40 border-border text-muted-foreground hover:border-gold/40",
+                    )}
+                  >
+                    <span className="h-5 w-5 rounded-full bg-secondary text-[10px] inline-flex items-center justify-center overflow-hidden">
+                      {f.avatar_url ? (
+                        <img src={f.avatar_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        initials
+                      )}
+                    </span>
+                    {f.nickname || f.name}
+                    {selected && <X className="h-3 w-3" />}
+                  </button>
+                );
+              })}
+              {filteredFriends.length === 0 && (
+                <p className="text-[11px] text-muted-foreground py-1">Nenhum amigo encontrado</p>
+              )}
+            </div>
+            {invitedFriendIds.length > 0 && (
+              <p className="text-[11px] text-muted-foreground">
+                Convidados ficam aguardando confirmação. Quando aceitarem, viram <strong>confirmados</strong>.
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Observadores */}
+        <label className="flex items-start gap-3 px-3 py-3 rounded-lg border border-border/40 bg-background/40 cursor-pointer hover:border-gold/30 transition">
           <Checkbox checked={acceptObservers} onCheckedChange={(c) => setAcceptObservers(!!c)} className="mt-0.5" />
+          <Eye className="h-4 w-4 mt-0.5 text-muted-foreground" />
           <div className="flex-1">
             <p className="text-sm font-medium text-foreground">Aceitar observadores</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              Qualquer um pode entrar como observador (sem aprovação)
+              Qualquer pessoa pode entrar como observador (sem ocupar vaga, sem aprovação)
             </p>
           </div>
         </label>

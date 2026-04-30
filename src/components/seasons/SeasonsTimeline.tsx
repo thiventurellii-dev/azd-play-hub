@@ -150,7 +150,7 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
             <div className="flex-shrink-0" style={{ width: NAME_COL_PX }}>
               {/* Header spacers matching year + quarter + month rows */}
               <div className="h-6 border-b border-border/40" />
-              <div className="h-10 border-b border-border/40" />
+              <div className="h-7 border-b border-border/40" />
               <div className="h-7 border-b border-border" />
               {visibleSeasons.length === 0 ? (
                 <div className="py-10 text-center text-sm text-muted-foreground pr-3">

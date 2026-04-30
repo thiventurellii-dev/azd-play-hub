@@ -81,11 +81,16 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
   const [friendsOpen, setFriendsOpen] = useState(false);
   const [selectedFriendsToAdd, setSelectedFriendsToAdd] = useState<Set<string>>(new Set());
 
-  // Community quick-add (only when prefilledCommunityId is set, e.g. from a community room)
+  // Community link + quick-add
+  const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(prefilledCommunityId || null);
+  const [userCommunities, setUserCommunities] = useState<{ id: string; name: string }[]>([]);
   const [communityName, setCommunityName] = useState<string | null>(null);
   const [communityMemberIds, setCommunityMemberIds] = useState<string[]>([]);
   const [communityOpen, setCommunityOpen] = useState(false);
   const [selectedCommunityToAdd, setSelectedCommunityToAdd] = useState<Set<string>>(new Set());
+
+  // Active-season games (which games belong to the active boardgame season)
+  const [activeSeasonGameIds, setActiveSeasonGameIds] = useState<string[]>([]);
 
   // Section 4 — Optional
   const [optionalOpen, setOptionalOpen] = useState(false);
@@ -112,8 +117,13 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
       const allSeasons = (s.data || []) as Season[];
       setSeasons(allSeasons);
       const active = allSeasons.find(x => x.status === 'active');
-      if (active) setSeasonId(active.id);
-      else setLinkToSeason(false);
+      if (active) {
+        setSeasonId(active.id);
+        const { data: sg } = await supabase.from('season_games' as any).select('game_id').eq('season_id', active.id);
+        setActiveSeasonGameIds(((sg || []) as any[]).map(r => r.game_id));
+      } else {
+        setLinkToSeason(false);
+      }
 
       const allGames = ((g.data || []) as Game[]).filter(gm => gm.slug !== 'blood-on-the-clocktower');
       setGames(allGames);
@@ -153,44 +163,66 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
         setPlayedDate(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`);
       }
 
-      // Friends list
+      // Friends list + user communities
       if (user?.id) {
-        const { data: fr } = await supabase
-          .from('friendships')
-          .select('user_id, friend_id, status')
-          .eq('status', 'accepted' as any)
-          .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
+        const [{ data: fr }, { data: myMemberships }] = await Promise.all([
+          supabase
+            .from('friendships')
+            .select('user_id, friend_id, status')
+            .eq('status', 'accepted' as any)
+            .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`),
+          supabase
+            .from('community_members' as any)
+            .select('community_id')
+            .eq('user_id', user.id)
+            .eq('status', 'active' as any),
+        ]);
         const ids = new Set<string>();
         for (const f of (fr || []) as any[]) {
           if (f.user_id === user.id) ids.add(f.friend_id);
           else if (f.friend_id === user.id) ids.add(f.user_id);
         }
         setFriendIds(Array.from(ids));
+
+        const myCommunityIds = ((myMemberships || []) as any[]).map((m: any) => m.community_id).filter(Boolean);
+        if (myCommunityIds.length > 0) {
+          const { data: comms } = await supabase
+            .from('communities' as any)
+            .select('id, name')
+            .in('id', myCommunityIds);
+          setUserCommunities(((comms || []) as any[]).map((c: any) => ({ id: c.id, name: c.name })));
+        }
       }
     };
     fetchBase();
   }, []);
 
-  // Fetch community members when prefilledCommunityId is provided
+  // Fetch community members + name whenever the selected community changes
   useEffect(() => {
-    if (!prefilledCommunityId) {
+    if (!selectedCommunityId) {
       setCommunityName(null);
       setCommunityMemberIds([]);
       return;
     }
     const run = async () => {
       const [{ data: comm }, { data: members }] = await Promise.all([
-        supabase.from('communities' as any).select('name').eq('id', prefilledCommunityId).maybeSingle(),
+        supabase.from('communities' as any).select('name').eq('id', selectedCommunityId).maybeSingle(),
         supabase.from('community_members' as any)
           .select('user_id')
-          .eq('community_id', prefilledCommunityId)
+          .eq('community_id', selectedCommunityId)
           .eq('status', 'active' as any),
       ]);
       setCommunityName((comm as any)?.name ?? null);
-      setCommunityMemberIds(((members || []) as any[]).map(m => m.user_id).filter(Boolean));
+      setCommunityMemberIds(((members || []) as any[]).map((m: any) => m.user_id).filter(Boolean));
     };
     run();
-  }, [prefilledCommunityId]);
+  }, [selectedCommunityId]);
+
+  // Auto-disable season link when selected game is NOT part of the active season
+  useEffect(() => {
+    if (!gameId) return;
+    if (!activeSeasonGameIds.includes(gameId)) setLinkToSeason(false);
+  }, [gameId, activeSeasonGameIds]);
 
   // Fetch schema + factions when game changes
   useEffect(() => {
@@ -427,7 +459,7 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
         image_url: imageUrl,
         first_player_id: null,
         platform: platform || null,
-        community_id: prefilledCommunityId || null,
+        community_id: selectedCommunityId || null,
       } as any).select().single();
       if (mErr) throw mErr;
 
@@ -654,7 +686,28 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
           </div>
         </div>
 
-        {gameId && seasons.find(s => s.status === 'active') && (
+        {/* Community link selector — visible when not pre-filled and user is in any community */}
+        {!prefilledCommunityId && userCommunities.length > 0 && (
+          <div className="space-y-1">
+            <label className="text-[11px] uppercase tracking-wide text-muted-foreground">Comunidade (opcional)</label>
+            <Select
+              value={selectedCommunityId ?? 'none'}
+              onValueChange={(v) => setSelectedCommunityId(v === 'none' ? null : v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Sem comunidade" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sem comunidade</SelectItem>
+                {userCommunities.map(c => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {gameId && seasons.find(s => s.status === 'active') && activeSeasonGameIds.includes(gameId) && (
           <label className="flex items-center justify-between gap-3 rounded-lg border border-gold/30 bg-gold/5 px-3 py-2 cursor-pointer">
             <div className="flex items-center gap-2">
               <Checkbox
@@ -768,7 +821,7 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
               </PopoverContent>
             </Popover>
           )}
-          {prefilledCommunityId && communityMemberIds.length > 0 && (
+          {selectedCommunityId && communityMemberIds.length > 0 && (
             <Popover open={communityOpen} onOpenChange={(o) => { setCommunityOpen(o); if (!o) setSelectedCommunityToAdd(new Set()); }}>
               <PopoverTrigger asChild>
                 <button

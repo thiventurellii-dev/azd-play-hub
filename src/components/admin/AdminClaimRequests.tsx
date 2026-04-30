@@ -93,8 +93,7 @@ const AdminClaimRequests = () => {
   }, []);
 
   const handleDelete = async (id: string) => {
-    const ok = await confirm('Apagar este registro de pedido? Esta ação não desfaz o vínculo, apenas remove a auditoria.');
-    if (!ok) return;
+    if (!window.confirm('Apagar este registro de pedido? Esta ação não desfaz o vínculo, apenas remove a auditoria.')) return;
     const { error } = await supabase.from('claim_requests').delete().eq('id', id);
     if (error) return notify('error', error.message);
     notify('success', 'Registro removido.');

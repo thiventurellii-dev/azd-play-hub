@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SeasonItem } from "@/hooks/useSeasonsData";
+import { SEASON_PALETTE, rgba, colorForIndex } from "@/lib/seasonColors";
 
 interface Props {
   seasons: SeasonItem[];
@@ -14,22 +15,6 @@ interface Props {
 const MONTHS_PT = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
 
 const startOfDay = (d: Date) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
-
-// Curated palette: gold, soft purple, green, desaturated blue
-// Each entry: [r, g, b] for rgba composition (gradients + glow)
-const SEASON_PALETTE: Array<[number, number, number]> = [
-  [245, 180, 0],   // #F5B400 amarelo
-  [139, 92, 246],  // #8B5CF6 roxo suave
-  [34, 197, 94],   // #22C55E verde
-  [59, 130, 246],  // #3B82F6 azul dessaturado
-];
-const FINISHED_RGB: [number, number, number] = [107, 114, 128]; // #6B7280 cinza neutro
-
-const colorFor = (_s: SeasonItem, idx: number): [number, number, number] => {
-  return SEASON_PALETTE[idx % SEASON_PALETTE.length];
-};
-
-const rgba = ([r, g, b]: [number, number, number], a: number) => `rgba(${r}, ${g}, ${b}, ${a})`;
 
 const NAME_COL_PX = 200;
 

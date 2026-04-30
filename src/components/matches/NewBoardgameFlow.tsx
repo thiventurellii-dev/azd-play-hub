@@ -1346,15 +1346,26 @@ const NewBoardgameFlow = ({
         </div>
 
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={addEntry}
-            disabled={entries.length >= maxPlayers}
-            className="border-dashed"
-          >
-            <UserPlus className="h-4 w-4 mr-1" /> Adicionar jogador
-          </Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={addEntry}
+              disabled={entries.length >= maxPlayers}
+              className="border-dashed"
+            >
+              <UserPlus className="h-4 w-4 mr-1" /> Adicionar jogador
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setAddGuestOpen(true)}
+              className="text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"
+              title="Cadastrar jogador sem conta"
+            >
+              <UserCircle2 className="h-4 w-4 mr-1" /> + Convidado
+            </Button>
+          </div>
           {hasSchema && showHelperHint && (
             <span className="text-[11px] text-muted-foreground">ⓘ Clique na pontuação pra abrir o detalhamento</span>
           )}

@@ -119,7 +119,7 @@ const EditMatchDialog = ({ open, onOpenChange, match, onSaved }: Props) => {
           game_id: gameId,
           duration_minutes: parseInt(duration) || null,
           played_at: updatedData.played_at,
-          first_player_id: results.find(r => r.is_first)?.player_id || null,
+          first_player_id: results.find(r => r.is_first && r.player_id)?.player_id || null,
         }).eq('id', match.id);
         if (error) throw error;
 
@@ -129,11 +129,6 @@ const EditMatchDialog = ({ open, onOpenChange, match, onSaved }: Props) => {
               position: r.position,
               score: r.score,
             }).eq('id', r.id);
-          } else {
-            await supabase.from('match_results').update({
-              position: r.position,
-              score: r.score,
-            }).eq('match_id', match.id).eq('player_id', r.player_id);
           }
         }
 
@@ -256,7 +251,7 @@ const EditMatchDialog = ({ open, onOpenChange, match, onSaved }: Props) => {
             </TableHeader>
             <TableBody>
               {results.map((r, i) => (
-                <TableRow key={r.player_id}>
+                <TableRow key={r.id || i}>
                   <TableCell className="text-sm truncate">{r.player_name}</TableCell>
                   <TableCell>
                     <Input type="number" min={1} value={r.position} onChange={e => {

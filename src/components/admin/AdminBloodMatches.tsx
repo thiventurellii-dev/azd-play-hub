@@ -12,12 +12,22 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { useNotification } from '@/components/NotificationDialog';
 import { Plus, Trash2, UserPlus, ChevronDown, ChevronUp, Search, Skull, Shield, Pencil } from 'lucide-react';
 import { recalculateSeasonRatings, submitBloodMatch } from '@/lib/bloodRatings';
+import { fetchUnclaimedGuests, type GuestPlayer } from '@/lib/guestPlayers';
 
 interface Season { id: string; name: string; }
 interface BloodScript { id: string; name: string; victory_conditions: string[]; }
 interface BloodCharacter { id: string; script_id: string; name: string; name_en: string; role_type: string; team: string; }
 interface Player { id: string; name: string; nickname?: string; }
-interface BloodPlayerEntry { player_id: string; character_id: string; team: 'good' | 'evil'; }
+interface BloodPlayerEntry { player_id: string; is_guest: boolean; character_id: string; team: 'good' | 'evil'; }
+
+// Encode/decode helpers for combined select values (profile vs guest share UUID space)
+const encodeP = (id: string, isGuest: boolean) => id ? `${isGuest ? 'g' : 'p'}:${id}` : '';
+const decodeP = (v: string): { id: string; is_guest: boolean } => {
+  if (!v) return { id: '', is_guest: false };
+  if (v.startsWith('g:')) return { id: v.slice(2), is_guest: true };
+  if (v.startsWith('p:')) return { id: v.slice(2), is_guest: false };
+  return { id: v, is_guest: false };
+};
 
 const AdminBloodMatches = () => {
   const { notify } = useNotification();
@@ -25,6 +35,7 @@ const AdminBloodMatches = () => {
   const [scripts, setScripts] = useState<BloodScript[]>([]);
   const [characters, setCharacters] = useState<BloodCharacter[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [guests, setGuests] = useState<GuestPlayer[]>([]);
 
   const [seasonId, setSeasonId] = useState('');
   const [scriptId, setScriptId] = useState('');
@@ -32,9 +43,10 @@ const AdminBloodMatches = () => {
   const [playedTime, setPlayedTime] = useState('');
   const [duration, setDuration] = useState('');
   const [storytellerId, setStorytellerId] = useState('');
+  const [storytellerIsGuest, setStorytellerIsGuest] = useState(false);
   const [winningTeam, setWinningTeam] = useState<'good' | 'evil'>('good');
-  const [evilPlayers, setEvilPlayers] = useState<BloodPlayerEntry[]>([{ player_id: '', character_id: '', team: 'evil' }]);
-  const [goodPlayers, setGoodPlayers] = useState<BloodPlayerEntry[]>([{ player_id: '', character_id: '', team: 'good' }]);
+  const [evilPlayers, setEvilPlayers] = useState<BloodPlayerEntry[]>([{ player_id: '', is_guest: false, character_id: '', team: 'evil' }]);
+  const [goodPlayers, setGoodPlayers] = useState<BloodPlayerEntry[]>([{ player_id: '', is_guest: false, character_id: '', team: 'good' }]);
   const [saving, setSaving] = useState(false);
 
   const [matches, setMatches] = useState<any[]>([]);
@@ -50,6 +62,7 @@ const AdminBloodMatches = () => {
   const [editPlayedTime, setEditPlayedTime] = useState('');
   const [editDuration, setEditDuration] = useState('');
   const [editStorytellerId, setEditStorytellerId] = useState('');
+  const [editStorytellerIsGuest, setEditStorytellerIsGuest] = useState(false);
   const [editWinningTeam, setEditWinningTeam] = useState<'good' | 'evil'>('good');
   const [editEvilPlayers, setEditEvilPlayers] = useState<BloodPlayerEntry[]>([]);
   const [editGoodPlayers, setEditGoodPlayers] = useState<BloodPlayerEntry[]>([]);
@@ -58,16 +71,18 @@ const AdminBloodMatches = () => {
 
   useEffect(() => {
     const fetchBase = async () => {
-      const [s, sc, ch, p] = await Promise.all([
+      const [s, sc, ch, p, gh] = await Promise.all([
         supabase.from('seasons').select('id, name').eq('type', 'blood' as any).neq('status', 'finished').neq('status', 'upcoming').order('start_date', { ascending: false }),
         supabase.from('blood_scripts').select('id, name, victory_conditions'),
         supabase.from('blood_characters').select('id, script_id, name, name_en, role_type, team'),
         supabase.from('profiles').select('id, name, nickname').order('name'),
+        fetchUnclaimedGuests(),
       ]);
       setSeasons((s.data || []) as Season[]);
       setScripts((sc.data || []).map((x: any) => ({ ...x, victory_conditions: Array.isArray(x.victory_conditions) ? x.victory_conditions : [] })) as BloodScript[]);
       setCharacters((ch.data || []) as BloodCharacter[]);
       setPlayers((p.data || []) as Player[]);
+      setGuests(gh as GuestPlayer[]);
     };
     fetchBase();
     fetchMatches();
@@ -97,12 +112,26 @@ const AdminBloodMatches = () => {
     for (const s of (scriptsRes.data || [])) scriptMap[s.id] = s.name;
 
     const playerIds = [...new Set([
-      ...(matchData as any[]).map(m => m.storyteller_player_id),
-      ...((playersRes.data || []) as any[]).map(p => p.player_id),
+      ...(matchData as any[]).map(m => m.storyteller_player_id).filter(Boolean),
+      ...((playersRes.data || []) as any[]).map(p => p.player_id).filter(Boolean),
     ])];
-    const { data: profilesData } = await supabase.from('profiles').select('id, name, nickname').in('id', playerIds);
+    const ghostIds = [...new Set([
+      ...(matchData as any[]).map(m => m.storyteller_ghost_id).filter(Boolean),
+      ...((playersRes.data || []) as any[]).map(p => p.ghost_player_id).filter(Boolean),
+    ])];
+
+    const [profilesRes, ghostsRes] = await Promise.all([
+      playerIds.length > 0
+        ? supabase.from('profiles').select('id, name, nickname').in('id', playerIds)
+        : Promise.resolve({ data: [] as any[] }),
+      ghostIds.length > 0
+        ? supabase.from('ghost_players').select('id, display_name').in('id', ghostIds)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
     const profileMap: Record<string, string> = {};
-    for (const p of (profilesData || [])) profileMap[p.id] = (p as any).nickname || p.name;
+    for (const p of (profilesRes.data || [])) profileMap[(p as any).id] = (p as any).nickname || (p as any).name;
+    const ghostMap: Record<string, string> = {};
+    for (const g of (ghostsRes.data || [])) ghostMap[(g as any).id] = (g as any).display_name;
 
     const charIds = [...new Set(((playersRes.data || []) as any[]).map(p => p.character_id))];
     const { data: charsData } = charIds.length > 0
@@ -111,19 +140,32 @@ const AdminBloodMatches = () => {
     const charMap: Record<string, string> = {};
     for (const c of (charsData || [])) charMap[(c as any).id] = (c as any).name;
 
-    setMatches((matchData as any[]).map(m => ({
-      ...m,
-      season_name: seasonMap[m.season_id] || '?',
-      script_name: scriptMap[m.script_id] || '?',
-      storyteller_name: profileMap[m.storyteller_player_id] || '?',
-      players: ((playersRes.data || []) as any[])
-        .filter(p => p.match_id === m.id)
-        .map(p => ({
-          ...p,
-          player_name: profileMap[p.player_id] || '?',
-          character_name: charMap[p.character_id] || '?',
-        })),
-    })));
+    setMatches((matchData as any[]).map(m => {
+      const stIsGuest = !!m.storyteller_ghost_id;
+      const stName = stIsGuest
+        ? (ghostMap[m.storyteller_ghost_id] || 'Convidado')
+        : (profileMap[m.storyteller_player_id] || '?');
+      return {
+        ...m,
+        season_name: seasonMap[m.season_id] || '?',
+        script_name: scriptMap[m.script_id] || '?',
+        storyteller_name: stName,
+        storyteller_is_guest: stIsGuest,
+        players: ((playersRes.data || []) as any[])
+          .filter(p => p.match_id === m.id)
+          .map(p => {
+            const isGuest = !!p.ghost_player_id;
+            return {
+              ...p,
+              is_guest: isGuest,
+              player_name: isGuest
+                ? (ghostMap[p.ghost_player_id] || 'Convidado')
+                : (profileMap[p.player_id] || '?'),
+              character_name: charMap[p.character_id] || '?',
+            };
+          }),
+      };
+    }));
   };
 
   const scriptCharacters = characters.filter(c => c.script_id === scriptId);
@@ -147,8 +189,8 @@ const AdminBloodMatches = () => {
   ].filter(Boolean);
 
   const addPlayer = (team: 'good' | 'evil') => {
-    if (team === 'evil') setEvilPlayers([...evilPlayers, { player_id: '', character_id: '', team: 'evil' }]);
-    else setGoodPlayers([...goodPlayers, { player_id: '', character_id: '', team: 'good' }]);
+    if (team === 'evil') setEvilPlayers([...evilPlayers, { player_id: '', is_guest: false, character_id: '', team: 'evil' }]);
+    else setGoodPlayers([...goodPlayers, { player_id: '', is_guest: false, character_id: '', team: 'good' }]);
   };
   const removePlayer = (team: 'good' | 'evil', idx: number) => {
     if (team === 'evil') setEvilPlayers(evilPlayers.filter((_, i) => i !== idx));
@@ -167,8 +209,8 @@ const AdminBloodMatches = () => {
   };
 
   const addEditPlayer = (team: 'good' | 'evil') => {
-    if (team === 'evil') setEditEvilPlayers([...editEvilPlayers, { player_id: '', character_id: '', team: 'evil' }]);
-    else setEditGoodPlayers([...editGoodPlayers, { player_id: '', character_id: '', team: 'good' }]);
+    if (team === 'evil') setEditEvilPlayers([...editEvilPlayers, { player_id: '', is_guest: false, character_id: '', team: 'evil' }]);
+    else setEditGoodPlayers([...editGoodPlayers, { player_id: '', is_guest: false, character_id: '', team: 'good' }]);
   };
   const removeEditPlayer = (team: 'good' | 'evil', idx: number) => {
     if (team === 'evil') setEditEvilPlayers(editEvilPlayers.filter((_, i) => i !== idx));
@@ -203,14 +245,16 @@ const AdminBloodMatches = () => {
         playedAt: new Date(`${playedDate}T${playedTime}`).toISOString(),
         durationMinutes: parseInt(duration) || null,
         storytellerId,
+        storytellerIsGuest,
         winningTeam,
         players: allPlayers,
       });
 
       notify('success', 'Partida de Blood registrada!');
-      setEvilPlayers([{ player_id: '', character_id: '', team: 'evil' }]);
-      setGoodPlayers([{ player_id: '', character_id: '', team: 'good' }]);
-      setDuration(''); setPlayedDate(''); setPlayedTime(''); setStorytellerId('');
+      setEvilPlayers([{ player_id: '', is_guest: false, character_id: '', team: 'evil' }]);
+      setGoodPlayers([{ player_id: '', is_guest: false, character_id: '', team: 'good' }]);
+      setDuration(''); setPlayedDate(''); setPlayedTime('');
+      setStorytellerId(''); setStorytellerIsGuest(false);
       fetchMatches();
     } catch (err: any) {
       notify('error', err.message || 'Erro ao registrar partida');
@@ -229,13 +273,24 @@ const AdminBloodMatches = () => {
     setEditPlayedDate(d.toISOString().split('T')[0]);
     setEditPlayedTime(d.toTimeString().slice(0, 5));
     setEditDuration(m.duration_minutes ? String(m.duration_minutes) : '');
-    setEditStorytellerId(m.storyteller_player_id);
+    setEditStorytellerId(m.storyteller_ghost_id || m.storyteller_player_id || '');
+    setEditStorytellerIsGuest(!!m.storyteller_ghost_id);
     setEditWinningTeam(m.winning_team);
     setEditEvilPlayers(
-      m.players.filter((p: any) => p.team === 'evil').map((p: any) => ({ player_id: p.player_id, character_id: p.character_id, team: 'evil' as const }))
+      m.players.filter((p: any) => p.team === 'evil').map((p: any) => ({
+        player_id: p.ghost_player_id || p.player_id,
+        is_guest: !!p.ghost_player_id,
+        character_id: p.character_id,
+        team: 'evil' as const,
+      }))
     );
     setEditGoodPlayers(
-      m.players.filter((p: any) => p.team === 'good').map((p: any) => ({ player_id: p.player_id, character_id: p.character_id, team: 'good' as const }))
+      m.players.filter((p: any) => p.team === 'good').map((p: any) => ({
+        player_id: p.ghost_player_id || p.player_id,
+        is_guest: !!p.ghost_player_id,
+        character_id: p.character_id,
+        team: 'good' as const,
+      }))
     );
     setEditVictoryConditions(Array.isArray(m.victory_conditions) ? [...m.victory_conditions] : []);
     setEditDialogOpen(true);
@@ -258,7 +313,8 @@ const AdminBloodMatches = () => {
         script_id: editScriptId,
         played_at: new Date(`${editPlayedDate}T${editPlayedTime}`).toISOString(),
         duration_minutes: parseInt(editDuration) || null,
-        storyteller_player_id: editStorytellerId,
+        storyteller_player_id: editStorytellerIsGuest ? null : editStorytellerId,
+        storyteller_ghost_id: editStorytellerIsGuest ? editStorytellerId : null,
         winning_team: editWinningTeam,
         victory_conditions: editVictoryConditions,
       } as any).eq('id', editingMatch.id);
@@ -268,7 +324,8 @@ const AdminBloodMatches = () => {
       await supabase.from('blood_match_players').delete().eq('match_id', editingMatch.id);
       const matchPlayers = allPlayers.map(p => ({
         match_id: editingMatch.id,
-        player_id: p.player_id,
+        player_id: p.is_guest ? null : p.player_id,
+        ghost_player_id: p.is_guest ? p.player_id : null,
         character_id: p.character_id,
         team: p.team,
       }));
@@ -313,14 +370,33 @@ const AdminBloodMatches = () => {
         </div>
         {playersList.map((ep, i) => (
           <div key={i} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] items-end">
-            <Select value={ep.player_id} onValueChange={v => onUpdate(team, i, 'player_id', v)}>
+            <Select
+              value={encodeP(ep.player_id, ep.is_guest)}
+              onValueChange={v => {
+                const dec = decodeP(v);
+                onUpdate(team, i, 'player_id', dec.id);
+                onUpdate(team, i, 'is_guest', dec.is_guest as any);
+              }}
+            >
               <SelectTrigger><SelectValue placeholder="Jogador" /></SelectTrigger>
               <SelectContent>
-                {players.map(p => (
-                  <SelectItem key={p.id} value={p.id} disabled={allSelected.includes(p.id) && p.id !== ep.player_id}>
-                    {p.nickname || p.name}
-                  </SelectItem>
-                ))}
+                {players.map(p => {
+                  const v = encodeP(p.id, false);
+                  return (
+                    <SelectItem key={v} value={v} disabled={allSelected.includes(p.id) && !(p.id === ep.player_id && !ep.is_guest)}>
+                      {p.nickname || p.name}
+                    </SelectItem>
+                  );
+                })}
+                {guests.length > 0 && <div className="px-2 py-1 text-xs text-amber-400/70 border-t border-border/40 mt-1">Convidados</div>}
+                {guests.map(g => {
+                  const v = encodeP(g.id, true);
+                  return (
+                    <SelectItem key={v} value={v} disabled={allSelected.includes(g.id) && !(g.id === ep.player_id && ep.is_guest)}>
+                      {g.nickname} <span className="ml-1 text-xs text-amber-400">(convidado)</span>
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
             <Select value={ep.character_id} onValueChange={v => onUpdate(team, i, 'character_id', v)}>
@@ -360,7 +436,7 @@ const AdminBloodMatches = () => {
             </div>
             <div className="space-y-2">
               <Label>Script *</Label>
-              <Select value={scriptId} onValueChange={v => { setScriptId(v); setEvilPlayers([{ player_id: '', character_id: '', team: 'evil' }]); setGoodPlayers([{ player_id: '', character_id: '', team: 'good' }]); }}>
+              <Select value={scriptId} onValueChange={v => { setScriptId(v); setEvilPlayers([{ player_id: '', is_guest: false, character_id: '', team: 'evil' }]); setGoodPlayers([{ player_id: '', is_guest: false, character_id: '', team: 'good' }]); }}>
                 <SelectTrigger><SelectValue placeholder="Selecione o script" /></SelectTrigger>
                 <SelectContent>
                   {scripts.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
@@ -369,14 +445,29 @@ const AdminBloodMatches = () => {
             </div>
             <div className="space-y-2">
               <Label>Storyteller *</Label>
-              <Select value={storytellerId} onValueChange={setStorytellerId}>
+              <Select
+                value={encodeP(storytellerId, storytellerIsGuest)}
+                onValueChange={v => { const d = decodeP(v); setStorytellerId(d.id); setStorytellerIsGuest(d.is_guest); }}
+              >
                 <SelectTrigger><SelectValue placeholder="Quem narrou?" /></SelectTrigger>
                 <SelectContent>
-                  {players.map(p => (
-                    <SelectItem key={p.id} value={p.id} disabled={allSelectedPlayerIds.includes(p.id) && p.id !== storytellerId}>
-                      {p.nickname || p.name}
-                    </SelectItem>
-                  ))}
+                  {players.map(p => {
+                    const v = encodeP(p.id, false);
+                    return (
+                      <SelectItem key={v} value={v} disabled={allSelectedPlayerIds.includes(p.id) && !(p.id === storytellerId && !storytellerIsGuest)}>
+                        {p.nickname || p.name}
+                      </SelectItem>
+                    );
+                  })}
+                  {guests.length > 0 && <div className="px-2 py-1 text-xs text-amber-400/70 border-t border-border/40 mt-1">Convidados</div>}
+                  {guests.map(g => {
+                    const v = encodeP(g.id, true);
+                    return (
+                      <SelectItem key={v} value={v} disabled={allSelectedPlayerIds.includes(g.id) && !(g.id === storytellerId && storytellerIsGuest)}>
+                        {g.nickname} <span className="ml-1 text-xs text-amber-400">(convidado)</span>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -512,14 +603,29 @@ const AdminBloodMatches = () => {
               </div>
               <div className="space-y-2">
                 <Label>Storyteller *</Label>
-                <Select value={editStorytellerId} onValueChange={setEditStorytellerId}>
+                <Select
+                  value={encodeP(editStorytellerId, editStorytellerIsGuest)}
+                  onValueChange={v => { const d = decodeP(v); setEditStorytellerId(d.id); setEditStorytellerIsGuest(d.is_guest); }}
+                >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {players.map(p => (
-                      <SelectItem key={p.id} value={p.id} disabled={editAllSelectedPlayerIds.includes(p.id) && p.id !== editStorytellerId}>
-                        {p.nickname || p.name}
-                      </SelectItem>
-                    ))}
+                    {players.map(p => {
+                      const v = encodeP(p.id, false);
+                      return (
+                        <SelectItem key={v} value={v} disabled={editAllSelectedPlayerIds.includes(p.id) && !(p.id === editStorytellerId && !editStorytellerIsGuest)}>
+                          {p.nickname || p.name}
+                        </SelectItem>
+                      );
+                    })}
+                    {guests.length > 0 && <div className="px-2 py-1 text-xs text-amber-400/70 border-t border-border/40 mt-1">Convidados</div>}
+                    {guests.map(g => {
+                      const v = encodeP(g.id, true);
+                      return (
+                        <SelectItem key={v} value={v} disabled={editAllSelectedPlayerIds.includes(g.id) && !(g.id === editStorytellerId && editStorytellerIsGuest)}>
+                          {g.nickname} <span className="ml-1 text-xs text-amber-400">(convidado)</span>
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>

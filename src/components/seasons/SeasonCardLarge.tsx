@@ -58,7 +58,7 @@ export const SeasonCardLarge = ({ season: s, index, colorIndex, linkedNames, isA
             <div className="flex items-start justify-between gap-2">
               <h3 className="font-semibold text-base truncate">{s.name}</h3>
               <div className="flex items-center gap-1 flex-shrink-0">
-                <Badge className={statusColors[s.status]}>{statusLabels[s.status]}</Badge>
+                <Badge style={badgeStyle} className="border">{statusLabels[s.status]}</Badge>
                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-gold transition-colors" />
               </div>
             </div>

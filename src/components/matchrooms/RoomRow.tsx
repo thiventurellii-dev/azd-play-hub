@@ -362,6 +362,7 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
     setLoading(false);
   };
 
+  const handleCancel = async () => {
     if (!confirm("Tem certeza que deseja cancelar esta sala?")) return;
     setLoading(true);
     await supabase.from("match_rooms").update({ status: "cancelled" }).eq("id", room.id);

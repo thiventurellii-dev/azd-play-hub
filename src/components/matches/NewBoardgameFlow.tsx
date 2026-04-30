@@ -487,12 +487,14 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
   return (
     <div className="space-y-4 pb-24">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Registrar partida</h2>
-          <p className="text-sm text-muted-foreground">Boardgame · partida que já aconteceu</p>
+      {!hideHeader && (
+        <div className="flex items-start justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-foreground">Registrar partida</h2>
+            <p className="text-sm text-muted-foreground">Boardgame · partida que já aconteceu</p>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Section 1 — Game */}
       <div className={`rounded-xl border ${sectionDoneClass(!!gameId)} bg-card/60 p-5 space-y-4`}>

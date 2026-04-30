@@ -595,7 +595,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
   return (
     <div className="space-y-4">
       {/* Header */}
-      {!hideHeader && (
+      {(!isEdit || !hideHeader) && (
         <div className="flex items-start gap-3">
           {!isEdit && (
             <Button
@@ -613,10 +613,11 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
             </Button>
           )}
           <div className="flex-1">
-            <h2 className="text-lg font-semibold text-foreground">{cfg.title}</h2>
+            {!hideHeader && <h2 className="text-lg font-semibold text-foreground">{cfg.title}</h2>}
             <span
               className={cn(
-                "inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-1 rounded-full border text-xs font-medium",
+                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium",
+                hideHeader ? "" : "mt-1.5",
                 cfg.accentBg,
                 cfg.accentBorder,
                 cfg.accent,

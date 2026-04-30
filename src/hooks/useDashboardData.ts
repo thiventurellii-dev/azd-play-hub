@@ -181,10 +181,17 @@ async function fetchSeasonRankings(seasonId: string): Promise<TopPlayer[]> {
     .sort((a, b) => b.current_mmr - a.current_mmr || a.player_id.localeCompare(b.player_id));
 }
 
-async function fetchLatestUserSeasonMmrChange(userId: string, seasonId: string): Promise<number | null> {
+type LatestUserSeasonMatch = {
+  mmr_change: number | null;
+  game_id: string | null;
+  match_id: string | null;
+  played_at: string | null;
+};
+
+async function fetchLatestUserSeasonMatch(userId: string, seasonId: string): Promise<LatestUserSeasonMatch | null> {
   const { data: results } = await supabase
     .from("match_results")
-    .select("id, mmr_change, matches!inner(played_at, season_id)")
+    .select("id, mmr_change, match_id, matches!inner(played_at, season_id, game_id)")
     .eq("player_id", userId)
     .eq("matches.season_id", seasonId);
 
@@ -196,10 +203,60 @@ async function fetchLatestUserSeasonMmrChange(userId: string, seasonId: string):
 
     if (playedAtB !== playedAtA) return playedAtB - playedAtA;
     return b.id.localeCompare(a.id);
-  })[0];
+  })[0] as { id: string; mmr_change: number | null; match_id: string; matches: JoinedRecord<{ played_at: string; game_id: string }> } | undefined;
 
-  return latestResult?.mmr_change ?? null;
+  if (!latestResult) return null;
+  const m = unwrapJoinedRecord(latestResult.matches);
+  return {
+    mmr_change: latestResult.mmr_change ?? null,
+    game_id: m?.game_id ?? null,
+    match_id: latestResult.match_id ?? null,
+    played_at: m?.played_at ?? null,
+  };
 }
+
+type SeasonRatingFull = SeasonRatingRow;
+
+async function fetchSeasonRatingsRaw(seasonId: string): Promise<SeasonRatingFull[]> {
+  const { data } = await supabase
+    .from("mmr_ratings")
+    .select("player_id, current_mmr, wins, games_played, game_id")
+    .eq("season_id", seasonId);
+  return (data as SeasonRatingFull[]) ?? [];
+}
+
+async function fetchMatchMmrBefore(matchId: string): Promise<Record<string, number>> {
+  const { data } = await supabase
+    .from("match_results")
+    .select("player_id, mmr_before")
+    .eq("match_id", matchId);
+  const map: Record<string, number> = {};
+  for (const r of (data || []) as Array<{ player_id: string | null; mmr_before: number | null }>) {
+    if (r.player_id && r.mmr_before != null) map[r.player_id] = Number(r.mmr_before);
+  }
+  return map;
+}
+
+function aggregateRatings(ratings: SeasonRatingFull[]): Map<string, number> {
+  const agg = new Map<string, { total: number; count: number }>();
+  for (const r of ratings) {
+    const cur = agg.get(r.player_id) ?? { total: 0, count: 0 };
+    cur.total += Number(r.current_mmr);
+    cur.count += 1;
+    agg.set(r.player_id, cur);
+  }
+  const out = new Map<string, number>();
+  for (const [pid, v] of agg) out.set(pid, v.total / v.count);
+  return out;
+}
+
+function rankToPositions(avgMap: Map<string, number>): Map<string, number> {
+  const sorted = [...avgMap.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  const pos = new Map<string, number>();
+  sorted.forEach(([pid], i) => pos.set(pid, i + 1));
+  return pos;
+}
+
 
 export function useDashboardData(userId: string | undefined) {
   const enabled = !!userId;

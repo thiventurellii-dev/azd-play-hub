@@ -393,7 +393,7 @@ const AdminBloodMatches = () => {
                   const v = encodeP(g.id, true);
                   return (
                     <SelectItem key={v} value={v} disabled={allSelected.includes(g.id) && !(g.id === ep.player_id && ep.is_guest)}>
-                      {g.display_name} <span className="ml-1 text-xs text-amber-400">(convidado)</span>
+                      {g.nickname} <span className="ml-1 text-xs text-amber-400">(convidado)</span>
                     </SelectItem>
                   );
                 })}

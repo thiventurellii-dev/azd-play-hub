@@ -317,19 +317,29 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
     enabled: !room && !!user?.id,
     queryFn: async () => {
       const [openRes, lastRes] = await Promise.all([
-        supabase.from("match_rooms").select("room_type").eq("status", "open" as any),
         supabase
           .from("match_rooms")
-          .select("id, room_type, scheduled_at, title, game:games(name)")
+          .select("room_type, campaign_id, blood_script_id, game:games(slug,name)")
+          .eq("status", "open" as any),
+        supabase
+          .from("match_rooms")
+          .select("id, room_type, campaign_id, blood_script_id, scheduled_at, title, game:games(name,slug)")
           .eq("created_by", user!.id)
           .order("scheduled_at", { ascending: false })
           .limit(1)
           .maybeSingle(),
       ]);
+      const classify = (r: any): "boardgame" | "botc" | "rpg" => {
+        const g = Array.isArray(r.game) ? r.game[0] : r.game;
+        const slug = g?.slug || "";
+        const name = (g?.name || "").toLowerCase();
+        if (r.blood_script_id || slug === "blood-on-the-clocktower" || name.includes("blood")) return "botc";
+        if (r.campaign_id || r.room_type === "rpg" || slug === "rpg-generico") return "rpg";
+        return "boardgame";
+      };
       const counts: Record<string, number> = { boardgame: 0, botc: 0, rpg: 0 };
       for (const r of (openRes.data ?? []) as any[]) {
-        const t = r.room_type || "boardgame";
-        counts[t] = (counts[t] ?? 0) + 1;
+        counts[classify(r)] = (counts[classify(r)] ?? 0) + 1;
       }
       const last = lastRes.data
         ? {
@@ -693,8 +703,13 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
           <button
             type="button"
             onClick={() => {
-              const last = pickerStats.last!;
-              const t = (last.room_type || "boardgame") as Category;
+              const last: any = pickerStats.last!;
+              const g = Array.isArray(last.game) ? last.game[0] : last.game;
+              const slug = g?.slug || "";
+              const name = (g?.name || "").toLowerCase();
+              let t: Category = "boardgame";
+              if (last.blood_script_id || slug === "blood-on-the-clocktower" || name.includes("blood")) t = "botc";
+              else if (last.campaign_id || last.room_type === "rpg" || slug === "rpg-generico") t = "rpg";
               setCategory(t);
               if (t === "botc") setMaxPlayers("15");
             }}

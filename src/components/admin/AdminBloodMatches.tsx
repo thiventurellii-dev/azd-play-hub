@@ -273,13 +273,24 @@ const AdminBloodMatches = () => {
     setEditPlayedDate(d.toISOString().split('T')[0]);
     setEditPlayedTime(d.toTimeString().slice(0, 5));
     setEditDuration(m.duration_minutes ? String(m.duration_minutes) : '');
-    setEditStorytellerId(m.storyteller_player_id);
+    setEditStorytellerId(m.storyteller_ghost_id || m.storyteller_player_id || '');
+    setEditStorytellerIsGuest(!!m.storyteller_ghost_id);
     setEditWinningTeam(m.winning_team);
     setEditEvilPlayers(
-      m.players.filter((p: any) => p.team === 'evil').map((p: any) => ({ player_id: p.player_id, character_id: p.character_id, team: 'evil' as const }))
+      m.players.filter((p: any) => p.team === 'evil').map((p: any) => ({
+        player_id: p.ghost_player_id || p.player_id,
+        is_guest: !!p.ghost_player_id,
+        character_id: p.character_id,
+        team: 'evil' as const,
+      }))
     );
     setEditGoodPlayers(
-      m.players.filter((p: any) => p.team === 'good').map((p: any) => ({ player_id: p.player_id, character_id: p.character_id, team: 'good' as const }))
+      m.players.filter((p: any) => p.team === 'good').map((p: any) => ({
+        player_id: p.ghost_player_id || p.player_id,
+        is_guest: !!p.ghost_player_id,
+        character_id: p.character_id,
+        team: 'good' as const,
+      }))
     );
     setEditVictoryConditions(Array.isArray(m.victory_conditions) ? [...m.victory_conditions] : []);
     setEditDialogOpen(true);
@@ -302,7 +313,8 @@ const AdminBloodMatches = () => {
         script_id: editScriptId,
         played_at: new Date(`${editPlayedDate}T${editPlayedTime}`).toISOString(),
         duration_minutes: parseInt(editDuration) || null,
-        storyteller_player_id: editStorytellerId,
+        storyteller_player_id: editStorytellerIsGuest ? null : editStorytellerId,
+        storyteller_ghost_id: editStorytellerIsGuest ? editStorytellerId : null,
         winning_team: editWinningTeam,
         victory_conditions: editVictoryConditions,
       } as any).eq('id', editingMatch.id);
@@ -312,7 +324,8 @@ const AdminBloodMatches = () => {
       await supabase.from('blood_match_players').delete().eq('match_id', editingMatch.id);
       const matchPlayers = allPlayers.map(p => ({
         match_id: editingMatch.id,
-        player_id: p.player_id,
+        player_id: p.is_guest ? null : p.player_id,
+        ghost_player_id: p.is_guest ? p.player_id : null,
         character_id: p.character_id,
         team: p.team,
       }));

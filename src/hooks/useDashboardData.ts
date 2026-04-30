@@ -290,9 +290,54 @@ export function useDashboardData(userId: string | undefined) {
   });
 
   const latestUserResultQuery = useQuery({
-    queryKey: ["dashboard", "latestUserSeasonResult", userId, seasonQuery.data?.id],
-    queryFn: () => fetchLatestUserSeasonMmrChange(userId!, seasonQuery.data!.id),
+    queryKey: ["dashboard", "latestUserSeasonMatch", userId, seasonQuery.data?.id],
+    queryFn: () => fetchLatestUserSeasonMatch(userId!, seasonQuery.data!.id),
     enabled: !!userId && !!seasonQuery.data?.id,
+    staleTime: 60_000,
+  });
+
+  const positionChangeQuery = useQuery({
+    queryKey: [
+      "dashboard",
+      "positionChange",
+      userId,
+      seasonQuery.data?.id,
+      latestUserResultQuery.data?.match_id,
+      latestUserResultQuery.data?.game_id,
+    ],
+    queryFn: async () => {
+      const last = latestUserResultQuery.data!;
+      if (!last.match_id || !last.game_id) return null;
+      const [ratings, mmrBefore] = await Promise.all([
+        fetchSeasonRatingsRaw(seasonQuery.data!.id),
+        fetchMatchMmrBefore(last.match_id),
+      ]);
+      if (!ratings.length) return null;
+
+      // Current avg MMR per player (across all games in season)
+      const currentAvg = aggregateRatings(ratings);
+      const currentPos = rankToPositions(currentAvg);
+
+      // Previous: replace current_mmr for the last-match game with mmr_before
+      const prevRatings: SeasonRatingFull[] = ratings.map((r) => {
+        if (r.game_id === last.game_id && mmrBefore[r.player_id] != null) {
+          return { ...r, current_mmr: mmrBefore[r.player_id] };
+        }
+        return r;
+      });
+      const prevAvg = aggregateRatings(prevRatings);
+      const prevPos = rankToPositions(prevAvg);
+
+      const cur = currentPos.get(userId!);
+      const prev = prevPos.get(userId!);
+      if (cur == null || prev == null) return null;
+      return prev - cur; // positive = subiu
+    },
+    enabled:
+      !!userId &&
+      !!seasonQuery.data?.id &&
+      !!latestUserResultQuery.data?.match_id &&
+      !!latestUserResultQuery.data?.game_id,
     staleTime: 60_000,
   });
 
@@ -302,7 +347,8 @@ export function useDashboardData(userId: string | undefined) {
     ? {
         position: userIndex + 1,
         current_mmr: rankings[userIndex].current_mmr,
-        mmr_change: latestUserResultQuery.data ?? null,
+        mmr_change: latestUserResultQuery.data?.mmr_change ?? null,
+        position_change: positionChangeQuery.data ?? null,
       }
     : null;
 

@@ -730,9 +730,11 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
             <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Data e hora *</label>
-            <div className="mt-1.5 grid grid-cols-2 gap-2">
-              <DatePickerField value={scheduledDate} onChange={setScheduledDate} placeholder="Data" />
-              <Input type="time" value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)} />
+            <div className="mt-1.5 flex gap-2">
+              <div className="flex-1 min-w-0">
+                <DatePickerField value={scheduledDate} onChange={setScheduledDate} placeholder="Data" />
+              </div>
+              <Input type="time" value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)} className="w-[110px] shrink-0" />
             </div>
           </div>
           <div>

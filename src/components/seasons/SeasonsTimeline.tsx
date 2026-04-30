@@ -241,7 +241,7 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
                     const endPct = Math.min(100, ((sEnd - rangeStart.getTime()) / totalMs) * 100);
                     const widthPct = Math.max(1, endPct - startPct);
                     const participates = participatedIds.has(s.id);
-                    const rgb = colorFor(s, idx);
+                    const rgb = colorForIndex(idx);
                     const isFuture = new Date(s.start_date) > today;
 
                     const barStyle: React.CSSProperties = {

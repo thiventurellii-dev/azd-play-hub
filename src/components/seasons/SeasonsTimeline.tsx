@@ -258,8 +258,9 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
                       barStyle.background = `linear-gradient(90deg, ${rgba(rgb, 0.2)} 0%, ${rgba(rgb, 0.6)} 40%, ${rgba(rgb, 1)} 100%)`;
                       barStyle.boxShadow = `0 0 12px ${rgba(rgb, 0.35)}, 0 0 24px ${rgba(rgb, 0.2)}`;
                     } else {
-                      // Upcoming: solid palette color, no gradient, no glow
+                      // Upcoming: solid palette color, no gradient, with glow
                       barStyle.background = rgba(rgb, 0.85);
+                      barStyle.boxShadow = `0 0 12px ${rgba(rgb, 0.35)}, 0 0 24px ${rgba(rgb, 0.2)}`;
                     }
 
                     return (

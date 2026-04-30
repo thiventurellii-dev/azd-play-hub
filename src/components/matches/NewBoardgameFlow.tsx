@@ -100,6 +100,7 @@ const NewBoardgameFlow = ({
     prefilledPlayers && prefilledPlayers.length > 0
       ? prefilledPlayers.map((pid, i) => ({
           player_id: pid,
+          is_guest: false,
           seat_position: i + 1,
           faction: "",
           total_score: null,
@@ -135,7 +136,7 @@ const NewBoardgameFlow = ({
   const [saving, setSaving] = useState(false);
 
   function emptyEntry(seat: number): Entry {
-    return { player_id: "", seat_position: seat, faction: "", total_score: null, scores: {}, scoring_open: false };
+    return { player_id: "", is_guest: false, seat_position: seat, faction: "", total_score: null, scores: {}, scoring_open: false };
   }
 
   // Initial fetch

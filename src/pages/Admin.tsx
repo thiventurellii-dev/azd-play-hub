@@ -12,6 +12,7 @@ import AdminAchievements from "@/components/admin/AdminAchievements";
 import AdminMatches from "@/components/admin/AdminMatches";
 import AdminLogs from "@/components/admin/AdminLogs";
 import AdminEditProposals from "@/components/admin/AdminEditProposals";
+import AdminClaimRequests from "@/components/admin/AdminClaimRequests";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";

@@ -304,6 +304,9 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
   const seasons = useMemo(() => options?.seasons ?? [], [options?.seasons]);
   const userCommunities = useMemo(() => options?.communities ?? [], [options?.communities]);
   const userCampaigns = useMemo(() => options?.campaigns ?? [], [options?.campaigns]);
+  const gamePlayCounts = useMemo(() => options?.gamePlayCounts ?? {}, [options?.gamePlayCounts]);
+  const recentGameIds = useMemo(() => options?.recentGameIds ?? [], [options?.recentGameIds]);
+  const friends = useMemo(() => options?.friends ?? [], [options?.friends]);
 
   const [category, setCategory] = useState<Category | "">("");
   const [gameId, setGameId] = useState("");

@@ -1171,7 +1171,10 @@ const NewBoardgameFlow = ({
                     <PopoverContent className="w-[280px] p-0" align="start">
                       <Command>
                         <CommandInput placeholder="Buscar jogador ou convidado..." />
-                        <CommandList>
+                        <CommandList
+                          className="max-h-[320px]"
+                          onWheel={(ev) => ev.stopPropagation()}
+                        >
                           <CommandEmpty>
                             <div className="py-3 text-sm space-y-2">
                               <p className="text-muted-foreground">Nenhum jogador encontrado.</p>
@@ -1195,9 +1198,10 @@ const NewBoardgameFlow = ({
                                     updateEntry(i, { player_id: p.id, is_guest: false });
                                     setOpenPicker(null);
                                   }}
+                                  className="data-[selected=true]:bg-secondary/70 data-[selected=true]:text-foreground"
                                 >
                                   <Check
-                                    className={`mr-2 h-4 w-4 ${!e.is_guest && e.player_id === p.id ? "opacity-100" : "opacity-0"}`}
+                                    className={`mr-2 h-4 w-4 ${!e.is_guest && e.player_id === p.id ? "opacity-100 text-gold" : "opacity-0"}`}
                                   />
                                   {p.nickname || p.name}
                                   {p.nickname && <span className="ml-1 text-xs text-muted-foreground">({p.name})</span>}
@@ -1216,9 +1220,10 @@ const NewBoardgameFlow = ({
                                       updateEntry(i, { player_id: g.id, is_guest: true });
                                       setOpenPicker(null);
                                     }}
+                                    className="data-[selected=true]:bg-secondary/70 data-[selected=true]:text-foreground"
                                   >
                                     <Check
-                                      className={`mr-2 h-4 w-4 ${e.is_guest && e.player_id === g.id ? "opacity-100" : "opacity-0"}`}
+                                      className={`mr-2 h-4 w-4 ${e.is_guest && e.player_id === g.id ? "opacity-100 text-gold" : "opacity-0"}`}
                                     />
                                     <UserCircle2 className="mr-1 h-3.5 w-3.5 text-amber-400" />
                                     {g.nickname}
@@ -1228,16 +1233,6 @@ const NewBoardgameFlow = ({
                             </CommandGroup>
                           )}
                         </CommandList>
-                        <div className="border-t border-border p-2">
-                          <button
-                            type="button"
-                            onClick={() => { setOpenPicker(null); setAddGuestOpen(true); }}
-                            className="w-full text-xs text-amber-400 hover:bg-amber-500/10 rounded px-2 py-1.5 inline-flex items-center justify-center gap-1.5"
-                          >
-                            <UserCircle2 className="h-3.5 w-3.5" />
-                            Adicionar novo convidado
-                          </button>
-                        </div>
                       </Command>
                     </PopoverContent>
                   </Popover>

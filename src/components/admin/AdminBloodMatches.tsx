@@ -603,14 +603,29 @@ const AdminBloodMatches = () => {
               </div>
               <div className="space-y-2">
                 <Label>Storyteller *</Label>
-                <Select value={editStorytellerId} onValueChange={setEditStorytellerId}>
+                <Select
+                  value={encodeP(editStorytellerId, editStorytellerIsGuest)}
+                  onValueChange={v => { const d = decodeP(v); setEditStorytellerId(d.id); setEditStorytellerIsGuest(d.is_guest); }}
+                >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {players.map(p => (
-                      <SelectItem key={p.id} value={p.id} disabled={editAllSelectedPlayerIds.includes(p.id) && p.id !== editStorytellerId}>
-                        {p.nickname || p.name}
-                      </SelectItem>
-                    ))}
+                    {players.map(p => {
+                      const v = encodeP(p.id, false);
+                      return (
+                        <SelectItem key={v} value={v} disabled={editAllSelectedPlayerIds.includes(p.id) && !(p.id === editStorytellerId && !editStorytellerIsGuest)}>
+                          {p.nickname || p.name}
+                        </SelectItem>
+                      );
+                    })}
+                    {guests.length > 0 && <div className="px-2 py-1 text-xs text-amber-400/70 border-t border-border/40 mt-1">Convidados</div>}
+                    {guests.map(g => {
+                      const v = encodeP(g.id, true);
+                      return (
+                        <SelectItem key={v} value={v} disabled={editAllSelectedPlayerIds.includes(g.id) && !(g.id === editStorytellerId && editStorytellerIsGuest)}>
+                          {g.nickname} <span className="ml-1 text-xs text-amber-400">(convidado)</span>
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>

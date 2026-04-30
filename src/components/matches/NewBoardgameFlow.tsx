@@ -171,6 +171,27 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
     fetchBase();
   }, []);
 
+  // Fetch community members when prefilledCommunityId is provided
+  useEffect(() => {
+    if (!prefilledCommunityId) {
+      setCommunityName(null);
+      setCommunityMemberIds([]);
+      return;
+    }
+    const run = async () => {
+      const [{ data: comm }, { data: members }] = await Promise.all([
+        supabase.from('communities' as any).select('name').eq('id', prefilledCommunityId).maybeSingle(),
+        supabase.from('community_members' as any)
+          .select('user_id')
+          .eq('community_id', prefilledCommunityId)
+          .eq('status', 'active' as any),
+      ]);
+      setCommunityName((comm as any)?.name ?? null);
+      setCommunityMemberIds(((members || []) as any[]).map(m => m.user_id).filter(Boolean));
+    };
+    run();
+  }, [prefilledCommunityId]);
+
   // Fetch schema + factions when game changes
   useEffect(() => {
     if (!gameId) { setScoringSchema(null); setGameFactions([]); return; }

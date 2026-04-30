@@ -34,10 +34,11 @@ interface Props {
   prefilledPlayers?: string[];
   prefilledDate?: string;
   prefilledCategory?: 'boardgame' | 'botc';
+  prefilledCommunityId?: string;
   onComplete?: (matchId?: string) => void;
 }
 
-const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, prefilledCategory, onComplete }: Props) => {
+const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, prefilledCategory, prefilledCommunityId, onComplete }: Props) => {
   const { notify } = useNotification();
   const [category, setCategory] = useState<'boardgame' | 'botc' | 'rpg' | ''>(prefilledCategory || '');
   const [step, setStep] = useState(1);
@@ -407,6 +408,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, prefil
         prefilledGameId={prefilledGameId}
         prefilledPlayers={prefilledPlayers}
         prefilledDate={prefilledDate}
+        prefilledCommunityId={prefilledCommunityId}
         hideHeader={!!prefilledCategory}
         onComplete={onComplete}
       />

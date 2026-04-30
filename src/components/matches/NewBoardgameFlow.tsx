@@ -36,12 +36,13 @@ interface Props {
   prefilledGameId?: string;
   prefilledPlayers?: string[];
   prefilledDate?: string;
+  prefilledCommunityId?: string;
   hideHeader?: boolean;
 }
 
 const PLATFORMS = ['Presencial', 'Tabletop Simulator', 'BoardGame Arena', 'Discord', 'Outro Online'];
 
-const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefilledDate, hideHeader }: Props) => {
+const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefilledDate, prefilledCommunityId, hideHeader }: Props) => {
   const { notify } = useNotification();
 
   // Data
@@ -79,6 +80,12 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
   const [friendIds, setFriendIds] = useState<string[]>([]);
   const [friendsOpen, setFriendsOpen] = useState(false);
   const [selectedFriendsToAdd, setSelectedFriendsToAdd] = useState<Set<string>>(new Set());
+
+  // Community quick-add (only when prefilledCommunityId is set, e.g. from a community room)
+  const [communityName, setCommunityName] = useState<string | null>(null);
+  const [communityMemberIds, setCommunityMemberIds] = useState<string[]>([]);
+  const [communityOpen, setCommunityOpen] = useState(false);
+  const [selectedCommunityToAdd, setSelectedCommunityToAdd] = useState<Set<string>>(new Set());
 
   // Section 4 — Optional
   const [optionalOpen, setOptionalOpen] = useState(false);
@@ -163,6 +170,27 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
     };
     fetchBase();
   }, []);
+
+  // Fetch community members when prefilledCommunityId is provided
+  useEffect(() => {
+    if (!prefilledCommunityId) {
+      setCommunityName(null);
+      setCommunityMemberIds([]);
+      return;
+    }
+    const run = async () => {
+      const [{ data: comm }, { data: members }] = await Promise.all([
+        supabase.from('communities' as any).select('name').eq('id', prefilledCommunityId).maybeSingle(),
+        supabase.from('community_members' as any)
+          .select('user_id')
+          .eq('community_id', prefilledCommunityId)
+          .eq('status', 'active' as any),
+      ]);
+      setCommunityName((comm as any)?.name ?? null);
+      setCommunityMemberIds(((members || []) as any[]).map(m => m.user_id).filter(Boolean));
+    };
+    run();
+  }, [prefilledCommunityId]);
 
   // Fetch schema + factions when game changes
   useEffect(() => {
@@ -399,6 +427,7 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
         image_url: imageUrl,
         first_player_id: null,
         platform: platform || null,
+        community_id: prefilledCommunityId || null,
       } as any).select().single();
       if (mErr) throw mErr;
 
@@ -625,7 +654,7 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
           </div>
         </div>
 
-        {seasons.find(s => s.status === 'active') && (
+        {gameId && seasons.find(s => s.status === 'active') && (
           <label className="flex items-center justify-between gap-3 rounded-lg border border-gold/30 bg-gold/5 px-3 py-2 cursor-pointer">
             <div className="flex items-center gap-2">
               <Checkbox
@@ -739,15 +768,92 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
               </PopoverContent>
             </Popover>
           )}
+          {prefilledCommunityId && communityMemberIds.length > 0 && (
+            <Popover open={communityOpen} onOpenChange={(o) => { setCommunityOpen(o); if (!o) setSelectedCommunityToAdd(new Set()); }}>
+              <PopoverTrigger asChild>
+                <button
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[#7ee787]/30 bg-[#7ee787]/10 px-3 py-1 text-xs text-[#7ee787] hover:bg-[#7ee787]/20"
+                >
+                  <Users className="h-3 w-3" /> + Comunidade
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[280px] p-0" align="start">
+                {communityName && (
+                  <div className="border-b border-border px-3 py-2 text-[11px] uppercase tracking-wide text-muted-foreground">
+                    {communityName}
+                  </div>
+                )}
+                <Command>
+                  <CommandInput placeholder="Buscar membro..." />
+                  <CommandList>
+                    <CommandEmpty>Nenhum membro disponível.</CommandEmpty>
+                    <CommandGroup>
+                      {profiles
+                        .filter(p => communityMemberIds.includes(p.id) && !entries.some(e => e.player_id === p.id))
+                        .map(p => {
+                          const checked = selectedCommunityToAdd.has(p.id);
+                          return (
+                            <CommandItem
+                              key={p.id}
+                              value={`${p.nickname || ''} ${p.name}`}
+                              onSelect={() => {
+                                setSelectedCommunityToAdd(prev => {
+                                  const next = new Set(prev);
+                                  if (next.has(p.id)) next.delete(p.id);
+                                  else next.add(p.id);
+                                  return next;
+                                });
+                              }}
+                            >
+                              <Checkbox checked={checked} className="mr-2 data-[state=checked]:bg-gold data-[state=checked]:border-gold" />
+                              <Avatar className="h-6 w-6 mr-2">
+                                <AvatarImage src={p.avatar_url || undefined} />
+                                <AvatarFallback className="text-[10px]">{(p.nickname || p.name).slice(0, 2).toUpperCase()}</AvatarFallback>
+                              </Avatar>
+                              {p.nickname || p.name}
+                            </CommandItem>
+                          );
+                        })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+                <div className="flex items-center justify-between gap-2 border-t border-border p-2">
+                  <span className="text-[11px] text-muted-foreground">{selectedCommunityToAdd.size} selecionado(s)</span>
+                  <Button
+                    size="sm"
+                    variant="gold"
+                    disabled={selectedCommunityToAdd.size === 0}
+                    onClick={() => {
+                      const ids = Array.from(selectedCommunityToAdd);
+                      setEntries(prev => {
+                        const next = [...prev];
+                        for (const fid of ids) {
+                          const empty = next.findIndex(e => !e.player_id);
+                          if (empty >= 0) next[empty] = { ...next[empty], player_id: fid };
+                          else next.push({ ...emptyEntry(next.length + 1), player_id: fid });
+                        }
+                        return next;
+                      });
+                      setSelectedCommunityToAdd(new Set());
+                      setCommunityOpen(false);
+                    }}
+                  >
+                    Adicionar
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
         </div>
 
         {/* Header row */}
-        <div className="grid grid-cols-[40px_1fr_auto_auto_auto] gap-3 text-[10px] uppercase tracking-wide text-muted-foreground px-2">
+        <div className="grid grid-cols-[40px_1fr_auto_auto_auto_32px] gap-3 text-[10px] uppercase tracking-wide text-muted-foreground px-2">
           <div className="text-center">Assento</div>
           <div className="pl-2">Jogador</div>
           {gameFactions.length > 0 && <div className="w-[110px]">Facção</div>}
           <div className="w-[80px] text-right">Pontuação</div>
           <div className="w-[60px] text-center">Posição</div>
+          <div />
         </div>
 
         <div className="space-y-2">
@@ -759,7 +865,7 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
 
             return (
               <div key={i} className="space-y-2">
-                <div className="grid grid-cols-[40px_1fr_auto_auto_auto] items-center gap-3 rounded-lg border border-border/40 bg-background/40 px-2 py-2">
+                <div className="grid grid-cols-[40px_1fr_auto_auto_auto_32px] items-center gap-3 rounded-lg border border-border/40 bg-background/40 px-2 py-2">
                   {/* Seat */}
                   <Input
                     type="number"
@@ -841,10 +947,18 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
                   <PodiumCell pos={pos} hasScore={e.total_score != null} />
 
                   {/* Remove */}
-                  {entries.length > 1 && (
-                    <button onClick={() => removeEntry(i)} className="col-start-5 row-start-1 -mr-1 hidden">
+                  {entries.length > 1 ? (
+                    <button
+                      type="button"
+                      onClick={() => removeEntry(i)}
+                      className="h-8 w-8 inline-flex items-center justify-center rounded text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                      title="Remover jogador"
+                      aria-label="Remover jogador"
+                    >
                       <Trash2 className="h-4 w-4" />
                     </button>
+                  ) : (
+                    <span />
                   )}
                 </div>
 

@@ -251,7 +251,7 @@ const EditMatchDialog = ({ open, onOpenChange, match, onSaved }: Props) => {
             </TableHeader>
             <TableBody>
               {results.map((r, i) => (
-                <TableRow key={r.player_id}>
+                <TableRow key={r.id || i}>
                   <TableCell className="text-sm truncate">{r.player_name}</TableCell>
                   <TableCell>
                     <Input type="number" min={1} value={r.position} onChange={e => {

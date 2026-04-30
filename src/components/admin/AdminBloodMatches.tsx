@@ -370,14 +370,33 @@ const AdminBloodMatches = () => {
         </div>
         {playersList.map((ep, i) => (
           <div key={i} className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] items-end">
-            <Select value={ep.player_id} onValueChange={v => onUpdate(team, i, 'player_id', v)}>
+            <Select
+              value={encodeP(ep.player_id, ep.is_guest)}
+              onValueChange={v => {
+                const dec = decodeP(v);
+                onUpdate(team, i, 'player_id', dec.id);
+                onUpdate(team, i, 'is_guest', dec.is_guest as any);
+              }}
+            >
               <SelectTrigger><SelectValue placeholder="Jogador" /></SelectTrigger>
               <SelectContent>
-                {players.map(p => (
-                  <SelectItem key={p.id} value={p.id} disabled={allSelected.includes(p.id) && p.id !== ep.player_id}>
-                    {p.nickname || p.name}
-                  </SelectItem>
-                ))}
+                {players.map(p => {
+                  const v = encodeP(p.id, false);
+                  return (
+                    <SelectItem key={v} value={v} disabled={allSelected.includes(p.id) && !(p.id === ep.player_id && !ep.is_guest)}>
+                      {p.nickname || p.name}
+                    </SelectItem>
+                  );
+                })}
+                {guests.length > 0 && <div className="px-2 py-1 text-xs text-amber-400/70 border-t border-border/40 mt-1">Convidados</div>}
+                {guests.map(g => {
+                  const v = encodeP(g.id, true);
+                  return (
+                    <SelectItem key={v} value={v} disabled={allSelected.includes(g.id) && !(g.id === ep.player_id && ep.is_guest)}>
+                      {g.display_name} <span className="ml-1 text-xs text-amber-400">(convidado)</span>
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
             <Select value={ep.character_id} onValueChange={v => onUpdate(team, i, 'character_id', v)}>

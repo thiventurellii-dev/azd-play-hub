@@ -182,25 +182,28 @@ export type Database = {
         Row: {
           character_id: string
           created_at: string
+          ghost_player_id: string | null
           id: string
           match_id: string
-          player_id: string
+          player_id: string | null
           team: Database["public"]["Enums"]["blood_team"]
         }
         Insert: {
           character_id: string
           created_at?: string
+          ghost_player_id?: string | null
           id?: string
           match_id: string
-          player_id: string
+          player_id?: string | null
           team: Database["public"]["Enums"]["blood_team"]
         }
         Update: {
           character_id?: string
           created_at?: string
+          ghost_player_id?: string | null
           id?: string
           match_id?: string
-          player_id?: string
+          player_id?: string | null
           team?: Database["public"]["Enums"]["blood_team"]
         }
         Relationships: [
@@ -209,6 +212,13 @@ export type Database = {
             columns: ["character_id"]
             isOneToOne: false
             referencedRelation: "blood_characters"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blood_match_players_ghost_player_id_fkey"
+            columns: ["ghost_player_id"]
+            isOneToOne: false
+            referencedRelation: "ghost_players"
             referencedColumns: ["id"]
           },
           {
@@ -229,7 +239,8 @@ export type Database = {
           played_at: string
           script_id: string
           season_id: string
-          storyteller_player_id: string
+          storyteller_ghost_id: string | null
+          storyteller_player_id: string | null
           victory_conditions: Json | null
           winning_team: Database["public"]["Enums"]["blood_team"]
         }
@@ -241,7 +252,8 @@ export type Database = {
           played_at?: string
           script_id: string
           season_id: string
-          storyteller_player_id: string
+          storyteller_ghost_id?: string | null
+          storyteller_player_id?: string | null
           victory_conditions?: Json | null
           winning_team: Database["public"]["Enums"]["blood_team"]
         }
@@ -253,7 +265,8 @@ export type Database = {
           played_at?: string
           script_id?: string
           season_id?: string
-          storyteller_player_id?: string
+          storyteller_ghost_id?: string | null
+          storyteller_player_id?: string | null
           victory_conditions?: Json | null
           winning_team?: Database["public"]["Enums"]["blood_team"]
         }
@@ -270,6 +283,13 @@ export type Database = {
             columns: ["season_id"]
             isOneToOne: false
             referencedRelation: "seasons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blood_matches_storyteller_ghost_id_fkey"
+            columns: ["storyteller_ghost_id"]
+            isOneToOne: false
+            referencedRelation: "ghost_players"
             referencedColumns: ["id"]
           },
         ]

@@ -50,7 +50,7 @@ export interface MatchRoomData {
   game: { id: string; name: string; image_url: string | null };
 }
 
-const PLATFORM_OPTIONS = ["Presencial", "Tabletop Simulator", "BoardGame Arena", "Discord", "Foundry", "Outro Online"];
+const PLATFORM_OPTIONS = ["Presencial", "Tabletop Simulator", "BoardGame Arena", "Foundry", "Outro Online"];
 
 interface MatchRoomFormProps {
   room?: MatchRoomData | null;

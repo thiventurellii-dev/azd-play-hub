@@ -54,13 +54,13 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   // Section 1 — Game
-  const [gameId, setGameId] = useState('');
+  const [gameId, setGameId] = useState(prefilledGameId || '');
   const [gameSearch, setGameSearch] = useState('');
   const [scoringSchema, setScoringSchema] = useState<ScoringSchema | null>(null);
   const [gameFactions, setGameFactions] = useState<string[]>([]);
 
   // Section 2 — When
-  const [playedDate, setPlayedDate] = useState('');
+  const [playedDate, setPlayedDate] = useState(prefilledDate || '');
   const [playedTime, setPlayedTime] = useState('20:00');
   const [duration, setDuration] = useState('');
   const [platform, setPlatform] = useState('Presencial');
@@ -68,9 +68,17 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
   const [linkToSeason, setLinkToSeason] = useState(true);
 
   // Section 3 — Players
-  const [entries, setEntries] = useState<Entry[]>([emptyEntry(1)]);
+  const initialEntries: Entry[] = (prefilledPlayers && prefilledPlayers.length > 0)
+    ? prefilledPlayers.map((pid, i) => ({ player_id: pid, seat_position: i + 1, faction: '', total_score: null, scores: {}, scoring_open: false }))
+    : [emptyEntry(1)];
+  const [entries, setEntries] = useState<Entry[]>(initialEntries);
   const [showHelperHint, setShowHelperHint] = useState(true);
   const [openPicker, setOpenPicker] = useState<number | null>(null);
+
+  // Friends quick-add
+  const [friendIds, setFriendIds] = useState<string[]>([]);
+  const [friendsOpen, setFriendsOpen] = useState(false);
+  const [selectedFriendsToAdd, setSelectedFriendsToAdd] = useState<Set<string>>(new Set());
 
   // Section 4 — Optional
   const [optionalOpen, setOptionalOpen] = useState(false);

@@ -408,6 +408,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, prefil
         prefilledGameId={prefilledGameId}
         prefilledPlayers={prefilledPlayers}
         prefilledDate={prefilledDate}
+        prefilledCommunityId={prefilledCommunityId}
         hideHeader={!!prefilledCategory}
         onComplete={onComplete}
       />

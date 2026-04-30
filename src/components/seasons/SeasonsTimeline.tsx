@@ -240,7 +240,6 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
                     const startPct = Math.max(0, ((sStart - rangeStart.getTime()) / totalMs) * 100);
                     const endPct = Math.min(100, ((sEnd - rangeStart.getTime()) / totalMs) * 100);
                     const widthPct = Math.max(1, endPct - startPct);
-                    const participates = participatedIds.has(s.id);
                     const rgb = colorForIndex(idx);
                     const isFuture = new Date(s.start_date) > today;
                     const isFinished = s.status === "finished";
@@ -252,21 +251,15 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
                     };
 
                     if (isFinished) {
-                      // Finished: flat low-contrast neutral grey (pre-redesign look)
+                      // Finished: flat low-contrast neutral grey
                       barStyle.background = `rgba(107, 114, 128, 0.45)`;
-                    } else if (participates) {
-                      if (isActive) {
-                        // Active + participating: full gradient + glow
-                        barStyle.background = `linear-gradient(90deg, ${rgba(rgb, 0.2)} 0%, ${rgba(rgb, 0.6)} 40%, ${rgba(rgb, 1)} 100%)`;
-                        barStyle.boxShadow = `0 0 12px ${rgba(rgb, 0.35)}, 0 0 24px ${rgba(rgb, 0.2)}`;
-                      } else {
-                        // Upcoming + participating: solid palette color, no gradient, no glow
-                        barStyle.background = rgba(rgb, 0.85);
-                      }
+                    } else if (isActive) {
+                      // Active: full gradient + glow
+                      barStyle.background = `linear-gradient(90deg, ${rgba(rgb, 0.2)} 0%, ${rgba(rgb, 0.6)} 40%, ${rgba(rgb, 1)} 100%)`;
+                      barStyle.boxShadow = `0 0 12px ${rgba(rgb, 0.35)}, 0 0 24px ${rgba(rgb, 0.2)}`;
                     } else {
-                      // Not participating (active or upcoming): faded flat color, no glow
-                      barStyle.background = rgba(rgb, 0.25);
-                      barStyle.border = `1px solid ${rgba(rgb, 0.5)}`;
+                      // Upcoming: solid palette color, no gradient, no glow
+                      barStyle.background = rgba(rgb, 0.85);
                     }
 
                     return (

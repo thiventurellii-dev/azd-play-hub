@@ -25,8 +25,7 @@ const SEASON_PALETTE: Array<[number, number, number]> = [
 ];
 const FINISHED_RGB: [number, number, number] = [107, 114, 128]; // #6B7280 cinza neutro
 
-const colorFor = (s: SeasonItem, idx: number): [number, number, number] => {
-  if (s.status === "finished") return FINISHED_RGB;
+const colorFor = (_s: SeasonItem, idx: number): [number, number, number] => {
   return SEASON_PALETTE[idx % SEASON_PALETTE.length];
 };
 

@@ -25,6 +25,7 @@ const Profile = () => {
   const { notify } = useNotification();
   useProfileCompletion();
   const [editing, setEditing] = useState(false);
+  const [claiming, setClaiming] = useState(false);
   const [profile, setProfile] = useState<any>(null);
   const [form, setForm] = useState({ name: '', nickname: '', phone: '', country_code: '+55', state: '', city: '', birth_date: '', gender: '', pronouns: '', email: '' });
   const [changingPassword, setChangingPassword] = useState(false);

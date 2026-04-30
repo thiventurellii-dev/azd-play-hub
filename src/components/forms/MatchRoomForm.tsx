@@ -2,15 +2,27 @@ import { useState, useEffect, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/lib/supabaseExternal";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { X, ChevronLeft, Gamepad2, Skull, Sword } from "lucide-react";
+import {
+  X,
+  ChevronLeft,
+  Gamepad2,
+  Skull,
+  Sword,
+  Check,
+  Users,
+  ChevronDown,
+  ChevronUp,
+  Sparkles,
+} from "lucide-react";
 import { DatePickerField } from "@/components/ui/date-picker-field";
 import { sendMatchNotification } from "@/lib/matchNotification";
+import { cn } from "@/lib/utils";
 
 /* ── Types ─────────────────────────────────────────── */
 
@@ -49,13 +61,64 @@ export interface MatchRoomData {
   game: { id: string; name: string; image_url: string | null };
 }
 
-const PLATFORM_OPTIONS = ["Presencial", "Tabletop Simulator", "BoardGame Arena", "Foundry", "Outro Online"];
+const PLATFORM_OPTIONS = [
+  "Presencial",
+  "Tabletop Simulator",
+  "BoardGame Arena",
+  "Discord",
+  "Foundry",
+  "Outro Online",
+];
 
 interface MatchRoomFormProps {
   room?: MatchRoomData | null;
   isAdminMode?: boolean;
   onSuccess?: () => void;
+  hideHeader?: boolean;
 }
+
+/* ── Domain config ─────────────────────────────────── */
+
+type Category = "boardgame" | "botc" | "rpg";
+
+const DOMAIN_CONFIG: Record<
+  Category,
+  {
+    label: string;
+    accent: string; // tailwind text color
+    accentBg: string;
+    accentBorder: string;
+    icon: typeof Gamepad2;
+    title: string;
+  }
+> = {
+  boardgame: {
+    label: "Boardgame",
+    accent: "text-gold",
+    accentBg: "bg-gold/10",
+    accentBorder: "border-gold/40",
+    icon: Gamepad2,
+    title: "Agendar partida",
+  },
+  botc: {
+    label: "Blood on the Clocktower",
+    accent: "text-red-400",
+    accentBg: "bg-red-500/10",
+    accentBorder: "border-red-500/40",
+    icon: Skull,
+    title: "Agendar partida",
+  },
+  rpg: {
+    label: "RPG",
+    accent: "text-purple-400",
+    accentBg: "bg-purple-500/10",
+    accentBorder: "border-purple-500/40",
+    icon: Sword,
+    title: "Agendar sessão",
+  },
+};
+
+/* ── Form options hook ─────────────────────────────── */
 
 const useFormOptions = (enabled: boolean, userId?: string) =>
   useQuery({
@@ -105,37 +168,111 @@ const useFormOptions = (enabled: boolean, userId?: string) =>
     staleTime: 30_000,
   });
 
-const categoryCards = [
+/* ── Section wrapper ───────────────────────────────── */
+
+const SectionCard = ({
+  index,
+  title,
+  complete,
+  summary,
+  children,
+  defaultOpen = true,
+  collapsible = false,
+}: {
+  index?: number;
+  title: string;
+  complete: boolean;
+  summary?: React.ReactNode;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+  collapsible?: boolean;
+}) => {
+  const [open, setOpen] = useState(defaultOpen);
+  const showContent = !collapsible || open;
+
+  return (
+    <div
+      className={cn(
+        "rounded-xl border bg-card/40 transition-colors",
+        complete ? "border-emerald-500/30" : "border-gold/25",
+      )}
+    >
+      <button
+        type="button"
+        onClick={() => collapsible && setOpen((v) => !v)}
+        className={cn(
+          "w-full flex items-center gap-3 px-4 py-3",
+          collapsible ? "cursor-pointer" : "cursor-default",
+        )}
+      >
+        <span
+          className={cn(
+            "flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold shrink-0",
+            complete
+              ? "bg-emerald-500/20 text-emerald-400"
+              : "bg-gold/15 text-gold",
+          )}
+        >
+          {complete ? <Check className="h-3.5 w-3.5" /> : index}
+        </span>
+        <span className="font-semibold text-sm text-foreground flex-1 text-left">{title}</span>
+        {summary && (
+          <span className="text-xs text-muted-foreground truncate max-w-[60%] text-right">{summary}</span>
+        )}
+        {collapsible && (
+          <span className="text-muted-foreground">
+            {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </span>
+        )}
+      </button>
+      {showContent && <div className="px-4 pb-4 pt-1 space-y-3 border-t border-border/40">{children}</div>}
+    </div>
+  );
+};
+
+/* ── Category picker ───────────────────────────────── */
+
+const categoryCards: Array<{
+  id: Category;
+  label: string;
+  description: string;
+  icon: typeof Gamepad2;
+  color: string;
+  border: string;
+  bg: string;
+}> = [
   {
-    id: "boardgame" as const,
+    id: "boardgame",
     label: "Boardgame",
     description: "Jogos de tabuleiro",
     icon: Gamepad2,
-    iconColor: "text-gold",
-    borderHover: "hover:border-gold/60",
-    borderActive: "border-gold",
+    color: "text-gold",
+    border: "hover:border-gold/60 hover:bg-gold/5",
+    bg: "bg-gold/10",
   },
   {
-    id: "botc" as const,
+    id: "botc",
     label: "Blood on the Clocktower",
-    description: "BotC",
+    description: "Mistério social · BotC",
     icon: Skull,
-    iconColor: "text-red-400",
-    borderHover: "hover:border-red-500/60",
-    borderActive: "border-red-500",
+    color: "text-red-400",
+    border: "hover:border-red-500/60 hover:bg-red-500/5",
+    bg: "bg-red-500/10",
   },
   {
-    id: "rpg" as const,
+    id: "rpg",
     label: "RPG",
-    description: "Sessão de campanha",
+    description: "Sessão ou one-shot",
     icon: Sword,
-    iconColor: "text-purple-400",
-    borderHover: "hover:border-purple-500/60",
-    borderActive: "border-purple-500",
+    color: "text-purple-400",
+    border: "hover:border-purple-500/60 hover:bg-purple-500/5",
+    bg: "bg-purple-500/10",
   },
 ];
 
-const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormProps) => {
+/* ── Component ─────────────────────────────────────── */
+
+const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = false }: MatchRoomFormProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const isEdit = !!room;
@@ -148,7 +285,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
   const userCommunities = useMemo(() => options?.communities ?? [], [options?.communities]);
   const userCampaigns = useMemo(() => options?.campaigns ?? [], [options?.campaigns]);
 
-  const [category, setCategory] = useState<"boardgame" | "botc" | "rpg" | "">("");
+  const [category, setCategory] = useState<Category | "">("");
   const [gameId, setGameId] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -162,9 +299,11 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
   const [selectedCommunityId, setSelectedCommunityId] = useState("");
   const [communityOnly, setCommunityOnly] = useState(false);
   const [platform, setPlatform] = useState("");
-  const [status, setStatus] = useState("");
+  const [adminStatus, setAdminStatus] = useState("");
   const [selectedCampaignId, setSelectedCampaignId] = useState("");
+  const [acceptObservers, setAcceptObservers] = useState(false);
 
+  /* hydrate edit */
   useEffect(() => {
     if (!room) return;
     setGameId(room.game?.id ?? "");
@@ -179,13 +318,10 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
     setSelectedCommunityId(room.community_id ?? "");
     setCommunityOnly(!!room.community_only);
     setPlatform(room.platform ?? "");
-    setStatus("");
+    setAdminStatus("");
     const game = games.find((g) => g.id === room.game?.id);
-    if (game?.slug === "blood-on-the-clocktower") {
-      setCategory("botc");
-    } else {
-      setCategory("boardgame");
-    }
+    if (game?.slug === "blood-on-the-clocktower") setCategory("botc");
+    else setCategory("boardgame");
   }, [room, games]);
 
   useEffect(() => {
@@ -205,7 +341,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
     if (game?.max_players) setMaxPlayers(String(game.max_players));
   }, [gameId, games, isEdit]);
 
-  // Auto-título para RPG: "Sessão N - Nome da campanha"
+  // Auto-título RPG
   useEffect(() => {
     if (isEdit || category !== "rpg" || !selectedCampaignId) return;
     const camp = userCampaigns.find((c) => c.id === selectedCampaignId);
@@ -228,6 +364,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
     (g) => g.slug === "rpg-generico" || g.slug === "rpg-generic" || g.name?.toLowerCase() === "rpg",
   );
   const selectedCampaign = userCampaigns.find((c) => c.id === selectedCampaignId);
+  const selectedGame = games.find((g) => g.id === gameId);
 
   const filteredGames = games.filter((g) => {
     if (category === "boardgame")
@@ -245,6 +382,13 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
   const toggleTag = (tagId: string) =>
     setSelectedTagIds((prev) => (prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]));
 
+  /* ── Section completion checks ─── */
+  const sec1Complete = isBotC ? !!selectedScriptId && !!title : isRpg ? !!selectedCampaignId && !!title : !!gameId && !!title;
+  const sec2Complete = !!scheduledDate && !!scheduledTime && !!maxPlayers;
+  const sec3Complete = !!maxPlayers && parseInt(maxPlayers) > 0;
+  const sec4Complete = true; // visibilidade tem defaults
+
+  /* ── Mutation ─── */
   const mutation = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error("Não autenticado");
@@ -269,24 +413,17 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
         if (newGame) finalGameId = newGame.id;
       }
       if (isRpg && !finalGameId) {
-        // Procura primeiro no banco para evitar duplicatas
         const { data: existing } = await supabase
           .from("games")
           .select("id")
           .or("slug.eq.rpg-generico,slug.eq.rpg-generic,name.ilike.rpg")
           .limit(1)
           .maybeSingle();
-        if (existing?.id) {
-          finalGameId = existing.id;
-        } else {
+        if (existing?.id) finalGameId = existing.id;
+        else {
           const { data: newGame } = await supabase
             .from("games")
-            .insert({
-              name: "RPG",
-              slug: "rpg-generico",
-              min_players: 2,
-              max_players: 10,
-            } as any)
+            .insert({ name: "RPG", slug: "rpg-generico", min_players: 2, max_players: 10 } as any)
             .select("id")
             .single();
           if (newGame) finalGameId = newGame.id;
@@ -312,11 +449,10 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
           community_only: !!selectedCommunityId && communityOnly,
           room_type: category || "boardgame",
           platform: platform || null,
-          ...(isAdminMode && status
-            ? { status: status as "open" | "full" | "in_progress" | "finished" | "cancelled" }
+          ...(isAdminMode && adminStatus
+            ? { status: adminStatus as "open" | "full" | "in_progress" | "finished" | "cancelled" }
             : {}),
         };
-
         const { error } = await supabase.from("match_rooms").update(updatePayload).eq("id", room.id);
         if (error) throw error;
 
@@ -380,31 +516,33 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
   });
 
   const handleSubmit = () => {
-    if (isBotC) {
-      if (!selectedScriptId || !title || !scheduledDate) {
-        toast.error("Preencha os campos obrigatórios (Script, Título, Data)");
-        return;
-      }
-    } else if (isRpg) {
-      if (!selectedCampaignId || !title || !scheduledDate) {
-        toast.error("Selecione uma campanha, título e data");
-        return;
-      }
-    } else {
-      if (!gameId || !title || !scheduledDate) {
-        toast.error("Preencha os campos obrigatórios (Jogo, Título, Data)");
-        return;
-      }
+    if (!sec1Complete) {
+      toast.error("Preencha o que vai jogar e o título");
+      return;
+    }
+    if (!sec2Complete) {
+      toast.error("Defina data, hora e vagas");
+      return;
     }
     mutation.mutate();
   };
 
-  /* Category picker (create only) */
+  /* ── Picker ─── */
   if (!isEdit && !category) {
     return (
-      <div className="space-y-4">
-        <p className="text-sm text-muted-foreground">Escolha a categoria:</p>
-        <div className="flex flex-wrap justify-center gap-4">
+      <div className="space-y-5">
+        {!hideHeader && (
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">Agendar partida ou sessão</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Crie uma sala pra reunir jogadores em um momento futuro
+            </p>
+          </div>
+        )}
+        <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+          Escolha a categoria
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {categoryCards.map((card) => {
             const Icon = card.icon;
             return (
@@ -415,11 +553,16 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
                   setCategory(card.id);
                   if (card.id === "botc") setMaxPlayers("15");
                 }}
-                className={`flex flex-col items-center justify-center p-6 rounded-lg border-2 border-border ${card.borderHover} text-center transition-all group w-[200px] aspect-[3/4]`}
+                className={cn(
+                  "flex flex-col items-center justify-center px-4 py-6 rounded-xl border border-border/60 bg-card/40 transition-all group",
+                  card.border,
+                )}
               >
-                <Icon className={`h-12 w-12 mb-3 ${card.iconColor} group-hover:scale-110 transition-transform`} />
-                <p className="font-semibold text-sm">{card.label}</p>
-                <p className="text-xs text-muted-foreground mt-1">{card.description}</p>
+                <span className={cn("flex h-12 w-12 items-center justify-center rounded-full mb-3", card.bg)}>
+                  <Icon className={cn("h-6 w-6", card.color)} />
+                </span>
+                <p className="font-semibold text-sm text-foreground">{card.label}</p>
+                <p className="text-xs text-muted-foreground mt-1 text-center">{card.description}</p>
               </button>
             );
           })}
@@ -436,203 +579,336 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
     );
   }
 
+  const cat: Category = (category || "boardgame") as Category;
+  const cfg = DOMAIN_CONFIG[cat];
+  const CatIcon = cfg.icon;
+
+  /* ── Summaries ─── */
+  const sec1Summary = sec1Complete
+    ? isBotC
+      ? `${bloodScripts.find((s) => s.id === selectedScriptId)?.name ?? ""} · ${title}`
+      : isRpg
+        ? `${selectedCampaign?.name ?? ""} · ${title}`
+        : `${selectedGame?.name ?? ""} · ${title}`
+    : undefined;
+  const sec2Summary =
+    sec2Complete && scheduledDate
+      ? `${new Date(`${scheduledDate}T${scheduledTime || "00:00"}`).toLocaleDateString("pt-BR", {
+          weekday: "short",
+          day: "2-digit",
+          month: "2-digit",
+        })} · ${scheduledTime}${platform ? ` · ${platform}` : ""}`
+      : undefined;
+  const sec4Summary = (() => {
+    const parts: string[] = [];
+    if (selectedTagIds.length > 0) {
+      parts.push(
+        selectedTagIds
+          .map((id) => availableTags.find((t) => t.id === id)?.name)
+          .filter(Boolean)
+          .join(" + "),
+      );
+    }
+    const season = filteredSeasons.find((s) => s.id === selectedSeasonId);
+    if (season) parts.push(season.name);
+    return parts.join(" · ") || undefined;
+  })();
+
+  /* ── Form ─── */
   return (
     <div className="space-y-4">
-      {!isEdit && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            setCategory("");
-            setGameId("");
-            setSelectedScriptId("");
-          }}
-          className="mb-2"
-        >
-          <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
-        </Button>
+      {/* Header */}
+      {!hideHeader && (
+        <div className="flex items-start gap-3">
+          {!isEdit && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setCategory("");
+                setGameId("");
+                setSelectedScriptId("");
+                setSelectedCampaignId("");
+              }}
+              className="shrink-0"
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
+            </Button>
+          )}
+          <div className="flex-1">
+            <h2 className="text-lg font-semibold text-foreground">{cfg.title}</h2>
+            <span
+              className={cn(
+                "inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-1 rounded-full border text-xs font-medium",
+                cfg.accentBg,
+                cfg.accentBorder,
+                cfg.accent,
+              )}
+            >
+              <CatIcon className="h-3.5 w-3.5" />
+              {cfg.label}
+            </span>
+          </div>
+        </div>
       )}
 
-      {isBotC ? (
-        <div>
-          <Label>Script *</Label>
-          <Select value={selectedScriptId} onValueChange={setSelectedScriptId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione o script" />
-            </SelectTrigger>
-            <SelectContent>
-              {bloodScripts.map((s) => (
-                <SelectItem key={s.id} value={s.id}>
-                  {s.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      ) : isRpg ? (
-        <div>
-          <Label>Campanha *</Label>
-          {userCampaigns.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
-              Você ainda não mestra nenhuma campanha.{" "}
-              <a href="/campanhas" className="text-gold hover:underline">
-                Criar campanha
-              </a>
-            </div>
-          ) : (
-            <Select value={selectedCampaignId} onValueChange={setSelectedCampaignId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a campanha" />
+      {/* Section 1 - O que vai jogar */}
+      <SectionCard index={1} title="O que vai jogar" complete={sec1Complete} summary={sec1Summary}>
+        {isBotC ? (
+          <div>
+            <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Script *</label>
+            <Select value={selectedScriptId} onValueChange={setSelectedScriptId}>
+              <SelectTrigger className="mt-1.5">
+                <SelectValue placeholder="Selecione o script" />
               </SelectTrigger>
               <SelectContent>
-                {userCampaigns.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
+                {bloodScripts.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          )}
-          {selectedCampaign && (
-            <div className="mt-2 rounded-md border border-purple-500/30 bg-purple-500/5 px-3 py-2">
-              <div className="flex items-center gap-2 text-xs">
-                <Sword className="h-3.5 w-3.5 text-purple-400" />
-                <span className="text-muted-foreground">Mestre da campanha:</span>
-                <span className="font-semibold text-foreground">Você</span>
-              </div>
-              <p className="text-[11px] text-muted-foreground mt-1">
-                Apenas o mestre poderá inserir o resultado desta sessão. Título preenchido como "Sessão N —{" "}
-                {selectedCampaign.name}".
-              </p>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div>
-          <Label>Jogo *</Label>
-          <Select value={gameId} onValueChange={setGameId}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione o jogo" />
-            </SelectTrigger>
-            <SelectContent>
-              {filteredGames.map((g) => (
-                <SelectItem key={g.id} value={g.id}>
-                  {g.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-      <div>
-        <Label>Título *</Label>
-        <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Partida de sábado" />
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label>Data *</Label>
-          <DatePickerField value={scheduledDate} onChange={setScheduledDate} placeholder="Selecione a data" />
-        </div>
-        <div>
-          <Label>Hora</Label>
-          <Input type="time" value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)} />
-        </div>
-      </div>
-
-      <div>
-        <Label>Vagas Máximas</Label>
-        <Input type="number" min="2" value={maxPlayers} onChange={(e) => setMaxPlayers(e.target.value)} />
-      </div>
-
-      <div>
-        <Label>Local / Plataforma</Label>
-        <Select value={platform || "none"} onValueChange={(v) => setPlatform(v === "none" ? "" : v)}>
-          <SelectTrigger>
-            <SelectValue placeholder="Onde será jogado?" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">Não especificado</SelectItem>
-            {PLATFORM_OPTIONS.map((p) => (
-              <SelectItem key={p} value={p}>
-                {p}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {isAdminMode && isEdit && (
-        <div>
-          <Label>Status (Admin)</Label>
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger>
-              <SelectValue placeholder="Manter atual" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="open">Aberto</SelectItem>
-              <SelectItem value="full">Lotado</SelectItem>
-              <SelectItem value="in_progress">Em Andamento</SelectItem>
-              <SelectItem value="finished">Encerrado</SelectItem>
-              <SelectItem value="cancelled">Cancelado</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-      <div>
-        <Label>Tags (nível da sala)</Label>
-        <div className="flex flex-wrap gap-2 mt-1">
-          {availableTags.map((tag) => {
-            const isSelected = selectedTagIds.includes(tag.id);
-            return (
-              <button
-                key={tag.id}
-                type="button"
-                onClick={() => toggleTag(tag.id)}
-                className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${
-                  isSelected
-                    ? "bg-gold/20 border-gold/50 text-gold"
-                    : "bg-muted/50 border-border text-muted-foreground hover:border-gold/30"
-                }`}
-              >
-                {tag.name}
-                {isSelected && <X className="h-3 w-3 inline ml-1" />}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {filteredSeasons.length > 0 && (
-        <div>
-          <Label>Temporada (competitivo - opcional)</Label>
-          <Select value={selectedSeasonId || "none"} onValueChange={(v) => setSelectedSeasonId(v === "none" ? "" : v)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Nenhuma (casual)" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="none">Nenhuma (casual)</SelectItem>
-              {filteredSeasons.map((s) => (
-                <SelectItem key={s.id} value={s.id}>
-                  {s.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-      {userCommunities.length > 0 && (
-        <div className="space-y-2">
+          </div>
+        ) : isRpg ? (
           <div>
-            <Label>Comunidade (opcional)</Label>
+            <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Campanha *</label>
+            {userCampaigns.length === 0 ? (
+              <div className="mt-1.5 rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
+                Você ainda não mestra nenhuma campanha.{" "}
+                <a href="/campanhas" className="text-purple-400 hover:underline">
+                  Criar campanha
+                </a>
+              </div>
+            ) : (
+              <Select value={selectedCampaignId} onValueChange={setSelectedCampaignId}>
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue placeholder="Selecione a campanha" />
+                </SelectTrigger>
+                <SelectContent>
+                  {userCampaigns.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            {selectedCampaign && (
+              <div className="mt-2 rounded-md border border-purple-500/30 bg-purple-500/5 px-3 py-2">
+                <p className="text-[11px] text-muted-foreground">
+                  Apenas os aventureiros da campanha podem entrar como jogadores. Outros podem entrar como observadores.
+                </p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Jogo *</label>
+              <Select value={gameId} onValueChange={setGameId}>
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue placeholder="Selecione o jogo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {filteredGames.map((g) => (
+                    <SelectItem key={g.id} value={g.id}>
+                      {g.name}
+                      {g.max_players ? (
+                        <span className="text-muted-foreground"> · até {g.max_players} jog.</span>
+                      ) : null}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Título *</label>
+              <Input
+                className="mt-1.5"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Ex: Mesa de sábado"
+              />
+            </div>
+          </div>
+        )}
+
+        {(isBotC || isRpg) && (
+          <div>
+            <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Título *</label>
+            <Input
+              className="mt-1.5"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={isBotC ? "Ex: Sessão de quinta" : "Ex: Sessão 3 - O Vale"}
+            />
+          </div>
+        )}
+      </SectionCard>
+
+      {/* Section 2 - Quando */}
+      <SectionCard index={2} title="Quando" complete={sec2Complete} summary={sec2Summary}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div>
+            <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Data e hora *</label>
+            <div className="mt-1.5 grid grid-cols-2 gap-2">
+              <DatePickerField value={scheduledDate} onChange={setScheduledDate} placeholder="Data" />
+              <Input type="time" value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)} />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Vagas</label>
+            <div className="relative mt-1.5">
+              <Input
+                type="number"
+                min="2"
+                value={maxPlayers}
+                onChange={(e) => setMaxPlayers(e.target.value)}
+                className="pr-16"
+              />
+              {selectedGame?.max_players && !isBotC && !isRpg && (
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-muted-foreground">
+                  de {selectedGame.max_players} max
+                </span>
+              )}
+            </div>
+          </div>
+          <div>
+            <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Local</label>
+            <Select value={platform || "none"} onValueChange={(v) => setPlatform(v === "none" ? "" : v)}>
+              <SelectTrigger className="mt-1.5">
+                <SelectValue placeholder="Onde será jogado?" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Não especificado</SelectItem>
+                {PLATFORM_OPTIONS.map((p) => (
+                  <SelectItem key={p} value={p}>
+                    {p}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </SectionCard>
+
+      {/* Section 3 - Mesa */}
+      <SectionCard index={3} title="Mesa" complete={sec3Complete} summary="Configure quem entra e em qual papel">
+        <div className="rounded-lg border border-border/40 bg-background/40 px-3 py-3 flex items-center gap-3">
+          <Users className={cn("h-4 w-4", cfg.accent)} />
+          <span className="text-xs uppercase tracking-wide text-muted-foreground font-semibold flex-1">
+            Vagas de jogadores
+          </span>
+          <Input
+            type="number"
+            min="2"
+            value={maxPlayers}
+            onChange={(e) => setMaxPlayers(e.target.value)}
+            className="w-20 text-center"
+          />
+          {selectedGame?.max_players && !isBotC && !isRpg && (
+            <span className="text-[11px] text-muted-foreground">de {selectedGame.max_players} max</span>
+          )}
+        </div>
+
+        <label className="flex items-start gap-3 px-3 py-3 rounded-lg border border-border/40 bg-background/40 cursor-pointer">
+          <Checkbox
+            checked={acceptObservers}
+            onCheckedChange={(c) => setAcceptObservers(!!c)}
+            className="mt-0.5"
+          />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-foreground">Aceitar observadores</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              Qualquer um pode entrar como observador (sem aprovação)
+            </p>
+          </div>
+        </label>
+      </SectionCard>
+
+      {/* Section 4 - Quem pode entrar */}
+      <SectionCard index={4} title="Quem pode entrar" complete={sec4Complete} summary={sec4Summary}>
+        <div>
+          <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Nível da sala</label>
+          <div className="flex flex-wrap gap-2 mt-2">
+            {availableTags.map((tag) => {
+              const isSelected = selectedTagIds.includes(tag.id);
+              const isHighlight = tag.name.toLowerCase().includes("novato");
+              return (
+                <button
+                  key={tag.id}
+                  type="button"
+                  onClick={() => toggleTag(tag.id)}
+                  className={cn(
+                    "px-3 py-1 rounded-full text-xs font-medium border transition-all",
+                    isSelected
+                      ? isHighlight
+                        ? "bg-emerald-500/20 border-emerald-400/60 text-emerald-300 shadow-[0_0_12px_-2px_hsl(var(--domain-positive)/0.4)]"
+                        : "bg-gold/20 border-gold/50 text-gold"
+                      : isHighlight
+                        ? "bg-emerald-500/5 border-emerald-400/30 text-emerald-300/80 hover:bg-emerald-500/10"
+                        : "bg-muted/40 border-border text-muted-foreground hover:border-gold/30",
+                  )}
+                >
+                  {isHighlight && <Sparkles className="h-3 w-3 inline mr-1 -mt-0.5" />}
+                  {tag.name}
+                  {isSelected && <X className="h-3 w-3 inline ml-1" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {filteredSeasons.length > 0 && (
+          <div>
+            <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">
+              Vale para temporada?
+            </label>
+            <div className="flex flex-wrap gap-2 mt-2">
+              <button
+                type="button"
+                onClick={() => setSelectedSeasonId("")}
+                className={cn(
+                  "px-3 py-1 rounded-full text-xs font-medium border transition-all",
+                  !selectedSeasonId
+                    ? "bg-muted/60 border-border text-foreground"
+                    : "bg-muted/30 border-border/60 text-muted-foreground hover:border-border",
+                )}
+              >
+                Casual
+              </button>
+              {filteredSeasons.map((s) => {
+                const active = selectedSeasonId === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setSelectedSeasonId(s.id)}
+                    className={cn(
+                      "px-3 py-1 rounded-full text-xs font-medium border transition-all",
+                      active
+                        ? "bg-gold/20 border-gold/60 text-gold"
+                        : "bg-muted/40 border-border text-muted-foreground hover:border-gold/30",
+                    )}
+                  >
+                    {active && <Check className="h-3 w-3 inline mr-1 -mt-0.5" />}
+                    {s.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {userCommunities.length > 0 && (
+          <div>
+            <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Comunidade</label>
             <Select
               value={selectedCommunityId || "none"}
               onValueChange={(v) => setSelectedCommunityId(v === "none" ? "" : v)}
             >
-              <SelectTrigger>
+              <SelectTrigger className="mt-1.5">
                 <SelectValue placeholder="Nenhuma" />
               </SelectTrigger>
               <SelectContent>
@@ -644,34 +920,67 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
                 ))}
               </SelectContent>
             </Select>
+            {selectedCommunityId && (
+              <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer mt-2 px-3 py-2 rounded-md bg-purple-500/5 border border-purple-500/20">
+                <Checkbox
+                  checked={communityOnly}
+                  onCheckedChange={(c) => setCommunityOnly(!!c)}
+                />
+                Exclusiva para membros da comunidade
+              </label>
+            )}
           </div>
-          {selectedCommunityId && (
-            <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
-              <input
-                type="checkbox"
-                checked={communityOnly}
-                onChange={(e) => setCommunityOnly(e.target.checked)}
-                className="h-4 w-4 rounded border-border accent-gold"
-              />
-              Exclusiva para membros da comunidade
-            </label>
-          )}
-        </div>
-      )}
+        )}
 
-      <div>
-        <Label>Descrição {!isEdit && "(opcional)"}</Label>
+        {isAdminMode && isEdit && (
+          <div>
+            <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">
+              Status (admin)
+            </label>
+            <Select value={adminStatus} onValueChange={setAdminStatus}>
+              <SelectTrigger className="mt-1.5">
+                <SelectValue placeholder="Manter atual" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="open">Aberto</SelectItem>
+                <SelectItem value="full">Lotado</SelectItem>
+                <SelectItem value="in_progress">Em Andamento</SelectItem>
+                <SelectItem value="finished">Encerrado</SelectItem>
+                <SelectItem value="cancelled">Cancelado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+      </SectionCard>
+
+      {/* Section 5 - Descrição (collapsible) */}
+      <SectionCard
+        title="Descrição (opcional)"
+        complete={!!description}
+        summary="Texto livre"
+        collapsible
+        defaultOpen={false}
+      >
         <Textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Observações sobre a partida..."
           rows={3}
         />
-      </div>
+      </SectionCard>
 
-      <Button variant="gold" className="w-full min-h-[44px]" onClick={handleSubmit} disabled={mutation.isPending}>
-        {mutation.isPending ? "Salvando..." : isEdit ? "Salvar Alterações" : "Agendar Partida"}
-      </Button>
+      {/* Footer */}
+      <div className="flex items-center justify-between pt-2 border-t border-border/40">
+        <p className="text-xs text-muted-foreground">
+          {sec1Complete && sec2Complete
+            ? "Pronto pra agendar"
+            : "Falta preencher: " +
+              [!sec1Complete && "o que jogar", !sec2Complete && "data/hora"].filter(Boolean).join(", ")}
+        </p>
+        <Button variant="gold" onClick={handleSubmit} disabled={mutation.isPending}>
+          {mutation.isPending ? "Salvando..." : isEdit ? "Salvar alterações" : "Agendar partida"}
+        </Button>
+      </div>
     </div>
   );
 };

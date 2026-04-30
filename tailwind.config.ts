@@ -59,6 +59,13 @@ export default {
           foreground: "hsl(var(--gold-foreground))",
           muted: "hsl(var(--gold-muted))",
         },
+        domain: {
+          board: "hsl(var(--domain-board))",
+          botc: "hsl(var(--domain-botc))",
+          rpg: "hsl(var(--domain-rpg))",
+          info: "hsl(var(--domain-info))",
+          positive: "hsl(var(--domain-positive))",
+        },
         surface: {
           DEFAULT: "hsl(var(--surface))",
           raised: "hsl(var(--surface-raised))",

@@ -8,7 +8,7 @@ import RoomRow, { type MatchRoom } from "@/components/matchrooms/RoomRow";
 import CalendarCarousel from "@/components/matchrooms/CalendarCarousel";
 import CreateRoomDialog from "@/components/matchrooms/CreateRoomDialog";
 import NewMatchFlow from "@/components/matches/NewMatchFlow";
-import { Calendar, ClipboardList, Filter, X, SlidersHorizontal, Star, Gamepad2 } from "lucide-react";
+import { Calendar, ClipboardList, Filter, X, SlidersHorizontal, Star, Gamepad2, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";

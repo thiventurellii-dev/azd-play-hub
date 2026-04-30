@@ -53,7 +53,7 @@ const AdminMatches = () => {
   const [playedDate, setPlayedDate] = useState('');
   const [playedTime, setPlayedTime] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [results, setResults] = useState<MatchResult[]>([{ player_id: '', position: 1, score: 0, is_first_player: false }]);
+  const [results, setResults] = useState<MatchResult[]>([{ player_id: '', is_guest: false, position: 1, score: 0, is_first_player: false }]);
   const [saving, setSaving] = useState(false);
   const [matches, setMatches] = useState<MatchRecord[]>([]);
 
@@ -144,7 +144,7 @@ const AdminMatches = () => {
     })));
   };
 
-  const addResult = () => setResults([...results, { player_id: '', position: results.length + 1, score: 0, is_first_player: false }]);
+  const addResult = () => setResults([...results, { player_id: '', is_guest: false, position: results.length + 1, score: 0, is_first_player: false }]);
   const updateResult = (i: number, field: keyof MatchResult, value: any) => {
     const updated = [...results];
     if (field === 'is_first_player' && value === true) {
@@ -263,7 +263,7 @@ const AdminMatches = () => {
       }
 
       notify('success', 'Partida registrada com sucesso!');
-      setResults([{ player_id: '', position: 1, score: 0, is_first_player: false }]);
+      setResults([{ player_id: '', is_guest: false, position: 1, score: 0, is_first_player: false }]);
       setDuration(''); setPlayedDate(''); setPlayedTime(''); setImageFile(null);
       fetchMatches();
     } catch (err: any) {

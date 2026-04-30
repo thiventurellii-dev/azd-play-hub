@@ -45,6 +45,7 @@ export interface MatchRoom {
   campaign_id?: string | null;
   community_id?: string | null;
   community_only?: boolean | null;
+  accept_observers?: boolean | null;
   session_number?: number | null;
   session_recap?: string | null;
   session_title?: string | null;

@@ -312,6 +312,13 @@ const Profile = () => {
       )}
 
       <ClaimGuestDialog open={claiming} onOpenChange={setClaiming} />
+      {user && (
+        <PostSignupGuestMatchDialog
+          open={autoMatchOpen}
+          onOpenChange={setAutoMatchOpen}
+          profileId={user.id}
+        />
+      )}
     </div>
   );
 };

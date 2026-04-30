@@ -218,6 +218,12 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
     run();
   }, [selectedCommunityId]);
 
+  // Auto-disable season link when selected game is NOT part of the active season
+  useEffect(() => {
+    if (!gameId) return;
+    if (!activeSeasonGameIds.includes(gameId)) setLinkToSeason(false);
+  }, [gameId, activeSeasonGameIds]);
+
   // Fetch schema + factions when game changes
   useEffect(() => {
     if (!gameId) { setScoringSchema(null); setGameFactions([]); return; }

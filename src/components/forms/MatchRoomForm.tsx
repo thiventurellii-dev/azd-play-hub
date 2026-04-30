@@ -836,33 +836,38 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
       {/* Section 4 - Quem pode entrar */}
       <SectionCard index={4} title="Quem pode entrar" complete={sec4Complete} summary={sec4Summary}>
         <div>
-          <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Nível da sala</label>
+          <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Tags da sala</label>
           <div className="flex flex-wrap gap-2 mt-2">
-            {availableTags.map((tag) => {
-              const isSelected = selectedTagIds.includes(tag.id);
-              const isHighlight = tag.name.toLowerCase().includes("novato");
-              return (
-                <button
-                  key={tag.id}
-                  type="button"
-                  onClick={() => toggleTag(tag.id)}
-                  className={cn(
-                    "px-3 py-1 rounded-full text-xs font-medium border transition-all",
-                    isSelected
-                      ? isHighlight
-                        ? "bg-emerald-500/20 border-emerald-400/60 text-emerald-300 shadow-[0_0_12px_-2px_hsl(var(--domain-positive)/0.4)]"
-                        : "bg-gold/20 border-gold/50 text-gold"
-                      : isHighlight
-                        ? "bg-emerald-500/5 border-emerald-400/30 text-emerald-300/80 hover:bg-emerald-500/10"
-                        : "bg-muted/40 border-border text-muted-foreground hover:border-gold/30",
-                  )}
-                >
-                  {isHighlight && <Sparkles className="h-3 w-3 inline mr-1 -mt-0.5" />}
-                  {tag.name}
-                  {isSelected && <X className="h-3 w-3 inline ml-1" />}
-                </button>
-              );
-            })}
+            {availableTags
+              .filter((tag) => {
+                const n = tag.name.toLowerCase();
+                return n !== "casual" && n !== "competitivo";
+              })
+              .map((tag) => {
+                const isSelected = selectedTagIds.includes(tag.id);
+                const isHighlight = tag.name.toLowerCase().includes("novato");
+                return (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    onClick={() => toggleTag(tag.id)}
+                    className={cn(
+                      "px-3 py-1 rounded-full text-xs font-medium border transition-all",
+                      isSelected
+                        ? isHighlight
+                          ? "bg-emerald-500/20 border-emerald-400/60 text-emerald-300 shadow-[0_0_12px_-2px_hsl(var(--domain-positive)/0.4)]"
+                          : "bg-gold/20 border-gold/50 text-gold"
+                        : isHighlight
+                          ? "bg-emerald-500/5 border-emerald-400/30 text-emerald-300/80 hover:bg-emerald-500/10"
+                          : "bg-muted/40 border-border text-muted-foreground hover:border-gold/30",
+                    )}
+                  >
+                    {isHighlight && <Sparkles className="h-3 w-3 inline mr-1 -mt-0.5" />}
+                    {tag.name}
+                    {isSelected && <X className="h-3 w-3 inline ml-1" />}
+                  </button>
+                );
+              })}
           </div>
         </div>
 

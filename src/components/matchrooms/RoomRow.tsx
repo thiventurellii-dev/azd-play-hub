@@ -313,7 +313,55 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
     setLoading(false);
   };
 
-  const handleCancel = async () => {
+  const handleAcceptInvite = async () => {
+    if (!user || !myInvite) return;
+    setLoading(true);
+    const willConfirm = !isFull;
+    await supabase
+      .from("match_room_players")
+      .update({
+        type: willConfirm ? "confirmed" : "waitlist",
+        position: willConfirm ? confirmed.length + 1 : waitlist.length + 1,
+      } as any)
+      .eq("id", myInvite.id);
+    toast.success(willConfirm ? "Você confirmou presença!" : "Sala lotada — entrou na reserva");
+    await fetchPlayers(); onUpdate();
+    setLoading(false);
+  };
+
+  const handleDeclineInvite = async () => {
+    if (!user || !myInvite) return;
+    setLoading(true);
+    await supabase.from("match_room_players").delete().eq("id", myInvite.id);
+    toast.success("Convite recusado");
+    await fetchPlayers(); onUpdate();
+    setLoading(false);
+  };
+
+  const handleJoinAsObserver = async () => {
+    if (!user) return;
+    setLoading(true);
+    const { error } = await supabase
+      .from("match_room_players")
+      .insert({ room_id: room.id, player_id: user.id, type: "observer" as any, position: observers.length + 1 });
+    if (error) toast.error("Erro ao entrar como observador");
+    else toast.success("Você está observando esta sala");
+    setLoading(false);
+  };
+
+  const handleLeaveObserver = async () => {
+    if (!user) return;
+    setLoading(true);
+    await supabase
+      .from("match_room_players")
+      .delete()
+      .eq("room_id", room.id)
+      .eq("player_id", user.id)
+      .eq("type", "observer");
+    toast.success("Você saiu como observador");
+    setLoading(false);
+  };
+
     if (!confirm("Tem certeza que deseja cancelar esta sala?")) return;
     setLoading(true);
     await supabase.from("match_rooms").update({ status: "cancelled" }).eq("id", room.id);

@@ -408,6 +408,7 @@ const NewBoardgameFlow = ({
   const removeEntry = (i: number) => {
     setEntries((prev) => {
       const next = prev.filter((_, idx) => idx !== i);
+      if (next.length === 0) return [emptyEntry(1)];
       return next.map((e, idx) => ({ ...e, seat_position: idx + 1 }));
     });
   };
@@ -507,6 +508,36 @@ const NewBoardgameFlow = ({
     return Object.fromEntries(Object.entries(changes).map(([id, c]) => [id, parseFloat(c.toFixed(2))]));
   };
 
+  const fetchLatestGuestMmr = async (ghostPlayerIds: string[]): Promise<Record<string, number>> => {
+    if (ghostPlayerIds.length === 0) return {};
+
+    const { data, error } = await supabase
+      .from("match_results")
+      .select("ghost_player_id, mmr_after, matches!inner(played_at)")
+      .in("ghost_player_id", ghostPlayerIds)
+      .not("ghost_player_id", "is", null);
+
+    if (error) {
+      console.error("fetchLatestGuestMmr error:", error);
+      return {};
+    }
+
+    const latestMap: Record<string, number> = {};
+    const sortedRows = [...((data || []) as any[])].sort((a, b) => {
+      const aPlayedAt = new Date(a.matches?.played_at || 0).getTime();
+      const bPlayedAt = new Date(b.matches?.played_at || 0).getTime();
+      return bPlayedAt - aPlayedAt;
+    });
+
+    for (const row of sortedRows) {
+      const ghostId = row.ghost_player_id as string | null;
+      if (!ghostId || ghostId in latestMap) continue;
+      latestMap[ghostId] = row.mmr_after ?? 1000;
+    }
+
+    return latestMap;
+  };
+
   const handleSubmit = async () => {
     if (!progress.ready) {
       notify("error", progress.msg);
@@ -530,7 +561,9 @@ const NewBoardgameFlow = ({
       // Guests participam do ELO normalmente (para preservar a fórmula posicional),
       // mas não persistem em mmr_ratings — apenas registered users tem rating salvo.
       const registeredFilled = filled.filter((e) => !e.is_guest);
+      const guestFilled = filled.filter((e) => e.is_guest);
       const registeredIds = registeredFilled.map((e) => e.player_id);
+      const guestIds = guestFilled.map((e) => e.player_id);
       const effectiveSeasonId =
         linkToSeason && seasonId ? seasonId : seasons.find((s) => s.status === "active")?.id || seasons[0]?.id;
       if (!effectiveSeasonId) {
@@ -574,12 +607,9 @@ const NewBoardgameFlow = ({
             }
           }
         }
-        // Guests entram no ELO com rating default 1000 — preserva fórmula posicional.
-        // Quando o guest claim, recálculo retroativo reatribui o histórico.
-        for (const e of filled) {
-          if (e.is_guest && !(e.player_id in mmrMap)) {
-            mmrMap[e.player_id] = 1000;
-          }
+        const guestMmrMap = await fetchLatestGuestMmr(guestIds);
+        for (const e of guestFilled) {
+          mmrMap[e.player_id] = guestMmrMap[e.player_id] ?? 1000;
         }
         const allRanked = [...filled].sort(
           (a, b) => positionMap[a.player_id] - positionMap[b.player_id],
@@ -1292,7 +1322,7 @@ const NewBoardgameFlow = ({
                   <PodiumCell pos={pos} hasScore={e.total_score != null} />
 
                   {/* Remove */}
-                  {entries.length > 1 ? (
+                  {entries.some((entry, idx) => idx !== i && !!entry.player_id) || !!e.player_id ? (
                     <button
                       type="button"
                       onClick={() => removeEntry(i)}

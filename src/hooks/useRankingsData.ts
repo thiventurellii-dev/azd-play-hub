@@ -15,14 +15,16 @@ const fetchBoardgameRankings = async (seasonId: string): Promise<RankingEntry[]>
     .eq("season_id", seasonId)
     .order("current_mmr", { ascending: false });
   if (!data || data.length === 0) return [];
-  const playerIds = data.map((r: any) => r.player_id);
+  const playerIds = data.map((r: any) => r.player_id).filter(Boolean);
   const { data: profiles } = await supabase.rpc("get_public_profiles", { p_ids: playerIds });
   const pMap: Record<string, string> = {};
   for (const p of profiles || []) pMap[p.id] = (p as any).nickname || p.name;
-  return data.map((r: any) => ({
-    ...r,
-    player_name: pMap[r.player_id] || "Unknown",
-  }));
+  return data
+    .filter((r: any) => !!pMap[r.player_id])
+    .map((r: any) => ({
+      ...r,
+      player_name: pMap[r.player_id],
+    }));
 };
 
 const fetchBloodRankings = async (seasonId: string): Promise<BloodRankingEntry[]> => {

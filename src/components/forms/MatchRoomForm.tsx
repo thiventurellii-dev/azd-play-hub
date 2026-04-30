@@ -757,47 +757,91 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
             <div>
               <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Jogo *</label>
               {gameId && selectedGame ? (
-                <div className="mt-1.5 flex items-center gap-3 rounded-lg border border-border/40 bg-background/40 p-2.5">
-                  <div className="h-12 w-12 rounded-md bg-secondary overflow-hidden flex-shrink-0">
+                <div className="mt-1.5 flex items-center gap-3 rounded-lg border border-border/40 bg-background/40 p-3">
+                  <div className="h-14 w-14 rounded-md bg-secondary overflow-hidden flex-shrink-0">
                     {selectedGame.image_url ? (
                       <img src={selectedGame.image_url} alt={selectedGame.name} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground">
+                      <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
                         {selectedGame.name.slice(0, 4).toUpperCase()}
                       </div>
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-sm truncate">{selectedGame.name}</p>
-                    {selectedGame.max_players && (
-                      <p className="text-[11px] text-muted-foreground">até {selectedGame.max_players} jog.</p>
-                    )}
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {selectedGame.min_players ?? 1}-{selectedGame.max_players ?? "?"} jogadores
+                    </p>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => setGameId("")} className="text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setGameId("")}
+                    className="text-xs text-gold hover:underline"
+                  >
                     Trocar
-                  </Button>
+                  </button>
                 </div>
               ) : (
-                <div className="mt-1.5 grid grid-cols-2 sm:grid-cols-4 gap-2 max-h-[260px] overflow-y-auto">
-                  {filteredGames.map((g) => (
-                    <button
-                      key={g.id}
-                      type="button"
-                      onClick={() => setGameId(g.id)}
-                      className="group rounded-lg border border-border/40 bg-background/40 p-2 hover:border-gold/50 hover:bg-gold/5 transition text-left"
-                    >
-                      <div className="aspect-square rounded-md bg-secondary overflow-hidden mb-1.5">
-                        {g.image_url ? (
-                          <img src={g.image_url} alt={g.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
-                            {g.name.slice(0, 4).toUpperCase()}
+                <div className="mt-1.5 space-y-3">
+                  {recentGames.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {recentGames.map((g) => (
+                        <button
+                          key={g.id}
+                          type="button"
+                          onClick={() => setGameId(g.id)}
+                          className="group rounded-lg border border-border/40 bg-background/40 p-2 hover:border-gold/40 transition text-left"
+                        >
+                          <div className="aspect-square rounded-md bg-secondary overflow-hidden mb-2">
+                            {g.image_url ? (
+                              <img
+                                src={g.image_url}
+                                alt={g.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
+                                {g.name.slice(0, 4).toUpperCase()}
+                              </div>
+                            )}
                           </div>
-                        )}
+                          <p className="text-xs font-medium truncate">{g.name}</p>
+                          <p className="text-[10px] text-muted-foreground">{gamePlayCounts[g.id] || 0} partidas</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      value={gameSearch}
+                      onChange={(e) => setGameSearch(e.target.value)}
+                      placeholder="Buscar no catálogo..."
+                      className="pl-9"
+                    />
+                    {filteredCatalog.length > 0 && (
+                      <div className="absolute z-20 mt-1 w-full rounded-md border border-border bg-popover shadow-lg max-h-60 overflow-auto">
+                        {filteredCatalog.map((g) => (
+                          <button
+                            key={g.id}
+                            type="button"
+                            onClick={() => {
+                              setGameId(g.id);
+                              setGameSearch("");
+                            }}
+                            className="w-full text-left px-3 py-2 hover:bg-secondary text-sm flex items-center gap-2"
+                          >
+                            <div className="h-8 w-8 rounded bg-secondary overflow-hidden flex-shrink-0">
+                              {g.image_url && (
+                                <img src={g.image_url} alt={g.name} className="w-full h-full object-cover" />
+                              )}
+                            </div>
+                            {g.name}
+                          </button>
+                        ))}
                       </div>
-                      <p className="text-[11px] font-medium truncate">{g.name}</p>
-                    </button>
-                  ))}
+                    )}
+                  </div>
                 </div>
               )}
             </div>

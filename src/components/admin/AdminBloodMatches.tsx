@@ -12,12 +12,22 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { useNotification } from '@/components/NotificationDialog';
 import { Plus, Trash2, UserPlus, ChevronDown, ChevronUp, Search, Skull, Shield, Pencil } from 'lucide-react';
 import { recalculateSeasonRatings, submitBloodMatch } from '@/lib/bloodRatings';
+import { fetchUnclaimedGuests, type GuestPlayer } from '@/lib/guestPlayers';
 
 interface Season { id: string; name: string; }
 interface BloodScript { id: string; name: string; victory_conditions: string[]; }
 interface BloodCharacter { id: string; script_id: string; name: string; name_en: string; role_type: string; team: string; }
 interface Player { id: string; name: string; nickname?: string; }
-interface BloodPlayerEntry { player_id: string; character_id: string; team: 'good' | 'evil'; }
+interface BloodPlayerEntry { player_id: string; is_guest: boolean; character_id: string; team: 'good' | 'evil'; }
+
+// Encode/decode helpers for combined select values (profile vs guest share UUID space)
+const encodeP = (id: string, isGuest: boolean) => id ? `${isGuest ? 'g' : 'p'}:${id}` : '';
+const decodeP = (v: string): { id: string; is_guest: boolean } => {
+  if (!v) return { id: '', is_guest: false };
+  if (v.startsWith('g:')) return { id: v.slice(2), is_guest: true };
+  if (v.startsWith('p:')) return { id: v.slice(2), is_guest: false };
+  return { id: v, is_guest: false };
+};
 
 const AdminBloodMatches = () => {
   const { notify } = useNotification();

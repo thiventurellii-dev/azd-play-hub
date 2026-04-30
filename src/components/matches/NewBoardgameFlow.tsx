@@ -33,11 +33,15 @@ interface ScoringSchema { categories: { key: string; label: string; type?: strin
 
 interface Props {
   onComplete?: (matchId?: string) => void;
+  prefilledGameId?: string;
+  prefilledPlayers?: string[];
+  prefilledDate?: string;
+  hideHeader?: boolean;
 }
 
 const PLATFORMS = ['Presencial', 'Tabletop Simulator', 'BoardGame Arena', 'Discord', 'Outro Online'];
 
-const NewBoardgameFlow = ({ onComplete }: Props) => {
+const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefilledDate, hideHeader }: Props) => {
   const { notify } = useNotification();
 
   // Data

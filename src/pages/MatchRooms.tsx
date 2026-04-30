@@ -520,59 +520,118 @@ const MatchRooms = () => {
             gameFilter={gameFilter}
           />
 
-          {/* Selected day header */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <h2 className="text-sm font-bold text-muted-foreground capitalize">{fmtDateLong(selectedDate)}</h2>
-              {isToday && (
-                <span className="text-[10px] font-bold bg-gold text-gold-foreground px-2 py-0.5 rounded-full tracking-wider">
-                  HOJE
-                </span>
-              )}
-            </div>
-            <span className="text-xs text-muted-foreground">
-              {dayRooms.length} sala{dayRooms.length !== 1 ? "s" : ""}
-            </span>
-          </div>
-
-          {/* Day rooms */}
-          {dayRooms.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <div className="h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-3">
-                <Calendar className="h-5 w-5 text-muted-foreground/60" />
-              </div>
-              <p className="text-sm">Nenhuma sala neste dia</p>
-              <p className="text-xs text-muted-foreground/70 mt-1">
-                {hasActiveFilters ? "Tente ajustar os filtros" : "Tente outro dia ou crie uma sala"}
-              </p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-2.5">
-              {dayRooms.map((room) => (
-                <RoomRow key={room.id} room={room} onUpdate={fetchRooms} friendIds={friendIds} />
-              ))}
-            </div>
-          )}
-
-          {/* Favorite game from other days */}
-          {favRooms.length > 0 && (
-            <div className="mt-9">
-              <div className="flex items-center gap-2.5 mb-3">
-                <Star className="h-3.5 w-3.5 text-gold fill-gold" />
-                <span className="text-xs font-bold text-muted-foreground tracking-wide">
-                  {hasManualFavorites ? "Salas de Jogos Favoritos" : `Outras salas — ${inferredGame?.name ?? ""}`}
-                </span>
+          {gameFilter !== "all" ? (
+            <>
+              <div className="flex items-center gap-2.5 mb-4">
+                <Gamepad2 className="h-4 w-4 text-gold" />
+                <h2 className="text-sm font-bold text-foreground">
+                  Salas abertas — <span className="text-gold">{filteredGameName ?? "Jogo"}</span>
+                </h2>
                 <div className="flex-1 h-px bg-border/60" />
-                <span className="text-xs text-muted-foreground/70">
-                  {favRooms.length} sala{favRooms.length !== 1 ? "s" : ""}
+                <span className="text-xs text-muted-foreground">
+                  {gameFilterRoomsByDay.reduce((acc, g) => acc + g.rooms.length, 0)} sala
+                  {gameFilterRoomsByDay.reduce((acc, g) => acc + g.rooms.length, 0) !== 1 ? "s" : ""}
                 </span>
               </div>
-              <div className="flex flex-col gap-2.5">
-                {favRooms.map((room) => (
-                  <RoomRow key={room.id} room={room} onUpdate={fetchRooms} friendIds={friendIds} />
-                ))}
+
+              {gameFilterRoomsByDay.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <div className="h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-3">
+                    <Calendar className="h-5 w-5 text-muted-foreground/60" />
+                  </div>
+                  <p className="text-sm">Nenhuma sala aberta para esse jogo</p>
+                  <p className="text-xs text-muted-foreground/70 mt-1">
+                    Que tal criar uma e chamar a galera?
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-6">
+                  {gameFilterRoomsByDay.map((group) => {
+                    const isGroupToday = isSameDay(group.date, new Date());
+                    return (
+                      <div key={group.date.toISOString()}>
+                        <div className="flex items-center gap-2 mb-2.5">
+                          <span className="text-xs font-bold text-muted-foreground capitalize">
+                            {fmtDateLong(group.date)}
+                          </span>
+                          {isGroupToday && (
+                            <span className="text-[9px] font-bold bg-gold text-gold-foreground px-1.5 py-0.5 rounded-full tracking-wider">
+                              HOJE
+                            </span>
+                          )}
+                          <div className="flex-1 h-px bg-border/40" />
+                          <span className="text-[11px] text-muted-foreground/70">
+                            {group.rooms.length} sala{group.rooms.length !== 1 ? "s" : ""}
+                          </span>
+                        </div>
+                        <div className="flex flex-col gap-2.5">
+                          {group.rooms.map((room) => (
+                            <RoomRow key={room.id} room={room} onUpdate={fetchRooms} friendIds={friendIds} />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              {/* Selected day header */}
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-bold text-muted-foreground capitalize">{fmtDateLong(selectedDate)}</h2>
+                  {isToday && (
+                    <span className="text-[10px] font-bold bg-gold text-gold-foreground px-2 py-0.5 rounded-full tracking-wider">
+                      HOJE
+                    </span>
+                  )}
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {dayRooms.length} sala{dayRooms.length !== 1 ? "s" : ""}
+                </span>
               </div>
-            </div>
+
+              {/* Day rooms */}
+              {dayRooms.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <div className="h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-3">
+                    <Calendar className="h-5 w-5 text-muted-foreground/60" />
+                  </div>
+                  <p className="text-sm">Nenhuma sala neste dia</p>
+                  <p className="text-xs text-muted-foreground/70 mt-1">
+                    {hasActiveFilters ? "Tente ajustar os filtros" : "Tente outro dia ou crie uma sala"}
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2.5">
+                  {dayRooms.map((room) => (
+                    <RoomRow key={room.id} room={room} onUpdate={fetchRooms} friendIds={friendIds} />
+                  ))}
+                </div>
+              )}
+
+              {/* Favorite game from other days */}
+              {favRooms.length > 0 && (
+                <div className="mt-9">
+                  <div className="flex items-center gap-2.5 mb-3">
+                    <Star className="h-3.5 w-3.5 text-gold fill-gold" />
+                    <span className="text-xs font-bold text-muted-foreground tracking-wide">
+                      {hasManualFavorites ? "Salas de Jogos Favoritos" : `Outras salas — ${inferredGame?.name ?? ""}`}
+                    </span>
+                    <div className="flex-1 h-px bg-border/60" />
+                    <span className="text-xs text-muted-foreground/70">
+                      {favRooms.length} sala{favRooms.length !== 1 ? "s" : ""}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-2.5">
+                    {favRooms.map((room) => (
+                      <RoomRow key={room.id} room={room} onUpdate={fetchRooms} friendIds={friendIds} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
           {/* Legend */}

@@ -8,13 +8,14 @@ import RoomRow, { type MatchRoom } from "@/components/matchrooms/RoomRow";
 import CalendarCarousel from "@/components/matchrooms/CalendarCarousel";
 import CreateRoomDialog from "@/components/matchrooms/CreateRoomDialog";
 import NewMatchFlow from "@/components/matches/NewMatchFlow";
-import { Calendar, ClipboardList, Filter, X, SlidersHorizontal, Star, Gamepad2 } from "lucide-react";
+import { Calendar, ClipboardList, Filter, X, SlidersHorizontal, Star, Gamepad2, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EntitySheet } from "@/components/shared/EntitySheet";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -405,7 +406,22 @@ const MatchRooms = () => {
   const filterControls = (
     <div className="flex flex-wrap items-center gap-2">
       <div className="flex items-center gap-1.5">
-        <Gamepad2 className="h-3.5 w-3.5 text-muted-foreground" />
+        <TooltipProvider delayDuration={150}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                aria-label="Sobre o filtro de jogo"
+                className="text-muted-foreground hover:text-gold transition-colors"
+              >
+                <Info className="h-3.5 w-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-[240px] text-xs">
+              Ao filtrar por jogo, mostramos todas as salas abertas desse jogo agrupadas por data — não só as do dia selecionado.
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
         <Select value={gameFilter} onValueChange={setGameFilter}>
           <SelectTrigger
             className={cn("h-8 w-auto min-w-[160px] text-xs", gameFilter !== "all" && "text-gold border-gold/40")}

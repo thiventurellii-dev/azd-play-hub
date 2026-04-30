@@ -310,6 +310,38 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
   const friends = useMemo(() => options?.friends ?? [], [options?.friends]);
 
   const [category, setCategory] = useState<Category | "">("");
+
+  // Stats para o seletor de categoria
+  const { data: pickerStats } = useQuery({
+    queryKey: ["match-room-picker-stats", user?.id],
+    enabled: !room && !!user?.id,
+    queryFn: async () => {
+      const [openRes, lastRes] = await Promise.all([
+        supabase.from("match_rooms").select("room_type").eq("status", "open" as any),
+        supabase
+          .from("match_rooms")
+          .select("id, room_type, scheduled_at, title, game:games(name)")
+          .eq("created_by", user!.id)
+          .order("scheduled_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+      const counts: Record<string, number> = { boardgame: 0, botc: 0, rpg: 0 };
+      for (const r of (openRes.data ?? []) as any[]) {
+        const t = r.room_type || "boardgame";
+        counts[t] = (counts[t] ?? 0) + 1;
+      }
+      const last = lastRes.data
+        ? {
+            ...(lastRes.data as any),
+            game: Array.isArray((lastRes.data as any).game)
+              ? (lastRes.data as any).game[0]
+              : (lastRes.data as any).game,
+          }
+        : null;
+      return { counts, last };
+    },
+  });
   const [gameId, setGameId] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -615,6 +647,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {categoryCards.map((card) => {
             const Icon = card.icon;
+            const openCount = pickerStats?.counts?.[card.id] ?? 0;
             return (
               <button
                 key={card.id}
@@ -633,10 +666,55 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
                 </span>
                 <p className="font-semibold text-sm text-foreground">{card.label}</p>
                 <p className="text-xs text-muted-foreground mt-1 text-center">{card.description}</p>
+                <span
+                  className={cn(
+                    "mt-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-medium border",
+                    openCount > 0
+                      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                      : "border-border/60 bg-background/40 text-muted-foreground",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "h-1.5 w-1.5 rounded-full",
+                      openCount > 0 ? "bg-emerald-400" : "bg-muted-foreground/50",
+                    )}
+                  />
+                  {openCount === 0
+                    ? "0 salas"
+                    : `${openCount} ${openCount === 1 ? "sala aberta" : "salas abertas"}`}
+                </span>
               </button>
             );
           })}
         </div>
+
+        {pickerStats?.last && (
+          <button
+            type="button"
+            onClick={() => {
+              const last = pickerStats.last!;
+              const t = (last.room_type || "boardgame") as Category;
+              setCategory(t);
+              if (t === "botc") setMaxPlayers("15");
+            }}
+            className="w-full flex items-center gap-2 rounded-lg border border-border/60 bg-card/30 px-3 py-2.5 text-left text-xs text-muted-foreground hover:border-gold/40 hover:bg-gold/5 transition-colors"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-gold shrink-0" />
+            <span className="flex-1 truncate">
+              Última sala que você criou foi de{" "}
+              <strong className="text-foreground">
+                {pickerStats.last.game?.name || pickerStats.last.title || "uma partida"}
+              </strong>{" "}
+              em{" "}
+              {new Date(pickerStats.last.scheduled_at).toLocaleDateString("pt-BR", {
+                day: "2-digit",
+                month: "2-digit",
+              })}
+            </span>
+            <span className="text-gold font-medium shrink-0">repetir agendamento?</span>
+          </button>
+        )}
       </div>
     );
   }

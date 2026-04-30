@@ -823,24 +823,29 @@ const NewBoardgameFlow = ({
 
         {/* Community link selector — visible when not pre-filled and user is in any community */}
         {!prefilledCommunityId && userCommunities.length > 0 && (
-          <div className="space-y-1">
-            <label className="text-[11px] uppercase tracking-wide text-muted-foreground">Comunidade (opcional)</label>
-            <Select
-              value={selectedCommunityId ?? "none"}
-              onValueChange={(v) => setSelectedCommunityId(v === "none" ? null : v)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Sem comunidade" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Sem comunidade</SelectItem>
-                {userCommunities.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
+          <div className="space-y-2">
+            <label className="text-[11px] uppercase tracking-wide text-muted-foreground">Comunidade</label>
+            <div className="flex flex-wrap gap-2">
+              {userCommunities.map((c) => {
+                const active = selectedCommunityId === c.id;
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => setSelectedCommunityId(active ? null : c.id)}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-all ${
+                      active
+                        ? "bg-purple-500/20 border-purple-400/60 text-purple-300 shadow-[0_0_12px_-2px_hsl(270_70%_60%/0.4)]"
+                        : "bg-muted/40 border-border text-muted-foreground hover:border-purple-400/40 hover:text-purple-300/80"
+                    }`}
+                  >
+                    <Users className="h-3 w-3" />
                     {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                    {active && <X className="h-3 w-3 ml-0.5" />}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 

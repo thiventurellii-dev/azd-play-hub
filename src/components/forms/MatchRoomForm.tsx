@@ -893,19 +893,19 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
 
       {/* Section 2 - Quando */}
       <SectionCard index={2} title="Quando" complete={sec2Complete} summary={sec2Summary}>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="md:col-span-2">
-            <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Data e hora *</label>
-            <div className="mt-1.5 flex gap-2">
-              <div className="flex-1 min-w-[180px]">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="space-y-1">
+            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">Data e hora *</label>
+            <div className="flex gap-2">
+              <div className="flex-1 min-w-0">
                 <DatePickerField value={scheduledDate} onChange={setScheduledDate} placeholder="Data" />
               </div>
-              <Input type="time" value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)} className="w-[120px] shrink-0" />
+              <Input type="time" value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)} className="w-[110px] shrink-0" />
             </div>
           </div>
-          <div>
-            <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Vagas</label>
-            <div className="relative mt-1.5">
+          <div className="space-y-1">
+            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">Vagas</label>
+            <div className="relative">
               <Input
                 type="number"
                 min="2"
@@ -920,10 +920,10 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
               )}
             </div>
           </div>
-          <div>
-            <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Local</label>
+          <div className="space-y-1">
+            <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">Local</label>
             <Select value={platform || "none"} onValueChange={(v) => setPlatform(v === "none" ? "" : v)}>
-              <SelectTrigger className="mt-1.5">
+              <SelectTrigger>
                 <SelectValue placeholder="Onde será jogado?" />
               </SelectTrigger>
               <SelectContent>

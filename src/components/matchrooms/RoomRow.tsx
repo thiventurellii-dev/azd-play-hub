@@ -565,8 +565,17 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
               {status.label}
             </Badge>
             {canInteract && user && (
-              <div className="flex gap-1.5 flex-1 lg:flex-initial">
-                {isInRoom ? (
+              <div className="flex gap-1.5 flex-1 lg:flex-initial flex-wrap lg:justify-end">
+                {myInvite ? (
+                  <>
+                    <Button variant="gold" size="sm" className="h-9 flex-1 lg:flex-initial" onClick={handleAcceptInvite} disabled={loading}>
+                      <Check className="h-3.5 w-3.5 mr-1" /> Aceitar convite
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-9 lg:flex-initial" onClick={handleDeclineInvite} disabled={loading} title="Recusar convite">
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </>
+                ) : isInRoom ? (
                   <Button variant="outline" size="sm" className="h-9 flex-1 lg:flex-initial" onClick={handleLeave} disabled={loading}>
                     Sair
                   </Button>
@@ -579,6 +588,31 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
                     <LogIn className="h-3.5 w-3.5 mr-1" />
                     {isFull ? "Reserva" : "Entrar"}
                   </Button>
+                )}
+                {room.accept_observers && !isInRoom && !isInWait && !myInvite && (
+                  isObserving ? (
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-9 w-9 flex-shrink-0 border-blue-500/40 bg-blue-500/10 text-blue-300 hover:bg-blue-500/20"
+                      onClick={handleLeaveObserver}
+                      disabled={loading}
+                      title="Sair como observador"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-9 w-9 flex-shrink-0 hover:border-blue-500/50 hover:text-blue-300"
+                      onClick={handleJoinAsObserver}
+                      disabled={loading}
+                      title="Observar esta sala"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                    </Button>
+                  )
                 )}
                 <Button variant="outline" size="icon" className="h-9 w-9 flex-shrink-0" onClick={handleShare} title="Compartilhar">
                   <Share2 className="h-3.5 w-3.5" />

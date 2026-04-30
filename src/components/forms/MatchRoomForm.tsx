@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { X, ChevronLeft, Gamepad2, Skull, Sword, Check, Users, ChevronDown, ChevronUp, Sparkles, Search, Eye, UserPlus } from "lucide-react";
 import { DatePickerField } from "@/components/ui/date-picker-field";
 import { sendMatchNotification } from "@/lib/matchNotification";
+import { sendRoomNotifications } from "@/lib/roomNotifications";
 import { cn } from "@/lib/utils";
 
 /* ── Types ─────────────────────────────────────────── */

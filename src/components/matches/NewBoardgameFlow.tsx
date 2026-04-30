@@ -937,13 +937,6 @@ const NewBoardgameFlow = ({
               <UserPlus className="h-3 w-3" /> + Eu
             </button>
           )}
-          <button
-            onClick={() => setAddGuestOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs text-amber-400 hover:bg-amber-500/20"
-            title="Cadastrar jogador sem conta"
-          >
-            <UserCircle2 className="h-3 w-3" /> + Convidado
-          </button>
           {friendIds.length > 0 && (
             <Popover
               open={friendsOpen}
@@ -953,7 +946,7 @@ const NewBoardgameFlow = ({
               }}
             >
               <PopoverTrigger asChild>
-                <button className="inline-flex items-center gap-1.5 rounded-full border border-[#ffb84a]/30 bg-[#ffb84a]/10 px-3 py-1 text-xs text-[#ffb84a] hover:bg-[#ffb84a]/20">
+                <button className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-300 hover:bg-emerald-500/20">
                   <UserPlus className="h-3 w-3" /> + Amigos
                 </button>
               </PopoverTrigger>

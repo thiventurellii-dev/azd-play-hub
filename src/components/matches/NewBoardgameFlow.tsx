@@ -964,6 +964,7 @@ const NewBoardgameFlow = ({
                             <CommandItem
                               key={p.id}
                               value={`${p.nickname || ""} ${p.name}`}
+                              className="data-[selected=true]:bg-secondary/70 data-[selected=true]:text-foreground"
                               onSelect={() => {
                                 setSelectedFriendsToAdd((prev) => {
                                   const next = new Set(prev);

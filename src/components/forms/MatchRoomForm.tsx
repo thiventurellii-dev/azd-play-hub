@@ -310,6 +310,38 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
   const friends = useMemo(() => options?.friends ?? [], [options?.friends]);
 
   const [category, setCategory] = useState<Category | "">("");
+
+  // Stats para o seletor de categoria
+  const { data: pickerStats } = useQuery({
+    queryKey: ["match-room-picker-stats", user?.id],
+    enabled: !room && !!user?.id,
+    queryFn: async () => {
+      const [openRes, lastRes] = await Promise.all([
+        supabase.from("match_rooms").select("room_type").eq("status", "open" as any),
+        supabase
+          .from("match_rooms")
+          .select("id, room_type, scheduled_at, title, game:games(name)")
+          .eq("created_by", user!.id)
+          .order("scheduled_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
+      const counts: Record<string, number> = { boardgame: 0, botc: 0, rpg: 0 };
+      for (const r of (openRes.data ?? []) as any[]) {
+        const t = r.room_type || "boardgame";
+        counts[t] = (counts[t] ?? 0) + 1;
+      }
+      const last = lastRes.data
+        ? {
+            ...(lastRes.data as any),
+            game: Array.isArray((lastRes.data as any).game)
+              ? (lastRes.data as any).game[0]
+              : (lastRes.data as any).game,
+          }
+        : null;
+      return { counts, last };
+    },
+  });
   const [gameId, setGameId] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");

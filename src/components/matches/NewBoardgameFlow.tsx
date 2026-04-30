@@ -527,7 +527,9 @@ const NewBoardgameFlow = ({
         positionMap[e.player_id] = i + 1;
       });
 
-      const playerIds = filled.map((e) => e.player_id);
+      // Only registered users participate in MMR
+      const registeredFilled = filled.filter((e) => !e.is_guest);
+      const registeredIds = registeredFilled.map((e) => e.player_id);
       const effectiveSeasonId =
         linkToSeason && seasonId ? seasonId : seasons.find((s) => s.status === "active")?.id || seasons[0]?.id;
       if (!effectiveSeasonId) {
@@ -541,19 +543,21 @@ const NewBoardgameFlow = ({
       let winsMap: Record<string, number> = {};
       let eloChanges: Record<string, number> = {};
 
-      if (linkToSeason && seasonId) {
+      // MMR only when linked to season AND there are registered players
+      const computeMmr = linkToSeason && !!seasonId && registeredIds.length > 0;
+      if (computeMmr) {
         const { data: mmrData } = await supabase
           .from("mmr_ratings")
           .select("player_id, current_mmr, games_played, wins")
           .eq("season_id", seasonId)
           .eq("game_id", gameId)
-          .in("player_id", playerIds);
+          .in("player_id", registeredIds);
         for (const m of mmrData || []) {
           mmrMap[(m as any).player_id] = (m as any).current_mmr;
           gpMap[(m as any).player_id] = (m as any).games_played;
           winsMap[(m as any).player_id] = (m as any).wins;
         }
-        for (const pid of playerIds) {
+        for (const pid of registeredIds) {
           if (!(pid in mmrMap)) {
             mmrMap[pid] = 1000;
             gpMap[pid] = 0;
@@ -568,7 +572,11 @@ const NewBoardgameFlow = ({
             });
           }
         }
-        const eloResults = filled.map((e) => ({ player_id: e.player_id, position: positionMap[e.player_id] }));
+        // ELO computed only between registered players (positions relative to each other)
+        const registeredRanked = [...registeredFilled].sort(
+          (a, b) => positionMap[a.player_id] - positionMap[b.player_id],
+        );
+        const eloResults = registeredRanked.map((e, i) => ({ player_id: e.player_id, position: i + 1 }));
         eloChanges = calculateElo(eloResults, mmrMap);
       }
 
@@ -603,15 +611,18 @@ const NewBoardgameFlow = ({
 
       const matchResults = filled.map((e) => {
         const pos = positionMap[e.player_id];
+        const isGuest = e.is_guest;
+        const mmrBefore = isGuest ? null : mmrMap[e.player_id] || 1000;
+        const mmrChange = isGuest ? 0 : eloChanges[e.player_id] || 0;
         return {
           match_id: match.id,
-          player_id: e.player_id,
-          ghost_player_id: null,
+          player_id: isGuest ? null : e.player_id,
+          ghost_player_id: isGuest ? e.player_id : null,
           position: pos,
           score: e.total_score || 0,
-          mmr_before: mmrMap[e.player_id] || 1000,
-          mmr_change: eloChanges[e.player_id] || 0,
-          mmr_after: (mmrMap[e.player_id] || 1000) + (eloChanges[e.player_id] || 0),
+          mmr_before: mmrBefore,
+          mmr_change: mmrChange,
+          mmr_after: isGuest ? null : (mmrMap[e.player_id] || 1000) + mmrChange,
           seat_position: e.seat_position,
           faction: e.faction || null,
           is_new_player: false,
@@ -623,7 +634,12 @@ const NewBoardgameFlow = ({
       if (hasSchema && insertedResults) {
         const detailed: any[] = [];
         for (const ir of insertedResults) {
-          const e = filled.find((en) => en.player_id === (ir as any).player_id);
+          // Match by player_id OR ghost_player_id depending on entry kind
+          const e = filled.find((en) =>
+            en.is_guest
+              ? (ir as any).ghost_player_id === en.player_id
+              : (ir as any).player_id === en.player_id,
+          );
           if (e?.scores) {
             for (const [key, value] of Object.entries(e.scores)) {
               if (typeof value === "number" && value !== 0) {
@@ -635,8 +651,8 @@ const NewBoardgameFlow = ({
         if (detailed.length > 0) await supabase.from("match_result_scores").insert(detailed);
       }
 
-      if (linkToSeason && seasonId) {
-        for (const e of filled) {
+      if (computeMmr) {
+        for (const e of registeredFilled) {
           const isWin = positionMap[e.player_id] === 1;
           await supabase.rpc("upsert_mmr_for_match", {
             p_player_id: e.player_id,

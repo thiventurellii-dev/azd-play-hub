@@ -9,14 +9,38 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
-  Calendar, Clock, Users, ExternalLink, Video, Award, ChevronDown, ChevronUp,
-  Flag, Share2, UserPlus, Gamepad2, TrendingUp, Trophy, Shield, FileText, Info, Upload, Download,
-  ArrowUp, ArrowDown, Minus,
+  Calendar,
+  Clock,
+  Users,
+  ExternalLink,
+  Video,
+  Award,
+  ChevronDown,
+  ChevronUp,
+  Flag,
+  Share2,
+  UserPlus,
+  Gamepad2,
+  TrendingUp,
+  Trophy,
+  Shield,
+  FileText,
+  Info,
+  Upload,
+  Download,
+  ArrowUp,
+  ArrowDown,
+  Minus,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { getRankIcon, getBloodPrizeClass, getBloodWinStats } from "@/utils/game-logic";
 import type {
-  SeasonFull, RankingEntry, BloodRankingEntry, MatchRecord, BloodMatchRecord, GameInfo,
+  SeasonFull,
+  RankingEntry,
+  BloodRankingEntry,
+  MatchRecord,
+  BloodMatchRecord,
+  GameInfo,
 } from "@/types/database";
 import { useNotification } from "@/components/NotificationDialog";
 import { useAuth } from "@/contexts/AuthContext";
@@ -63,7 +87,10 @@ const SeasonDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { notify } = useNotification();
   const { isAdmin } = useAuth();
-  const [season, setSeason] = useState<(SeasonFull & { cover_url: string | null; start_date: string; end_date: string; regulation_url: string | null }) | null>(null);
+  const [season, setSeason] = useState<
+    | (SeasonFull & { cover_url: string | null; start_date: string; end_date: string; regulation_url: string | null })
+    | null
+  >(null);
   const [coverFallback, setCoverFallback] = useState<string | null>(null);
   const [linkedItems, setLinkedItems] = useState<{ name: string; image_url: string | null }[]>([]);
   const [rankings, setRankings] = useState<RankingEntry[]>([]);
@@ -104,7 +131,10 @@ const SeasonDetail = () => {
         const { data: sbsData } = await supabase.from("season_blood_scripts").select("script_id").eq("season_id", id);
         const scriptIds = (sbsData || []).map((x: any) => x.script_id);
         if (scriptIds.length > 0) {
-          const { data: scriptsData } = await supabase.from("blood_scripts").select("id, name, image_url").in("id", scriptIds);
+          const { data: scriptsData } = await supabase
+            .from("blood_scripts")
+            .select("id, name, image_url")
+            .in("id", scriptIds);
           const items = ((scriptsData || []) as any[]).map((s) => ({ name: s.name, image_url: s.image_url }));
           setLinkedItems(items);
           setCoverFallback(items.find((i) => i.image_url)?.image_url || null);
@@ -112,8 +142,11 @@ const SeasonDetail = () => {
 
         // Blood matches
         const { data: bmData } = await supabase
-          .from("blood_matches").select("*").eq("season_id", id)
-          .order("played_at", { ascending: false }).limit(50);
+          .from("blood_matches")
+          .select("*")
+          .eq("season_id", id)
+          .order("played_at", { ascending: false })
+          .limit(50);
 
         if (bmData && bmData.length > 0) {
           const scriptIds2 = [...new Set((bmData as any[]).map((m) => m.script_id))];
@@ -128,7 +161,9 @@ const SeasonDetail = () => {
           const scriptMap: Record<string, string> = {};
           for (const s of (scriptsRes.data || []) as any[]) scriptMap[s.id] = s.name;
 
-          const allPlayerIds = [...new Set([...storytellerIds, ...((playersRes.data || []) as any[]).map((p) => p.player_id)])];
+          const allPlayerIds = [
+            ...new Set([...storytellerIds, ...((playersRes.data || []) as any[]).map((p) => p.player_id)]),
+          ];
           const { data: profiles } = await supabase.rpc("get_public_profiles", { p_ids: allPlayerIds });
           const pMap: Record<string, string> = {};
           const aMap: Record<string, string | null> = {};
@@ -139,27 +174,38 @@ const SeasonDetail = () => {
           setAvatarMap((prev) => ({ ...prev, ...aMap }));
 
           const charIds = [...new Set(((playersRes.data || []) as any[]).map((p) => p.character_id))];
-          const { data: charsData } = charIds.length > 0
-            ? await supabase.from("blood_characters").select("id, name").in("id", charIds)
-            : { data: [] };
+          const { data: charsData } =
+            charIds.length > 0
+              ? await supabase.from("blood_characters").select("id, name").in("id", charIds)
+              : { data: [] };
           const charMap: Record<string, string> = {};
           for (const c of (charsData || []) as any[]) charMap[c.id] = c.name;
 
           setBloodMatches(
             (bmData as any[]).map((m) => ({
-              id: m.id, played_at: m.played_at, duration_minutes: m.duration_minutes,
-              script_name: scriptMap[m.script_id] || "?", winning_team: m.winning_team,
+              id: m.id,
+              played_at: m.played_at,
+              duration_minutes: m.duration_minutes,
+              script_name: scriptMap[m.script_id] || "?",
+              winning_team: m.winning_team,
               storyteller_name: pMap[m.storyteller_player_id] || "?",
               platform: m.platform || null,
               players: ((playersRes.data || []) as any[])
                 .filter((p) => p.match_id === m.id)
-                .map((p) => ({ player_name: pMap[p.player_id] || "?", character_name: charMap[p.character_id] || "?", team: p.team })),
+                .map((p) => ({
+                  player_name: pMap[p.player_id] || "?",
+                  character_name: charMap[p.character_id] || "?",
+                  team: p.team,
+                })),
             })),
           );
         }
 
         const { data: brData } = await supabase
-          .from("blood_mmr_ratings").select("*").eq("season_id", id).order("total_points", { ascending: false });
+          .from("blood_mmr_ratings")
+          .select("*")
+          .eq("season_id", id)
+          .order("total_points", { ascending: false });
 
         if (brData && brData.length > 0) {
           const playerIds = (brData as any[]).map((r) => r.player_id);
@@ -171,11 +217,13 @@ const SeasonDetail = () => {
             aMap[p.id] = (p as any).avatar_url || null;
           }
           setAvatarMap((prev) => ({ ...prev, ...aMap }));
-          setBloodRankings((brData as any[]).map((r) => ({
-            ...r,
-            player_name: pMap[r.player_id] || "?",
-            avatar_url: aMap[r.player_id] || null,
-          })));
+          setBloodRankings(
+            (brData as any[]).map((r) => ({
+              ...r,
+              player_name: pMap[r.player_id] || "?",
+              avatar_url: aMap[r.player_id] || null,
+            })),
+          );
         }
       } else {
         const { data: sgData } = await supabase.from("season_games").select("game_id").eq("season_id", id);
@@ -234,17 +282,26 @@ const SeasonDetail = () => {
 
           setMatches(
             mData.map((m) => ({
-              id: m.id, played_at: m.played_at, duration_minutes: m.duration_minutes,
-              image_url: m.image_url, first_player_id: (m as any).first_player_id || null,
-              game_name: gameMap[m.game_id] || "?", game_id: m.game_id,
+              id: m.id,
+              played_at: m.played_at,
+              duration_minutes: m.duration_minutes,
+              image_url: m.image_url,
+              first_player_id: (m as any).first_player_id || null,
+              game_name: gameMap[m.game_id] || "?",
+              game_id: m.game_id,
               platform: (m as any).platform || null,
               results: (resRes.data || [])
                 .filter((r) => r.match_id === m.id)
                 .sort((a, b) => a.position - b.position)
                 .map((r: any) => ({
-                  player_name: pMap[r.player_id] || "?", player_id: r.player_id,
-                  position: r.position, seat_position: r.seat_position ?? null, score: r.score || 0,
-                  mmr_change: r.mmr_change || 0, mmr_before: r.mmr_before || 1000, mmr_after: r.mmr_after || 1000,
+                  player_name: pMap[r.player_id] || "?",
+                  player_id: r.player_id,
+                  position: r.position,
+                  seat_position: r.seat_position ?? null,
+                  score: r.score || 0,
+                  mmr_change: r.mmr_change || 0,
+                  mmr_before: r.mmr_before || 1000,
+                  mmr_after: r.mmr_after || 1000,
                   faction: r.faction || null,
                 })) as any,
             })),
@@ -292,7 +349,8 @@ const SeasonDetail = () => {
             .map((pid) => ({
               player_id: pid,
               current_mmr: parseFloat((agg[pid].mmr / gameCount[pid]).toFixed(2)),
-              games_played: agg[pid].gp, wins: agg[pid].wins,
+              games_played: agg[pid].gp,
+              wins: agg[pid].wins,
               player_name: pMap[pid] || "Unknown",
               avatar_url: aMap[pid] || null,
             }))
@@ -307,7 +365,11 @@ const SeasonDetail = () => {
             aMap[p.id] = (p as any).avatar_url || null;
           }
           setAvatarMap((prev) => ({ ...prev, ...aMap }));
-          aggregated = rData.map((r) => ({ ...r, player_name: pMap[r.player_id] || "Unknown", avatar_url: aMap[r.player_id] || null }));
+          aggregated = rData.map((r) => ({
+            ...r,
+            player_name: pMap[r.player_id] || "Unknown",
+            avatar_url: aMap[r.player_id] || null,
+          }));
         }
         setRankings(aggregated);
       } else {
@@ -328,7 +390,9 @@ const SeasonDetail = () => {
     // Current ranking order (already sorted by current_mmr desc on rankings state)
     const currentSorted = [...rankings].sort((a, b) => Number(b.current_mmr) - Number(a.current_mmr));
     const currentPos: Record<string, number> = {};
-    currentSorted.forEach((r, i) => { currentPos[r.player_id] = i + 1; });
+    currentSorted.forEach((r, i) => {
+      currentPos[r.player_id] = i + 1;
+    });
 
     // Reconstruct previous MMR: for each player in last match, use mmr_before; others keep current_mmr
     const prevMmrMap: Record<string, number> = {};
@@ -343,7 +407,9 @@ const SeasonDetail = () => {
       .map((r) => ({ id: r.player_id, mmr: prevMmrMap[r.player_id] ?? Number(r.current_mmr) }))
       .sort((a, b) => b.mmr - a.mmr);
     const prevPos: Record<string, number> = {};
-    prevSorted.forEach((r, i) => { prevPos[r.id] = i + 1; });
+    prevSorted.forEach((r, i) => {
+      prevPos[r.id] = i + 1;
+    });
 
     const deltas: Record<string, number> = {};
     for (const pid of lastParticipants) {
@@ -353,7 +419,6 @@ const SeasonDetail = () => {
     }
     return deltas;
   }, [season, rankings, filteredMatches]);
-
 
   // Computed stats
   const isBlood = season?.type === "blood";
@@ -374,20 +439,19 @@ const SeasonDetail = () => {
       const totalGames = bloodRankings.reduce((s, r) => s + (r.games_played - r.games_as_storyteller), 0);
       const totalWins = bloodRankings.reduce((s, r) => s + r.wins_evil + r.wins_good, 0);
       const winRate = totalGames > 0 ? Math.round((totalWins / totalGames) * 100) : 0;
-      const avgMmr = participants > 0
-        ? Math.round(bloodRankings.reduce((s, r) => s + r.total_points, 0) / participants)
-        : 0;
+      const avgMmr =
+        participants > 0 ? Math.round(bloodRankings.reduce((s, r) => s + r.total_points, 0) / participants) : 0;
       return { participants, matchesCount, winRate, avgMmr };
     }
     const participants = rankings.length;
     const matchesCount = matches.length;
     const ratings = rankings.filter((r) => r.games_played > 0);
-    const winRate = ratings.length > 0
-      ? Math.round((ratings.reduce((s, r) => s + r.wins / r.games_played, 0) / ratings.length) * 100)
-      : 0;
-    const avgMmr = participants > 0
-      ? Math.round(rankings.reduce((s, r) => s + Number(r.current_mmr), 0) / participants)
-      : 0;
+    const winRate =
+      ratings.length > 0
+        ? Math.round((ratings.reduce((s, r) => s + r.wins / r.games_played, 0) / ratings.length) * 100)
+        : 0;
+    const avgMmr =
+      participants > 0 ? Math.round(rankings.reduce((s, r) => s + Number(r.current_mmr), 0) / participants) : 0;
     return { participants, matchesCount, winRate, avgMmr };
   }, [season, isBlood, rankings, bloodRankings, matches, bloodMatches]);
 
@@ -432,7 +496,10 @@ const SeasonDetail = () => {
       const { error: upErr } = await supabase.storage.from("season-regulations").upload(path, file, { upsert: true });
       if (upErr) throw upErr;
       const { data: urlData } = supabase.storage.from("season-regulations").getPublicUrl(path);
-      const { error: updErr } = await supabase.from("seasons").update({ regulation_url: urlData.publicUrl } as any).eq("id", id);
+      const { error: updErr } = await supabase
+        .from("seasons")
+        .update({ regulation_url: urlData.publicUrl } as any)
+        .eq("id", id);
       if (updErr) throw updErr;
       setSeason({ ...season, regulation_url: urlData.publicUrl });
       notify("success", "Regulamento enviado!");
@@ -462,7 +529,8 @@ const SeasonDetail = () => {
           </div>
           {linkedItems.length > 0 && (
             <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-              <span>{isBlood ? "🩸" : "🎲"}</span>{linkedItems.map((i) => i.name).join(", ")}
+              <span>{isBlood ? "🩸" : "🎲"}</span>
+              {linkedItems.map((i) => i.name).join(", ")}
             </p>
           )}
           <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
@@ -472,8 +540,12 @@ const SeasonDetail = () => {
               {new Date(season.end_date + "T00:00:00").toLocaleDateString("pt-BR")}
               {daysRemaining !== null && <span className="ml-1">({daysRemaining} dias restantes)</span>}
             </span>
-            <span className="flex items-center gap-1"><Trophy className="h-3.5 w-3.5" /> Temporada oficial</span>
-            <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" /> Ranking público</span>
+            <span className="flex items-center gap-1">
+              <Trophy className="h-3.5 w-3.5" /> Temporada oficial
+            </span>
+            <span className="flex items-center gap-1">
+              <Users className="h-3.5 w-3.5" /> Ranking público
+            </span>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -640,7 +712,9 @@ const SeasonDetail = () => {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <button type="button" aria-label="O que é Win Rate médio?" className="flex-shrink-0"><Info className="h-3.5 w-3.5 opacity-70 hover:opacity-100" /></button>
+                          <button type="button" aria-label="O que é Win Rate médio?" className="flex-shrink-0">
+                            <Info className="h-3.5 w-3.5 opacity-70 hover:opacity-100" />
+                          </button>
                         </TooltipTrigger>
                         <TooltipContent className="max-w-[240px] text-xs">
                           Média da taxa de vitórias (vitórias ÷ partidas) de todos os participantes da temporada.
@@ -661,7 +735,9 @@ const SeasonDetail = () => {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <button type="button" aria-label="O que é MMR médio?" className="flex-shrink-0"><Info className="h-3.5 w-3.5 opacity-70 hover:opacity-100" /></button>
+                          <button type="button" aria-label="O que é MMR médio?" className="flex-shrink-0">
+                            <Info className="h-3.5 w-3.5 opacity-70 hover:opacity-100" />
+                          </button>
                         </TooltipTrigger>
                         <TooltipContent className="max-w-[240px] text-xs">
                           {isBlood
@@ -694,7 +770,9 @@ const SeasonDetail = () => {
                   <SelectContent>
                     <SelectItem value="all">Todos os jogos (média)</SelectItem>
                     {games.map((g) => (
-                      <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                      <SelectItem key={g.id} value={g.id}>
+                        {g.name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -703,11 +781,16 @@ const SeasonDetail = () => {
               <div className="min-w-0">
                 {isBlood ? (
                   bloodRankings.length === 0 ? (
-                    <Card className="bg-card border-border"><CardContent className="py-12 text-center text-muted-foreground">Nenhum ranking disponível ainda.</CardContent></Card>
+                    <Card className="bg-card border-border">
+                      <CardContent className="py-12 text-center text-muted-foreground">
+                        Nenhum ranking disponível ainda.
+                      </CardContent>
+                    </Card>
                   ) : (
                     <div className="overflow-x-auto">
                       <div className="grid grid-cols-[40px_1fr_70px_70px_70px_70px_70px_80px] gap-2 px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        <span>#</span><span>Jogador</span>
+                        <span>#</span>
+                        <span>Jogador</span>
                         <span className="text-center">Partidas</span>
                         <span className="text-center">V. Mal</span>
                         <span className="text-center">V. Bem</span>
@@ -718,13 +801,22 @@ const SeasonDetail = () => {
                       {bloodRankings.map((r, i) => {
                         const { winPct } = getBloodWinStats(r);
                         return (
-                          <motion.div key={r.player_id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}>
-                            <div className={`grid grid-cols-[40px_1fr_70px_70px_70px_70px_70px_80px] gap-2 items-center px-4 py-3 rounded-lg border border-border hover:border-gold/20 transition-colors ${getBloodPrizeClass(i)}`}>
+                          <motion.div
+                            key={r.player_id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: i * 0.04 }}
+                          >
+                            <div
+                              className={`grid grid-cols-[40px_1fr_70px_70px_70px_70px_70px_80px] gap-2 items-center px-4 py-3 rounded-lg border border-border hover:border-gold/20 transition-colors ${getBloodPrizeClass(i)}`}
+                            >
                               <div className="flex items-center justify-center">{getRankIcon(i)}</div>
                               <div className="flex items-center gap-2 min-w-0">
                                 <Avatar className="h-6 w-6 flex-shrink-0">
                                   {r.avatar_url && <AvatarImage src={r.avatar_url} alt={r.player_name} />}
-                                  <AvatarFallback className="text-[10px] bg-secondary">{r.player_name.charAt(0).toUpperCase()}</AvatarFallback>
+                                  <AvatarFallback className="text-[10px] bg-secondary">
+                                    {r.player_name.charAt(0).toUpperCase()}
+                                  </AvatarFallback>
                                 </Avatar>
                                 <p className="font-semibold truncate">{r.player_name}</p>
                               </div>
@@ -741,11 +833,16 @@ const SeasonDetail = () => {
                     </div>
                   )
                 ) : rankings.length === 0 ? (
-                  <Card className="bg-card border-border"><CardContent className="py-12 text-center text-muted-foreground">Nenhum ranking disponível ainda.</CardContent></Card>
+                  <Card className="bg-card border-border">
+                    <CardContent className="py-12 text-center text-muted-foreground">
+                      Nenhum ranking disponível ainda.
+                    </CardContent>
+                  </Card>
                 ) : (
                   <div className="overflow-x-auto">
                     <div className="grid grid-cols-[40px_1fr_80px_80px_80px_140px_90px] gap-2 px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      <span>#</span><span>Jogador</span>
+                      <span>#</span>
+                      <span>Jogador</span>
                       <span className="text-center">Partidas</span>
                       <span className="text-center">Vitórias</span>
                       <span className="text-center">Win Rate</span>
@@ -759,7 +856,7 @@ const SeasonDetail = () => {
                               </button>
                             </TooltipTrigger>
                             <TooltipContent className="max-w-[260px] text-xs normal-case font-normal">
-                              Mudança de posição no ranking após a última partida da temporada. Verde = subiu, vermelho = desceu.
+                              Mudança de posição no ranking após a última partida da temporada.
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
@@ -769,13 +866,22 @@ const SeasonDetail = () => {
                     {rankings.map((r, i) => {
                       const delta = positionDeltas[r.player_id];
                       return (
-                        <motion.div key={r.player_id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}>
-                          <div className={`grid grid-cols-[40px_1fr_80px_80px_80px_140px_90px] gap-2 items-center px-4 py-3 rounded-lg border border-border hover:border-gold/20 transition-colors ${i < 3 ? "border-gold/30" : ""}`}>
+                        <motion.div
+                          key={r.player_id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: i * 0.04 }}
+                        >
+                          <div
+                            className={`grid grid-cols-[40px_1fr_80px_80px_80px_140px_90px] gap-2 items-center px-4 py-3 rounded-lg border border-border hover:border-gold/20 transition-colors ${i < 3 ? "border-gold/30" : ""}`}
+                          >
                             <div className="flex items-center justify-center">{getRankIcon(i)}</div>
                             <div className="flex items-center gap-2 min-w-0">
                               <Avatar className="h-6 w-6 flex-shrink-0">
                                 {r.avatar_url && <AvatarImage src={r.avatar_url} alt={r.player_name} />}
-                                <AvatarFallback className="text-[10px] bg-secondary">{r.player_name.charAt(0).toUpperCase()}</AvatarFallback>
+                                <AvatarFallback className="text-[10px] bg-secondary">
+                                  {r.player_name.charAt(0).toUpperCase()}
+                                </AvatarFallback>
                               </Avatar>
                               <p className="font-semibold truncate">{r.player_name}</p>
                             </div>
@@ -793,7 +899,8 @@ const SeasonDetail = () => {
                                 </span>
                               ) : delta < 0 ? (
                                 <span className="flex items-center gap-1 text-red-500">
-                                  <ArrowDown className="h-3.5 w-3.5" /> {delta} {Math.abs(delta) === 1 ? "posição" : "posições"}
+                                  <ArrowDown className="h-3.5 w-3.5" /> {delta}{" "}
+                                  {Math.abs(delta) === 1 ? "posição" : "posições"}
                                 </span>
                               ) : (
                                 <span className="flex items-center gap-1 text-muted-foreground">
@@ -825,21 +932,34 @@ const SeasonDetail = () => {
             <TabsContent value="matches">
               {isBlood ? (
                 bloodMatches.length === 0 ? (
-                  <Card className="bg-card border-border"><CardContent className="py-12 text-center text-muted-foreground">Nenhuma partida registrada.</CardContent></Card>
+                  <Card className="bg-card border-border">
+                    <CardContent className="py-12 text-center text-muted-foreground">
+                      Nenhuma partida registrada.
+                    </CardContent>
+                  </Card>
                 ) : (
                   <div className="space-y-3">
                     {bloodMatches.map((m) => {
                       const isExpanded = expandedMatch === m.id;
                       return (
-                        <Card key={m.id} className="bg-card border-border hover:border-gold/20 transition-colors cursor-pointer"
-                          onClick={() => setExpandedMatch(isExpanded ? null : m.id)}>
+                        <Card
+                          key={m.id}
+                          className="bg-card border-border hover:border-gold/20 transition-colors cursor-pointer"
+                          onClick={() => setExpandedMatch(isExpanded ? null : m.id)}
+                        >
                           <CardContent className="py-4 space-y-3">
                             <div className="flex items-center gap-3">
                               <DateBlock date={m.played_at} />
                               <div className="flex-1 min-w-0 flex items-center justify-between flex-wrap gap-2">
                                 <div className="flex items-center gap-2 flex-wrap min-w-0">
                                   <Badge variant="outline">{m.script_name}</Badge>
-                                  <Badge className={m.winning_team === "evil" ? "bg-red-500/20 text-red-400 border-red-500/30" : "bg-blue-500/20 text-blue-400 border-blue-500/30"}>
+                                  <Badge
+                                    className={
+                                      m.winning_team === "evil"
+                                        ? "bg-red-500/20 text-red-400 border-red-500/30"
+                                        : "bg-blue-500/20 text-blue-400 border-blue-500/30"
+                                    }
+                                  >
                                     {m.winning_team === "evil" ? "💀 Mal" : "🛡️ Bem"}
                                   </Badge>
                                   <span className="text-xs text-muted-foreground">Narrador: {m.storyteller_name}</span>
@@ -850,31 +970,53 @@ const SeasonDetail = () => {
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <span className="text-[11px] text-muted-foreground tabular-nums">{new Date(m.played_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
-                                  {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                                  <span className="text-[11px] text-muted-foreground tabular-nums">
+                                    {new Date(m.played_at).toLocaleTimeString("pt-BR", {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </span>
+                                  {isExpanded ? (
+                                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                  ) : (
+                                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                  )}
                                 </div>
                               </div>
                             </div>
                             {isExpanded && (
-                              <div className="space-y-2 pt-2 border-t border-border" onClick={(e) => e.stopPropagation()}>
+                              <div
+                                className="space-y-2 pt-2 border-t border-border"
+                                onClick={(e) => e.stopPropagation()}
+                              >
                                 <div className="flex items-center gap-2 text-sm p-2 rounded bg-gold/10">
                                   <span className="text-gold">📖</span>
                                   <span className="font-medium text-gold">Narrador: {m.storyteller_name}</span>
                                 </div>
-                                {m.players.filter((p: any) => p.team === "evil").map((p: any, i: number) => (
-                                  <div key={`evil-${i}`} className="flex items-center gap-2 text-sm p-2 rounded bg-red-500/10">
-                                    <span className="text-red-400">💀</span>
-                                    <span className="font-medium">{p.player_name}</span>
-                                    <span className="text-muted-foreground">— {p.character_name}</span>
-                                  </div>
-                                ))}
-                                {m.players.filter((p: any) => p.team === "good").map((p: any, i: number) => (
-                                  <div key={`good-${i}`} className="flex items-center gap-2 text-sm p-2 rounded bg-blue-500/10">
-                                    <span className="text-blue-400">🛡️</span>
-                                    <span className="font-medium">{p.player_name}</span>
-                                    <span className="text-muted-foreground">— {p.character_name}</span>
-                                  </div>
-                                ))}
+                                {m.players
+                                  .filter((p: any) => p.team === "evil")
+                                  .map((p: any, i: number) => (
+                                    <div
+                                      key={`evil-${i}`}
+                                      className="flex items-center gap-2 text-sm p-2 rounded bg-red-500/10"
+                                    >
+                                      <span className="text-red-400">💀</span>
+                                      <span className="font-medium">{p.player_name}</span>
+                                      <span className="text-muted-foreground">— {p.character_name}</span>
+                                    </div>
+                                  ))}
+                                {m.players
+                                  .filter((p: any) => p.team === "good")
+                                  .map((p: any, i: number) => (
+                                    <div
+                                      key={`good-${i}`}
+                                      className="flex items-center gap-2 text-sm p-2 rounded bg-blue-500/10"
+                                    >
+                                      <span className="text-blue-400">🛡️</span>
+                                      <span className="font-medium">{p.player_name}</span>
+                                      <span className="text-muted-foreground">— {p.character_name}</span>
+                                    </div>
+                                  ))}
                               </div>
                             )}
                           </CardContent>
@@ -884,22 +1026,31 @@ const SeasonDetail = () => {
                   </div>
                 )
               ) : filteredMatches.length === 0 ? (
-                <Card className="bg-card border-border"><CardContent className="py-12 text-center text-muted-foreground">Nenhuma partida registrada.</CardContent></Card>
+                <Card className="bg-card border-border">
+                  <CardContent className="py-12 text-center text-muted-foreground">
+                    Nenhuma partida registrada.
+                  </CardContent>
+                </Card>
               ) : (
                 <div className="space-y-3">
                   {filteredMatches.map((m) => {
                     const isExpanded = expandedMatch === m.id;
                     const winner = m.results.find((r) => r.position === 1);
                     return (
-                      <Card key={m.id} className="bg-card border-border hover:border-gold/20 transition-colors cursor-pointer"
-                        onClick={() => setExpandedMatch(isExpanded ? null : m.id)}>
+                      <Card
+                        key={m.id}
+                        className="bg-card border-border hover:border-gold/20 transition-colors cursor-pointer"
+                        onClick={() => setExpandedMatch(isExpanded ? null : m.id)}
+                      >
                         <CardContent className="py-4 space-y-3">
                           <div className="flex items-center gap-3">
                             <DateBlock date={m.played_at} />
                             <div className="flex-1 min-w-0 flex items-center justify-between flex-wrap gap-2">
                               <div className="flex items-center gap-2 flex-wrap min-w-0">
                                 <Badge variant="outline">{m.game_name}</Badge>
-                                {winner && <span className="text-sm font-medium text-gold">🏆 {winner.player_name}</span>}
+                                {winner && (
+                                  <span className="text-sm font-medium text-gold">🏆 {winner.player_name}</span>
+                                )}
                                 {m.duration_minutes && (
                                   <span className="text-xs text-muted-foreground flex items-center gap-1">
                                     <Clock className="h-3 w-3" /> {m.duration_minutes} min
@@ -907,8 +1058,17 @@ const SeasonDetail = () => {
                                 )}
                               </div>
                               <div className="flex items-center gap-2">
-                                <span className="text-[11px] text-muted-foreground tabular-nums">{new Date(m.played_at).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>
-                                {isExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+                                <span className="text-[11px] text-muted-foreground tabular-nums">
+                                  {new Date(m.played_at).toLocaleTimeString("pt-BR", {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </span>
+                                {isExpanded ? (
+                                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                )}
                               </div>
                             </div>
                           </div>
@@ -917,19 +1077,36 @@ const SeasonDetail = () => {
                               {m.image_url && <MatchImage src={m.image_url} />}
                               <div className="space-y-2">
                                 {m.results.map((r, i) => (
-                                  <div key={i} className="flex items-center gap-3 text-sm p-2 rounded-lg bg-secondary/30">
-                                    <Badge variant={r.position === 1 ? "default" : "secondary"} className={`w-8 justify-center ${r.position === 1 ? "bg-gold text-black" : ""}`}>{r.position}º</Badge>
+                                  <div
+                                    key={i}
+                                    className="flex items-center gap-3 text-sm p-2 rounded-lg bg-secondary/30"
+                                  >
+                                    <Badge
+                                      variant={r.position === 1 ? "default" : "secondary"}
+                                      className={`w-8 justify-center ${r.position === 1 ? "bg-gold text-black" : ""}`}
+                                    >
+                                      {r.position}º
+                                    </Badge>
                                     <Avatar className="h-5 w-5 flex-shrink-0">
-                                      {avatarMap[r.player_id] && <AvatarImage src={avatarMap[r.player_id] || undefined} alt={r.player_name} />}
-                                      <AvatarFallback className="text-[9px] bg-secondary">{r.player_name.charAt(0).toUpperCase()}</AvatarFallback>
+                                      {avatarMap[r.player_id] && (
+                                        <AvatarImage src={avatarMap[r.player_id] || undefined} alt={r.player_name} />
+                                      )}
+                                      <AvatarFallback className="text-[9px] bg-secondary">
+                                        {r.player_name.charAt(0).toUpperCase()}
+                                      </AvatarFallback>
                                     </Avatar>
                                     <span className="flex-1 font-medium flex items-center gap-1 min-w-0 truncate">
                                       {r.player_name}
-                                      {r.player_id === m.first_player_id && <Flag className="h-3.5 w-3.5 text-gold ml-1" />}
+                                      {r.player_id === m.first_player_id && (
+                                        <Flag className="h-3.5 w-3.5 text-gold ml-1" />
+                                      )}
                                     </span>
                                     <span className="text-muted-foreground">{r.score} pts</span>
-                                    <span className={`text-xs font-medium ${r.mmr_change >= 0 ? "text-green-500" : "text-red-500"}`}>
-                                      {r.mmr_change >= 0 ? "+" : ""}{r.mmr_change} MMR
+                                    <span
+                                      className={`text-xs font-medium ${r.mmr_change >= 0 ? "text-green-500" : "text-red-500"}`}
+                                    >
+                                      {r.mmr_change >= 0 ? "+" : ""}
+                                      {r.mmr_change} MMR
                                     </span>
                                   </div>
                                 ))}
@@ -943,7 +1120,6 @@ const SeasonDetail = () => {
                 </div>
               )}
             </TabsContent>
-
           </Tabs>
         </main>
       </div>

@@ -494,11 +494,15 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
                   <Button variant="outline" size="sm" className="h-9 flex-1 lg:flex-initial" onClick={() => setResultModalOpen(true)}>
                     <Eye className="h-3.5 w-3.5 mr-1" /> Ver Resultados
                   </Button>
-                ) : (
+                ) : canInsertResult ? (
                   <Button variant="gold" size="sm" className="h-9 flex-1 lg:flex-initial" onClick={() => setMatchFlowOpen(true)}>
                     <ClipboardList className="h-3.5 w-3.5 mr-1" /> Inserir Resultado
                   </Button>
-                )}
+                ) : isRpg ? (
+                  <div className="h-9 flex-1 lg:flex-initial flex items-center px-3 rounded-md border border-dashed border-border text-[11px] text-muted-foreground">
+                    Aguardando o mestre inserir o resultado
+                  </div>
+                ) : null}
                 {canManage && (
                   <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0 text-destructive hover:text-destructive" onClick={handleDelete} disabled={loading} title="Excluir sala">
                     <Trash2 className="h-3.5 w-3.5" />

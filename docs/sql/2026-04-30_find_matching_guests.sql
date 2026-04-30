@@ -65,7 +65,7 @@ AS $$
   ORDER BY match_score DESC, g.created_at ASC;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.find_matching_guests(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.find_matching_guests(uuid) TO authenticated, anon;
 
 -- =====================================================================
 -- Notifica admins quando matches são detectados (chamado pelo cliente

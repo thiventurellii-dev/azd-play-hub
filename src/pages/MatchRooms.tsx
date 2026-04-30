@@ -107,7 +107,7 @@ const MatchRooms = () => {
       supabase
         .from("match_rooms")
         .select(
-          "id, title, description, scheduled_at, max_players, status, created_by, season_id, blood_script_id, room_type, campaign_id, community_id, community_only, session_number, session_recap, session_title, duration_minutes, game:games(id, name, image_url)",
+          "id, title, description, scheduled_at, max_players, status, created_by, season_id, blood_script_id, room_type, campaign_id, community_id, community_only, accept_observers, session_number, session_recap, session_title, duration_minutes, game:games(id, name, image_url)",
         )
         .eq("id", roomParam)
         .maybeSingle(),
@@ -154,7 +154,7 @@ const MatchRooms = () => {
     const { data } = await supabase
       .from("match_rooms")
       .select(
-        "id, title, description, scheduled_at, max_players, status, created_by, season_id, blood_script_id, room_type, campaign_id, community_id, community_only, session_number, session_recap, session_title, duration_minutes, result_id, result_type, game:games(id, name, image_url), match_room_tag_links(room_tags(name))",
+        "id, title, description, scheduled_at, max_players, status, created_by, season_id, blood_script_id, room_type, campaign_id, community_id, community_only, accept_observers, session_number, session_recap, session_title, duration_minutes, result_id, result_type, game:games(id, name, image_url), match_room_tag_links(room_tags(name))",
       )
       .order("scheduled_at", { ascending: true });
 

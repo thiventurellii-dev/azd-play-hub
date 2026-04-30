@@ -913,6 +913,13 @@ const NewBoardgameFlow = ({
               <UserPlus className="h-3 w-3" /> + Eu
             </button>
           )}
+          <button
+            onClick={() => setAddGuestOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs text-amber-400 hover:bg-amber-500/20"
+            title="Cadastrar jogador sem conta"
+          >
+            <UserCircle2 className="h-3 w-3" /> + Convidado
+          </button>
           {friendIds.length > 0 && (
             <Popover
               open={friendsOpen}

@@ -107,7 +107,7 @@ const LoggedInIndex = () => {
 
       <section className="container pb-16">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <Link to={seasonLink} className="group block order-1 h-full sm:order-none">
+          <Link to={seasonLink} className="group block order-2 h-full sm:order-none">
             <DashboardCard title={activeSeason?.name ?? "Ranking da Season"} icon={<span>🏆</span>} delay={0.6} loading={loading}>
               {activeSeason ? (
                 <div className="space-y-4">
@@ -168,7 +168,7 @@ const LoggedInIndex = () => {
             </DashboardCard>
           </Link>
 
-          <Link to="/partidas" className="group block order-2 h-full sm:order-none">
+          <Link to="/partidas" className="group block order-1 h-full sm:order-none">
             <DashboardCard
               title="Próximas Partidas"
               icon={<Calendar className="h-4 w-4" />}

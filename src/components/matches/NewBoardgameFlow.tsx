@@ -380,8 +380,7 @@ const NewBoardgameFlow = ({
     } else if (scoredCount < filledCount) {
       const missing = entries.filter((e) => e.player_id && e.total_score == null);
       const first = missing[0];
-      const prof = profiles.find((p) => p.id === first?.player_id);
-      const name = prof?.nickname || prof?.name || "jogador";
+      const name = first ? resolveEntryName(first) : "jogador";
       msg = missing.length === 1 ? `Falta a pontuação de ${name}` : `Faltam ${missing.length} pontuações`;
     }
     return { pct, msg, ready: done === total };

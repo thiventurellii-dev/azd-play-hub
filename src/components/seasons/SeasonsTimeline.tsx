@@ -197,7 +197,7 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
               </div>
 
               {/* Quarter row */}
-              <div className="relative h-10 border-b border-border/40">
+              <div className="relative h-7 border-b border-border/40">
                 {quarterMarks.map((q, i) => {
                   const startPct = ((q.startDate.getTime() - rangeStart.getTime()) / totalMs) * 100;
                   const endPct = ((q.endDate.getTime() - rangeStart.getTime()) / totalMs) * 100;
@@ -208,11 +208,10 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
                   return (
                     <div
                       key={i}
-                      className="absolute top-0 h-full flex flex-col justify-center pl-2 border-l border-border/40"
+                      className="absolute top-0 h-full flex items-center pl-2 border-l border-border/40"
                       style={{ left: `${clampedStart}%`, width: `${width}%` }}
                     >
                       <span className="text-xs font-bold text-foreground leading-tight">{q.label}</span>
-                      <span className="text-[9px] text-muted-foreground leading-tight truncate">{q.months}</span>
                     </div>
                   );
                 })}

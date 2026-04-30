@@ -258,7 +258,6 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
                     const widthPct = Math.max(1, endPct - startPct);
                     const participates = participatedIds.has(s.id);
                     const rgb = colorFor(s, idx);
-                    const isFinished = s.status === "finished";
                     const isFuture = new Date(s.start_date) > today;
 
                     const barStyle: React.CSSProperties = {
@@ -266,11 +265,8 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
                       width: `${widthPct}%`,
                     };
 
-                    if (isFinished) {
-                      // Flat, low contrast
-                      barStyle.background = rgba(rgb, 0.45);
-                    } else if (participates) {
-                      // Active + participating: full gradient + glow
+                    if (participates) {
+                      // Participating: full gradient + glow (same treatment for active and finished)
                       barStyle.background = `linear-gradient(90deg, ${rgba(rgb, 0.2)} 0%, ${rgba(rgb, 0.6)} 40%, ${rgba(rgb, 1)} 100%)`;
                       if (!isFuture) {
                         barStyle.boxShadow = `0 0 12px ${rgba(rgb, 0.35)}, 0 0 24px ${rgba(rgb, 0.2)}`;

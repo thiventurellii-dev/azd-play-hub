@@ -759,7 +759,7 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
 
             return (
               <div key={i} className="space-y-2">
-                <div className="grid grid-cols-[40px_1fr_auto_auto_auto] items-center gap-2 rounded-lg border border-border/40 bg-background/40 px-2 py-2">
+                <div className="grid grid-cols-[40px_1fr_auto_auto_auto] items-center gap-3 rounded-lg border border-border/40 bg-background/40 px-2 py-2">
                   {/* Seat */}
                   <Input
                     type="number"

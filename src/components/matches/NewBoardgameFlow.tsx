@@ -680,7 +680,28 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
           </div>
         </div>
 
-        {gameId && seasons.find(s => s.status === 'active') && (
+        {/* Community link selector — visible when not pre-filled and user is in any community */}
+        {!prefilledCommunityId && userCommunities.length > 0 && (
+          <div className="space-y-1">
+            <label className="text-[11px] uppercase tracking-wide text-muted-foreground">Comunidade (opcional)</label>
+            <Select
+              value={selectedCommunityId ?? 'none'}
+              onValueChange={(v) => setSelectedCommunityId(v === 'none' ? null : v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Sem comunidade" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sem comunidade</SelectItem>
+                {userCommunities.map(c => (
+                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {gameId && seasons.find(s => s.status === 'active') && activeSeasonGameIds.includes(gameId) && (
           <label className="flex items-center justify-between gap-3 rounded-lg border border-gold/30 bg-gold/5 px-3 py-2 cursor-pointer">
             <div className="flex items-center gap-2">
               <Checkbox

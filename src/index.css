@@ -42,6 +42,13 @@
     --surface: 0 0% 6%;
     --surface-raised: 0 0% 10%;
 
+    /* Domain accents (Boardgame=gold, BotC=red, RPG=purple) */
+    --domain-board: 43 96% 56%;
+    --domain-botc: 0 73% 67%;
+    --domain-rpg: 261 100% 83%;
+    --domain-info: 207 100% 64%;
+    --domain-positive: 142 76% 73%;
+
     --sidebar-background: 0 0% 6%;
     --sidebar-foreground: 0 0% 85%;
     --sidebar-primary: 43 100% 50%;

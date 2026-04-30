@@ -62,6 +62,7 @@ const AdminBloodMatches = () => {
   const [editPlayedTime, setEditPlayedTime] = useState('');
   const [editDuration, setEditDuration] = useState('');
   const [editStorytellerId, setEditStorytellerId] = useState('');
+  const [editStorytellerIsGuest, setEditStorytellerIsGuest] = useState(false);
   const [editWinningTeam, setEditWinningTeam] = useState<'good' | 'evil'>('good');
   const [editEvilPlayers, setEditEvilPlayers] = useState<BloodPlayerEntry[]>([]);
   const [editGoodPlayers, setEditGoodPlayers] = useState<BloodPlayerEntry[]>([]);

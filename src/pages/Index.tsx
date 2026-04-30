@@ -168,7 +168,7 @@ const LoggedInIndex = () => {
             </DashboardCard>
           </Link>
 
-          <Link to="/partidas" className="group block order-1 h-full sm:order-1">
+          <Link to="/partidas" className="group block order-3 h-full sm:order-3">
             <DashboardCard
               title="Próximas Partidas"
               icon={<Calendar className="h-4 w-4" />}
@@ -212,7 +212,7 @@ const LoggedInIndex = () => {
             </DashboardCard>
           </Link>
 
-          <Link to="/games" className="group block order-3 h-full sm:order-none">
+          <Link to="/games" className="group block order-1 h-full sm:order-1">
             <DashboardCard title="Últimas Partidas" icon={<span>🎲</span>} delay={0.7} loading={loading}>
               {recentMatches.length > 0 ? (
                 <div className="space-y-2">

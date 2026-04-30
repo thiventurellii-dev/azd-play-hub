@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Shield, Calendar, Users, Trophy, FileText, AtSign, Lightbulb, Award, ClipboardList, Swords, ChevronDown, PanelLeftClose, PanelLeftOpen, ScrollText, GitPullRequest } from "lucide-react";
+import { Shield, Calendar, Users, Trophy, FileText, AtSign, Lightbulb, Award, ClipboardList, Swords, ChevronDown, PanelLeftClose, PanelLeftOpen, ScrollText, GitPullRequest, UserCheck } from "lucide-react";
 import AdminSeasons from "@/components/admin/AdminSeasons";
 import AdminBloodMatches from "@/components/admin/AdminBloodMatches";
 import AdminBloodScripts from "@/components/admin/AdminBloodScripts";

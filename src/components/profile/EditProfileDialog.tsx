@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -25,7 +26,7 @@ export const EditProfileDialog = ({ open, onOpenChange, userId, initialProfile, 
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     name: '', nickname: '', phone: '', country_code: '+55',
-    state: '', city: '', birth_date: '', gender: '', pronouns: '',
+    state: '', city: '', birth_date: '', gender: '', pronouns: '', bio: '',
   });
   const [tags, setTags] = useState<PlayerTag[]>([]);
 
@@ -41,6 +42,7 @@ export const EditProfileDialog = ({ open, onOpenChange, userId, initialProfile, 
         birth_date: initialProfile.birth_date || '',
         gender: initialProfile.gender || '',
         pronouns: initialProfile.pronouns || '',
+        bio: initialProfile.bio || '',
       });
       setTags(initialTags);
     }
@@ -66,6 +68,7 @@ export const EditProfileDialog = ({ open, onOpenChange, userId, initialProfile, 
       birth_date: form.birth_date,
       gender: form.gender,
       pronouns: form.pronouns,
+      bio: form.bio.trim() || null,
     };
     const { error } = await supabase.from('profiles').update(updates as any).eq('id', userId);
     if (error) { setSaving(false); return notify('error', error.message); }

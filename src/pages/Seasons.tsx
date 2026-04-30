@@ -19,6 +19,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { SeasonsTimeline } from "@/components/seasons/SeasonsTimeline";
 import { SeasonCardLarge } from "@/components/seasons/SeasonCardLarge";
 import { SeasonRowFinished } from "@/components/seasons/SeasonRowFinished";
+import { buildSeasonColorMap } from "@/lib/seasonColors";
 
 const Seasons = () => {
   const { isAdmin } = useAuth();

@@ -65,6 +65,19 @@ const Profile = () => {
     });
   }, [user]);
 
+  // Auto-sugestão de reivindicação de guests (uma vez por usuário)
+  useEffect(() => {
+    if (!user) return;
+    const key = `azd:guest-match-checked:${user.id}`;
+    if (localStorage.getItem(key)) return;
+    supabase.rpc('find_matching_guests', { p_profile_id: user.id }).then(({ data, error }) => {
+      if (error) { console.warn('find_matching_guests error', error); return; }
+      const matches = (data as any[]) || [];
+      if (matches.length > 0) setAutoMatchOpen(true);
+      localStorage.setItem(key, '1');
+    });
+  }, [user]);
+
   // Save handler now lives in EditProfileDialog. The dialog calls onSaved with
   // the updated profile + tags so we can refresh local state without a refetch.
   const handleProfileSaved = (updated: any, newTags: PlayerTag[]) => {

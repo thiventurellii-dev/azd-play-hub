@@ -40,7 +40,7 @@ const statusBadge = (s: string) => {
 };
 
 const AdminClaimRequests = () => {
-  const { notify, confirm } = useNotification();
+  const { notify } = useNotification();
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<ClaimRow[]>([]);
   const [filter, setFilter] = useState<Status>('all');

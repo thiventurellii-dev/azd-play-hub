@@ -527,7 +527,8 @@ const NewBoardgameFlow = ({
         positionMap[e.player_id] = i + 1;
       });
 
-      // Only registered users participate in MMR
+      // Guests participam do ELO normalmente (para preservar a fórmula posicional),
+      // mas não persistem em mmr_ratings — apenas registered users tem rating salvo.
       const registeredFilled = filled.filter((e) => !e.is_guest);
       const registeredIds = registeredFilled.map((e) => e.player_id);
       const effectiveSeasonId =
@@ -543,40 +544,47 @@ const NewBoardgameFlow = ({
       let winsMap: Record<string, number> = {};
       let eloChanges: Record<string, number> = {};
 
-      // MMR only when linked to season AND there are registered players
-      const computeMmr = linkToSeason && !!seasonId && registeredIds.length > 0;
+      const computeMmr = linkToSeason && !!seasonId;
       if (computeMmr) {
-        const { data: mmrData } = await supabase
-          .from("mmr_ratings")
-          .select("player_id, current_mmr, games_played, wins")
-          .eq("season_id", seasonId)
-          .eq("game_id", gameId)
-          .in("player_id", registeredIds);
-        for (const m of mmrData || []) {
-          mmrMap[(m as any).player_id] = (m as any).current_mmr;
-          gpMap[(m as any).player_id] = (m as any).games_played;
-          winsMap[(m as any).player_id] = (m as any).wins;
-        }
-        for (const pid of registeredIds) {
-          if (!(pid in mmrMap)) {
-            mmrMap[pid] = 1000;
-            gpMap[pid] = 0;
-            winsMap[pid] = 0;
-            await supabase.rpc("upsert_mmr_for_match", {
-              p_player_id: pid,
-              p_season_id: seasonId,
-              p_game_id: gameId,
-              p_current_mmr: 1000,
-              p_games_played: 0,
-              p_wins: 0,
-            });
+        if (registeredIds.length > 0) {
+          const { data: mmrData } = await supabase
+            .from("mmr_ratings")
+            .select("player_id, current_mmr, games_played, wins")
+            .eq("season_id", seasonId)
+            .eq("game_id", gameId)
+            .in("player_id", registeredIds);
+          for (const m of mmrData || []) {
+            mmrMap[(m as any).player_id] = (m as any).current_mmr;
+            gpMap[(m as any).player_id] = (m as any).games_played;
+            winsMap[(m as any).player_id] = (m as any).wins;
+          }
+          for (const pid of registeredIds) {
+            if (!(pid in mmrMap)) {
+              mmrMap[pid] = 1000;
+              gpMap[pid] = 0;
+              winsMap[pid] = 0;
+              await supabase.rpc("upsert_mmr_for_match", {
+                p_player_id: pid,
+                p_season_id: seasonId,
+                p_game_id: gameId,
+                p_current_mmr: 1000,
+                p_games_played: 0,
+                p_wins: 0,
+              });
+            }
           }
         }
-        // ELO computed only between registered players (positions relative to each other)
-        const registeredRanked = [...registeredFilled].sort(
+        // Guests entram no ELO com rating default 1000 — preserva fórmula posicional.
+        // Quando o guest claim, recálculo retroativo reatribui o histórico.
+        for (const e of filled) {
+          if (e.is_guest && !(e.player_id in mmrMap)) {
+            mmrMap[e.player_id] = 1000;
+          }
+        }
+        const allRanked = [...filled].sort(
           (a, b) => positionMap[a.player_id] - positionMap[b.player_id],
         );
-        const eloResults = registeredRanked.map((e, i) => ({ player_id: e.player_id, position: i + 1 }));
+        const eloResults = allRanked.map((e, i) => ({ player_id: e.player_id, position: i + 1 }));
         eloChanges = calculateElo(eloResults, mmrMap);
       }
 

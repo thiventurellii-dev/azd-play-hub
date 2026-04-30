@@ -19,6 +19,7 @@ import { useProfileTags } from '@/hooks/useProfileTags';
 import { MyCampaignsCard } from '@/components/rpg/MyCampaignsCard';
 import { EditProfileDialog } from '@/components/profile/EditProfileDialog';
 import { ClaimGuestDialog } from '@/components/profile/ClaimGuestDialog';
+import { PostSignupGuestMatchDialog } from '@/components/profile/PostSignupGuestMatchDialog';
 
 const Profile = () => {
   const { user, role } = useAuth();

@@ -10,7 +10,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { useNotification } from "@/components/NotificationDialog";
 import { DatePickerField } from "@/components/ui/date-picker-field";
-import { Check, ChevronDown, ChevronRight, Crown, Search, Trash2, Upload, UserPlus, Users, X } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, Crown, Search, Trash2, Upload, UserPlus, Users, X, UserCircle2 } from "lucide-react";
+import AddGuestDialog from "@/components/players/AddGuestDialog";
+import { fetchUnclaimedGuests, type GuestPlayer } from "@/lib/guestPlayers";
 
 interface Season {
   id: string;
@@ -32,7 +34,8 @@ interface Profile {
   avatar_url: string | null;
 }
 interface Entry {
-  player_id: string;
+  player_id: string;        // profile.id OR ghost_player.id
+  is_guest: boolean;        // true => player_id refers to ghost_players.id
   seat_position: number;
   faction: string;
   total_score: number | null;
@@ -73,6 +76,8 @@ const NewBoardgameFlow = ({
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [games, setGames] = useState<Game[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [guests, setGuests] = useState<GuestPlayer[]>([]);
+  const [addGuestOpen, setAddGuestOpen] = useState(false);
   const [recentGames, setRecentGames] = useState<Game[]>([]);
   const [gamePlayCounts, setGamePlayCounts] = useState<Record<string, number>>({});
   const [avgDurations, setAvgDurations] = useState<Record<string, number>>({});
@@ -97,6 +102,7 @@ const NewBoardgameFlow = ({
     prefilledPlayers && prefilledPlayers.length > 0
       ? prefilledPlayers.map((pid, i) => ({
           player_id: pid,
+          is_guest: false,
           seat_position: i + 1,
           faction: "",
           total_score: null,
@@ -132,7 +138,7 @@ const NewBoardgameFlow = ({
   const [saving, setSaving] = useState(false);
 
   function emptyEntry(seat: number): Entry {
-    return { player_id: "", seat_position: seat, faction: "", total_score: null, scores: {}, scoring_open: false };
+    return { player_id: "", is_guest: false, seat_position: seat, faction: "", total_score: null, scores: {}, scoring_open: false };
   }
 
   // Initial fetch
@@ -169,6 +175,9 @@ const NewBoardgameFlow = ({
       const allGames = ((g.data || []) as Game[]).filter((gm) => gm.slug !== "blood-on-the-clocktower");
       setGames(allGames);
       setProfiles((p.data || []) as Profile[]);
+
+      // Load unclaimed guest profiles
+      fetchUnclaimedGuests().then(setGuests);
 
       // Recent games + play counts (overall + avg duration)
       const { data: matches } = await supabase
@@ -311,6 +320,17 @@ const NewBoardgameFlow = ({
   const minPlayers = selectedGame?.min_players || 1;
   const maxPlayers = selectedGame?.max_players || 99;
 
+  // Resolve display name for an entry (supports profiles + guests)
+  const resolveEntryName = (e: Entry): string => {
+    if (!e.player_id) return "jogador";
+    if (e.is_guest) {
+      const g = guests.find((gg) => gg.id === e.player_id);
+      return g?.nickname || g?.name || "convidado";
+    }
+    const p = profiles.find((pp) => pp.id === e.player_id);
+    return p?.nickname || p?.name || "jogador";
+  };
+
   // Schema scorable fields (flat)
   const scorableFields: SchemaField[] = useMemo(() => {
     if (!scoringSchema) return [];
@@ -371,8 +391,7 @@ const NewBoardgameFlow = ({
     } else if (scoredCount < filledCount) {
       const missing = entries.filter((e) => e.player_id && e.total_score == null);
       const first = missing[0];
-      const prof = profiles.find((p) => p.id === first?.player_id);
-      const name = prof?.nickname || prof?.name || "jogador";
+      const name = first ? resolveEntryName(first) : "jogador";
       msg = missing.length === 1 ? `Falta a pontuação de ${name}` : `Faltam ${missing.length} pontuações`;
     }
     return { pct, msg, ready: done === total };
@@ -508,7 +527,9 @@ const NewBoardgameFlow = ({
         positionMap[e.player_id] = i + 1;
       });
 
-      const playerIds = filled.map((e) => e.player_id);
+      // Only registered users participate in MMR
+      const registeredFilled = filled.filter((e) => !e.is_guest);
+      const registeredIds = registeredFilled.map((e) => e.player_id);
       const effectiveSeasonId =
         linkToSeason && seasonId ? seasonId : seasons.find((s) => s.status === "active")?.id || seasons[0]?.id;
       if (!effectiveSeasonId) {
@@ -522,19 +543,21 @@ const NewBoardgameFlow = ({
       let winsMap: Record<string, number> = {};
       let eloChanges: Record<string, number> = {};
 
-      if (linkToSeason && seasonId) {
+      // MMR only when linked to season AND there are registered players
+      const computeMmr = linkToSeason && !!seasonId && registeredIds.length > 0;
+      if (computeMmr) {
         const { data: mmrData } = await supabase
           .from("mmr_ratings")
           .select("player_id, current_mmr, games_played, wins")
           .eq("season_id", seasonId)
           .eq("game_id", gameId)
-          .in("player_id", playerIds);
+          .in("player_id", registeredIds);
         for (const m of mmrData || []) {
           mmrMap[(m as any).player_id] = (m as any).current_mmr;
           gpMap[(m as any).player_id] = (m as any).games_played;
           winsMap[(m as any).player_id] = (m as any).wins;
         }
-        for (const pid of playerIds) {
+        for (const pid of registeredIds) {
           if (!(pid in mmrMap)) {
             mmrMap[pid] = 1000;
             gpMap[pid] = 0;
@@ -549,7 +572,11 @@ const NewBoardgameFlow = ({
             });
           }
         }
-        const eloResults = filled.map((e) => ({ player_id: e.player_id, position: positionMap[e.player_id] }));
+        // ELO computed only between registered players (positions relative to each other)
+        const registeredRanked = [...registeredFilled].sort(
+          (a, b) => positionMap[a.player_id] - positionMap[b.player_id],
+        );
+        const eloResults = registeredRanked.map((e, i) => ({ player_id: e.player_id, position: i + 1 }));
         eloChanges = calculateElo(eloResults, mmrMap);
       }
 
@@ -584,15 +611,18 @@ const NewBoardgameFlow = ({
 
       const matchResults = filled.map((e) => {
         const pos = positionMap[e.player_id];
+        const isGuest = e.is_guest;
+        const mmrBefore = isGuest ? null : mmrMap[e.player_id] || 1000;
+        const mmrChange = isGuest ? 0 : eloChanges[e.player_id] || 0;
         return {
           match_id: match.id,
-          player_id: e.player_id,
-          ghost_player_id: null,
+          player_id: isGuest ? null : e.player_id,
+          ghost_player_id: isGuest ? e.player_id : null,
           position: pos,
           score: e.total_score || 0,
-          mmr_before: mmrMap[e.player_id] || 1000,
-          mmr_change: eloChanges[e.player_id] || 0,
-          mmr_after: (mmrMap[e.player_id] || 1000) + (eloChanges[e.player_id] || 0),
+          mmr_before: mmrBefore,
+          mmr_change: mmrChange,
+          mmr_after: isGuest ? null : (mmrMap[e.player_id] || 1000) + mmrChange,
           seat_position: e.seat_position,
           faction: e.faction || null,
           is_new_player: false,
@@ -604,7 +634,12 @@ const NewBoardgameFlow = ({
       if (hasSchema && insertedResults) {
         const detailed: any[] = [];
         for (const ir of insertedResults) {
-          const e = filled.find((en) => en.player_id === (ir as any).player_id);
+          // Match by player_id OR ghost_player_id depending on entry kind
+          const e = filled.find((en) =>
+            en.is_guest
+              ? (ir as any).ghost_player_id === en.player_id
+              : (ir as any).player_id === en.player_id,
+          );
           if (e?.scores) {
             for (const [key, value] of Object.entries(e.scores)) {
               if (typeof value === "number" && value !== 0) {
@@ -616,8 +651,8 @@ const NewBoardgameFlow = ({
         if (detailed.length > 0) await supabase.from("match_result_scores").insert(detailed);
       }
 
-      if (linkToSeason && seasonId) {
-        for (const e of filled) {
+      if (computeMmr) {
+        for (const e of registeredFilled) {
           const isWin = positionMap[e.player_id] === 1;
           await supabase.rpc("upsert_mmr_for_match", {
             p_player_id: e.player_id,
@@ -894,6 +929,13 @@ const NewBoardgameFlow = ({
               <UserPlus className="h-3 w-3" /> + Eu
             </button>
           )}
+          <button
+            onClick={() => setAddGuestOpen(true)}
+            className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs text-amber-400 hover:bg-amber-500/20"
+            title="Cadastrar jogador sem conta"
+          >
+            <UserCircle2 className="h-3 w-3" /> + Convidado
+          </button>
           {friendIds.length > 0 && (
             <Popover
               open={friendsOpen}
@@ -1075,7 +1117,8 @@ const NewBoardgameFlow = ({
 
         <div className="space-y-2">
           {entries.map((e, i) => {
-            const player = profiles.find((p) => p.id === e.player_id);
+            const player = !e.is_guest ? profiles.find((p) => p.id === e.player_id) : null;
+            const guest = e.is_guest ? guests.find((g) => g.id === e.player_id) : null;
             const podiumInfo = podium[e.player_id];
             const pos = podiumInfo?.pos ?? null;
             const usedIds = entries
@@ -1109,37 +1152,91 @@ const NewBoardgameFlow = ({
                             </Avatar>
                             <span className="text-sm font-medium truncate">{player.nickname || player.name}</span>
                           </>
+                        ) : guest ? (
+                          <>
+                            <div className="h-7 w-7 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
+                              <UserCircle2 className="h-4 w-4 text-amber-400" />
+                            </div>
+                            <span className="text-sm font-medium truncate text-amber-200">
+                              {guest.nickname}
+                              <span className="ml-1 text-[10px] text-amber-400/70">convidado</span>
+                            </span>
+                          </>
                         ) : (
                           <span className="text-sm text-muted-foreground">Selecionar jogador...</span>
                         )}
                       </button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[260px] p-0" align="start">
+                    <PopoverContent className="w-[280px] p-0" align="start">
                       <Command>
-                        <CommandInput placeholder="Buscar jogador..." />
+                        <CommandInput placeholder="Buscar jogador ou convidado..." />
                         <CommandList>
-                          <CommandEmpty>Nenhum jogador encontrado.</CommandEmpty>
-                          <CommandGroup>
+                          <CommandEmpty>
+                            <div className="py-3 text-sm space-y-2">
+                              <p className="text-muted-foreground">Nenhum jogador encontrado.</p>
+                              <button
+                                type="button"
+                                onClick={() => { setOpenPicker(null); setAddGuestOpen(true); }}
+                                className="text-gold hover:underline text-xs"
+                              >
+                                + Cadastrar como convidado
+                              </button>
+                            </div>
+                          </CommandEmpty>
+                          <CommandGroup heading="Jogadores cadastrados">
                             {profiles
                               .filter((p) => !usedIds.includes(p.id))
                               .map((p) => (
                                 <CommandItem
-                                  key={p.id}
+                                  key={`p-${p.id}`}
                                   value={`${p.nickname || ""} ${p.name}`}
                                   onSelect={() => {
-                                    updateEntry(i, { player_id: p.id });
+                                    updateEntry(i, { player_id: p.id, is_guest: false });
                                     setOpenPicker(null);
                                   }}
                                 >
                                   <Check
-                                    className={`mr-2 h-4 w-4 ${e.player_id === p.id ? "opacity-100" : "opacity-0"}`}
+                                    className={`mr-2 h-4 w-4 ${!e.is_guest && e.player_id === p.id ? "opacity-100" : "opacity-0"}`}
                                   />
                                   {p.nickname || p.name}
                                   {p.nickname && <span className="ml-1 text-xs text-muted-foreground">({p.name})</span>}
                                 </CommandItem>
                               ))}
                           </CommandGroup>
+                          {guests.filter((g) => !usedIds.includes(g.id)).length > 0 && (
+                            <CommandGroup heading="Convidados">
+                              {guests
+                                .filter((g) => !usedIds.includes(g.id))
+                                .map((g) => (
+                                  <CommandItem
+                                    key={`g-${g.id}`}
+                                    value={`${g.nickname} ${g.name || ""} guest`}
+                                    onSelect={() => {
+                                      updateEntry(i, { player_id: g.id, is_guest: true });
+                                      setOpenPicker(null);
+                                    }}
+                                  >
+                                    <Check
+                                      className={`mr-2 h-4 w-4 ${e.is_guest && e.player_id === g.id ? "opacity-100" : "opacity-0"}`}
+                                    />
+                                    <UserCircle2 className="mr-1 h-3.5 w-3.5 text-amber-400" />
+                                    {g.nickname}
+                                    {g.name && <span className="ml-1 text-xs text-muted-foreground">({g.name})</span>}
+                                  </CommandItem>
+                                ))}
+                            </CommandGroup>
+                          )}
                         </CommandList>
+                        <div className="border-t border-border p-2">
+                          <button
+                            type="button"
+                            onClick={() => { setOpenPicker(null); setAddGuestOpen(true); }}
+                            className="w-full text-xs text-amber-400 hover:bg-amber-500/10 rounded px-2 py-1.5 inline-flex items-center justify-center gap-1.5"
+                          >
+                            <UserCircle2 className="h-3.5 w-3.5" />
+                            Adicionar novo convidado
+                          </button>
+                        </div>
                       </Command>
                     </PopoverContent>
                   </Popover>
@@ -1332,6 +1429,23 @@ const NewBoardgameFlow = ({
           {saving ? "Salvando..." : "Registrar partida"}
         </Button>
       </div>
+
+      {/* Add guest dialog */}
+      <AddGuestDialog
+        open={addGuestOpen}
+        onOpenChange={setAddGuestOpen}
+        onCreated={(g) => {
+          setGuests((prev) => [g, ...prev]);
+          // Auto-fill into first empty entry, or append
+          setEntries((prev) => {
+            const next = [...prev];
+            const empty = next.findIndex((e) => !e.player_id);
+            if (empty >= 0) next[empty] = { ...next[empty], player_id: g.id, is_guest: true };
+            else next.push({ ...emptyEntry(next.length + 1), player_id: g.id, is_guest: true });
+            return next;
+          });
+        }}
+      />
     </div>
   );
 };

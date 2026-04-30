@@ -78,6 +78,7 @@ const contentMap: Record<string, React.ReactNode> = {
   suggestions: <AdminSuggestions />,
   logs: <AdminLogs />,
   proposals: <AdminEditProposals />,
+  claims: <AdminClaimRequests />,
 };
 
 const Admin = () => {

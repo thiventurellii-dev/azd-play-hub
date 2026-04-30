@@ -770,12 +770,13 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
         </div>
 
         {/* Header row */}
-        <div className="grid grid-cols-[40px_1fr_auto_auto_auto] gap-3 text-[10px] uppercase tracking-wide text-muted-foreground px-2">
+        <div className="grid grid-cols-[40px_1fr_auto_auto_auto_32px] gap-3 text-[10px] uppercase tracking-wide text-muted-foreground px-2">
           <div className="text-center">Assento</div>
           <div className="pl-2">Jogador</div>
           {gameFactions.length > 0 && <div className="w-[110px]">Facção</div>}
           <div className="w-[80px] text-right">Pontuação</div>
           <div className="w-[60px] text-center">Posição</div>
+          <div />
         </div>
 
         <div className="space-y-2">
@@ -787,7 +788,7 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
 
             return (
               <div key={i} className="space-y-2">
-                <div className="grid grid-cols-[40px_1fr_auto_auto_auto] items-center gap-3 rounded-lg border border-border/40 bg-background/40 px-2 py-2">
+                <div className="grid grid-cols-[40px_1fr_auto_auto_auto_32px] items-center gap-3 rounded-lg border border-border/40 bg-background/40 px-2 py-2">
                   {/* Seat */}
                   <Input
                     type="number"
@@ -869,10 +870,18 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
                   <PodiumCell pos={pos} hasScore={e.total_score != null} />
 
                   {/* Remove */}
-                  {entries.length > 1 && (
-                    <button onClick={() => removeEntry(i)} className="col-start-5 row-start-1 -mr-1 hidden">
+                  {entries.length > 1 ? (
+                    <button
+                      type="button"
+                      onClick={() => removeEntry(i)}
+                      className="h-8 w-8 inline-flex items-center justify-center rounded text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-colors"
+                      title="Remover jogador"
+                      aria-label="Remover jogador"
+                    >
                       <Trash2 className="h-4 w-4" />
                     </button>
+                  ) : (
+                    <span />
                   )}
                 </div>
 

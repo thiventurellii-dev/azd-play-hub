@@ -655,9 +655,6 @@ const MatchRooms = () => {
               <span className="inline-block w-2.5 h-2.5 rounded-sm bg-gold/10 border border-gold/50" /> Você
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="inline-block w-2.5 h-2.5 rounded-sm bg-secondary border border-green-500/50" /> Amigos
-            </span>
-            <span className="flex items-center gap-1.5">
               <span className="inline-block w-2.5 h-2.5 rounded-sm bg-secondary border border-border" /> Outros
             </span>
           </div>

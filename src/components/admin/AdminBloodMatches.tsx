@@ -35,6 +35,7 @@ const AdminBloodMatches = () => {
   const [scripts, setScripts] = useState<BloodScript[]>([]);
   const [characters, setCharacters] = useState<BloodCharacter[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
+  const [guests, setGuests] = useState<GuestPlayer[]>([]);
 
   const [seasonId, setSeasonId] = useState('');
   const [scriptId, setScriptId] = useState('');
@@ -42,6 +43,7 @@ const AdminBloodMatches = () => {
   const [playedTime, setPlayedTime] = useState('');
   const [duration, setDuration] = useState('');
   const [storytellerId, setStorytellerId] = useState('');
+  const [storytellerIsGuest, setStorytellerIsGuest] = useState(false);
   const [winningTeam, setWinningTeam] = useState<'good' | 'evil'>('good');
   const [evilPlayers, setEvilPlayers] = useState<BloodPlayerEntry[]>([{ player_id: '', is_guest: false, character_id: '', team: 'evil' }]);
   const [goodPlayers, setGoodPlayers] = useState<BloodPlayerEntry[]>([{ player_id: '', is_guest: false, character_id: '', team: 'good' }]);

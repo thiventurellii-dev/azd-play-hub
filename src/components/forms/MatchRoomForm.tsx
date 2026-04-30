@@ -500,6 +500,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
           community_only: !!selectedCommunityId && communityOnly,
           room_type: category || "boardgame",
           platform: platform || null,
+          accept_observers: acceptObservers,
           ...(isAdminMode && adminStatus
             ? { status: adminStatus as "open" | "full" | "in_progress" | "finished" | "cancelled" }
             : {}),

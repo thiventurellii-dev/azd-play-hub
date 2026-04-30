@@ -527,7 +527,8 @@ const NewBoardgameFlow = ({
         positionMap[e.player_id] = i + 1;
       });
 
-      // Only registered users participate in MMR
+      // Guests participam do ELO normalmente (para preservar a fórmula posicional),
+      // mas não persistem em mmr_ratings — apenas registered users tem rating salvo.
       const registeredFilled = filled.filter((e) => !e.is_guest);
       const registeredIds = registeredFilled.map((e) => e.player_id);
       const effectiveSeasonId =
@@ -543,40 +544,47 @@ const NewBoardgameFlow = ({
       let winsMap: Record<string, number> = {};
       let eloChanges: Record<string, number> = {};
 
-      // MMR only when linked to season AND there are registered players
-      const computeMmr = linkToSeason && !!seasonId && registeredIds.length > 0;
+      const computeMmr = linkToSeason && !!seasonId;
       if (computeMmr) {
-        const { data: mmrData } = await supabase
-          .from("mmr_ratings")
-          .select("player_id, current_mmr, games_played, wins")
-          .eq("season_id", seasonId)
-          .eq("game_id", gameId)
-          .in("player_id", registeredIds);
-        for (const m of mmrData || []) {
-          mmrMap[(m as any).player_id] = (m as any).current_mmr;
-          gpMap[(m as any).player_id] = (m as any).games_played;
-          winsMap[(m as any).player_id] = (m as any).wins;
-        }
-        for (const pid of registeredIds) {
-          if (!(pid in mmrMap)) {
-            mmrMap[pid] = 1000;
-            gpMap[pid] = 0;
-            winsMap[pid] = 0;
-            await supabase.rpc("upsert_mmr_for_match", {
-              p_player_id: pid,
-              p_season_id: seasonId,
-              p_game_id: gameId,
-              p_current_mmr: 1000,
-              p_games_played: 0,
-              p_wins: 0,
-            });
+        if (registeredIds.length > 0) {
+          const { data: mmrData } = await supabase
+            .from("mmr_ratings")
+            .select("player_id, current_mmr, games_played, wins")
+            .eq("season_id", seasonId)
+            .eq("game_id", gameId)
+            .in("player_id", registeredIds);
+          for (const m of mmrData || []) {
+            mmrMap[(m as any).player_id] = (m as any).current_mmr;
+            gpMap[(m as any).player_id] = (m as any).games_played;
+            winsMap[(m as any).player_id] = (m as any).wins;
+          }
+          for (const pid of registeredIds) {
+            if (!(pid in mmrMap)) {
+              mmrMap[pid] = 1000;
+              gpMap[pid] = 0;
+              winsMap[pid] = 0;
+              await supabase.rpc("upsert_mmr_for_match", {
+                p_player_id: pid,
+                p_season_id: seasonId,
+                p_game_id: gameId,
+                p_current_mmr: 1000,
+                p_games_played: 0,
+                p_wins: 0,
+              });
+            }
           }
         }
-        // ELO computed only between registered players (positions relative to each other)
-        const registeredRanked = [...registeredFilled].sort(
+        // Guests entram no ELO com rating default 1000 — preserva fórmula posicional.
+        // Quando o guest claim, recálculo retroativo reatribui o histórico.
+        for (const e of filled) {
+          if (e.is_guest && !(e.player_id in mmrMap)) {
+            mmrMap[e.player_id] = 1000;
+          }
+        }
+        const allRanked = [...filled].sort(
           (a, b) => positionMap[a.player_id] - positionMap[b.player_id],
         );
-        const eloResults = registeredRanked.map((e, i) => ({ player_id: e.player_id, position: i + 1 }));
+        const eloResults = allRanked.map((e, i) => ({ player_id: e.player_id, position: i + 1 }));
         eloChanges = calculateElo(eloResults, mmrMap);
       }
 
@@ -612,8 +620,8 @@ const NewBoardgameFlow = ({
       const matchResults = filled.map((e) => {
         const pos = positionMap[e.player_id];
         const isGuest = e.is_guest;
-        const mmrBefore = isGuest ? null : mmrMap[e.player_id] || 1000;
-        const mmrChange = isGuest ? 0 : eloChanges[e.player_id] || 0;
+        const mmrBefore = mmrMap[e.player_id] ?? 1000;
+        const mmrChange = eloChanges[e.player_id] ?? 0;
         return {
           match_id: match.id,
           player_id: isGuest ? null : e.player_id,
@@ -622,7 +630,7 @@ const NewBoardgameFlow = ({
           score: e.total_score || 0,
           mmr_before: mmrBefore,
           mmr_change: mmrChange,
-          mmr_after: isGuest ? null : (mmrMap[e.player_id] || 1000) + mmrChange,
+          mmr_after: mmrBefore + mmrChange,
           seat_position: e.seat_position,
           faction: e.faction || null,
           is_new_player: false,
@@ -651,7 +659,7 @@ const NewBoardgameFlow = ({
         if (detailed.length > 0) await supabase.from("match_result_scores").insert(detailed);
       }
 
-      if (computeMmr) {
+      if (computeMmr && registeredIds.length > 0) {
         for (const e of registeredFilled) {
           const isWin = positionMap[e.player_id] === 1;
           await supabase.rpc("upsert_mmr_for_match", {
@@ -929,13 +937,6 @@ const NewBoardgameFlow = ({
               <UserPlus className="h-3 w-3" /> + Eu
             </button>
           )}
-          <button
-            onClick={() => setAddGuestOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs text-amber-400 hover:bg-amber-500/20"
-            title="Cadastrar jogador sem conta"
-          >
-            <UserCircle2 className="h-3 w-3" /> + Convidado
-          </button>
           {friendIds.length > 0 && (
             <Popover
               open={friendsOpen}
@@ -945,14 +946,14 @@ const NewBoardgameFlow = ({
               }}
             >
               <PopoverTrigger asChild>
-                <button className="inline-flex items-center gap-1.5 rounded-full border border-[#ffb84a]/30 bg-[#ffb84a]/10 px-3 py-1 text-xs text-[#ffb84a] hover:bg-[#ffb84a]/20">
+                <button className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-300 hover:bg-emerald-500/20">
                   <UserPlus className="h-3 w-3" /> + Amigos
                 </button>
               </PopoverTrigger>
               <PopoverContent className="w-[280px] p-0" align="start">
                 <Command>
                   <CommandInput placeholder="Buscar amigo..." />
-                  <CommandList>
+                  <CommandList className="max-h-[280px]" onWheel={(ev) => ev.stopPropagation()}>
                     <CommandEmpty>Nenhum amigo disponível.</CommandEmpty>
                     <CommandGroup>
                       {profiles
@@ -963,6 +964,7 @@ const NewBoardgameFlow = ({
                             <CommandItem
                               key={p.id}
                               value={`${p.nickname || ""} ${p.name}`}
+                              className="data-[selected=true]:bg-secondary/70 data-[selected=true]:text-foreground"
                               onSelect={() => {
                                 setSelectedFriendsToAdd((prev) => {
                                   const next = new Set(prev);
@@ -1037,7 +1039,7 @@ const NewBoardgameFlow = ({
                 )}
                 <Command>
                   <CommandInput placeholder="Buscar membro..." />
-                  <CommandList>
+                  <CommandList className="max-h-[280px]" onWheel={(ev) => ev.stopPropagation()}>
                     <CommandEmpty>Nenhum membro disponível.</CommandEmpty>
                     <CommandGroup>
                       {profiles
@@ -1048,6 +1050,7 @@ const NewBoardgameFlow = ({
                             <CommandItem
                               key={p.id}
                               value={`${p.nickname || ""} ${p.name}`}
+                              className="data-[selected=true]:bg-secondary/70 data-[selected=true]:text-foreground"
                               onSelect={() => {
                                 setSelectedCommunityToAdd((prev) => {
                                   const next = new Set(prev);
@@ -1170,7 +1173,10 @@ const NewBoardgameFlow = ({
                     <PopoverContent className="w-[280px] p-0" align="start">
                       <Command>
                         <CommandInput placeholder="Buscar jogador ou convidado..." />
-                        <CommandList>
+                        <CommandList
+                          className="max-h-[320px]"
+                          onWheel={(ev) => ev.stopPropagation()}
+                        >
                           <CommandEmpty>
                             <div className="py-3 text-sm space-y-2">
                               <p className="text-muted-foreground">Nenhum jogador encontrado.</p>
@@ -1194,9 +1200,10 @@ const NewBoardgameFlow = ({
                                     updateEntry(i, { player_id: p.id, is_guest: false });
                                     setOpenPicker(null);
                                   }}
+                                  className="data-[selected=true]:bg-secondary/70 data-[selected=true]:text-foreground"
                                 >
                                   <Check
-                                    className={`mr-2 h-4 w-4 ${!e.is_guest && e.player_id === p.id ? "opacity-100" : "opacity-0"}`}
+                                    className={`mr-2 h-4 w-4 ${!e.is_guest && e.player_id === p.id ? "opacity-100 text-gold" : "opacity-0"}`}
                                   />
                                   {p.nickname || p.name}
                                   {p.nickname && <span className="ml-1 text-xs text-muted-foreground">({p.name})</span>}
@@ -1215,9 +1222,10 @@ const NewBoardgameFlow = ({
                                       updateEntry(i, { player_id: g.id, is_guest: true });
                                       setOpenPicker(null);
                                     }}
+                                    className="data-[selected=true]:bg-secondary/70 data-[selected=true]:text-foreground"
                                   >
                                     <Check
-                                      className={`mr-2 h-4 w-4 ${e.is_guest && e.player_id === g.id ? "opacity-100" : "opacity-0"}`}
+                                      className={`mr-2 h-4 w-4 ${e.is_guest && e.player_id === g.id ? "opacity-100 text-gold" : "opacity-0"}`}
                                     />
                                     <UserCircle2 className="mr-1 h-3.5 w-3.5 text-amber-400" />
                                     {g.nickname}
@@ -1227,16 +1235,6 @@ const NewBoardgameFlow = ({
                             </CommandGroup>
                           )}
                         </CommandList>
-                        <div className="border-t border-border p-2">
-                          <button
-                            type="button"
-                            onClick={() => { setOpenPicker(null); setAddGuestOpen(true); }}
-                            className="w-full text-xs text-amber-400 hover:bg-amber-500/10 rounded px-2 py-1.5 inline-flex items-center justify-center gap-1.5"
-                          >
-                            <UserCircle2 className="h-3.5 w-3.5" />
-                            Adicionar novo convidado
-                          </button>
-                        </div>
                       </Command>
                     </PopoverContent>
                   </Popover>
@@ -1348,15 +1346,26 @@ const NewBoardgameFlow = ({
         </div>
 
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={addEntry}
-            disabled={entries.length >= maxPlayers}
-            className="border-dashed"
-          >
-            <UserPlus className="h-4 w-4 mr-1" /> Adicionar jogador
-          </Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={addEntry}
+              disabled={entries.length >= maxPlayers}
+              className="border-dashed"
+            >
+              <UserPlus className="h-4 w-4 mr-1" /> Adicionar jogador
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setAddGuestOpen(true)}
+              className="text-amber-400 hover:text-amber-300 hover:bg-amber-500/10"
+              title="Cadastrar jogador sem conta"
+            >
+              <UserCircle2 className="h-4 w-4 mr-1" /> + Convidado
+            </Button>
+          </div>
           {hasSchema && showHelperHint && (
             <span className="text-[11px] text-muted-foreground">ⓘ Clique na pontuação pra abrir o detalhamento</span>
           )}

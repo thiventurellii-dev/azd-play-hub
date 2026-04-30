@@ -413,9 +413,9 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
         variant="outline"
         className={cn(
           "text-xs font-normal",
-          isMe && "border-gold/50 bg-gold/10 text-gold font-semibold",
-          !isMe && isFriend && "border-green-500/50 bg-secondary",
-          !isMe && !isFriend && "border-border bg-secondary text-muted-foreground",
+          isMe && "border-gold/50 bg-gold/10 text-white font-semibold",
+          !isMe && isFriend && "border-border bg-secondary text-white",
+          !isMe && !isFriend && "border-border bg-secondary text-white",
           isWaitlist && !isMe && "opacity-90"
         )}
       >

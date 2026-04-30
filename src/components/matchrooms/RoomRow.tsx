@@ -43,6 +43,8 @@ export interface MatchRoom {
   result_type?: string | null;
   room_type?: string | null;
   campaign_id?: string | null;
+  community_id?: string | null;
+  community_only?: boolean | null;
   session_number?: number | null;
   session_recap?: string | null;
   session_title?: string | null;
@@ -582,6 +584,7 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
                     prefilledPlayers={confirmed.map(p => p.player_id)}
                     prefilledDate={room.scheduled_at?.slice(0, 10)}
                     prefilledCategory="boardgame"
+                    prefilledCommunityId={room.community_id ?? undefined}
                     onComplete={handleResultComplete}
                   />
                 )}

@@ -404,11 +404,28 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
                       Competitivo
                     </Badge>
                   )}
-                  {(room.tags || []).filter(t => t.toLowerCase() !== "competitivo").map(t => (
-                    <Badge key={t} variant="outline" className="text-[10px] py-0 px-1.5 border-gold/30 text-gold/80 bg-gold/5">
-                      {t}
-                    </Badge>
-                  ))}
+                  {(room.tags || [])
+                    .filter(t => {
+                      const n = t.toLowerCase();
+                      return n !== "competitivo" && n !== "casual";
+                    })
+                    .map(t => {
+                      const isHighlight = t.toLowerCase().includes("novato");
+                      return (
+                        <Badge
+                          key={t}
+                          variant="outline"
+                          className={cn(
+                            "text-[10px] py-0 px-1.5",
+                            isHighlight
+                              ? "border-emerald-400/60 text-emerald-300 bg-emerald-500/10 shadow-[0_0_8px_-2px_hsl(var(--domain-positive)/0.5)]"
+                              : "border-gold/30 text-gold/80 bg-gold/5",
+                          )}
+                        >
+                          {t}
+                        </Badge>
+                      );
+                    })}
                   {avgMmr !== null && (
                     <Badge variant="outline" className="text-[10px] py-0 px-1.5 border-blue-500/40 text-blue-400 bg-blue-500/10 gap-1">
                       <TrendingUp className="h-2.5 w-2.5" /> MMR médio: {avgMmr}

@@ -398,6 +398,27 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
     return true;
   });
 
+  const recentGames = useMemo(() => {
+    return recentGameIds
+      .map((gid) => filteredGames.find((g) => g.id === gid))
+      .filter(Boolean)
+      .slice(0, 4) as Game[];
+  }, [recentGameIds, filteredGames]);
+
+  const filteredCatalog = useMemo(() => {
+    const q = gameSearch.trim().toLowerCase();
+    if (!q) return [];
+    return filteredGames.filter((g) => g.name.toLowerCase().includes(q)).slice(0, 8);
+  }, [gameSearch, filteredGames]);
+
+  const filteredFriends = useMemo(() => {
+    const q = friendSearch.trim().toLowerCase();
+    if (!q) return friends;
+    return friends.filter((f) =>
+      (f.nickname || f.name || "").toLowerCase().includes(q),
+    );
+  }, [friendSearch, friends]);
+
   const filteredSeasons =
     category === "boardgame"
       ? seasons.filter((s) => s.type === "boardgame" && s.status === "active")

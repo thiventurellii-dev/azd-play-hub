@@ -244,8 +244,13 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
 
   const confirmed = players.filter(p => p.type === "confirmed");
   const waitlist = players.filter(p => p.type === "waitlist");
+  const observers = players.filter(p => p.type === "observer");
+  const moderators = players.filter(p => p.type === "moderator");
+  const invitedUsers = players.filter(p => p.type === "invited");
   const isInRoom = confirmed.some(p => p.player_id === user?.id);
   const isInWait = waitlist.some(p => p.player_id === user?.id);
+  const isObserving = observers.some(p => p.player_id === user?.id);
+  const myInvite = invitedUsers.find(p => p.player_id === user?.id);
   const isFull = confirmed.length >= room.max_players;
   const canInteract = room.status === "open" || room.status === "full";
   const isCreator = user?.id === room.created_by;

@@ -1094,7 +1094,8 @@ const NewBoardgameFlow = ({
 
         <div className="space-y-2">
           {entries.map((e, i) => {
-            const player = profiles.find((p) => p.id === e.player_id);
+            const player = !e.is_guest ? profiles.find((p) => p.id === e.player_id) : null;
+            const guest = e.is_guest ? guests.find((g) => g.id === e.player_id) : null;
             const podiumInfo = podium[e.player_id];
             const pos = podiumInfo?.pos ?? null;
             const usedIds = entries
@@ -1128,37 +1129,91 @@ const NewBoardgameFlow = ({
                             </Avatar>
                             <span className="text-sm font-medium truncate">{player.nickname || player.name}</span>
                           </>
+                        ) : guest ? (
+                          <>
+                            <div className="h-7 w-7 rounded-full bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
+                              <UserCircle2 className="h-4 w-4 text-amber-400" />
+                            </div>
+                            <span className="text-sm font-medium truncate text-amber-200">
+                              {guest.nickname}
+                              <span className="ml-1 text-[10px] text-amber-400/70">convidado</span>
+                            </span>
+                          </>
                         ) : (
                           <span className="text-sm text-muted-foreground">Selecionar jogador...</span>
                         )}
                       </button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-[260px] p-0" align="start">
+                    <PopoverContent className="w-[280px] p-0" align="start">
                       <Command>
-                        <CommandInput placeholder="Buscar jogador..." />
+                        <CommandInput placeholder="Buscar jogador ou convidado..." />
                         <CommandList>
-                          <CommandEmpty>Nenhum jogador encontrado.</CommandEmpty>
-                          <CommandGroup>
+                          <CommandEmpty>
+                            <div className="py-3 text-sm space-y-2">
+                              <p className="text-muted-foreground">Nenhum jogador encontrado.</p>
+                              <button
+                                type="button"
+                                onClick={() => { setOpenPicker(null); setAddGuestOpen(true); }}
+                                className="text-gold hover:underline text-xs"
+                              >
+                                + Cadastrar como convidado
+                              </button>
+                            </div>
+                          </CommandEmpty>
+                          <CommandGroup heading="Jogadores cadastrados">
                             {profiles
                               .filter((p) => !usedIds.includes(p.id))
                               .map((p) => (
                                 <CommandItem
-                                  key={p.id}
+                                  key={`p-${p.id}`}
                                   value={`${p.nickname || ""} ${p.name}`}
                                   onSelect={() => {
-                                    updateEntry(i, { player_id: p.id });
+                                    updateEntry(i, { player_id: p.id, is_guest: false });
                                     setOpenPicker(null);
                                   }}
                                 >
                                   <Check
-                                    className={`mr-2 h-4 w-4 ${e.player_id === p.id ? "opacity-100" : "opacity-0"}`}
+                                    className={`mr-2 h-4 w-4 ${!e.is_guest && e.player_id === p.id ? "opacity-100" : "opacity-0"}`}
                                   />
                                   {p.nickname || p.name}
                                   {p.nickname && <span className="ml-1 text-xs text-muted-foreground">({p.name})</span>}
                                 </CommandItem>
                               ))}
                           </CommandGroup>
+                          {guests.filter((g) => !usedIds.includes(g.id)).length > 0 && (
+                            <CommandGroup heading="Convidados">
+                              {guests
+                                .filter((g) => !usedIds.includes(g.id))
+                                .map((g) => (
+                                  <CommandItem
+                                    key={`g-${g.id}`}
+                                    value={`${g.nickname} ${g.name || ""} guest`}
+                                    onSelect={() => {
+                                      updateEntry(i, { player_id: g.id, is_guest: true });
+                                      setOpenPicker(null);
+                                    }}
+                                  >
+                                    <Check
+                                      className={`mr-2 h-4 w-4 ${e.is_guest && e.player_id === g.id ? "opacity-100" : "opacity-0"}`}
+                                    />
+                                    <UserCircle2 className="mr-1 h-3.5 w-3.5 text-amber-400" />
+                                    {g.nickname}
+                                    {g.name && <span className="ml-1 text-xs text-muted-foreground">({g.name})</span>}
+                                  </CommandItem>
+                                ))}
+                            </CommandGroup>
+                          )}
                         </CommandList>
+                        <div className="border-t border-border p-2">
+                          <button
+                            type="button"
+                            onClick={() => { setOpenPicker(null); setAddGuestOpen(true); }}
+                            className="w-full text-xs text-amber-400 hover:bg-amber-500/10 rounded px-2 py-1.5 inline-flex items-center justify-center gap-1.5"
+                          >
+                            <UserCircle2 className="h-3.5 w-3.5" />
+                            Adicionar novo convidado
+                          </button>
+                        </div>
                       </Command>
                     </PopoverContent>
                   </Popover>

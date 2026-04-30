@@ -427,6 +427,7 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
         image_url: imageUrl,
         first_player_id: null,
         platform: platform || null,
+        community_id: prefilledCommunityId || null,
       } as any).select().single();
       if (mErr) throw mErr;
 

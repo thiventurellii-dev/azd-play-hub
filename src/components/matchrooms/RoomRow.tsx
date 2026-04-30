@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabaseExternal";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Calendar, Clock, Users, LogIn, Share2, ClipboardList, MessageCircle, XCircle, Trash2,
-  TrendingUp, Eye, ChevronDown, ChevronUp, Pencil, Gamepad2,
+  TrendingUp, Eye, ChevronDown, ChevronUp, Pencil, Gamepad2, Check, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";

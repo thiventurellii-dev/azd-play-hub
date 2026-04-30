@@ -8,9 +8,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/lib/supabaseExternal";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { X, ChevronLeft, Gamepad2, Skull, Sword, Check, Users, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
+import { X, ChevronLeft, Gamepad2, Skull, Sword, Check, Users, ChevronDown, ChevronUp, Sparkles, Search, Eye, UserPlus } from "lucide-react";
 import { DatePickerField } from "@/components/ui/date-picker-field";
 import { sendMatchNotification } from "@/lib/matchNotification";
+import { sendRoomNotifications } from "@/lib/roomNotifications";
 import { cn } from "@/lib/utils";
 
 /* ── Types ─────────────────────────────────────────── */
@@ -19,8 +20,15 @@ interface Game {
   id: string;
   name: string;
   slug: string | null;
+  min_players: number | null;
   max_players: number | null;
   image_url: string | null;
+}
+interface FriendProfile {
+  id: string;
+  name: string;
+  nickname: string | null;
+  avatar_url: string | null;
 }
 interface BloodScript {
   id: string;
@@ -108,8 +116,8 @@ const useFormOptions = (enabled: boolean, userId?: string) =>
     queryKey: ["match-room-form-options", userId],
     queryFn: async () => {
       const sb: any = supabase;
-      const [gamesRes, scriptsRes, tagsRes, seasonsRes, communitiesRes, campaignsRes] = await Promise.all([
-        supabase.from("games").select("id, name, slug, max_players, image_url").order("name"),
+      const [gamesRes, scriptsRes, tagsRes, seasonsRes, communitiesRes, campaignsRes, recentMatchesRes, friendsRes] = await Promise.all([
+        supabase.from("games").select("id, name, slug, min_players, max_players, image_url").order("name"),
         supabase.from("blood_scripts").select("id, name").order("name"),
         supabase.from("room_tags").select("id, name").order("name"),
         supabase.from("seasons").select("id, name, status, type").in("status", ["active", "upcoming"]).order("name"),
@@ -128,7 +136,41 @@ const useFormOptions = (enabled: boolean, userId?: string) =>
               .in("status", ["planning", "active"])
               .order("created_at", { ascending: false })
           : Promise.resolve({ data: [] }),
+        supabase.from("matches").select("game_id, played_at").order("played_at", { ascending: false }).limit(500),
+        userId
+          ? supabase
+              .from("friendships")
+              .select("user_id, friend_id, status")
+              .eq("status", "accepted" as any)
+              .or(`user_id.eq.${userId},friend_id.eq.${userId}`)
+          : Promise.resolve({ data: [] }),
       ]);
+
+      // Recent games + counts
+      const counts: Record<string, number> = {};
+      const ordered: string[] = [];
+      for (const m of (recentMatchesRes.data || []) as any[]) {
+        const gid = m.game_id;
+        if (!gid) continue;
+        counts[gid] = (counts[gid] || 0) + 1;
+        if (!ordered.includes(gid)) ordered.push(gid);
+      }
+
+      // Friends
+      const friendIdSet = new Set<string>();
+      for (const f of (friendsRes.data || []) as any[]) {
+        if (f.user_id === userId) friendIdSet.add(f.friend_id);
+        else if (f.friend_id === userId) friendIdSet.add(f.user_id);
+      }
+      let friendProfiles: FriendProfile[] = [];
+      if (friendIdSet.size > 0) {
+        const { data: fp } = await supabase
+          .from("profiles")
+          .select("id, name, nickname, avatar_url")
+          .in("id", Array.from(friendIdSet));
+        friendProfiles = (fp || []) as FriendProfile[];
+      }
+
       return {
         games: (gamesRes.data ?? []) as Game[],
         scripts: (scriptsRes.data ?? []) as BloodScript[],
@@ -145,6 +187,9 @@ const useFormOptions = (enabled: boolean, userId?: string) =>
           status: string;
           adventure_id: string | null;
         }[],
+        gamePlayCounts: counts,
+        recentGameIds: ordered,
+        friends: friendProfiles,
       };
     },
     enabled,
@@ -260,6 +305,9 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
   const seasons = useMemo(() => options?.seasons ?? [], [options?.seasons]);
   const userCommunities = useMemo(() => options?.communities ?? [], [options?.communities]);
   const userCampaigns = useMemo(() => options?.campaigns ?? [], [options?.campaigns]);
+  const gamePlayCounts = useMemo(() => options?.gamePlayCounts ?? {}, [options?.gamePlayCounts]);
+  const recentGameIds = useMemo(() => options?.recentGameIds ?? [], [options?.recentGameIds]);
+  const friends = useMemo(() => options?.friends ?? [], [options?.friends]);
 
   const [category, setCategory] = useState<Category | "">("");
   const [gameId, setGameId] = useState("");
@@ -278,6 +326,9 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
   const [adminStatus, setAdminStatus] = useState("");
   const [selectedCampaignId, setSelectedCampaignId] = useState("");
   const [acceptObservers, setAcceptObservers] = useState(false);
+  const [gameSearch, setGameSearch] = useState("");
+  const [invitedFriendIds, setInvitedFriendIds] = useState<string[]>([]);
+  const [friendSearch, setFriendSearch] = useState("");
 
   /* hydrate edit */
   useEffect(() => {
@@ -347,6 +398,27 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
       return g.slug !== "blood-on-the-clocktower" && g.slug !== "rpg-generico" && g.slug !== "rpg-generic";
     return true;
   });
+
+  const recentGames = useMemo(() => {
+    return recentGameIds
+      .map((gid) => filteredGames.find((g) => g.id === gid))
+      .filter(Boolean)
+      .slice(0, 4) as Game[];
+  }, [recentGameIds, filteredGames]);
+
+  const filteredCatalog = useMemo(() => {
+    const q = gameSearch.trim().toLowerCase();
+    if (!q) return [];
+    return filteredGames.filter((g) => g.name.toLowerCase().includes(q)).slice(0, 8);
+  }, [gameSearch, filteredGames]);
+
+  const filteredFriends = useMemo(() => {
+    const q = friendSearch.trim().toLowerCase();
+    if (!q) return friends;
+    return friends.filter((f) =>
+      (f.nickname || f.name || "").toLowerCase().includes(q),
+    );
+  }, [friendSearch, friends]);
 
   const filteredSeasons =
     category === "boardgame"
@@ -429,6 +501,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
           community_only: !!selectedCommunityId && communityOnly,
           room_type: category || "boardgame",
           platform: platform || null,
+          accept_observers: acceptObservers,
           ...(isAdminMode && adminStatus
             ? { status: adminStatus as "open" | "full" | "in_progress" | "finished" | "cancelled" }
             : {}),
@@ -460,6 +533,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
             room_type: category || "boardgame",
             platform: platform || null,
             campaign_id: isRpg ? selectedCampaignId || null : null,
+            accept_observers: acceptObservers,
           } as any)
           .select()
           .single();
@@ -469,6 +543,24 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
           await supabase
             .from("match_room_tag_links")
             .insert(selectedTagIds.map((tagId) => ({ room_id: data.id, tag_id: tagId })));
+        }
+
+        // Convites
+        if (invitedFriendIds.length > 0) {
+          const inviteRows = invitedFriendIds.map((pid, i) => ({
+            room_id: data.id,
+            player_id: pid,
+            type: "invited",
+            position: i + 1,
+          }));
+          await supabase.from("match_room_players").insert(inviteRows as any);
+          sendRoomNotifications({
+            userIds: invitedFriendIds,
+            type: "room_invite",
+            title: "Você foi convidado!",
+            message: `${title ? `"${title}"` : "Uma sala"} — confirme sua presença.`,
+            roomId: data.id,
+          }).catch(() => {});
         }
 
         const game = games.find((g) => g.id === finalGameId);
@@ -686,47 +778,91 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
             <div>
               <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Jogo *</label>
               {gameId && selectedGame ? (
-                <div className="mt-1.5 flex items-center gap-3 rounded-lg border border-border/40 bg-background/40 p-2.5">
-                  <div className="h-12 w-12 rounded-md bg-secondary overflow-hidden flex-shrink-0">
+                <div className="mt-1.5 flex items-center gap-3 rounded-lg border border-border/40 bg-background/40 p-3">
+                  <div className="h-14 w-14 rounded-md bg-secondary overflow-hidden flex-shrink-0">
                     {selectedGame.image_url ? (
                       <img src={selectedGame.image_url} alt={selectedGame.name} className="w-full h-full object-cover" />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground">
+                      <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
                         {selectedGame.name.slice(0, 4).toUpperCase()}
                       </div>
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold text-sm truncate">{selectedGame.name}</p>
-                    {selectedGame.max_players && (
-                      <p className="text-[11px] text-muted-foreground">até {selectedGame.max_players} jog.</p>
-                    )}
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {selectedGame.min_players ?? 1}-{selectedGame.max_players ?? "?"} jogadores
+                    </p>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => setGameId("")} className="text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setGameId("")}
+                    className="text-xs text-gold hover:underline"
+                  >
                     Trocar
-                  </Button>
+                  </button>
                 </div>
               ) : (
-                <div className="mt-1.5 grid grid-cols-2 sm:grid-cols-4 gap-2 max-h-[260px] overflow-y-auto">
-                  {filteredGames.map((g) => (
-                    <button
-                      key={g.id}
-                      type="button"
-                      onClick={() => setGameId(g.id)}
-                      className="group rounded-lg border border-border/40 bg-background/40 p-2 hover:border-gold/50 hover:bg-gold/5 transition text-left"
-                    >
-                      <div className="aspect-square rounded-md bg-secondary overflow-hidden mb-1.5">
-                        {g.image_url ? (
-                          <img src={g.image_url} alt={g.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
-                            {g.name.slice(0, 4).toUpperCase()}
+                <div className="mt-1.5 space-y-3">
+                  {recentGames.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {recentGames.map((g) => (
+                        <button
+                          key={g.id}
+                          type="button"
+                          onClick={() => setGameId(g.id)}
+                          className="group rounded-lg border border-border/40 bg-background/40 p-2 hover:border-gold/40 transition text-left"
+                        >
+                          <div className="aspect-square rounded-md bg-secondary overflow-hidden mb-2">
+                            {g.image_url ? (
+                              <img
+                                src={g.image_url}
+                                alt={g.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-sm text-muted-foreground">
+                                {g.name.slice(0, 4).toUpperCase()}
+                              </div>
+                            )}
                           </div>
-                        )}
+                          <p className="text-xs font-medium truncate">{g.name}</p>
+                          <p className="text-[10px] text-muted-foreground">{gamePlayCounts[g.id] || 0} partidas</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      value={gameSearch}
+                      onChange={(e) => setGameSearch(e.target.value)}
+                      placeholder="Buscar no catálogo..."
+                      className="pl-9"
+                    />
+                    {filteredCatalog.length > 0 && (
+                      <div className="absolute z-20 mt-1 w-full rounded-md border border-border bg-popover shadow-lg max-h-60 overflow-auto">
+                        {filteredCatalog.map((g) => (
+                          <button
+                            key={g.id}
+                            type="button"
+                            onClick={() => {
+                              setGameId(g.id);
+                              setGameSearch("");
+                            }}
+                            className="w-full text-left px-3 py-2 hover:bg-secondary text-sm flex items-center gap-2"
+                          >
+                            <div className="h-8 w-8 rounded bg-secondary overflow-hidden flex-shrink-0">
+                              {g.image_url && (
+                                <img src={g.image_url} alt={g.name} className="w-full h-full object-cover" />
+                              )}
+                            </div>
+                            {g.name}
+                          </button>
+                        ))}
                       </div>
-                      <p className="text-[11px] font-medium truncate">{g.name}</p>
-                    </button>
-                  ))}
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -822,12 +958,79 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
           )}
         </div>
 
-        <label className="flex items-start gap-3 px-3 py-3 rounded-lg border border-border/40 bg-background/40 cursor-pointer">
+        {/* Convidar amigos — sempre visível, sem toggle */}
+        {!isEdit && friends.length > 0 && (
+          <div className="rounded-lg border border-border/40 bg-background/40 p-3 space-y-2.5">
+            <div className="flex items-center gap-2">
+              <UserPlus className="h-4 w-4 text-gold" />
+              <span className="text-xs uppercase tracking-wide text-muted-foreground font-semibold flex-1">
+                Convidar amigos
+              </span>
+              <span className="text-[11px] text-muted-foreground">
+                {invitedFriendIds.length}/{Math.max(parseInt(maxPlayers) || 0, 0)} vagas
+              </span>
+            </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                value={friendSearch}
+                onChange={(e) => setFriendSearch(e.target.value)}
+                placeholder="Buscar amigo..."
+                className="pl-9 h-8 text-sm"
+              />
+            </div>
+            <div className="flex flex-wrap gap-1.5 max-h-[180px] overflow-y-auto">
+              {filteredFriends.map((f) => {
+                const selected = invitedFriendIds.includes(f.id);
+                const initials = (f.nickname || f.name || "?").slice(0, 2).toUpperCase();
+                return (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() =>
+                      setInvitedFriendIds((prev) =>
+                        prev.includes(f.id) ? prev.filter((id) => id !== f.id) : [...prev, f.id],
+                      )
+                    }
+                    className={cn(
+                      "inline-flex items-center gap-1.5 pl-1 pr-2 py-0.5 rounded-full text-xs font-medium border transition-all",
+                      selected
+                        ? "bg-gold/20 border-gold/60 text-gold"
+                        : "bg-muted/40 border-border text-muted-foreground hover:border-gold/40",
+                    )}
+                  >
+                    <span className="h-5 w-5 rounded-full bg-secondary text-[10px] inline-flex items-center justify-center overflow-hidden">
+                      {f.avatar_url ? (
+                        <img src={f.avatar_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        initials
+                      )}
+                    </span>
+                    {f.nickname || f.name}
+                    {selected && <X className="h-3 w-3" />}
+                  </button>
+                );
+              })}
+              {filteredFriends.length === 0 && (
+                <p className="text-[11px] text-muted-foreground py-1">Nenhum amigo encontrado</p>
+              )}
+            </div>
+            {invitedFriendIds.length > 0 && (
+              <p className="text-[11px] text-muted-foreground">
+                Convidados ficam aguardando confirmação. Quando aceitarem, viram <strong>confirmados</strong>.
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Observadores */}
+        <label className="flex items-start gap-3 px-3 py-3 rounded-lg border border-border/40 bg-background/40 cursor-pointer hover:border-gold/30 transition">
           <Checkbox checked={acceptObservers} onCheckedChange={(c) => setAcceptObservers(!!c)} className="mt-0.5" />
+          <Eye className="h-4 w-4 mt-0.5 text-muted-foreground" />
           <div className="flex-1">
             <p className="text-sm font-medium text-foreground">Aceitar observadores</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              Qualquer um pode entrar como observador (sem aprovação)
+              Qualquer pessoa pode entrar como observador (sem ocupar vaga, sem aprovação)
             </p>
           </div>
         </label>

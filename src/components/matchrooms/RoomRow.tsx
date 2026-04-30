@@ -3,7 +3,7 @@ import { supabase } from "@/lib/supabaseExternal";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   Calendar, Clock, Users, LogIn, Share2, ClipboardList, MessageCircle, XCircle, Trash2,
-  TrendingUp, Eye, ChevronDown, ChevronUp, Pencil, Gamepad2,
+  TrendingUp, Eye, ChevronDown, ChevronUp, Pencil, Gamepad2, Check, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +45,7 @@ export interface MatchRoom {
   campaign_id?: string | null;
   community_id?: string | null;
   community_only?: boolean | null;
+  accept_observers?: boolean | null;
   session_number?: number | null;
   session_recap?: string | null;
   session_title?: string | null;
@@ -243,8 +244,13 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
 
   const confirmed = players.filter(p => p.type === "confirmed");
   const waitlist = players.filter(p => p.type === "waitlist");
+  const observers = players.filter(p => p.type === "observer");
+  const moderators = players.filter(p => p.type === "moderator");
+  const invitedUsers = players.filter(p => p.type === "invited");
   const isInRoom = confirmed.some(p => p.player_id === user?.id);
   const isInWait = waitlist.some(p => p.player_id === user?.id);
+  const isObserving = observers.some(p => p.player_id === user?.id);
+  const myInvite = invitedUsers.find(p => p.player_id === user?.id);
   const isFull = confirmed.length >= room.max_players;
   const canInteract = room.status === "open" || room.status === "full";
   const isCreator = user?.id === room.created_by;
@@ -304,6 +310,55 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
     }
     toast.success("Você saiu da sala");
     await fetchPlayers(); onUpdate();
+    setLoading(false);
+  };
+
+  const handleAcceptInvite = async () => {
+    if (!user || !myInvite) return;
+    setLoading(true);
+    const willConfirm = !isFull;
+    await supabase
+      .from("match_room_players")
+      .update({
+        type: willConfirm ? "confirmed" : "waitlist",
+        position: willConfirm ? confirmed.length + 1 : waitlist.length + 1,
+      } as any)
+      .eq("id", myInvite.id);
+    toast.success(willConfirm ? "Você confirmou presença!" : "Sala lotada — entrou na reserva");
+    await fetchPlayers(); onUpdate();
+    setLoading(false);
+  };
+
+  const handleDeclineInvite = async () => {
+    if (!user || !myInvite) return;
+    setLoading(true);
+    await supabase.from("match_room_players").delete().eq("id", myInvite.id);
+    toast.success("Convite recusado");
+    await fetchPlayers(); onUpdate();
+    setLoading(false);
+  };
+
+  const handleJoinAsObserver = async () => {
+    if (!user) return;
+    setLoading(true);
+    const { error } = await supabase
+      .from("match_room_players")
+      .insert({ room_id: room.id, player_id: user.id, type: "observer" as any, position: observers.length + 1 });
+    if (error) toast.error("Erro ao entrar como observador");
+    else toast.success("Você está observando esta sala");
+    setLoading(false);
+  };
+
+  const handleLeaveObserver = async () => {
+    if (!user) return;
+    setLoading(true);
+    await supabase
+      .from("match_room_players")
+      .delete()
+      .eq("room_id", room.id)
+      .eq("player_id", user.id)
+      .eq("type", "observer");
+    toast.success("Você saiu como observador");
     setLoading(false);
   };
 
@@ -473,6 +528,34 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
                 </div>
               </div>
             )}
+            {invitedUsers.length > 0 && (
+              <div className="mt-2">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-purple-400 mb-1">
+                  Convidados ({invitedUsers.length})
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {invitedUsers.map(p => (
+                    <Badge key={p.id} variant="outline" className="text-xs font-normal border-purple-500/40 bg-purple-500/10 text-purple-300">
+                      {displayName(p)} <span className="ml-1 text-[10px] opacity-70">aguardando</span>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            {observers.length > 0 && (
+              <div className="mt-2">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
+                  <Eye className="h-3 w-3" /> Observadores ({observers.length})
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {observers.map(p => (
+                    <Badge key={p.id} variant="outline" className="text-xs font-normal border-border/60 bg-muted/30 text-muted-foreground">
+                      {displayName(p)}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
             {confirmed.length === 0 && waitlist.length === 0 && (
               <span className="text-xs text-muted-foreground/60">Nenhum jogador ainda</span>
             )}
@@ -482,8 +565,17 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
               {status.label}
             </Badge>
             {canInteract && user && (
-              <div className="flex gap-1.5 flex-1 lg:flex-initial">
-                {isInRoom ? (
+              <div className="flex gap-1.5 flex-1 lg:flex-initial flex-wrap lg:justify-end">
+                {myInvite ? (
+                  <>
+                    <Button variant="gold" size="sm" className="h-9 flex-1 lg:flex-initial" onClick={handleAcceptInvite} disabled={loading}>
+                      <Check className="h-3.5 w-3.5 mr-1" /> Aceitar convite
+                    </Button>
+                    <Button variant="outline" size="sm" className="h-9 lg:flex-initial" onClick={handleDeclineInvite} disabled={loading} title="Recusar convite">
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </>
+                ) : isInRoom ? (
                   <Button variant="outline" size="sm" className="h-9 flex-1 lg:flex-initial" onClick={handleLeave} disabled={loading}>
                     Sair
                   </Button>
@@ -496,6 +588,31 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
                     <LogIn className="h-3.5 w-3.5 mr-1" />
                     {isFull ? "Reserva" : "Entrar"}
                   </Button>
+                )}
+                {room.accept_observers && !isInRoom && !isInWait && !myInvite && (
+                  isObserving ? (
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-9 w-9 flex-shrink-0 border-blue-500/40 bg-blue-500/10 text-blue-300 hover:bg-blue-500/20"
+                      onClick={handleLeaveObserver}
+                      disabled={loading}
+                      title="Sair como observador"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-9 w-9 flex-shrink-0 hover:border-blue-500/50 hover:text-blue-300"
+                      onClick={handleJoinAsObserver}
+                      disabled={loading}
+                      title="Observar esta sala"
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                    </Button>
+                  )
                 )}
                 <Button variant="outline" size="icon" className="h-9 w-9 flex-shrink-0" onClick={handleShare} title="Compartilhar">
                   <Share2 className="h-3.5 w-3.5" />

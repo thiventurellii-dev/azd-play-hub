@@ -256,7 +256,7 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
                     } else if (isActive) {
                       // Active: full gradient + glow
                       barStyle.background = `linear-gradient(90deg, ${rgba(rgb, 0.2)} 0%, ${rgba(rgb, 0.6)} 40%, ${rgba(rgb, 1)} 100%)`;
-                      barStyle.boxShadow = `0 0 14px ${rgba(rgb, 0.7)}, 0 0 28px ${rgba(rgb, 0.45)}, 0 0 48px ${rgba(rgb, 0.25)}`;
+                      barStyle.boxShadow = `0 0 12px ${rgba(rgb, 0.35)}, 0 0 24px ${rgba(rgb, 0.2)}`;
                     } else {
                       // Upcoming: solid palette color, no gradient, no glow
                       barStyle.background = rgba(rgb, 0.85);

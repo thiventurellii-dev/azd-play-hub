@@ -51,8 +51,8 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
       cursor.setMonth(cursor.getMonth() + 1);
     }
 
-    // Quarter marks (group of 3 months). Each entry: start month index in `months`, label, year, month names
-    const quarters: { startDate: Date; endDate: Date; label: string; year: number; months: string }[] = [];
+    // Quarter marks (group of 3 months)
+    const quarters: { startDate: Date; endDate: Date; label: string; year: number }[] = [];
     const qCursor = new Date(start);
     while (qCursor < end) {
       const qStart = new Date(qCursor);
@@ -60,15 +60,11 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
       const qMonthStart = (qNum - 1) * 3;
       const qDate = new Date(qStart.getFullYear(), qMonthStart, 1);
       const qEnd = new Date(qStart.getFullYear(), qMonthStart + 3, 1);
-      const monthsLabel = [qMonthStart, qMonthStart + 1, qMonthStart + 2]
-        .map((m) => MONTHS_PT[m].charAt(0) + MONTHS_PT[m].slice(1).toLowerCase())
-        .join(" • ");
       quarters.push({
         startDate: qDate,
         endDate: qEnd,
         label: `Q${qNum}`,
         year: qDate.getFullYear(),
-        months: monthsLabel,
       });
       qCursor.setMonth(qCursor.getMonth() + 3);
       qCursor.setDate(1);

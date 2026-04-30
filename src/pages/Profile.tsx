@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { useNotification } from '@/components/NotificationDialog';
-import { Pencil, Lock, Camera, Mail } from 'lucide-react';
+import { Pencil, Lock, Camera, Mail, UserCheck } from 'lucide-react';
 import { brazilianStates, formatPhone } from '@/lib/brazil-data';
 import FriendsList from '@/components/friendlist/FriendsList';
 import XpBadge from '@/components/shared/XpBadge';

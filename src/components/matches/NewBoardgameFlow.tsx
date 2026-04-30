@@ -176,6 +176,9 @@ const NewBoardgameFlow = ({
       setGames(allGames);
       setProfiles((p.data || []) as Profile[]);
 
+      // Load unclaimed guest profiles
+      fetchUnclaimedGuests().then(setGuests);
+
       // Recent games + play counts (overall + avg duration)
       const { data: matches } = await supabase
         .from("matches")

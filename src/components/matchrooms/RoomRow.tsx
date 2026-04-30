@@ -528,6 +528,34 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
                 </div>
               </div>
             )}
+            {invitedUsers.length > 0 && (
+              <div className="mt-2">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-purple-400 mb-1">
+                  Convidados ({invitedUsers.length})
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {invitedUsers.map(p => (
+                    <Badge key={p.id} variant="outline" className="text-xs font-normal border-purple-500/40 bg-purple-500/10 text-purple-300">
+                      {displayName(p)} <span className="ml-1 text-[10px] opacity-70">aguardando</span>
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+            {observers.length > 0 && (
+              <div className="mt-2">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
+                  <Eye className="h-3 w-3" /> Observadores ({observers.length})
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {observers.map(p => (
+                    <Badge key={p.id} variant="outline" className="text-xs font-normal border-border/60 bg-muted/30 text-muted-foreground">
+                      {displayName(p)}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
             {confirmed.length === 0 && waitlist.length === 0 && (
               <span className="text-xs text-muted-foreground/60">Nenhum jogador ainda</span>
             )}

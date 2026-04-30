@@ -19,6 +19,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { SeasonsTimeline } from "@/components/seasons/SeasonsTimeline";
 import { SeasonCardLarge } from "@/components/seasons/SeasonCardLarge";
 import { SeasonRowFinished } from "@/components/seasons/SeasonRowFinished";
+import { buildSeasonColorMap } from "@/lib/seasonColors";
 
 const Seasons = () => {
   const { isAdmin } = useAuth();
@@ -134,6 +135,8 @@ const Seasons = () => {
     return seasons.filter((s) => s.status === "finished").sort((a, b) => b.end_date.localeCompare(a.end_date));
   }, [seasons]);
 
+  const colorMap = useMemo(() => buildSeasonColorMap(seasons), [seasons]);
+
   const linkedNames = (s: SeasonItem) => (s.type === "blood" ? seasonScripts[s.id] || [] : seasonGames[s.id] || []);
 
   return (
@@ -215,6 +218,7 @@ const Seasons = () => {
                       key={s.id}
                       season={s}
                       index={i}
+                      colorIndex={colorMap[s.id] ?? 0}
                       linkedNames={linkedNames(s)}
                       isAdmin={isAdmin}
                       onEdit={() => openEdit(s)}

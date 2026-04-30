@@ -5,29 +5,32 @@ import { Button } from "@/components/ui/button";
 import { Calendar, Trophy, Users, Pencil, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 import type { SeasonItem } from "@/hooks/useSeasonsData";
+import { colorForIndex, rgba } from "@/lib/seasonColors";
 
-const statusColors: Record<string, string> = {
-  active: "bg-gold/20 text-gold border-gold/30",
-  upcoming: "bg-purple-500/20 text-purple-400 border-purple-500/30",
-  finished: "bg-muted text-muted-foreground border-border",
-};
 const statusLabels: Record<string, string> = { active: "Ativa", upcoming: "Em breve", finished: "Finalizada" };
 const formatDate = (d: string) => { const [y, m, dd] = d.split("-"); return `${dd}/${m}/${y}`; };
 
 interface Props {
   season: SeasonItem;
   index: number;
+  colorIndex: number;
   linkedNames: string[];
   isAdmin: boolean;
   onEdit: () => void;
 }
 
-export const SeasonCardLarge = ({ season: s, index, linkedNames, isAdmin, onEdit }: Props) => {
+export const SeasonCardLarge = ({ season: s, index, colorIndex, linkedNames, isAdmin, onEdit }: Props) => {
   const totalPrize = s.type === "blood"
     ? s.prize_1st * 3 + s.prize_4th_6th * 3 + s.prize_7th_10th * 3
     : s.prize_1st + s.prize_2nd + s.prize_3rd;
 
   const fallbackEmoji = s.type === "blood" ? "🩸" : "🎲";
+  const rgb = colorForIndex(colorIndex);
+  const badgeStyle: React.CSSProperties = {
+    backgroundColor: rgba(rgb, 0.2),
+    color: `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`,
+    borderColor: rgba(rgb, 0.4),
+  };
 
   return (
     <motion.div
@@ -55,7 +58,7 @@ export const SeasonCardLarge = ({ season: s, index, linkedNames, isAdmin, onEdit
             <div className="flex items-start justify-between gap-2">
               <h3 className="font-semibold text-base truncate">{s.name}</h3>
               <div className="flex items-center gap-1 flex-shrink-0">
-                <Badge className={statusColors[s.status]}>{statusLabels[s.status]}</Badge>
+                <Badge style={badgeStyle} className="border">{statusLabels[s.status]}</Badge>
                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-gold transition-colors" />
               </div>
             </div>

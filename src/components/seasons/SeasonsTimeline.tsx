@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SeasonItem } from "@/hooks/useSeasonsData";
+import { SEASON_PALETTE, rgba, colorForIndex } from "@/lib/seasonColors";
 
 interface Props {
   seasons: SeasonItem[];
@@ -14,23 +15,6 @@ interface Props {
 const MONTHS_PT = ["JAN", "FEV", "MAR", "ABR", "MAI", "JUN", "JUL", "AGO", "SET", "OUT", "NOV", "DEZ"];
 
 const startOfDay = (d: Date) => { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; };
-
-// Curated palette: gold, soft purple, green, desaturated blue
-// Each entry: [r, g, b] for rgba composition (gradients + glow)
-const SEASON_PALETTE: Array<[number, number, number]> = [
-  [245, 180, 0],   // #F5B400 amarelo
-  [139, 92, 246],  // #8B5CF6 roxo suave
-  [34, 197, 94],   // #22C55E verde
-  [59, 130, 246],  // #3B82F6 azul dessaturado
-];
-const FINISHED_RGB: [number, number, number] = [107, 114, 128]; // #6B7280 cinza neutro
-
-const colorFor = (s: SeasonItem, idx: number): [number, number, number] => {
-  if (s.status === "finished") return FINISHED_RGB;
-  return SEASON_PALETTE[idx % SEASON_PALETTE.length];
-};
-
-const rgba = ([r, g, b]: [number, number, number], a: number) => `rgba(${r}, ${g}, ${b}, ${a})`;
 
 const NAME_COL_PX = 200;
 
@@ -51,8 +35,8 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
       cursor.setMonth(cursor.getMonth() + 1);
     }
 
-    // Quarter marks (group of 3 months). Each entry: start month index in `months`, label, year, month names
-    const quarters: { startDate: Date; endDate: Date; label: string; year: number; months: string }[] = [];
+    // Quarter marks (group of 3 months)
+    const quarters: { startDate: Date; endDate: Date; label: string; year: number }[] = [];
     const qCursor = new Date(start);
     while (qCursor < end) {
       const qStart = new Date(qCursor);
@@ -60,15 +44,11 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
       const qMonthStart = (qNum - 1) * 3;
       const qDate = new Date(qStart.getFullYear(), qMonthStart, 1);
       const qEnd = new Date(qStart.getFullYear(), qMonthStart + 3, 1);
-      const monthsLabel = [qMonthStart, qMonthStart + 1, qMonthStart + 2]
-        .map((m) => MONTHS_PT[m].charAt(0) + MONTHS_PT[m].slice(1).toLowerCase())
-        .join(" • ");
       quarters.push({
         startDate: qDate,
         endDate: qEnd,
         label: `Q${qNum}`,
         year: qDate.getFullYear(),
-        months: monthsLabel,
       });
       qCursor.setMonth(qCursor.getMonth() + 3);
       qCursor.setDate(1);
@@ -154,7 +134,7 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
             <div className="flex-shrink-0" style={{ width: NAME_COL_PX }}>
               {/* Header spacers matching year + quarter + month rows */}
               <div className="h-6 border-b border-border/40" />
-              <div className="h-10 border-b border-border/40" />
+              <div className="h-7 border-b border-border/40" />
               <div className="h-7 border-b border-border" />
               {visibleSeasons.length === 0 ? (
                 <div className="py-10 text-center text-sm text-muted-foreground pr-3">
@@ -201,7 +181,7 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
               </div>
 
               {/* Quarter row */}
-              <div className="relative h-10 border-b border-border/40">
+              <div className="relative h-7 border-b border-border/40">
                 {quarterMarks.map((q, i) => {
                   const startPct = ((q.startDate.getTime() - rangeStart.getTime()) / totalMs) * 100;
                   const endPct = ((q.endDate.getTime() - rangeStart.getTime()) / totalMs) * 100;
@@ -212,11 +192,10 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
                   return (
                     <div
                       key={i}
-                      className="absolute top-0 h-full flex flex-col justify-center pl-2 border-l border-border/40"
+                      className="absolute top-0 h-full flex items-center pl-2 border-l border-border/40"
                       style={{ left: `${clampedStart}%`, width: `${width}%` }}
                     >
                       <span className="text-xs font-bold text-foreground leading-tight">{q.label}</span>
-                      <span className="text-[9px] text-muted-foreground leading-tight truncate">{q.months}</span>
                     </div>
                   );
                 })}
@@ -262,8 +241,7 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
                     const endPct = Math.min(100, ((sEnd - rangeStart.getTime()) / totalMs) * 100);
                     const widthPct = Math.max(1, endPct - startPct);
                     const participates = participatedIds.has(s.id);
-                    const rgb = colorFor(s, idx);
-                    const isFinished = s.status === "finished";
+                    const rgb = colorForIndex(idx);
                     const isFuture = new Date(s.start_date) > today;
 
                     const barStyle: React.CSSProperties = {
@@ -271,11 +249,8 @@ export const SeasonsTimeline = ({ seasons, participatedIds }: Props) => {
                       width: `${widthPct}%`,
                     };
 
-                    if (isFinished) {
-                      // Flat, low contrast
-                      barStyle.background = rgba(rgb, 0.45);
-                    } else if (participates) {
-                      // Active + participating: full gradient + glow
+                    if (participates) {
+                      // Participating: full gradient + glow (same treatment for active and finished)
                       barStyle.background = `linear-gradient(90deg, ${rgba(rgb, 0.2)} 0%, ${rgba(rgb, 0.6)} 40%, ${rgba(rgb, 1)} 100%)`;
                       if (!isFuture) {
                         barStyle.boxShadow = `0 0 12px ${rgba(rgb, 0.35)}, 0 0 24px ${rgba(rgb, 0.2)}`;

@@ -11,7 +11,7 @@ interface Friendship {
   user_id: string;
   friend_id: string;
   status: string;
-  profile: { id: string; name: string; nickname: string | null };
+  profile: { id: string; name: string; nickname: string | null; avatar_url: string | null };
 }
 
 interface FriendsListProps {
@@ -39,7 +39,7 @@ const FriendsList = ({ userId }: FriendsListProps) => {
     const otherIds = data.map(f => f.user_id === targetUserId ? f.friend_id : f.user_id);
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("id, name, nickname")
+      .select("id, name, nickname, avatar_url")
       .in("id", otherIds);
 
     const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
@@ -48,7 +48,7 @@ const FriendsList = ({ userId }: FriendsListProps) => {
       const otherId = f.user_id === targetUserId ? f.friend_id : f.user_id;
       return {
         ...f,
-        profile: profileMap.get(otherId) || { id: otherId, name: "Jogador", nickname: null },
+        profile: profileMap.get(otherId) || { id: otherId, name: "Jogador", nickname: null, avatar_url: null },
       };
     });
 

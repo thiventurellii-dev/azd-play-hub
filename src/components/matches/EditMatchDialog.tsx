@@ -129,11 +129,6 @@ const EditMatchDialog = ({ open, onOpenChange, match, onSaved }: Props) => {
               position: r.position,
               score: r.score,
             }).eq('id', r.id);
-          } else {
-            await supabase.from('match_results').update({
-              position: r.position,
-              score: r.score,
-            }).eq('match_id', match.id).eq('player_id', r.player_id);
           }
         }
 

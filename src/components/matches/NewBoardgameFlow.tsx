@@ -767,6 +767,82 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
               </PopoverContent>
             </Popover>
           )}
+          {prefilledCommunityId && communityMemberIds.length > 0 && (
+            <Popover open={communityOpen} onOpenChange={(o) => { setCommunityOpen(o); if (!o) setSelectedCommunityToAdd(new Set()); }}>
+              <PopoverTrigger asChild>
+                <button
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[#7ee787]/30 bg-[#7ee787]/10 px-3 py-1 text-xs text-[#7ee787] hover:bg-[#7ee787]/20"
+                >
+                  <Users className="h-3 w-3" /> + Comunidade
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[280px] p-0" align="start">
+                {communityName && (
+                  <div className="border-b border-border px-3 py-2 text-[11px] uppercase tracking-wide text-muted-foreground">
+                    {communityName}
+                  </div>
+                )}
+                <Command>
+                  <CommandInput placeholder="Buscar membro..." />
+                  <CommandList>
+                    <CommandEmpty>Nenhum membro disponível.</CommandEmpty>
+                    <CommandGroup>
+                      {profiles
+                        .filter(p => communityMemberIds.includes(p.id) && !entries.some(e => e.player_id === p.id))
+                        .map(p => {
+                          const checked = selectedCommunityToAdd.has(p.id);
+                          return (
+                            <CommandItem
+                              key={p.id}
+                              value={`${p.nickname || ''} ${p.name}`}
+                              onSelect={() => {
+                                setSelectedCommunityToAdd(prev => {
+                                  const next = new Set(prev);
+                                  if (next.has(p.id)) next.delete(p.id);
+                                  else next.add(p.id);
+                                  return next;
+                                });
+                              }}
+                            >
+                              <Checkbox checked={checked} className="mr-2 data-[state=checked]:bg-gold data-[state=checked]:border-gold" />
+                              <Avatar className="h-6 w-6 mr-2">
+                                <AvatarImage src={p.avatar_url || undefined} />
+                                <AvatarFallback className="text-[10px]">{(p.nickname || p.name).slice(0, 2).toUpperCase()}</AvatarFallback>
+                              </Avatar>
+                              {p.nickname || p.name}
+                            </CommandItem>
+                          );
+                        })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+                <div className="flex items-center justify-between gap-2 border-t border-border p-2">
+                  <span className="text-[11px] text-muted-foreground">{selectedCommunityToAdd.size} selecionado(s)</span>
+                  <Button
+                    size="sm"
+                    variant="gold"
+                    disabled={selectedCommunityToAdd.size === 0}
+                    onClick={() => {
+                      const ids = Array.from(selectedCommunityToAdd);
+                      setEntries(prev => {
+                        const next = [...prev];
+                        for (const fid of ids) {
+                          const empty = next.findIndex(e => !e.player_id);
+                          if (empty >= 0) next[empty] = { ...next[empty], player_id: fid };
+                          else next.push({ ...emptyEntry(next.length + 1), player_id: fid });
+                        }
+                        return next;
+                      });
+                      setSelectedCommunityToAdd(new Set());
+                      setCommunityOpen(false);
+                    }}
+                  >
+                    Adicionar
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
         </div>
 
         {/* Header row */}

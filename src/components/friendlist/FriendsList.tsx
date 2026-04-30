@@ -93,9 +93,13 @@ const FriendsList = ({ userId }: FriendsListProps) => {
             {pendingReceived.map(f => (
               <div key={f.id} className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-gold font-bold text-sm">
-                    {(f.profile.nickname || f.profile.name).charAt(0).toUpperCase()}
-                  </div>
+                  {f.profile.avatar_url ? (
+                    <img src={f.profile.avatar_url} alt="" className="h-8 w-8 rounded-full object-cover" />
+                  ) : (
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-gold font-bold text-sm">
+                      {(f.profile.nickname || f.profile.name).charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <div>
                     <p className="text-sm font-medium">{f.profile.name}</p>
                     {f.profile.nickname && <p className="text-xs text-gold">@{f.profile.nickname}</p>}
@@ -130,9 +134,13 @@ const FriendsList = ({ userId }: FriendsListProps) => {
               {friends.map(f => (
                 <div key={f.id} className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-gold font-bold text-sm">
-                      {(f.profile.nickname || f.profile.name).charAt(0).toUpperCase()}
-                    </div>
+                    {f.profile.avatar_url ? (
+                      <img src={f.profile.avatar_url} alt="" className="h-8 w-8 rounded-full object-cover" />
+                    ) : (
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-gold font-bold text-sm">
+                        {(f.profile.nickname || f.profile.name).charAt(0).toUpperCase()}
+                      </div>
+                    )}
                     <div>
                       <p className="text-sm font-medium">{f.profile.name}</p>
                       {f.profile.nickname && <p className="text-xs text-gold">@{f.profile.nickname}</p>}

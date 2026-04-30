@@ -118,12 +118,14 @@ const LoggedInIndex = () => {
                       <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Minha posição</p>
                       <p className="text-lg font-bold">{userRank.position}° lugar</p>
                       <p className="text-sm text-muted-foreground">{formatMmr(userRank.current_mmr)} MMR</p>
-                      {userRank.mmr_change != null && userRank.mmr_change !== 0 && (
-                        <p className={`text-xs ${userRank.mmr_change > 0 ? "text-green-400" : "text-red-400"}`}>
-                          {userRank.mmr_change > 0 ? "↑" : "↓"} {userRank.mmr_change > 0 ? "+" : ""}
-                          {formatMmr(userRank.mmr_change)} desde a última partida
+                      {userRank.position_change != null && userRank.position_change !== 0 ? (
+                        <p className={`text-xs ${userRank.position_change > 0 ? "text-green-400" : "text-red-400"}`}>
+                          {userRank.position_change > 0 ? "↑" : "↓"} {userRank.position_change > 0 ? "+" : ""}
+                          {userRank.position_change} {Math.abs(userRank.position_change) === 1 ? "posição" : "posições"} desde a última partida
                         </p>
-                      )}
+                      ) : userRank.position_change === 0 ? (
+                        <p className="text-xs text-muted-foreground">Manteve a posição na última partida</p>
+                      ) : null}
                     </div>
                   ) : (
                     <div className="flex flex-col items-center gap-2 py-2 text-center">

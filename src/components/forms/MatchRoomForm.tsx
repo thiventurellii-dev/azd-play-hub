@@ -20,6 +20,7 @@ interface Game {
   name: string;
   slug: string | null;
   max_players: number | null;
+  image_url: string | null;
 }
 interface BloodScript {
   id: string;
@@ -50,7 +51,7 @@ export interface MatchRoomData {
   game: { id: string; name: string; image_url: string | null };
 }
 
-const PLATFORM_OPTIONS = ["Presencial", "Tabletop Simulator", "BoardGame Arena", "Discord", "Foundry", "Outro Online"];
+const PLATFORM_OPTIONS = ["Presencial", "Tabletop Simulator", "BoardGame Arena", "Foundry", "Outro Online"];
 
 interface MatchRoomFormProps {
   room?: MatchRoomData | null;
@@ -108,7 +109,7 @@ const useFormOptions = (enabled: boolean, userId?: string) =>
     queryFn: async () => {
       const sb: any = supabase;
       const [gamesRes, scriptsRes, tagsRes, seasonsRes, communitiesRes, campaignsRes] = await Promise.all([
-        supabase.from("games").select("id, name, slug, max_players").order("name"),
+        supabase.from("games").select("id, name, slug, max_players, image_url").order("name"),
         supabase.from("blood_scripts").select("id, name").order("name"),
         supabase.from("room_tags").select("id, name").order("name"),
         supabase.from("seasons").select("id, name, status, type").in("status", ["active", "upcoming"]).order("name"),
@@ -595,7 +596,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
   return (
     <div className="space-y-4">
       {/* Header */}
-      {!hideHeader && (
+      {(!isEdit || !hideHeader) && (
         <div className="flex items-start gap-3">
           {!isEdit && (
             <Button
@@ -613,10 +614,11 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
             </Button>
           )}
           <div className="flex-1">
-            <h2 className="text-lg font-semibold text-foreground">{cfg.title}</h2>
+            {!hideHeader && <h2 className="text-lg font-semibold text-foreground">{cfg.title}</h2>}
             <span
               className={cn(
-                "inline-flex items-center gap-1.5 mt-1.5 px-2.5 py-1 rounded-full border text-xs font-medium",
+                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium",
+                hideHeader ? "" : "mt-1.5",
                 cfg.accentBg,
                 cfg.accentBorder,
                 cfg.accent,
@@ -680,24 +682,53 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="space-y-3">
             <div>
               <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Jogo *</label>
-              <Select value={gameId} onValueChange={setGameId}>
-                <SelectTrigger className="mt-1.5">
-                  <SelectValue placeholder="Selecione o jogo" />
-                </SelectTrigger>
-                <SelectContent>
+              {gameId && selectedGame ? (
+                <div className="mt-1.5 flex items-center gap-3 rounded-lg border border-border/40 bg-background/40 p-2.5">
+                  <div className="h-12 w-12 rounded-md bg-secondary overflow-hidden flex-shrink-0">
+                    {selectedGame.image_url ? (
+                      <img src={selectedGame.image_url} alt={selectedGame.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[10px] text-muted-foreground">
+                        {selectedGame.name.slice(0, 4).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-sm truncate">{selectedGame.name}</p>
+                    {selectedGame.max_players && (
+                      <p className="text-[11px] text-muted-foreground">até {selectedGame.max_players} jog.</p>
+                    )}
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setGameId("")} className="text-xs">
+                    Trocar
+                  </Button>
+                </div>
+              ) : (
+                <div className="mt-1.5 grid grid-cols-2 sm:grid-cols-4 gap-2 max-h-[260px] overflow-y-auto">
                   {filteredGames.map((g) => (
-                    <SelectItem key={g.id} value={g.id}>
-                      {g.name}
-                      {g.max_players ? (
-                        <span className="text-muted-foreground"> · até {g.max_players} jog.</span>
-                      ) : null}
-                    </SelectItem>
+                    <button
+                      key={g.id}
+                      type="button"
+                      onClick={() => setGameId(g.id)}
+                      className="group rounded-lg border border-border/40 bg-background/40 p-2 hover:border-gold/50 hover:bg-gold/5 transition text-left"
+                    >
+                      <div className="aspect-square rounded-md bg-secondary overflow-hidden mb-1.5">
+                        {g.image_url ? (
+                          <img src={g.image_url} alt={g.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
+                            {g.name.slice(0, 4).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <p className="text-[11px] font-medium truncate">{g.name}</p>
+                    </button>
                   ))}
-                </SelectContent>
-              </Select>
+                </div>
+              )}
             </div>
             <div>
               <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Título *</label>
@@ -729,9 +760,11 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div>
             <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Data e hora *</label>
-            <div className="mt-1.5 grid grid-cols-2 gap-2">
-              <DatePickerField value={scheduledDate} onChange={setScheduledDate} placeholder="Data" />
-              <Input type="time" value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)} />
+            <div className="mt-1.5 flex gap-2">
+              <div className="flex-1 min-w-0">
+                <DatePickerField value={scheduledDate} onChange={setScheduledDate} placeholder="Data" />
+              </div>
+              <Input type="time" value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)} className="w-[110px] shrink-0" />
             </div>
           </div>
           <div>
@@ -803,33 +836,38 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
       {/* Section 4 - Quem pode entrar */}
       <SectionCard index={4} title="Quem pode entrar" complete={sec4Complete} summary={sec4Summary}>
         <div>
-          <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Nível da sala</label>
+          <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Tags da sala</label>
           <div className="flex flex-wrap gap-2 mt-2">
-            {availableTags.map((tag) => {
-              const isSelected = selectedTagIds.includes(tag.id);
-              const isHighlight = tag.name.toLowerCase().includes("novato");
-              return (
-                <button
-                  key={tag.id}
-                  type="button"
-                  onClick={() => toggleTag(tag.id)}
-                  className={cn(
-                    "px-3 py-1 rounded-full text-xs font-medium border transition-all",
-                    isSelected
-                      ? isHighlight
-                        ? "bg-emerald-500/20 border-emerald-400/60 text-emerald-300 shadow-[0_0_12px_-2px_hsl(var(--domain-positive)/0.4)]"
-                        : "bg-gold/20 border-gold/50 text-gold"
-                      : isHighlight
-                        ? "bg-emerald-500/5 border-emerald-400/30 text-emerald-300/80 hover:bg-emerald-500/10"
-                        : "bg-muted/40 border-border text-muted-foreground hover:border-gold/30",
-                  )}
-                >
-                  {isHighlight && <Sparkles className="h-3 w-3 inline mr-1 -mt-0.5" />}
-                  {tag.name}
-                  {isSelected && <X className="h-3 w-3 inline ml-1" />}
-                </button>
-              );
-            })}
+            {availableTags
+              .filter((tag) => {
+                const n = tag.name.toLowerCase();
+                return n !== "casual" && n !== "competitivo";
+              })
+              .map((tag) => {
+                const isSelected = selectedTagIds.includes(tag.id);
+                const isHighlight = tag.name.toLowerCase().includes("novato");
+                return (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    onClick={() => toggleTag(tag.id)}
+                    className={cn(
+                      "px-3 py-1 rounded-full text-xs font-medium border transition-all",
+                      isSelected
+                        ? isHighlight
+                          ? "bg-emerald-500/20 border-emerald-400/60 text-emerald-300 shadow-[0_0_12px_-2px_hsl(var(--domain-positive)/0.4)]"
+                          : "bg-gold/20 border-gold/50 text-gold"
+                        : isHighlight
+                          ? "bg-emerald-500/5 border-emerald-400/30 text-emerald-300/80 hover:bg-emerald-500/10"
+                          : "bg-muted/40 border-border text-muted-foreground hover:border-gold/30",
+                    )}
+                  >
+                    {isHighlight && <Sparkles className="h-3 w-3 inline mr-1 -mt-0.5" />}
+                    {tag.name}
+                    {isSelected && <X className="h-3 w-3 inline ml-1" />}
+                  </button>
+                );
+              })}
           </div>
         </div>
 
@@ -877,22 +915,35 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
         {userCommunities.length > 0 && (
           <div>
             <label className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Comunidade</label>
-            <Select
-              value={selectedCommunityId || "none"}
-              onValueChange={(v) => setSelectedCommunityId(v === "none" ? "" : v)}
-            >
-              <SelectTrigger className="mt-1.5">
-                <SelectValue placeholder="Nenhuma" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Nenhuma</SelectItem>
-                {userCommunities.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {userCommunities.map((c) => {
+                const active = selectedCommunityId === c.id;
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => {
+                      if (active) {
+                        setSelectedCommunityId("");
+                        setCommunityOnly(false);
+                      } else {
+                        setSelectedCommunityId(c.id);
+                      }
+                    }}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border transition-all",
+                      active
+                        ? "bg-purple-500/20 border-purple-400/60 text-purple-300 shadow-[0_0_12px_-2px_hsl(270_70%_60%/0.4)]"
+                        : "bg-muted/40 border-border text-muted-foreground hover:border-purple-400/40 hover:text-purple-300/80",
+                    )}
+                  >
+                    <Users className="h-3 w-3" />
                     {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                    {active && <X className="h-3 w-3 ml-0.5" />}
+                  </button>
+                );
+              })}
+            </div>
             {selectedCommunityId && (
               <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer mt-2 px-3 py-2 rounded-md bg-purple-500/5 border border-purple-500/20">
                 <Checkbox checked={communityOnly} onCheckedChange={(c) => setCommunityOnly(!!c)} />

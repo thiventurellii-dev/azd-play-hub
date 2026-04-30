@@ -25,12 +25,13 @@ const CreateRoomDialog = ({ onCreated }: Props) => {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Agendar Partida / Sessão</DialogTitle>
+            <DialogTitle>Agendar partida ou sessão</DialogTitle>
             <DialogDescription>
-              Crie uma sala para reunir jogadores em uma partida ou sessão futura.
+              Crie uma sala pra reunir jogadores em um momento futuro.
             </DialogDescription>
           </DialogHeader>
           <MatchRoomForm
+            hideHeader
             onSuccess={() => {
               setOpen(false);
               onCreated();

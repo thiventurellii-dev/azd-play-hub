@@ -61,6 +61,18 @@ const Register = () => {
       const newUserId = signUpData?.user?.id;
       if (newUserId) {
         try { await saveProfileTags(newUserId, playerTags); } catch (e) { console.warn('tags save failed', e); }
+
+        // Detecta guests com dados compatíveis e notifica admins (best-effort).
+        // O usuário verá a sugestão de reivindicação ao acessar o Perfil após confirmar o e-mail.
+        try {
+          const { data: matches } = await supabase.rpc('find_matching_guests', { p_profile_id: newUserId });
+          const ids = ((matches as any[]) || []).map((m) => m.id);
+          if (ids.length > 0) {
+            await supabase.rpc('notify_admins_guest_matches', { p_profile_id: newUserId, p_ghost_ids: ids });
+          }
+        } catch (e) {
+          console.warn('guest auto-match failed', e);
+        }
       }
       setSubmitted(true);
     } catch (err: any) {

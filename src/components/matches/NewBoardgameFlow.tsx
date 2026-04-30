@@ -408,6 +408,7 @@ const NewBoardgameFlow = ({
   const removeEntry = (i: number) => {
     setEntries((prev) => {
       const next = prev.filter((_, idx) => idx !== i);
+      if (next.length === 0) return [emptyEntry(1)];
       return next.map((e, idx) => ({ ...e, seat_position: idx + 1 }));
     });
   };
@@ -514,8 +515,7 @@ const NewBoardgameFlow = ({
       .from("match_results")
       .select("ghost_player_id, mmr_after, matches!inner(played_at)")
       .in("ghost_player_id", ghostPlayerIds)
-      .not("ghost_player_id", "is", null)
-      .order("played_at", { foreignTable: "matches", ascending: false });
+      .not("ghost_player_id", "is", null);
 
     if (error) {
       console.error("fetchLatestGuestMmr error:", error);
@@ -523,7 +523,13 @@ const NewBoardgameFlow = ({
     }
 
     const latestMap: Record<string, number> = {};
-    for (const row of (data || []) as any[]) {
+    const sortedRows = [...((data || []) as any[])].sort((a, b) => {
+      const aPlayedAt = new Date(a.matches?.played_at || 0).getTime();
+      const bPlayedAt = new Date(b.matches?.played_at || 0).getTime();
+      return bPlayedAt - aPlayedAt;
+    });
+
+    for (const row of sortedRows) {
       const ghostId = row.ghost_player_id as string | null;
       if (!ghostId || ghostId in latestMap) continue;
       latestMap[ghostId] = row.mmr_after ?? 1000;

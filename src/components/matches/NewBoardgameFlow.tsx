@@ -34,7 +34,8 @@ interface Profile {
   avatar_url: string | null;
 }
 interface Entry {
-  player_id: string;
+  player_id: string;        // profile.id OR ghost_player.id
+  is_guest: boolean;        // true => player_id refers to ghost_players.id
   seat_position: number;
   faction: string;
   total_score: number | null;

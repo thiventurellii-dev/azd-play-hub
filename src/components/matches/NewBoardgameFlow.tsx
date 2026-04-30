@@ -659,7 +659,7 @@ const NewBoardgameFlow = ({
         if (detailed.length > 0) await supabase.from("match_result_scores").insert(detailed);
       }
 
-      if (computeMmr) {
+      if (computeMmr && registeredIds.length > 0) {
         for (const e of registeredFilled) {
           const isWin = positionMap[e.player_id] === 1;
           await supabase.rpc("upsert_mmr_for_match", {

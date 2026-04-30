@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/lib/supabaseExternal";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { X, ChevronLeft, Gamepad2, Skull, Sword, Check, Users, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
+import { X, ChevronLeft, Gamepad2, Skull, Sword, Check, Users, ChevronDown, ChevronUp, Sparkles, Search, Eye, UserPlus } from "lucide-react";
 import { DatePickerField } from "@/components/ui/date-picker-field";
 import { sendMatchNotification } from "@/lib/matchNotification";
 import { cn } from "@/lib/utils";

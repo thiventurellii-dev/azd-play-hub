@@ -14,6 +14,7 @@ import { Upload, UserPlus, Trash2, ChevronLeft, ChevronRight, Check, ChevronsUpD
 import { DatePickerField } from '@/components/ui/date-picker-field';
 import ScoringSheet from './ScoringSheet';
 import NewMatchBotcFlow from './NewMatchBotcFlow';
+import NewBoardgameFlow from './NewBoardgameFlow';
 import { Gamepad2, Skull, Sword } from 'lucide-react';
 
 interface Season { id: string; name: string; }
@@ -394,6 +395,7 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, prefil
     );
   }
 
+  // Boardgame — new single-page redesign
   return (
     <div className="space-y-4">
       {!prefilledCategory && (
@@ -401,6 +403,17 @@ const NewMatchFlow = ({ prefilledGameId, prefilledPlayers, prefilledDate, prefil
           <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
         </Button>
       )}
+      <NewBoardgameFlow onComplete={onComplete} />
+    </div>
+  );
+};
+
+export default NewMatchFlow;
+
+// --- Legacy wizard kept below for reference (no longer rendered) ---
+const _LegacyWizard_unused = () => {
+  return (
+    <div className="space-y-4">
       <Card className="bg-card border-border">
         <CardHeader>
           <CardTitle className="flex items-center justify-between">

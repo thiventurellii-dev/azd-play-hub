@@ -36,12 +36,13 @@ interface Props {
   prefilledGameId?: string;
   prefilledPlayers?: string[];
   prefilledDate?: string;
+  prefilledCommunityId?: string;
   hideHeader?: boolean;
 }
 
 const PLATFORMS = ['Presencial', 'Tabletop Simulator', 'BoardGame Arena', 'Discord', 'Outro Online'];
 
-const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefilledDate, hideHeader }: Props) => {
+const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefilledDate, prefilledCommunityId, hideHeader }: Props) => {
   const { notify } = useNotification();
 
   // Data

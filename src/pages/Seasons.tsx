@@ -135,6 +135,8 @@ const Seasons = () => {
     return seasons.filter((s) => s.status === "finished").sort((a, b) => b.end_date.localeCompare(a.end_date));
   }, [seasons]);
 
+  const colorMap = useMemo(() => buildSeasonColorMap(seasons), [seasons]);
+
   const linkedNames = (s: SeasonItem) => (s.type === "blood" ? seasonScripts[s.id] || [] : seasonGames[s.id] || []);
 
   return (

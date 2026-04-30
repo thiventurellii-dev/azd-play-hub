@@ -544,6 +544,24 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
             .insert(selectedTagIds.map((tagId) => ({ room_id: data.id, tag_id: tagId })));
         }
 
+        // Convites
+        if (invitedFriendIds.length > 0) {
+          const inviteRows = invitedFriendIds.map((pid, i) => ({
+            room_id: data.id,
+            player_id: pid,
+            type: "invited",
+            position: i + 1,
+          }));
+          await supabase.from("match_room_players").insert(inviteRows as any);
+          sendRoomNotifications({
+            userIds: invitedFriendIds,
+            type: "room_invite",
+            title: "Você foi convidado!",
+            message: `${title ? `"${title}"` : "Uma sala"} — confirme sua presença.`,
+            roomId: data.id,
+          }).catch(() => {});
+        }
+
         const game = games.find((g) => g.id === finalGameId);
         sendMatchNotification({
           event: "match_created",

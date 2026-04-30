@@ -953,7 +953,7 @@ const NewBoardgameFlow = ({
               <PopoverContent className="w-[280px] p-0" align="start">
                 <Command>
                   <CommandInput placeholder="Buscar amigo..." />
-                  <CommandList>
+                  <CommandList className="max-h-[280px]" onWheel={(ev) => ev.stopPropagation()}>
                     <CommandEmpty>Nenhum amigo disponível.</CommandEmpty>
                     <CommandGroup>
                       {profiles
@@ -1039,7 +1039,7 @@ const NewBoardgameFlow = ({
                 )}
                 <Command>
                   <CommandInput placeholder="Buscar membro..." />
-                  <CommandList>
+                  <CommandList className="max-h-[280px]" onWheel={(ev) => ev.stopPropagation()}>
                     <CommandEmpty>Nenhum membro disponível.</CommandEmpty>
                     <CommandGroup>
                       {profiles

@@ -106,4 +106,4 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.notify_admins_guest_matches(uuid, uuid[]) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.notify_admins_guest_matches(uuid, uuid[]) TO authenticated, anon;

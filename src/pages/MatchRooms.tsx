@@ -418,7 +418,7 @@ const MatchRooms = () => {
               </button>
             </TooltipTrigger>
             <TooltipContent side="top" className="max-w-[240px] text-xs">
-              Ao filtrar por jogo, mostramos todas as salas abertas desse jogo agrupadas por data — não só as do dia selecionado.
+              Ao filtrar por jogo, será mostrado todas as salas abertas desse jogo agrupadas por data.
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -556,9 +556,7 @@ const MatchRooms = () => {
                     <Calendar className="h-5 w-5 text-muted-foreground/60" />
                   </div>
                   <p className="text-sm">Nenhuma sala aberta para esse jogo</p>
-                  <p className="text-xs text-muted-foreground/70 mt-1">
-                    Que tal criar uma e chamar a galera?
-                  </p>
+                  <p className="text-xs text-muted-foreground/70 mt-1">Que tal criar uma e chamar a galera?</p>
                 </div>
               ) : (
                 <div className="flex flex-col gap-6">
@@ -734,9 +732,7 @@ const MatchRooms = () => {
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Registrar Resultado</DialogTitle>
-            <DialogDescription>
-              Registre o resultado de uma partida já jogada.
-            </DialogDescription>
+            <DialogDescription>Registre o resultado de uma partida já jogada.</DialogDescription>
           </DialogHeader>
           <ErrorBoundary>
             <NewMatchFlow

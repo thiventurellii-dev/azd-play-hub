@@ -7,3 +7,7 @@
 ALTER TYPE public.match_room_player_type ADD VALUE IF NOT EXISTS 'invited';
 ALTER TYPE public.match_room_player_type ADD VALUE IF NOT EXISTS 'observer';
 ALTER TYPE public.match_room_player_type ADD VALUE IF NOT EXISTS 'moderator';
+
+-- Flag para permitir entrada de observadores na sala
+ALTER TABLE public.match_rooms
+  ADD COLUMN IF NOT EXISTS accept_observers boolean NOT NULL DEFAULT false;

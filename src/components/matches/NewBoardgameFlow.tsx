@@ -140,9 +140,26 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
       const recent = ordered.slice(0, 4).map(gid => allGames.find(g => g.id === gid)).filter(Boolean) as Game[];
       setRecentGames(recent);
 
-      // Default date = today
-      const today = new Date();
-      setPlayedDate(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`);
+      // Default date = today (only if not prefilled)
+      if (!prefilledDate) {
+        const today = new Date();
+        setPlayedDate(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`);
+      }
+
+      // Friends list
+      if (user?.id) {
+        const { data: fr } = await supabase
+          .from('friendships')
+          .select('user_id, friend_id, status')
+          .eq('status', 'accepted' as any)
+          .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
+        const ids = new Set<string>();
+        for (const f of (fr || []) as any[]) {
+          if (f.user_id === user.id) ids.add(f.friend_id);
+          else if (f.friend_id === user.id) ids.add(f.user_id);
+        }
+        setFriendIds(Array.from(ids));
+      }
     };
     fetchBase();
   }, []);

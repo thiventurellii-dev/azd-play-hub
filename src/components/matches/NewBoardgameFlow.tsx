@@ -668,12 +668,83 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
               <UserPlus className="h-3 w-3" /> + Eu
             </button>
           )}
+          {friendIds.length > 0 && (
+            <Popover open={friendsOpen} onOpenChange={(o) => { setFriendsOpen(o); if (!o) setSelectedFriendsToAdd(new Set()); }}>
+              <PopoverTrigger asChild>
+                <button
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[#ffb84a]/30 bg-[#ffb84a]/10 px-3 py-1 text-xs text-[#ffb84a] hover:bg-[#ffb84a]/20"
+                >
+                  <UserPlus className="h-3 w-3" /> + Amigos
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[280px] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Buscar amigo..." />
+                  <CommandList>
+                    <CommandEmpty>Nenhum amigo disponível.</CommandEmpty>
+                    <CommandGroup>
+                      {profiles
+                        .filter(p => friendIds.includes(p.id) && !entries.some(e => e.player_id === p.id))
+                        .map(p => {
+                          const checked = selectedFriendsToAdd.has(p.id);
+                          return (
+                            <CommandItem
+                              key={p.id}
+                              value={`${p.nickname || ''} ${p.name}`}
+                              onSelect={() => {
+                                setSelectedFriendsToAdd(prev => {
+                                  const next = new Set(prev);
+                                  if (next.has(p.id)) next.delete(p.id);
+                                  else next.add(p.id);
+                                  return next;
+                                });
+                              }}
+                            >
+                              <Checkbox checked={checked} className="mr-2 data-[state=checked]:bg-gold data-[state=checked]:border-gold" />
+                              <Avatar className="h-6 w-6 mr-2">
+                                <AvatarImage src={p.avatar_url || undefined} />
+                                <AvatarFallback className="text-[10px]">{(p.nickname || p.name).slice(0, 2).toUpperCase()}</AvatarFallback>
+                              </Avatar>
+                              {p.nickname || p.name}
+                            </CommandItem>
+                          );
+                        })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+                <div className="flex items-center justify-between gap-2 border-t border-border p-2">
+                  <span className="text-[11px] text-muted-foreground">{selectedFriendsToAdd.size} selecionado(s)</span>
+                  <Button
+                    size="sm"
+                    variant="gold"
+                    disabled={selectedFriendsToAdd.size === 0}
+                    onClick={() => {
+                      const ids = Array.from(selectedFriendsToAdd);
+                      setEntries(prev => {
+                        const next = [...prev];
+                        for (const fid of ids) {
+                          const empty = next.findIndex(e => !e.player_id);
+                          if (empty >= 0) next[empty] = { ...next[empty], player_id: fid };
+                          else next.push({ ...emptyEntry(next.length + 1), player_id: fid });
+                        }
+                        return next;
+                      });
+                      setSelectedFriendsToAdd(new Set());
+                      setFriendsOpen(false);
+                    }}
+                  >
+                    Adicionar
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
         </div>
 
         {/* Header row */}
-        <div className="grid grid-cols-[40px_1fr_auto_auto_auto] gap-2 text-[10px] uppercase tracking-wide text-muted-foreground px-2">
-          <div>Assento</div>
-          <div>Jogador</div>
+        <div className="grid grid-cols-[40px_1fr_auto_auto_auto] gap-3 text-[10px] uppercase tracking-wide text-muted-foreground px-2">
+          <div className="text-center">Assento</div>
+          <div className="pl-2">Jogador</div>
           {gameFactions.length > 0 && <div className="w-[110px]">Facção</div>}
           <div className="w-[80px] text-right">Pontuação</div>
           <div className="w-[60px] text-center">Posição</div>

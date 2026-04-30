@@ -1413,6 +1413,23 @@ const NewBoardgameFlow = ({
           {saving ? "Salvando..." : "Registrar partida"}
         </Button>
       </div>
+
+      {/* Add guest dialog */}
+      <AddGuestDialog
+        open={addGuestOpen}
+        onOpenChange={setAddGuestOpen}
+        onCreated={(g) => {
+          setGuests((prev) => [g, ...prev]);
+          // Auto-fill into first empty entry, or append
+          setEntries((prev) => {
+            const next = [...prev];
+            const empty = next.findIndex((e) => !e.player_id);
+            if (empty >= 0) next[empty] = { ...next[empty], player_id: g.id, is_guest: true };
+            else next.push({ ...emptyEntry(next.length + 1), player_id: g.id, is_guest: true });
+            return next;
+          });
+        }}
+      />
     </div>
   );
 };

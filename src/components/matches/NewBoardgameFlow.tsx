@@ -117,8 +117,13 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
       const allSeasons = (s.data || []) as Season[];
       setSeasons(allSeasons);
       const active = allSeasons.find(x => x.status === 'active');
-      if (active) setSeasonId(active.id);
-      else setLinkToSeason(false);
+      if (active) {
+        setSeasonId(active.id);
+        const { data: sg } = await supabase.from('season_games' as any).select('game_id').eq('season_id', active.id);
+        setActiveSeasonGameIds(((sg || []) as any[]).map(r => r.game_id));
+      } else {
+        setLinkToSeason(false);
+      }
 
       const allGames = ((g.data || []) as Game[]).filter(gm => gm.slug !== 'blood-on-the-clocktower');
       setGames(allGames);

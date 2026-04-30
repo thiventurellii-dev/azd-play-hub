@@ -445,14 +445,29 @@ const AdminBloodMatches = () => {
             </div>
             <div className="space-y-2">
               <Label>Storyteller *</Label>
-              <Select value={storytellerId} onValueChange={setStorytellerId}>
+              <Select
+                value={encodeP(storytellerId, storytellerIsGuest)}
+                onValueChange={v => { const d = decodeP(v); setStorytellerId(d.id); setStorytellerIsGuest(d.is_guest); }}
+              >
                 <SelectTrigger><SelectValue placeholder="Quem narrou?" /></SelectTrigger>
                 <SelectContent>
-                  {players.map(p => (
-                    <SelectItem key={p.id} value={p.id} disabled={allSelectedPlayerIds.includes(p.id) && p.id !== storytellerId}>
-                      {p.nickname || p.name}
-                    </SelectItem>
-                  ))}
+                  {players.map(p => {
+                    const v = encodeP(p.id, false);
+                    return (
+                      <SelectItem key={v} value={v} disabled={allSelectedPlayerIds.includes(p.id) && !(p.id === storytellerId && !storytellerIsGuest)}>
+                        {p.nickname || p.name}
+                      </SelectItem>
+                    );
+                  })}
+                  {guests.length > 0 && <div className="px-2 py-1 text-xs text-amber-400/70 border-t border-border/40 mt-1">Convidados</div>}
+                  {guests.map(g => {
+                    const v = encodeP(g.id, true);
+                    return (
+                      <SelectItem key={v} value={v} disabled={allSelectedPlayerIds.includes(g.id) && !(g.id === storytellerId && storytellerIsGuest)}>
+                        {g.nickname} <span className="ml-1 text-xs text-amber-400">(convidado)</span>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>

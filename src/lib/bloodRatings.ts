@@ -1,14 +1,16 @@
 import { supabase } from "@/lib/supabaseExternal";
 
 interface BloodPlayerEntry {
-  player_id: string;
+  player_id: string;       // profile.id OR ghost_player.id
+  is_guest?: boolean;      // true => player_id refers to ghost_players.id
   character_id: string;
   team: 'good' | 'evil';
 }
 
 /**
  * Recalculates all blood_mmr_ratings for a given season from scratch.
- * Shared between AdminBloodMatches and NewMatchBotcFlow.
+ * Guests (ghost_players) NEVER enter blood_mmr_ratings — they remain hidden
+ * from the ranking until they claim their profile.
  */
 export const recalculateSeasonRatings = async (seasonId: string) => {
   const { data: sMatches } = await supabase
@@ -30,25 +32,29 @@ export const recalculateSeasonRatings = async (seasonId: string) => {
   };
 
   for (const match of sMatches) {
-    const matchPlayers = (sPlayers || []).filter(p => p.match_id === match.id);
-    const stId = match.storyteller_player_id;
+    // Skip storyteller bookkeeping if guest narrator (no profile id).
+    const matchPlayers = (sPlayers || []).filter(p => p.match_id === match.id && p.player_id);
+    const stId = (match as any).storyteller_player_id as string | null;
 
-    ensure(stId);
-    const stIsAlsoPlayer = matchPlayers.some(p => p.player_id === stId);
-    if (!stIsAlsoPlayer) {
-      ratings[stId].games_played += 1;
-      ratings[stId].games_as_storyteller += 1;
+    if (stId) {
+      ensure(stId);
+      const stIsAlsoPlayer = matchPlayers.some(p => p.player_id === stId);
+      if (!stIsAlsoPlayer) {
+        ratings[stId].games_played += 1;
+        ratings[stId].games_as_storyteller += 1;
+      }
     }
 
     for (const mp of matchPlayers) {
-      ensure(mp.player_id);
-      ratings[mp.player_id].games_played += 1;
-      if (mp.player_id === stId) {
-        ratings[mp.player_id].games_as_storyteller += 1;
+      // mp.player_id is registered (guests filtered above)
+      ensure(mp.player_id!);
+      ratings[mp.player_id!].games_played += 1;
+      if (stId && mp.player_id === stId) {
+        ratings[mp.player_id!].games_as_storyteller += 1;
       }
-      const won = mp.team === match.winning_team;
-      if (won && mp.team === 'evil') ratings[mp.player_id].wins_evil += 1;
-      if (won && mp.team === 'good') ratings[mp.player_id].wins_good += 1;
+      const won = mp.team === (match as any).winning_team;
+      if (won && mp.team === 'evil') ratings[mp.player_id!].wins_evil += 1;
+      if (won && mp.team === 'good') ratings[mp.player_id!].wins_good += 1;
     }
   }
 
@@ -71,7 +77,7 @@ export const recalculateSeasonRatings = async (seasonId: string) => {
 
 /**
  * Submits a Blood on the Clocktower match to the database.
- * Used by both AdminBloodMatches and NewMatchBotcFlow.
+ * Supports guest (ghost_player) participants and storyteller.
  */
 export const submitBloodMatch = async (params: {
   seasonId: string;
@@ -79,6 +85,7 @@ export const submitBloodMatch = async (params: {
   playedAt: string;
   durationMinutes: number | null;
   storytellerId: string;
+  storytellerIsGuest?: boolean;
   winningTeam: 'good' | 'evil';
   players: BloodPlayerEntry[];
   victoryConditions?: string[];
@@ -91,7 +98,8 @@ export const submitBloodMatch = async (params: {
       script_id: params.scriptId,
       played_at: params.playedAt,
       duration_minutes: params.durationMinutes,
-      storyteller_player_id: params.storytellerId,
+      storyteller_player_id: params.storytellerIsGuest ? null : params.storytellerId,
+      storyteller_ghost_id: params.storytellerIsGuest ? params.storytellerId : null,
       winning_team: params.winningTeam,
       victory_conditions: params.victoryConditions || [],
       platform: params.platform || null,
@@ -101,7 +109,8 @@ export const submitBloodMatch = async (params: {
 
   const matchPlayers = params.players.map(p => ({
     match_id: (match as any).id,
-    player_id: p.player_id,
+    player_id: p.is_guest ? null : p.player_id,
+    ghost_player_id: p.is_guest ? p.player_id : null,
     character_id: p.character_id,
     team: p.team,
   }));

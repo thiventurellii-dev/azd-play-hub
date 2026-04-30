@@ -8,18 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/lib/supabaseExternal";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import {
-  X,
-  ChevronLeft,
-  Gamepad2,
-  Skull,
-  Sword,
-  Check,
-  Users,
-  ChevronDown,
-  ChevronUp,
-  Sparkles,
-} from "lucide-react";
+import { X, ChevronLeft, Gamepad2, Skull, Sword, Check, Users, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { DatePickerField } from "@/components/ui/date-picker-field";
 import { sendMatchNotification } from "@/lib/matchNotification";
 import { cn } from "@/lib/utils";
@@ -61,14 +50,7 @@ export interface MatchRoomData {
   game: { id: string; name: string; image_url: string | null };
 }
 
-const PLATFORM_OPTIONS = [
-  "Presencial",
-  "Tabletop Simulator",
-  "BoardGame Arena",
-  "Discord",
-  "Foundry",
-  "Outro Online",
-];
+const PLATFORM_OPTIONS = ["Presencial", "Tabletop Simulator", "BoardGame Arena", "Discord", "Foundry", "Outro Online"];
 
 interface MatchRoomFormProps {
   room?: MatchRoomData | null;
@@ -200,25 +182,18 @@ const SectionCard = ({
       <button
         type="button"
         onClick={() => collapsible && setOpen((v) => !v)}
-        className={cn(
-          "w-full flex items-center gap-3 px-4 py-3",
-          collapsible ? "cursor-pointer" : "cursor-default",
-        )}
+        className={cn("w-full flex items-center gap-3 px-4 py-3", collapsible ? "cursor-pointer" : "cursor-default")}
       >
         <span
           className={cn(
             "flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold shrink-0",
-            complete
-              ? "bg-emerald-500/20 text-emerald-400"
-              : "bg-gold/15 text-gold",
+            complete ? "bg-emerald-500/20 text-emerald-400" : "bg-gold/15 text-gold",
           )}
         >
           {complete ? <Check className="h-3.5 w-3.5" /> : index}
         </span>
         <span className="font-semibold text-sm text-foreground flex-1 text-left">{title}</span>
-        {summary && (
-          <span className="text-xs text-muted-foreground truncate max-w-[60%] text-right">{summary}</span>
-        )}
+        {summary && <span className="text-xs text-muted-foreground truncate max-w-[60%] text-right">{summary}</span>}
         {collapsible && (
           <span className="text-muted-foreground">
             {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -253,7 +228,7 @@ const categoryCards: Array<{
   {
     id: "botc",
     label: "Blood on the Clocktower",
-    description: "Mistério social · BotC",
+    description: "Um Jogo de Dedução social",
     icon: Skull,
     color: "text-red-400",
     border: "hover:border-red-500/60 hover:bg-red-500/5",
@@ -383,7 +358,11 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
     setSelectedTagIds((prev) => (prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]));
 
   /* ── Section completion checks ─── */
-  const sec1Complete = isBotC ? !!selectedScriptId && !!title : isRpg ? !!selectedCampaignId && !!title : !!gameId && !!title;
+  const sec1Complete = isBotC
+    ? !!selectedScriptId && !!title
+    : isRpg
+      ? !!selectedCampaignId && !!title
+      : !!gameId && !!title;
   const sec2Complete = !!scheduledDate && !!scheduledTime && !!maxPlayers;
   const sec3Complete = !!maxPlayers && parseInt(maxPlayers) > 0;
   const sec4Complete = true; // visibilidade tem defaults
@@ -539,9 +518,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
             </p>
           </div>
         )}
-        <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
-          Escolha a categoria
-        </p>
+        <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Escolha a categoria</p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {categoryCards.map((card) => {
             const Icon = card.icon;
@@ -813,11 +790,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
         </div>
 
         <label className="flex items-start gap-3 px-3 py-3 rounded-lg border border-border/40 bg-background/40 cursor-pointer">
-          <Checkbox
-            checked={acceptObservers}
-            onCheckedChange={(c) => setAcceptObservers(!!c)}
-            className="mt-0.5"
-          />
+          <Checkbox checked={acceptObservers} onCheckedChange={(c) => setAcceptObservers(!!c)} className="mt-0.5" />
           <div className="flex-1">
             <p className="text-sm font-medium text-foreground">Aceitar observadores</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
@@ -922,10 +895,7 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
             </Select>
             {selectedCommunityId && (
               <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer mt-2 px-3 py-2 rounded-md bg-purple-500/5 border border-purple-500/20">
-                <Checkbox
-                  checked={communityOnly}
-                  onCheckedChange={(c) => setCommunityOnly(!!c)}
-                />
+                <Checkbox checked={communityOnly} onCheckedChange={(c) => setCommunityOnly(!!c)} />
                 Exclusiva para membros da comunidade
               </label>
             )}

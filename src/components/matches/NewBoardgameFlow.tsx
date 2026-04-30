@@ -81,6 +81,12 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
   const [friendsOpen, setFriendsOpen] = useState(false);
   const [selectedFriendsToAdd, setSelectedFriendsToAdd] = useState<Set<string>>(new Set());
 
+  // Community quick-add (only when prefilledCommunityId is set, e.g. from a community room)
+  const [communityName, setCommunityName] = useState<string | null>(null);
+  const [communityMemberIds, setCommunityMemberIds] = useState<string[]>([]);
+  const [communityOpen, setCommunityOpen] = useState(false);
+  const [selectedCommunityToAdd, setSelectedCommunityToAdd] = useState<Set<string>>(new Set());
+
   // Section 4 — Optional
   const [optionalOpen, setOptionalOpen] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);

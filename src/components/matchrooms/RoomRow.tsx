@@ -112,6 +112,7 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [commentCount, setCommentCount] = useState(0);
   const [scriptImageUrl, setScriptImageUrl] = useState<string | null>(null);
+  const [campaignMasterId, setCampaignMasterId] = useState<string | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const [resultModalOpen, setResultModalOpen] = useState(false);
@@ -126,6 +127,12 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
     supabase.from("blood_scripts").select("image_url").eq("id", room.blood_script_id).maybeSingle()
       .then(({ data }) => setScriptImageUrl((data as any)?.image_url ?? null));
   }, [room.blood_script_id]);
+
+  useEffect(() => {
+    if (!room.campaign_id) { setCampaignMasterId(null); return; }
+    supabase.from("rpg_campaigns").select("master_id").eq("id", room.campaign_id).maybeSingle()
+      .then(({ data }) => setCampaignMasterId((data as any)?.master_id ?? null));
+  }, [room.campaign_id]);
 
   useEffect(() => {
     if (room.result_id) {
@@ -242,6 +249,8 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
   const canManage = isCreator || isAdmin;
   const isBotC = !!room.blood_script_id;
   const isRpg = room.room_type === "rpg" && !!room.campaign_id;
+  const isRpgMaster = isRpg && !!user && (campaignMasterId === user.id);
+  const canInsertResult = isRpg ? (isRpgMaster || isAdmin) : true;
 
   const date = new Date(room.scheduled_at);
   const formattedDate = date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
@@ -485,11 +494,15 @@ const RoomRow = ({ room, onUpdate, friendIds }: Props) => {
                   <Button variant="outline" size="sm" className="h-9 flex-1 lg:flex-initial" onClick={() => setResultModalOpen(true)}>
                     <Eye className="h-3.5 w-3.5 mr-1" /> Ver Resultados
                   </Button>
-                ) : (
+                ) : canInsertResult ? (
                   <Button variant="gold" size="sm" className="h-9 flex-1 lg:flex-initial" onClick={() => setMatchFlowOpen(true)}>
                     <ClipboardList className="h-3.5 w-3.5 mr-1" /> Inserir Resultado
                   </Button>
-                )}
+                ) : isRpg ? (
+                  <div className="h-9 flex-1 lg:flex-initial flex items-center px-3 rounded-md border border-dashed border-border text-[11px] text-muted-foreground">
+                    Aguardando o mestre inserir o resultado
+                  </div>
+                ) : null}
                 {canManage && (
                   <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0 text-destructive hover:text-destructive" onClick={handleDelete} disabled={loading} title="Excluir sala">
                     <Trash2 className="h-3.5 w-3.5" />

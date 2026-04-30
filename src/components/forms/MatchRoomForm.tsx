@@ -438,9 +438,16 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess }: MatchRoomFormPr
             </Select>
           )}
           {selectedCampaign && (
-            <p className="text-[11px] text-muted-foreground mt-1">
-              O título será preenchido automaticamente como "Sessão N — {selectedCampaign.name}".
-            </p>
+            <div className="mt-2 rounded-md border border-purple-500/30 bg-purple-500/5 px-3 py-2">
+              <div className="flex items-center gap-2 text-xs">
+                <Sword className="h-3.5 w-3.5 text-purple-400" />
+                <span className="text-muted-foreground">Mestre da campanha:</span>
+                <span className="font-semibold text-foreground">Você</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Apenas o mestre poderá inserir o resultado desta sessão. Título preenchido como "Sessão N — {selectedCampaign.name}".
+              </p>
+            </div>
           )}
         </div>
       ) : (

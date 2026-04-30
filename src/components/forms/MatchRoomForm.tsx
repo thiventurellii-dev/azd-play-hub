@@ -893,34 +893,26 @@ const MatchRoomForm = ({ room, isAdminMode = false, onSuccess, hideHeader = fals
 
       {/* Section 2 - Quando */}
       <SectionCard index={2} title="Quando" complete={sec2Complete} summary={sec2Summary}>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="space-y-1">
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+          <div className="space-y-1 sm:col-span-5">
             <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">Data e hora *</label>
             <div className="flex gap-2">
               <div className="flex-1 min-w-0">
                 <DatePickerField value={scheduledDate} onChange={setScheduledDate} placeholder="Data" />
               </div>
-              <Input type="time" value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)} className="w-[110px] shrink-0" />
+              <Input type="time" value={scheduledTime} onChange={(e) => setScheduledTime(e.target.value)} className="w-[105px] shrink-0" />
             </div>
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1 sm:col-span-2">
             <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">Vagas</label>
-            <div className="relative">
-              <Input
-                type="number"
-                min="2"
-                value={maxPlayers}
-                onChange={(e) => setMaxPlayers(e.target.value)}
-                className="pr-16"
-              />
-              {selectedGame?.max_players && !isBotC && !isRpg && (
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-muted-foreground">
-                  de {selectedGame.max_players} max
-                </span>
-              )}
-            </div>
+            <Input
+              type="number"
+              min="2"
+              value={maxPlayers}
+              onChange={(e) => setMaxPlayers(e.target.value)}
+            />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-1 sm:col-span-5">
             <label className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">Local</label>
             <Select value={platform || "none"} onValueChange={(v) => setPlatform(v === "none" ? "" : v)}>
               <SelectTrigger>

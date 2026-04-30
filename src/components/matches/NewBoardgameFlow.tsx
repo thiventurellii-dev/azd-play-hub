@@ -163,44 +163,60 @@ const NewBoardgameFlow = ({ onComplete, prefilledGameId, prefilledPlayers, prefi
         setPlayedDate(`${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`);
       }
 
-      // Friends list
+      // Friends list + user communities
       if (user?.id) {
-        const { data: fr } = await supabase
-          .from('friendships')
-          .select('user_id, friend_id, status')
-          .eq('status', 'accepted' as any)
-          .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`);
+        const [{ data: fr }, { data: myMemberships }] = await Promise.all([
+          supabase
+            .from('friendships')
+            .select('user_id, friend_id, status')
+            .eq('status', 'accepted' as any)
+            .or(`user_id.eq.${user.id},friend_id.eq.${user.id}`),
+          supabase
+            .from('community_members' as any)
+            .select('community_id')
+            .eq('user_id', user.id)
+            .eq('status', 'active' as any),
+        ]);
         const ids = new Set<string>();
         for (const f of (fr || []) as any[]) {
           if (f.user_id === user.id) ids.add(f.friend_id);
           else if (f.friend_id === user.id) ids.add(f.user_id);
         }
         setFriendIds(Array.from(ids));
+
+        const myCommunityIds = ((myMemberships || []) as any[]).map((m: any) => m.community_id).filter(Boolean);
+        if (myCommunityIds.length > 0) {
+          const { data: comms } = await supabase
+            .from('communities' as any)
+            .select('id, name')
+            .in('id', myCommunityIds);
+          setUserCommunities(((comms || []) as any[]).map((c: any) => ({ id: c.id, name: c.name })));
+        }
       }
     };
     fetchBase();
   }, []);
 
-  // Fetch community members when prefilledCommunityId is provided
+  // Fetch community members + name whenever the selected community changes
   useEffect(() => {
-    if (!prefilledCommunityId) {
+    if (!selectedCommunityId) {
       setCommunityName(null);
       setCommunityMemberIds([]);
       return;
     }
     const run = async () => {
       const [{ data: comm }, { data: members }] = await Promise.all([
-        supabase.from('communities' as any).select('name').eq('id', prefilledCommunityId).maybeSingle(),
+        supabase.from('communities' as any).select('name').eq('id', selectedCommunityId).maybeSingle(),
         supabase.from('community_members' as any)
           .select('user_id')
-          .eq('community_id', prefilledCommunityId)
+          .eq('community_id', selectedCommunityId)
           .eq('status', 'active' as any),
       ]);
       setCommunityName((comm as any)?.name ?? null);
-      setCommunityMemberIds(((members || []) as any[]).map(m => m.user_id).filter(Boolean));
+      setCommunityMemberIds(((members || []) as any[]).map((m: any) => m.user_id).filter(Boolean));
     };
     run();
-  }, [prefilledCommunityId]);
+  }, [selectedCommunityId]);
 
   // Fetch schema + factions when game changes
   useEffect(() => {

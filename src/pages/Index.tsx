@@ -97,7 +97,7 @@ const LoggedInIndex = () => {
           <Link to="/seasons">
             <motion.div {...motionProps}>
               <Button variant="outline" size="lg">
-                Ver Ranking
+                Ver Seasons
               </Button>
             </motion.div>
           </Link>
@@ -108,7 +108,12 @@ const LoggedInIndex = () => {
       <section className="container pb-16">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Link to={seasonLink} className="group block order-2 h-full sm:order-2">
-            <DashboardCard title={activeSeason?.name ?? "Ranking da Season"} icon={<span>🏆</span>} delay={0.6} loading={loading}>
+            <DashboardCard
+              title={activeSeason?.name ?? "Ranking da Season"}
+              icon={<span>🏆</span>}
+              delay={0.6}
+              loading={loading}
+            >
               {activeSeason ? (
                 <div className="space-y-4">
                   {seasonContext && <p className="text-xs text-muted-foreground">{seasonContext}</p>}
@@ -121,7 +126,8 @@ const LoggedInIndex = () => {
                       {userRank.position_change != null && userRank.position_change !== 0 ? (
                         <p className={`text-xs ${userRank.position_change > 0 ? "text-green-400" : "text-red-400"}`}>
                           {userRank.position_change > 0 ? "↑" : "↓"} {userRank.position_change > 0 ? "+" : ""}
-                          {userRank.position_change} {Math.abs(userRank.position_change) === 1 ? "posição" : "posições"} desde a última partida
+                          {userRank.position_change} {Math.abs(userRank.position_change) === 1 ? "posição" : "posições"}{" "}
+                          desde a última partida
                         </p>
                       ) : userRank.position_change === 0 ? (
                         <p className="text-xs text-muted-foreground">Manteve a posição na última partida</p>
@@ -184,7 +190,10 @@ const LoggedInIndex = () => {
                           {room.game?.name} — {room.title}
                         </span>
                         <span className="ml-2 whitespace-nowrap text-xs text-muted-foreground">
-                          {new Date(room.scheduled_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
+                          {new Date(room.scheduled_at).toLocaleDateString("pt-BR", {
+                            day: "2-digit",
+                            month: "2-digit",
+                          })}
                         </span>
                       </div>
                       <div className="mt-1 flex items-center gap-2">
@@ -220,14 +229,18 @@ const LoggedInIndex = () => {
                     <div key={match.id} className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-1.5 truncate">
                         {match.isUserMatch && getPositionDot(match.position)}
-                        <span className={`truncate ${match.isUserMatch ? "" : "text-muted-foreground"}`}>{match.game?.name}</span>
+                        <span className={`truncate ${match.isUserMatch ? "" : "text-muted-foreground"}`}>
+                          {match.game?.name}
+                        </span>
                       </div>
                       <div className="ml-2 flex shrink-0 items-center gap-2">
                         <span className="text-[10px] text-muted-foreground">
                           {new Date(match.played_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
                         </span>
                         {match.position != null ? (
-                          <span className={`text-xs font-medium ${match.position === 1 ? "text-gold" : "text-muted-foreground"}`}>
+                          <span
+                            className={`text-xs font-medium ${match.position === 1 ? "text-gold" : "text-muted-foreground"}`}
+                          >
                             {match.position === 1 ? "🏆" : `${match.position}º`}
                             {match.score != null ? ` ${match.score}pts` : ""}
                           </span>

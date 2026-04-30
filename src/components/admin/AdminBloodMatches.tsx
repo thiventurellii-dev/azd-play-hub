@@ -245,6 +245,7 @@ const AdminBloodMatches = () => {
         playedAt: new Date(`${playedDate}T${playedTime}`).toISOString(),
         durationMinutes: parseInt(duration) || null,
         storytellerId,
+        storytellerIsGuest,
         winningTeam,
         players: allPlayers,
       });
@@ -252,7 +253,8 @@ const AdminBloodMatches = () => {
       notify('success', 'Partida de Blood registrada!');
       setEvilPlayers([{ player_id: '', is_guest: false, character_id: '', team: 'evil' }]);
       setGoodPlayers([{ player_id: '', is_guest: false, character_id: '', team: 'good' }]);
-      setDuration(''); setPlayedDate(''); setPlayedTime(''); setStorytellerId('');
+      setDuration(''); setPlayedDate(''); setPlayedTime('');
+      setStorytellerId(''); setStorytellerIsGuest(false);
       fetchMatches();
     } catch (err: any) {
       notify('error', err.message || 'Erro ao registrar partida');

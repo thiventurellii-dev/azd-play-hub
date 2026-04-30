@@ -43,8 +43,8 @@ const AdminBloodMatches = () => {
   const [duration, setDuration] = useState('');
   const [storytellerId, setStorytellerId] = useState('');
   const [winningTeam, setWinningTeam] = useState<'good' | 'evil'>('good');
-  const [evilPlayers, setEvilPlayers] = useState<BloodPlayerEntry[]>([{ player_id: '', character_id: '', team: 'evil' }]);
-  const [goodPlayers, setGoodPlayers] = useState<BloodPlayerEntry[]>([{ player_id: '', character_id: '', team: 'good' }]);
+  const [evilPlayers, setEvilPlayers] = useState<BloodPlayerEntry[]>([{ player_id: '', is_guest: false, character_id: '', team: 'evil' }]);
+  const [goodPlayers, setGoodPlayers] = useState<BloodPlayerEntry[]>([{ player_id: '', is_guest: false, character_id: '', team: 'good' }]);
   const [saving, setSaving] = useState(false);
 
   const [matches, setMatches] = useState<any[]>([]);
@@ -157,8 +157,8 @@ const AdminBloodMatches = () => {
   ].filter(Boolean);
 
   const addPlayer = (team: 'good' | 'evil') => {
-    if (team === 'evil') setEvilPlayers([...evilPlayers, { player_id: '', character_id: '', team: 'evil' }]);
-    else setGoodPlayers([...goodPlayers, { player_id: '', character_id: '', team: 'good' }]);
+    if (team === 'evil') setEvilPlayers([...evilPlayers, { player_id: '', is_guest: false, character_id: '', team: 'evil' }]);
+    else setGoodPlayers([...goodPlayers, { player_id: '', is_guest: false, character_id: '', team: 'good' }]);
   };
   const removePlayer = (team: 'good' | 'evil', idx: number) => {
     if (team === 'evil') setEvilPlayers(evilPlayers.filter((_, i) => i !== idx));
@@ -177,8 +177,8 @@ const AdminBloodMatches = () => {
   };
 
   const addEditPlayer = (team: 'good' | 'evil') => {
-    if (team === 'evil') setEditEvilPlayers([...editEvilPlayers, { player_id: '', character_id: '', team: 'evil' }]);
-    else setEditGoodPlayers([...editGoodPlayers, { player_id: '', character_id: '', team: 'good' }]);
+    if (team === 'evil') setEditEvilPlayers([...editEvilPlayers, { player_id: '', is_guest: false, character_id: '', team: 'evil' }]);
+    else setEditGoodPlayers([...editGoodPlayers, { player_id: '', is_guest: false, character_id: '', team: 'good' }]);
   };
   const removeEditPlayer = (team: 'good' | 'evil', idx: number) => {
     if (team === 'evil') setEditEvilPlayers(editEvilPlayers.filter((_, i) => i !== idx));
@@ -218,8 +218,8 @@ const AdminBloodMatches = () => {
       });
 
       notify('success', 'Partida de Blood registrada!');
-      setEvilPlayers([{ player_id: '', character_id: '', team: 'evil' }]);
-      setGoodPlayers([{ player_id: '', character_id: '', team: 'good' }]);
+      setEvilPlayers([{ player_id: '', is_guest: false, character_id: '', team: 'evil' }]);
+      setGoodPlayers([{ player_id: '', is_guest: false, character_id: '', team: 'good' }]);
       setDuration(''); setPlayedDate(''); setPlayedTime(''); setStorytellerId('');
       fetchMatches();
     } catch (err: any) {
@@ -370,7 +370,7 @@ const AdminBloodMatches = () => {
             </div>
             <div className="space-y-2">
               <Label>Script *</Label>
-              <Select value={scriptId} onValueChange={v => { setScriptId(v); setEvilPlayers([{ player_id: '', character_id: '', team: 'evil' }]); setGoodPlayers([{ player_id: '', character_id: '', team: 'good' }]); }}>
+              <Select value={scriptId} onValueChange={v => { setScriptId(v); setEvilPlayers([{ player_id: '', is_guest: false, character_id: '', team: 'evil' }]); setGoodPlayers([{ player_id: '', is_guest: false, character_id: '', team: 'good' }]); }}>
                 <SelectTrigger><SelectValue placeholder="Selecione o script" /></SelectTrigger>
                 <SelectContent>
                   {scripts.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}

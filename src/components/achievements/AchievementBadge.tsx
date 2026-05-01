@@ -158,8 +158,13 @@ export const AchievementBadge = ({
           <span className="inline-flex">{svg}</span>
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-xs">
-          <div className="space-y-0.5">
+          <div className="space-y-1">
             <p className="text-xs font-semibold">{name}</p>
+            {description && (
+              <p className="text-[11px] text-foreground/80 leading-snug">
+                {description}
+              </p>
+            )}
             <p className="text-[10px] text-muted-foreground">
               {RARITY_LABEL[rarity]}
               {level ? ` · Nível ${ROMAN[level] ?? level}` : ""}

@@ -1,19 +1,16 @@
 import { useMemo, useState } from "react";
-import { usePlayerAchievements, type PlayerAchievement } from "@/hooks/useAchievements";
+import { usePlayerAchievements } from "@/hooks/useAchievements";
 import { useGamesMap, resolveDomain, DOMAIN_LABEL, type AchievementDomain } from "@/hooks/useGamesMap";
 import { AchievementCard } from "@/components/achievements/AchievementCard";
 import { AchievementsGalleryDialog } from "@/components/achievements/AchievementsGalleryDialog";
 import { Button } from "@/components/ui/button";
+import { RARITY_HEX, RARITY_ORDER } from "@/lib/achievementUi";
 
 interface Props {
   profileId: string;
   isOwnProfile?: boolean;
   playerName?: string;
 }
-
-const RARITY_ORDER: Record<string, number> = {
-  legendary: 5, epic: 4, mesa: 3, rare: 2, uncommon: 1, common: 0,
-};
 
 const DOMAIN_PRIORITY: AchievementDomain[] = ["boardgame", "botc", "rpg", "global"];
 

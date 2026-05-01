@@ -66,6 +66,15 @@ export default {
           info: "hsl(var(--domain-info))",
           positive: "hsl(var(--domain-positive))",
         },
+        rarity: {
+          common: "hsl(var(--rarity-common))",
+          uncommon: "hsl(var(--rarity-uncommon))",
+          rare: "hsl(var(--rarity-rare))",
+          epic: "hsl(var(--rarity-epic))",
+          legendary: "hsl(var(--rarity-legendary))",
+          "legendary-end": "hsl(var(--rarity-legendary-end))",
+          mesa: "hsl(var(--rarity-mesa))",
+        },
         surface: {
           DEFAULT: "hsl(var(--surface))",
           raised: "hsl(var(--surface-raised))",

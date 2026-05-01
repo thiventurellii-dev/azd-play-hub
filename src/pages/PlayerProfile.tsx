@@ -23,6 +23,8 @@ import RpgTab from "@/components/profile/tabs/RpgTab";
 import ProfileTimeline, { type TimelineEvent } from "@/components/profile/ProfileTimeline";
 import ProfileAchievements from "@/components/profile/ProfileAchievements";
 import ProfileFooterGrid from "@/components/profile/ProfileFooterGrid";
+import { AchievementBadge } from "@/components/achievements/AchievementBadge";
+import { usePlayerAchievements } from "@/hooks/useAchievements";
 import { useQueryClient } from "@tanstack/react-query";
 
 const PlayerProfile = () => {

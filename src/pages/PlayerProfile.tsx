@@ -141,15 +141,23 @@ const PlayerProfile = () => {
         ),
       });
     }
-    for (const a of data.achievements.slice(0, 5)) {
-      if (!a.granted_at) continue;
+    for (const a of (achData?.visible ?? []).slice(0, 5)) {
+      if (!a.unlocked_at) continue;
       events.push({
         id: `a-${a.id}`,
         type: "achievement",
-        date: a.granted_at,
+        date: a.unlocked_at,
+        badge: (
+          <AchievementBadge
+            category={a.template.category}
+            rarity={a.template.rarity}
+            level={a.template.progression_level ?? undefined}
+            size="mini"
+          />
+        ),
         title: (
           <>
-            Conquistou <span className="text-gold font-medium">{a.name}</span>
+            Conquistou <span className="text-gold font-medium">{a.template.name}</span>
           </>
         ),
       });

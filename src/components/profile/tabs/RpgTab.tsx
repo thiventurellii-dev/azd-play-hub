@@ -2,11 +2,14 @@ import { Link } from "react-router-dom";
 import { Sparkles, Star, Plus, Flame } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ProfileRpgStats } from "@/hooks/useProfileRpgData";
+import ProfileDomainAchievements from "@/components/profile/ProfileDomainAchievements";
 
 interface Props {
   stats: ProfileRpgStats;
   isOwnProfile: boolean;
   onCreateCharacter?: () => void;
+  profileId: string;
+  playerName?: string;
 }
 
 const formatHours = (mins: number) => {
@@ -18,19 +21,31 @@ const formatDateTime = (iso: string) => {
   return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
 };
 
-export const RpgTab = ({ stats, isOwnProfile, onCreateCharacter }: Props) => {
+export const RpgTab = ({ stats, isOwnProfile, onCreateCharacter, profileId, playerName }: Props) => {
+  const achievementsBlock = (
+    <ProfileDomainAchievements
+      profileId={profileId}
+      domain="rpg"
+      playerName={playerName}
+    />
+  );
+
   const noContent =
     stats.campaigns.length === 0 && stats.characters.length === 0;
   if (noContent) {
     return (
-      <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-        Nenhuma campanha ou personagem de RPG ainda.
+      <div className="space-y-4">
+        {achievementsBlock}
+        <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+          Nenhuma campanha ou personagem de RPG ainda.
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
+      {achievementsBlock}
       {/* Stats */}
       <div className="grid gap-3 md:grid-cols-2">
         <RpgStatsCard

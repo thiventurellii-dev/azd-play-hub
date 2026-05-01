@@ -1,88 +1,161 @@
-## Redesign do Perfil do Jogador
+## Sistema de Achievements — Fase 1 (fundação visual + automático)
 
-Reconstrução do `src/pages/PlayerProfile.tsx` para mover de "performance dominante" para "identidade primeiro", aplicar paleta por domínio (gold = Boardgame, vermelho = BotC, roxo = RPG) e organizar conteúdo em tabs.
-
-A página atual (1004 linhas) será substancialmente reescrita. O fetch de dados será reorganizado em hooks dedicados para manter o componente legível.
+Recomeçando do zero: as tabelas `achievement_definitions` e `player_achievements` atuais (e o tab no Admin) são descartadas. Schema novo, catálogo novo, visual novo. Manual_claim e galeria completa ficam para a Fase 2.
 
 ---
 
-### 1. Banco — campos novos (mínimo viável)
+### 1. Migração SQL (banco externo `npinawelxdtsrcvzzvvs`)
 
-Migração SQL no banco externo (`npinawelxdtsrcvzzvvs`):
-
-- `profiles.bio` text nullable, max 140 chars (validação app-side).
-- Nova tabela `profile_showcased_games (profile_id uuid, game_id uuid, display_order int, PK composto)` para a seção "Jogos em destaque" curada. Fase 1: a coluna existe mas o fallback é auto-populado pelos top 4 mais jogados; modal de edição entra como follow-up.
-- A view/tabela `profile_activity_events` proposta no briefing **NÃO** entra agora — vou agregar a timeline em memória (achievements + last matches + RPG sessions + community joined + level ups) já que hoje é só ~5-6 itens. Se virar gargalo, migra pra view depois.
-
-A migração será apresentada para aprovação via tool de migração.
-
-### 2. Tokens de cor por domínio
-
-Adicionar em `tailwind.config.ts` / `src/index.css`:
-
-- `--domain-board: 43 96% 56%` (gold já existe)
-- `--domain-botc: 0 73% 67%` (vermelho `#e57373`)
-- `--domain-rpg: 261 100% 83%` (roxo `#c4a8ff`)
-- `--domain-info: 207 100% 64%` (azul verificado)
-- `--domain-positive: 142 76% 73%` (verde)
-
-Usadas em borders, ring, badge bg/text e dot do timeline.
-
-### 3. Componentes novos (em `src/components/profile/`)
-
-- `ProfileHero.tsx` — avatar 96px com **anel circular de XP** (SVG `<circle>` com `strokeDasharray` baseado em `pct`), pílula "Nv X" no canto, nome + verificado, `@nickname` em gold + pronomes, até 3 badges contextuais (Admin, Mestre, Storyteller — derivados), bio em serif itálico, linha de metadata (localização · membro desde · chip da comunidade principal), botões à direita.
-- `ProfileSpotlight.tsx` — faixa "Em destaque agora" com até 2 cards: Season ativa (gold) e Mestrando (roxo). Some inteira se nada aplicável.
-- `ProfileUpcomingMatches.tsx` — 2-3 cards full-width com DateBlock colorido por domínio + CTA "Entrar na sala" (com filtro de privacidade).
-- `ProfileRecentMatchesStrip.tsx` — 5 mini-cards horizontais (reaproveita `RecentMatchCardCompact` com pequeno ajuste).
-- `ProfileDomainTabs.tsx` — wrapper com tabs (`Boardgames N · Blood on the Clocktower N · RPG N`), tab ativa pinta border-bottom 2px da cor do domínio. Default: Boardgames.
-- `tabs/BoardgamesTab.tsx` — "Jogos em destaque" (4 cards capa) + "Joga muito com" (4 parceiros).
-- `tabs/BotcTab.tsx` — "Como Storyteller / Como Aventureiro" (2 stats cards) + "Personagens favoritos" (4 cards) + "Joga muito com" (breakdown Bem/Mal).
-- `tabs/RpgTab.tsx` — "Como Mestre / Como Aventureiro" (2 stats cards) + "Personagens" (showcase, reaproveita `HallOfHeroes` simplificado) + "Campanhas" (lista) + "Co-aventureiros" (4).
-- `ProfileTimeline.tsx` — linha do tempo unificada (5-6 eventos + "Ver tudo"), bolinhas coloridas por tipo.
-- `ProfileFooterGrid.tsx` — Amigos + Comunidades em 2 colunas.
-
-### 4. Hooks novos (em `src/hooks/`)
-
-- `usePlayerProfileData.ts` — agrupa o fetch grande hoje monolítico em queries via React Query, expondo: `profile`, `role`, `boardgameStats`, `botcStats`, `rpgStats`, `friends`, `communities`, `achievements`, `seasons`, `upcomingRooms`, `recentMatches`, `partners`, `timelineEvents`, `mainCommunity`, `isMaster`, `isStoryteller`. Cada subgrupo é uma `useQuery` separada para evitar re-fetch geral.
-- `useProfileRpgData.ts` — campanhas como mestre/aventureiro, personagens, co-aventureiros, próxima sessão.
-- `useProfileShowcasedGames.ts` — lê `profile_showcased_games`; se vazio, retorna top 4 auto-derivado.
-
-### 5. Estrutura final renderizada
+Drop-and-create. Migração entregue como arquivo `docs/sql/2026-05-01_achievements_v2.sql` para o usuário aplicar manualmente no SQL Editor externo (segue o padrão do projeto).
 
 ```text
-ProfileHero
-ProfileSpotlight        (some se vazio)
-ProfileUpcomingMatches  (com privacidade)
-ProfileRecentMatchesStrip
-ProfileDomainTabs
-  └── tab ativa (Boardgames | BotC | RPG)
-ProfileTimeline
-ProfileFooterGrid (Amigos · Comunidades)
-EditProfileDialog (controlado, igual hoje)
+DROP TABLE player_achievements;
+DROP TABLE achievement_definitions;
+
+CREATE TYPE achievement_category   -- participation | competitive | social | season | special | contribution
+CREATE TYPE achievement_rarity     -- common | uncommon | rare | epic | legendary | mesa
+CREATE TYPE achievement_scope_type -- global | game | season | event | player_pair | group | ranking
+CREATE TYPE achievement_type       -- automatic | manual_claim | admin_only | event_only
+CREATE TYPE player_achievement_status -- pending | approved | rejected | expired | disputed
+
+CREATE TABLE achievement_templates (
+  id, code UNIQUE, name, description_template,
+  category, type, trigger_type, trigger_config jsonb,
+  scope_type, threshold int,
+  rarity, progression_group text, progression_level int,
+  replaces_previous bool DEFAULT true,
+  is_active bool DEFAULT true,
+  requires_match bool DEFAULT false,
+  created_at, updated_at
+);
+
+CREATE TABLE player_achievements (
+  id, player_profile_id, achievement_template_id,
+  scope_type, scope_id uuid, match_id uuid,
+  status player_achievement_status DEFAULT 'approved',
+  unlocked_at, requested_by, approved_at, rejected_at,
+  metadata jsonb,
+  UNIQUE (player_profile_id, achievement_template_id, scope_type, scope_id)
+);
+
+CREATE TABLE achievement_community_stats (
+  achievement_template_id, scope_type, scope_id,
+  unlocked_count, total_eligible_players, community_percentage,
+  last_calculated_at,
+  PRIMARY KEY (achievement_template_id, scope_type, scope_id)
+);
 ```
 
-### 6. Privacidade
+RLS:
+- `achievement_templates`: SELECT público, ALL admin.
+- `player_achievements`: SELECT público (perfil é público), INSERT/UPDATE só admin nesta fase (trigger/edge usa service role).
+- `achievement_community_stats`: SELECT público, ALL admin/service.
 
-- Próximas partidas: filtra por `is_public` da room OR visitante é amigo do dono OR é o próprio.
-- Campanhas RPG privadas para visitante: mostra nome+status, oculta mestre/party/sessões.
+Trigger automático `trg_evaluate_achievements_after_match`:
+- Dispara `AFTER INSERT OR UPDATE` em `match_results` e `blood_match_players`.
+- Para cada participante afetado, percorre templates `is_active = true AND type = 'automatic'` e avalia o `trigger_type`. Se cumpre, faz `INSERT ... ON CONFLICT DO NOTHING` em `player_achievements`.
+- Triggers suportados na fase 1: `matches_total`, `wins_total`, `matches_by_game`, `wins_by_game`, `win_streak_by_game`, `distinct_games_played`, `first_win`, `first_match_by_game`, `position_top1_season`. Cobrem participation/competitive/season.
 
-### 7. Detalhes técnicos
+### 2. Catálogo inicial (seed)
 
-- **Anel de XP no avatar**: SVG 112x112 com 2 círculos concêntricos; stroke-dasharray = circumference, stroke-dashoffset = circumference * (1 - pct/100). Aposenta o uso de `XpBadge variant="full"` no hero (mantém o componente para outros usos).
-- **Badge "Mestre"**: derivado de `rpg_campaigns where master_id = profile.id and status = 'active'` (já temos hook).
-- **Badge "Storyteller"**: derivado de `sum(games_as_storyteller) >= 3` (já temos `botcStats`).
-- **EditProfileDialog**: adicionar campo "Bio" (textarea, maxLength 140, contador).
-- **Backwards-compat**: o Hall dos Heróis atual (`HallOfHeroes.tsx`) é embebido dentro da `RpgTab` em vez de ser seção solta.
+Mesma migração faz `INSERT` de ~20 templates iniciais, organizados em `progression_group`:
 
-### 8. Fora do escopo desta entrega
+```text
+game_participation:  Primeira Mesa (I) → Frequente (II) → Veterano (III) → Especialista (IV) → Mestre (V) → Lenda (VI)
+                     thresholds: 1 / 5 / 15 / 30 / 60 / 100, scope=game
+game_wins:           Primeira Vitória (I) → ... → Imbatível (VI)  scope=game
+global_participation: Iniciante / Ativo / Veterano da Comunidade  scope=global
+season_top:          Top do Pódio (scope=season, position=1)
+```
 
-- Modal de edição de "Jogos em destaque" com drag-and-drop (fase 2 — a tabela existe, pode ser editada manualmente; fallback automático funciona).
-- View materializada `profile_activity_events` (agregação em memória por enquanto).
-- Página "Ver tudo" da timeline (link aponta para futuro `/perfil/:nickname/atividade`, mas a rota fica como TODO se ainda não existir — botão pode ser stub).
+Raridades: I-II common, III uncommon, IV rare, V epic, VI legendary. Categoria participation = círculo, competitive = hexágono, season = escudo.
 
-### 9. Arquivos modificados
+### 3. Cron diário às 4h para `achievement_community_stats`
 
-- **Novos**: 11 componentes em `src/components/profile/` + `src/components/profile/tabs/` + 3 hooks em `src/hooks/` + 1 SQL em `docs/sql/`.
-- **Editados**: `src/pages/PlayerProfile.tsx` (reescrito), `src/components/profile/EditProfileDialog.tsx` (campo bio), `src/index.css` ou `tailwind.config.ts` (tokens de domínio), `src/types/database.ts` (se tipar bio/showcased).
+- Edge function `recalc-achievement-stats` (sem JWT, chamada por cron).
+- Para cada template ativo, calcula `unlocked_count` e `total_eligible_players` por escopo:
+  - `global` → todos os profiles ativos.
+  - `game` → quem já jogou aquele jogo (`match_results` distinct).
+  - `season` → quem participou da season.
+- Habilita `pg_cron` + `pg_net` e agenda via SQL (entregue separadamente, pois contém URL+anon key — usa o tool de insert, não migração).
 
-Pronto para implementar quando aprovado.
+### 4. Componente `<AchievementBadge>` (`src/components/achievements/AchievementBadge.tsx`)
+
+```tsx
+interface AchievementBadgeProps {
+  category: AchievementCategory;
+  rarity: AchievementRarity;
+  level?: number;          // 1..6 → numeral romano
+  size: 'mini'|'small'|'medium'|'large';  // 18 / 24 / 36 / 56 px
+  showLevel?: boolean;
+  locked?: boolean;
+  communityPct?: number;   // pra tooltip
+  name?: string;           // pra tooltip
+}
+```
+
+- SVG inline com `viewBox="0 0 100 100"` e os 6 paths do briefing (círculo, hexágono, losango, escudo, estrela, triângulo).
+- Cores muted exatamente como na tabela do briefing (Common `#8E9099` … Mesa `#8B5A2B`). Lendária = `<linearGradient>` gold + `box-shadow` glow. Mesa = dupla borda. Locked = `stroke-dasharray` + opacity 0.4.
+- Numeral romano serif centralizado (~33% do diâmetro), branco em formas escuras / `#1a1305` em gold.
+- Tokens novos em `src/index.css` para as raridades (`--rarity-common`, `--rarity-uncommon`, …) — não hardcoded no componente.
+- Tooltip (`@/components/ui/tooltip`) com nome + raridade + "Conquistada por X% da comunidade" (quando `size !== 'mini'` e `communityPct` definido).
+
+### 5. Hook `useAchievements`
+
+`src/hooks/useAchievements.ts` expõe:
+- `useTemplates()` — todos os templates (catálogo).
+- `usePlayerAchievements(profileId)` — conquistas do jogador, já com join no template e nas stats da comunidade. Aplica `replaces_previous`: agrupa por `progression_group + scope_id` e mantém só o `progression_level` mais alto na vista principal (bruto fica disponível pra timeline).
+- `useGameAchievements(gameId)` — templates com `scope_type='game'` + quem desbloqueou cada um (count + lista resumida).
+
+### 6. Integração no perfil (`src/pages/PlayerProfile.tsx`)
+
+Nova seção `ProfileAchievements` (`src/components/profile/ProfileAchievements.tsx`) inserida entre `ProfileRecentMatchesStrip` e `ProfileDomainTabs`:
+
+- Header: counter "X desbloqueadas · Y jogos · Z raras · W mesa · V lendárias" + "Ver todas →" (link stub para Fase 2, leva pra `#`).
+- Vitrine: 4 cards grandes (selo size=`large`) — default automático: legendárias > épicas > rara mais recente. Sem editor de destaques na Fase 1 (botão "Editar destaques" também é stub para Fase 2).
+- Cada card: selo, nome em serif, contexto (jogo/season), label de raridade, % da comunidade.
+
+A timeline atual continua usando o tipo `achievement` mas agora puxa do `usePlayerAchievements` (substitui a leitura legada em `usePlayerProfileData.ts`). Renderiza mini-selo (size=`mini`) no lugar da bolinha quando o evento é de conquista.
+
+### 7. Integração na página do jogo (`src/pages/GameDetail.tsx`)
+
+Nova seção "Conquistas deste jogo":
+- Header: "X possíveis · Y desbloqueadas pela comunidade · 1 lendária ainda intocada".
+- Linhas de progressão: para cada `progression_group` agrupa os 6 níveis horizontalmente, selo médio (36px) + contador "N jogadores" / "ninguém ainda". Níveis com `community_percentage = 0` ficam dashed.
+- Conquistas únicas (sem `progression_group`): grid simples de cards.
+- "Top desbloqueadores": top 3 com mais conquistas neste jogo (calculado client-side a partir de `useGameAchievements`).
+
+### 8. Admin (`src/components/admin/AdminAchievements.tsx` reescrito)
+
+CRUD do novo `achievement_templates`:
+- Form com todos os campos: code, name, description_template, category, type, trigger_type (preset list), scope_type, threshold, rarity, progression_group, progression_level, replaces_previous, requires_match, is_active.
+- Lista renderiza usando o próprio `<AchievementBadge>` (preview real).
+- Botão "Recalcular stats agora" que invoca a edge function manualmente.
+- Concessão manual (admin_only) de uma conquista a um jogador.
+
+### 9. Decisões fixadas (das perguntas)
+
+- **Migração**: drop-and-create, sem preservar histórico.
+- **Manual claim**: fora desta fase. Quando entrar (Fase 2), regra será maioria simples + 48h sem voto = **rejeitado**, e admin pode aprovar via página do jogo a qualquer momento.
+- **% comunidade**: cron diário 4h via edge function + `pg_cron`.
+- **Escopo**: Fase 1 = schema + AchievementBadge + trigger automático + perfil + página do jogo. **Fora**: manual_claim, galeria "Ver todas" funcional, notificações flutuantes, edição de destaques, validação por votos.
+
+### 10. Arquivos
+
+**Novos**
+- `docs/sql/2026-05-01_achievements_v2.sql` (drop+create+seed+trigger)
+- `supabase/functions/recalc-achievement-stats/index.ts`
+- `src/components/achievements/AchievementBadge.tsx`
+- `src/components/achievements/ProgressionRow.tsx`
+- `src/components/profile/ProfileAchievements.tsx`
+- `src/components/games/GameAchievements.tsx`
+- `src/hooks/useAchievements.ts`
+
+**Editados**
+- `src/components/admin/AdminAchievements.tsx` (reescrito)
+- `src/pages/PlayerProfile.tsx` (insere `ProfileAchievements`, atualiza timeline)
+- `src/pages/GameDetail.tsx` (insere `GameAchievements`)
+- `src/hooks/usePlayerProfileData.ts` (remove leitura de `achievement_definitions`/`player_achievements` legados)
+- `src/index.css` (tokens de raridade + font-serif para numerais)
+
+Pronto pra implementar quando aprovado.

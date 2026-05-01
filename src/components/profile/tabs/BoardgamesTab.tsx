@@ -2,25 +2,47 @@ import { Link } from "react-router-dom";
 import { Gamepad2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { GamePerf, Partner } from "@/hooks/usePlayerProfileData";
+import ProfileDomainAchievements from "@/components/profile/ProfileDomainAchievements";
 
 interface Props {
   showcased: GamePerf[];
   partners: Partner[];
   isOwnProfile: boolean;
   onEditShowcase?: () => void;
+  profileId: string;
+  playerName?: string;
 }
 
-export const BoardgamesTab = ({ showcased, partners, isOwnProfile, onEditShowcase }: Props) => {
+export const BoardgamesTab = ({
+  showcased,
+  partners,
+  isOwnProfile,
+  onEditShowcase,
+  profileId,
+  playerName,
+}: Props) => {
+  const achievementsBlock = (
+    <ProfileDomainAchievements
+      profileId={profileId}
+      domain="boardgame"
+      playerName={playerName}
+    />
+  );
+
   if (showcased.length === 0 && partners.length === 0) {
     return (
-      <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-        Nenhuma partida de boardgame registrada ainda.
+      <div className="space-y-4">
+        {achievementsBlock}
+        <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+          Nenhuma partida de boardgame registrada ainda.
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
+      {achievementsBlock}
       {showcased.length > 0 && (
         <section className="rounded-xl border border-border bg-card p-5">
           <div className="flex items-center justify-between mb-4">

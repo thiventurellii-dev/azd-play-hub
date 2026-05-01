@@ -263,6 +263,8 @@ const PlayerProfile = () => {
         ownerNickname={profile.nickname}
       />
 
+      <ProfileAchievements profileId={profile.id} isOwnProfile={isOwnProfile} />
+
       <ProfileDomainTabs counts={counts}>
         {(active) => {
           if (active === "boardgame") {

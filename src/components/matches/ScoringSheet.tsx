@@ -72,7 +72,8 @@ const ScoringSheet = ({ schema, players, onScoresChange }: Props) => {
 
   const recalcTotal = (scores: Record<string, number>) => {
     if (scorableFields.length > 0) {
-      return scorableFields.reduce((sum, f) => sum + (scores[f.key] || 0), 0);
+      const sum = scorableFields.reduce((s, f) => s + (scores[f.key] || 0), 0);
+      return Math.round(sum * 100) / 100;
     }
     return 0;
   };

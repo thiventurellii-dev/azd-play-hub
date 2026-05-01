@@ -274,7 +274,11 @@ const PlayerProfile = () => {
         ownerNickname={profile.nickname}
       />
 
-      <ProfileAchievements profileId={profile.id} isOwnProfile={isOwnProfile} />
+      <ProfileAchievements
+        profileId={profile.id}
+        isOwnProfile={isOwnProfile}
+        playerName={profile.nickname || profile.name}
+      />
 
       <ProfileDomainTabs counts={counts}>
         {(active) => {

@@ -1,10 +1,8 @@
 import { Link } from "react-router-dom";
-import { useGameDetail } from "@/hooks/useGameDetail";
-// no need for game lookup, we receive game id+name via props
-
 import { useGameAchievements } from "@/hooks/useAchievements";
 import { AchievementBadge } from "@/components/achievements/AchievementBadge";
-import type { AchievementTemplate, GameAchievementSummary } from "@/hooks/useAchievements";
+import { ProgressionRow } from "@/components/achievements/ProgressionRow";
+import type { GameAchievementSummary } from "@/hooks/useAchievements";
 import { useMemo } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -12,52 +10,6 @@ interface Props {
   gameId: string;
   gameName: string;
 }
-
-const ROMAN = ["", "I", "II", "III", "IV", "V", "VI"];
-
-const ProgressionRow = ({
-  group,
-  items,
-}: {
-  group: string;
-  items: GameAchievementSummary[];
-}) => {
-  const sorted = [...items].sort(
-    (a, b) => (a.template.progression_level ?? 0) - (b.template.progression_level ?? 0),
-  );
-  const groupName = sorted[0]?.template.name?.replace(/\s+\w+$/, "") || group;
-  return (
-    <div className="space-y-2">
-      <p className="text-xs uppercase tracking-wider text-muted-foreground">
-        {sorted[0]?.template.category === "competitive" ? "Vitórias" : "Participação"} · {groupName}
-      </p>
-      <div className="flex flex-wrap gap-4 items-end">
-        {sorted.map((s) => {
-          const locked = s.unlockedCount === 0;
-          return (
-            <div key={s.template.id} className="flex flex-col items-center gap-1 w-20">
-              <AchievementBadge
-                category={s.template.category}
-                rarity={s.template.rarity}
-                level={s.template.progression_level ?? undefined}
-                size="medium"
-                locked={locked}
-                name={s.template.name}
-                communityPct={s.communityPct}
-              />
-              <p className="text-[10px] text-center text-foreground/80 leading-tight">
-                {s.template.name}
-              </p>
-              <p className="text-[10px] text-muted-foreground tabular-nums">
-                {locked ? "ninguém ainda" : `${s.unlockedCount} jogador${s.unlockedCount > 1 ? "es" : ""}`}
-              </p>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
 
 export const GameAchievements = ({ gameId, gameName }: Props) => {
   const { data, isLoading } = useGameAchievements(gameId);

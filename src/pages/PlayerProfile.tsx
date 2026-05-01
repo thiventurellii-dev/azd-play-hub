@@ -23,6 +23,8 @@ import RpgTab from "@/components/profile/tabs/RpgTab";
 import ProfileTimeline, { type TimelineEvent } from "@/components/profile/ProfileTimeline";
 import ProfileAchievements from "@/components/profile/ProfileAchievements";
 import ProfileFooterGrid from "@/components/profile/ProfileFooterGrid";
+import { AchievementBadge } from "@/components/achievements/AchievementBadge";
+import { usePlayerAchievements } from "@/hooks/useAchievements";
 import { useQueryClient } from "@tanstack/react-query";
 
 const PlayerProfile = () => {
@@ -36,6 +38,7 @@ const PlayerProfile = () => {
   const profile = data?.profile;
   const profileId = profile?.id as string | undefined;
   const { data: rpgData } = useProfileRpgData(profileId);
+  const { data: achData } = usePlayerAchievements(profileId);
   const { tags: playerTags, setTags: setPlayerTags } = useProfileTags(profileId);
 
   const [editing, setEditing] = useState(false);
@@ -138,15 +141,23 @@ const PlayerProfile = () => {
         ),
       });
     }
-    for (const a of data.achievements.slice(0, 5)) {
-      if (!a.granted_at) continue;
+    for (const a of (achData?.visible ?? []).slice(0, 5)) {
+      if (!a.unlocked_at) continue;
       events.push({
         id: `a-${a.id}`,
         type: "achievement",
-        date: a.granted_at,
+        date: a.unlocked_at,
+        badge: (
+          <AchievementBadge
+            category={a.template.category}
+            rarity={a.template.rarity}
+            level={a.template.progression_level ?? undefined}
+            size="mini"
+          />
+        ),
         title: (
           <>
-            Conquistou <span className="text-gold font-medium">{a.name}</span>
+            Conquistou <span className="text-gold font-medium">{a.template.name}</span>
           </>
         ),
       });
@@ -166,7 +177,7 @@ const PlayerProfile = () => {
     return events
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
       .slice(0, 6);
-  }, [data]);
+  }, [data, achData]);
 
   if (isLoading) {
     return (

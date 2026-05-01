@@ -20,6 +20,8 @@ export interface TimelineEvent {
   date: string;
   title: React.ReactNode;
   to?: string;
+  /** Custom leading visual (e.g. mini AchievementBadge). Replaces the colored dot. */
+  badge?: React.ReactNode;
 }
 
 interface Props {
@@ -61,7 +63,11 @@ export const ProfileTimeline = ({ events, ownerNickname }: Props) => {
       <ul className="space-y-2.5">
         {visible.map((e) => (
           <li key={e.id} className="flex items-center gap-3">
-            <span className={cn("h-2 w-2 rounded-full flex-shrink-0", dotByType[e.type])} />
+            {e.badge ? (
+              <span className="flex-shrink-0">{e.badge}</span>
+            ) : (
+              <span className={cn("h-2 w-2 rounded-full flex-shrink-0", dotByType[e.type])} />
+            )}
             <div className="flex-1 min-w-0 text-sm leading-snug">{e.title}</div>
             <span className="text-[11px] text-muted-foreground tabular-nums whitespace-nowrap">
               {new Date(e.date).toLocaleDateString("pt-BR", {

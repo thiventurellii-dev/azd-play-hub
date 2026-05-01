@@ -38,6 +38,7 @@ const PlayerProfile = () => {
   const profile = data?.profile;
   const profileId = profile?.id as string | undefined;
   const { data: rpgData } = useProfileRpgData(profileId);
+  const { data: achData } = usePlayerAchievements(profileId);
   const { tags: playerTags, setTags: setPlayerTags } = useProfileTags(profileId);
 
   const [editing, setEditing] = useState(false);

@@ -28,6 +28,8 @@ interface Props {
   locked?: boolean;
   communityPct?: number;
   name?: string;
+  /** Texto descritivo já interpolado (ex: "Venceu 5 partidas de Catan."). */
+  description?: string;
   className?: string;
 }
 

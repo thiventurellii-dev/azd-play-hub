@@ -47,12 +47,13 @@ const GameDetail = () => {
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["game-detail", slug] });
 
-  // Activity over time (last 6 months)
+  // Activity over time — todos os 12 meses do ano corrente (jan→dez)
   const monthlyData = useMemo(() => {
-    const months: Record<string, number> = {};
     const now = new Date();
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const year = now.getFullYear();
+    const months: Record<string, number> = {};
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(year, i, 1);
       months[`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`] = 0;
     }
     for (const m of allMatches) {

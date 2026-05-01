@@ -127,7 +127,7 @@ const AdminAchievements = () => {
       requires_match: editing.requires_match ?? false,
     };
     if (!payload.code || !payload.name) {
-      notify({ title: "Faltam campos", message: "Code e nome são obrigatórios.", variant: "error" });
+      notify("error", "Code e nome são obrigatórios.", "Faltam campos");
       return;
     }
     let error;
@@ -140,10 +140,10 @@ const AdminAchievements = () => {
       ({ error } = await supabase.from("achievement_templates" as any).insert(payload));
     }
     if (error) {
-      notify({ title: "Erro", message: error.message, variant: "error" });
+      notify("error", error.message, "Erro");
       return;
     }
-    notify({ title: "Salvo", message: "Template atualizado.", variant: "success" });
+    notify("success", "Template atualizado.", "Salvo");
     setEditing(null);
     qc.invalidateQueries({ queryKey: ["achievement-templates"] });
   };
@@ -154,7 +154,7 @@ const AdminAchievements = () => {
       .update({ is_active: !t.is_active })
       .eq("id", t.id);
     if (error) {
-      notify({ title: "Erro", message: error.message, variant: "error" });
+      notify("error", error.message, "Erro");
       return;
     }
     qc.invalidateQueries({ queryKey: ["achievement-templates"] });
@@ -454,10 +454,10 @@ const GrantDialog = ({
       metadata: { granted: "manual" },
     });
     if (error) {
-      notify({ title: "Erro", message: error.message, variant: "error" });
+      notify("error", error.message, "Erro");
       return;
     }
-    notify({ title: "Concedida", message: `${template.name} concedida.`, variant: "success" });
+    notify("success", `${template.name} concedida.`, "Concedida");
     onGranted();
   };
 

@@ -189,6 +189,7 @@ const ScoringSheet = ({ schema, players, onScoresChange }: Props) => {
                       <TableCell key={ps.player_id}>
                         <Input
                           type="number"
+                          step="0.01"
                           value={ps.scores[sub.key] === undefined || ps.scores[sub.key] === 0 ? '' : ps.scores[sub.key]}
                           onChange={e => updateScore(i, sub.key, e.target.value)}
                           className="w-[80px] mx-auto"

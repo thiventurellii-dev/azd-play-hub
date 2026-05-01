@@ -13,6 +13,7 @@ import {
   RARITY_ORDER,
   resolveDescription,
 } from "@/lib/achievementUi";
+import { resolveDomain, DOMAIN_LABEL, type AchievementDomain } from "@/hooks/useGamesMap";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -21,6 +22,8 @@ interface Props {
   achievements: PlayerAchievement[];
   gamesMap: Map<string, string>;
   playerName?: string;
+  /** Quando definido, abre a galeria já filtrada por este domínio. */
+  initialDomainFilter?: AchievementDomain;
 }
 
 type TabKey = "by_game" | "recent" | "category" | "rare" | "manual" | "season";

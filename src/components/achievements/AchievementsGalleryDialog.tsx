@@ -125,12 +125,29 @@ export const AchievementsGalleryDialog = ({
   achievements,
   gamesMap,
   playerName,
+  initialDomainFilter,
 }: Props) => {
   const [tab, setTab] = useState<TabKey>("by_game");
+  const [domainFilter, setDomainFilter] = useState<AchievementDomain | null>(
+    initialDomainFilter ?? null,
+  );
+
+  // Sincroniza filtro quando o dialog reabre com novo domínio
+  useEffect(() => {
+    if (open) setDomainFilter(initialDomainFilter ?? null);
+  }, [open, initialDomainFilter]);
+
+  const scoped = useMemo(() => {
+    if (!domainFilter) return achievements;
+    return achievements.filter((a) => {
+      const gameName = a.scope_id ? gamesMap.get(a.scope_id) : undefined;
+      return resolveDomain(a.template.scope_type, gameName, a.template.code) === domainFilter;
+    });
+  }, [achievements, gamesMap, domainFilter]);
 
   const items = useMemo(
-    () => achievements.map((a) => enrich(a, gamesMap)),
-    [achievements, gamesMap],
+    () => scoped.map((a) => enrich(a, gamesMap)),
+    [scoped, gamesMap],
   );
 
   const counters = useMemo(() => {

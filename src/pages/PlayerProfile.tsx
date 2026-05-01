@@ -282,17 +282,20 @@ const PlayerProfile = () => {
 
       <ProfileDomainTabs counts={counts}>
         {(active) => {
+          const playerName = profile.nickname || profile.name;
           if (active === "boardgame") {
             return (
               <BoardgamesTab
                 showcased={data.boardgame.performance.slice(0, 4)}
                 partners={data.boardgame.partners}
                 isOwnProfile={isOwnProfile}
+                profileId={profile.id}
+                playerName={playerName}
               />
             );
           }
           if (active === "botc") {
-            return <BotcTab stats={data.botc} />;
+            return <BotcTab stats={data.botc} profileId={profile.id} playerName={playerName} />;
           }
           return (
             <RpgTab
@@ -306,6 +309,8 @@ const PlayerProfile = () => {
                 }
               }
               isOwnProfile={isOwnProfile}
+              profileId={profile.id}
+              playerName={playerName}
             />
           );
         }}

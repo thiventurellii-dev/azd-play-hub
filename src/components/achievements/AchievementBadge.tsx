@@ -79,6 +79,7 @@ export const AchievementBadge = ({
   locked = false,
   communityPct,
   name,
+  description,
   className,
 }: Props) => {
   const px = SIZE_PX[size];

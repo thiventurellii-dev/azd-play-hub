@@ -23,6 +23,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { FavoriteButton } from "@/components/shared/FavoriteButton";
 import { SeasonStatsPanel } from "@/components/seasons/SeasonStatsPanel";
 import { GamePersonalStatsPanel } from "@/components/games/GamePersonalStatsPanel";
+import GameAchievements from "@/components/games/GameAchievements";
 import { EditActionButton } from "@/components/shared/EditActionButton";
 import { DateBlock } from "@/components/shared/DateBlock";
 import EditMatchDialog from "@/components/matches/EditMatchDialog";
@@ -360,6 +361,8 @@ const GameDetail = () => {
                 </CardContent>
               </Card>
             )}
+
+            {game && <GameAchievements gameId={game.id} gameName={game.name} />}
           </TabsContent>
 
           {/* MATCHES — Season-style */}

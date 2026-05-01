@@ -21,6 +21,7 @@ import BoardgamesTab from "@/components/profile/tabs/BoardgamesTab";
 import BotcTab from "@/components/profile/tabs/BotcTab";
 import RpgTab from "@/components/profile/tabs/RpgTab";
 import ProfileTimeline, { type TimelineEvent } from "@/components/profile/ProfileTimeline";
+import ProfileAchievements from "@/components/profile/ProfileAchievements";
 import ProfileFooterGrid from "@/components/profile/ProfileFooterGrid";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -261,6 +262,8 @@ const PlayerProfile = () => {
         matches={data.recentMatches}
         ownerNickname={profile.nickname}
       />
+
+      <ProfileAchievements profileId={profile.id} isOwnProfile={isOwnProfile} />
 
       <ProfileDomainTabs counts={counts}>
         {(active) => {

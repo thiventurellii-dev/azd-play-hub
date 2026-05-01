@@ -49,6 +49,15 @@
     --domain-info: 207 100% 64%;
     --domain-positive: 142 76% 73%;
 
+    /* Achievement rarities — muted vintage palette (HSL of briefing hexes) */
+    --rarity-common: 228 6% 58%;        /* #8E9099 */
+    --rarity-uncommon: 95 27% 47%;      /* #6B8E50 */
+    --rarity-rare: 211 38% 53%;         /* #5780B3 */
+    --rarity-epic: 268 30% 51%;         /* #7E5BA8 */
+    --rarity-legendary: 42 47% 58%;     /* #C9A961 (start of gradient) */
+    --rarity-legendary-end: 39 43% 42%; /* #9B7E3E (end of gradient) */
+    --rarity-mesa: 27 53% 36%;          /* #8B5A2B */
+
     --sidebar-background: 0 0% 6%;
     --sidebar-foreground: 0 0% 85%;
     --sidebar-primary: 43 100% 50%;

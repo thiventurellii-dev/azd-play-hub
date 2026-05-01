@@ -319,30 +319,8 @@ export const usePlayerProfileData = (nickname?: string) =>
         }
       }
 
-      // ============ Conquistas ============
+      // ============ Conquistas (legacy removido — agora vem do hook useAchievements) ============
       const achievements: AchievementItem[] = [];
-      const { data: playerAchs } = await supabase
-        .from("player_achievements")
-        .select("achievement_id, granted_at")
-        .eq("player_id", profId)
-        .order("granted_at", { ascending: false });
-      if (playerAchs && playerAchs.length > 0) {
-        const achIds = (playerAchs as any[]).map((a) => a.achievement_id);
-        const { data: achDefs } = await supabase
-          .from("achievement_definitions")
-          .select("id, name, description")
-          .in("id", achIds);
-        const defMap: Record<string, any> = {};
-        for (const d of achDefs || []) defMap[(d as any).id] = d;
-        for (const pa of playerAchs as any[]) {
-          achievements.push({
-            id: pa.achievement_id,
-            name: defMap[pa.achievement_id]?.name || "Conquista",
-            description: defMap[pa.achievement_id]?.description || null,
-            granted_at: pa.granted_at || null,
-          });
-        }
-      }
 
       // ============ Comunidades ============
       const communities: CommunityItem[] = [];

@@ -30,7 +30,7 @@ import {
   Download,
   ArrowUp,
   ArrowDown,
-  Minus,
+  
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { getRankIcon, getBloodPrizeClass, getBloodWinStats } from "@/utils/game-logic";
@@ -891,20 +891,16 @@ const SeasonDetail = () => {
                               {r.games_played > 0 ? Math.round((r.wins / r.games_played) * 100) : 0}%
                             </p>
                             <div className="flex items-center justify-center text-xs font-medium">
-                              {delta === undefined ? (
+                              {delta === undefined || delta === 0 ? (
                                 <span className="text-muted-foreground/40">—</span>
                               ) : delta > 0 ? (
                                 <span className="flex items-center gap-1 text-green-500">
                                   <ArrowUp className="h-3.5 w-3.5" /> +{delta} {delta === 1 ? "posição" : "posições"}
                                 </span>
-                              ) : delta < 0 ? (
+                              ) : (
                                 <span className="flex items-center gap-1 text-red-500">
                                   <ArrowDown className="h-3.5 w-3.5" /> {delta}{" "}
                                   {Math.abs(delta) === 1 ? "posição" : "posições"}
-                                </span>
-                              ) : (
-                                <span className="flex items-center gap-1 text-muted-foreground">
-                                  <Minus className="h-3.5 w-3.5" /> 0
                                 </span>
                               )}
                             </div>

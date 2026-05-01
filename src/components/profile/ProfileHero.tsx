@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import { Camera, Pencil, Lock, MoreVertical, BadgeCheck, MapPin, Calendar } from "lucide-react";
+import { Camera, Pencil, Lock, MoreVertical, MapPin, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -14,6 +14,14 @@ import { useUserXp } from "@/hooks/useUserXp";
 import { brazilianStates } from "@/lib/brazil-data";
 import type { CommunityItem } from "@/hooks/usePlayerProfileData";
 import { cn } from "@/lib/utils";
+import { PLAYER_TAG_MAP, type PlayerTag } from "@/components/profile/PlayerTagsSelector";
+
+// Steam logo (simple icon)
+const SteamIcon = ({ className }: { className?: string }) => (
+  <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">
+    <path d="M12 0C5.566 0 .25 4.97.018 11.226L6.45 13.88a3.36 3.36 0 0 1 1.91-.59c.058 0 .115.003.172.006l2.86-4.142v-.058a4.473 4.473 0 0 1 4.473-4.473 4.473 4.473 0 0 1 4.473 4.473 4.473 4.473 0 0 1-4.554 4.473l-4.083 2.911c0 .049.005.098.005.147a3.366 3.366 0 0 1-3.367 3.367c-1.64 0-3.014-1.176-3.31-2.728L1.93 15.382C3.388 20.355 7.27 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zM7.54 18.21l-1.473-.61a2.554 2.554 0 0 0 1.319 1.355c1.296.539 2.793-.075 3.332-1.371a2.55 2.55 0 0 0 .002-1.957 2.55 2.55 0 0 0-1.371-1.376 2.547 2.547 0 0 0-1.895-.018l1.521.629a1.881 1.881 0 0 1 1.014 2.464 1.881 1.881 0 0 1-2.46 1.018l.011-.002zm11.547-9.473a2.98 2.98 0 0 0-2.977-2.977 2.98 2.98 0 0 0-2.977 2.977 2.98 2.98 0 0 0 2.977 2.976 2.98 2.98 0 0 0 2.977-2.976zm-5.207-.005a2.232 2.232 0 0 1 2.236-2.229 2.232 2.232 0 0 1 2.228 2.229 2.232 2.232 0 0 1-2.228 2.236 2.232 2.232 0 0 1-2.236-2.236z"/>
+  </svg>
+);
 
 interface Props {
   profile: any;
@@ -23,6 +31,7 @@ interface Props {
   mainCommunity: CommunityItem | null;
   isOwnProfile: boolean;
   uploadingAvatar: boolean;
+  playerTags?: PlayerTag[];
   onAvatarChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onEditProfile: () => void;
   onChangePassword: () => void;
@@ -48,6 +57,7 @@ export const ProfileHero = ({
   mainCommunity,
   isOwnProfile,
   uploadingAvatar,
+  playerTags = [],
   onAvatarChange,
   onEditProfile,
   onChangePassword,
@@ -144,7 +154,15 @@ export const ProfileHero = ({
           <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{profile.name}</h1>
             {profile.steam_id && (
-              <BadgeCheck className="h-5 w-5 text-domain-info" aria-label="Verificado" />
+              <a
+                href={`https://steamcommunity.com/profiles/${profile.steam_id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Perfil Steam"
+                className="text-foreground/70 hover:text-foreground transition-colors"
+              >
+                <SteamIcon className="h-5 w-5" />
+              </a>
             )}
           </div>
           <div className="mt-1 flex items-center gap-2 flex-wrap justify-center sm:justify-start text-sm">
@@ -161,21 +179,36 @@ export const ProfileHero = ({
             )}
           </div>
 
-          {/* Badges contextuais (max 3) */}
+          {/* Badges contextuais */}
           <div className="mt-3 flex items-center gap-1.5 flex-wrap justify-center sm:justify-start">
             {role === "admin" && (
-              <Badge className="bg-gold/15 text-gold border border-gold/30 hover:bg-gold/15">
+              <Badge className="bg-gold/15 text-white border border-gold/30 hover:bg-gold/15">
                 Admin
               </Badge>
             )}
-            {isMaster && (
-              <Badge className="bg-domain-rpg/15 text-domain-rpg border border-domain-rpg/30 hover:bg-domain-rpg/15">
-                Mestre
+            {playerTags.includes("boardgamer") && (
+              <Badge className="bg-domain-board/15 text-white border border-domain-board/30 hover:bg-domain-board/15">
+                🎲 Boardgamer
               </Badge>
             )}
-            {isStoryteller && (
-              <Badge className="bg-domain-botc/15 text-domain-botc border border-domain-botc/30 hover:bg-domain-botc/15">
-                Storyteller
+            {playerTags.includes("blood") && (
+              <Badge className="bg-domain-botc/15 text-white border border-domain-botc/30 hover:bg-domain-botc/15">
+                🩸 Blood on the Clocktower
+              </Badge>
+            )}
+            {(isStoryteller || playerTags.includes("storyteller")) && (
+              <Badge className="bg-domain-botc/15 text-white border border-domain-botc/30 hover:bg-domain-botc/15">
+                📖 Storyteller
+              </Badge>
+            )}
+            {playerTags.includes("aventureiro") && (
+              <Badge className="bg-domain-rpg/15 text-white border border-domain-rpg/30 hover:bg-domain-rpg/15">
+                ⚔️ Aventureiro
+              </Badge>
+            )}
+            {(isMaster || playerTags.includes("mestre")) && (
+              <Badge className="bg-domain-rpg/15 text-white border border-domain-rpg/30 hover:bg-domain-rpg/15">
+                🎭 Mestre
               </Badge>
             )}
           </div>

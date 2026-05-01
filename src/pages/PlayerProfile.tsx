@@ -203,6 +203,7 @@ const PlayerProfile = () => {
         mainCommunity={data.mainCommunity}
         isOwnProfile={isOwnProfile}
         uploadingAvatar={uploadingAvatar}
+        playerTags={playerTags}
         onAvatarChange={handleAvatarUpload}
         onEditProfile={() => setEditing(true)}
         onChangePassword={() => setChangingPassword(true)}

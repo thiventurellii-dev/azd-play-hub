@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { UpcomingRoom } from "@/hooks/usePlayerProfileData";
@@ -72,16 +71,16 @@ export const ProfileUpcomingMatches = ({ rooms, canSee }: Props) => {
                   {month}
                 </span>
               </div>
-              <div className="flex-1 min-w-0">
+              <Link to={`/partidas?room=${r.id}`} className="flex-1 min-w-0 group">
                 <div className="flex items-center gap-1.5">
-                  <p className="font-semibold text-sm truncate">{r.title}</p>
+                  <p className="font-semibold text-sm truncate group-hover:text-gold transition-colors">
+                    {r.title}
+                  </p>
                   <Badge
                     variant="outline"
                     className={cn(
-                      "text-[10px] px-1.5 py-0 h-4 border",
-                      full
-                        ? "border-muted text-muted-foreground"
-                        : "border-domain-positive/40 text-domain-positive",
+                      "text-[10px] px-1.5 py-0 h-4 border text-white",
+                      full ? "border-muted" : "border-domain-positive/40",
                     )}
                   >
                     {full ? "Cheia" : "Aberta"}
@@ -93,18 +92,7 @@ export const ProfileUpcomingMatches = ({ rooms, canSee }: Props) => {
                 <p className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">
                   {r.confirmed_count} / {r.max_players}
                 </p>
-              </div>
-              <Button
-                size="sm"
-                variant="outline"
-                asChild
-                className={cn("h-8 text-xs flex-shrink-0", cfg.btn)}
-                disabled={full}
-              >
-                <Link to={`/partidas?room=${r.id}`}>
-                  {full ? "Cheia" : "Entrar"}
-                </Link>
-              </Button>
+              </Link>
             </div>
           );
         })}

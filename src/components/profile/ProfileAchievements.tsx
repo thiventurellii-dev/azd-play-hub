@@ -81,13 +81,13 @@ export const ProfileAchievements = ({ profileId, playerName }: Props) => {
               {counters.total} desbloqueada{counters.total > 1 ? "s" : ""}
               {counters.games > 0 ? ` · ${counters.games} jogo${counters.games > 1 ? "s" : ""}` : ""}
               {counters.rare > 0 ? (
-                <> · <span className="text-[hsl(var(--rarity-rare))]">{counters.rare} rara{counters.rare > 1 ? "s" : ""}</span></>
+                <> · <span style={{ color: RARITY_HEX.rare }}>{counters.rare} rara{counters.rare > 1 ? "s" : ""}</span></>
               ) : null}
               {counters.mesa > 0 ? (
-                <> · <span className="text-[hsl(var(--rarity-mesa))]">{counters.mesa} mesa</span></>
+                <> · <span style={{ color: RARITY_HEX.mesa }}>{counters.mesa} mesa</span></>
               ) : null}
               {counters.legendary > 0 ? (
-                <> · <span className="text-[hsl(var(--rarity-legendary))]">{counters.legendary} lendária{counters.legendary > 1 ? "s" : ""}</span></>
+                <> · <span style={{ color: RARITY_HEX.legendary }}>{counters.legendary} lendária{counters.legendary > 1 ? "s" : ""}</span></>
               ) : null}
             </p>
           </div>

@@ -263,6 +263,23 @@ export const AchievementsGalleryDialog = ({
           </DialogTitle>
         </DialogHeader>
 
+        {domainFilter && (
+          <div className="flex items-center gap-2 -mt-1">
+            <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+              Filtrado:
+            </span>
+            <button
+              type="button"
+              onClick={() => setDomainFilter(null)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-primary/40 bg-primary/10 text-xs text-primary hover:bg-primary/20 transition-colors"
+              title="Remover filtro de domínio"
+            >
+              {DOMAIN_LABEL[domainFilter]}
+              <span className="text-[14px] leading-none">×</span>
+            </button>
+          </div>
+        )}
+
         <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)} className="flex-1 flex flex-col min-h-0">
           <TabsList className="self-start flex-wrap h-auto">
             <TabsTrigger value="by_game">Por jogo</TabsTrigger>

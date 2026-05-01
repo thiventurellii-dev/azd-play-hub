@@ -72,13 +72,14 @@ const ScoringSheet = ({ schema, players, onScoresChange }: Props) => {
 
   const recalcTotal = (scores: Record<string, number>) => {
     if (scorableFields.length > 0) {
-      return scorableFields.reduce((sum, f) => sum + (scores[f.key] || 0), 0);
+      const sum = scorableFields.reduce((s, f) => s + (scores[f.key] || 0), 0);
+      return Math.round(sum * 100) / 100;
     }
     return 0;
   };
 
   const updateScore = (playerIdx: number, fieldKey: string, rawValue: string) => {
-    const value = rawValue === '' ? 0 : parseInt(rawValue) || 0;
+    const value = rawValue === '' ? 0 : parseFloat(rawValue.replace(',', '.')) || 0;
     const updated = [...playerScores];
     const newScores = { ...updated[playerIdx].scores, [fieldKey]: value };
     updated[playerIdx] = {
@@ -189,6 +190,7 @@ const ScoringSheet = ({ schema, players, onScoresChange }: Props) => {
                       <TableCell key={ps.player_id}>
                         <Input
                           type="number"
+                          step="0.01"
                           value={ps.scores[sub.key] === undefined || ps.scores[sub.key] === 0 ? '' : ps.scores[sub.key]}
                           onChange={e => updateScore(i, sub.key, e.target.value)}
                           className="w-[80px] mx-auto"
@@ -207,6 +209,7 @@ const ScoringSheet = ({ schema, players, onScoresChange }: Props) => {
                   <TableCell key={ps.player_id}>
                     <Input
                       type="number"
+                      step="0.01"
                       value={ps.scores[field.key] === undefined || ps.scores[field.key] === 0 ? '' : ps.scores[field.key]}
                       onChange={e => updateScore(i, field.key, e.target.value)}
                       className="w-[80px] mx-auto"

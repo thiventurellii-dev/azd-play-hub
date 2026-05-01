@@ -154,7 +154,15 @@ export const ProfileHero = ({
           <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start">
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{profile.name}</h1>
             {profile.steam_id && (
-              <BadgeCheck className="h-5 w-5 text-domain-info" aria-label="Verificado" />
+              <a
+                href={`https://steamcommunity.com/profiles/${profile.steam_id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Perfil Steam"
+                className="text-foreground/70 hover:text-foreground transition-colors"
+              >
+                <SteamIcon className="h-5 w-5" />
+              </a>
             )}
           </div>
           <div className="mt-1 flex items-center gap-2 flex-wrap justify-center sm:justify-start text-sm">
@@ -171,21 +179,36 @@ export const ProfileHero = ({
             )}
           </div>
 
-          {/* Badges contextuais (max 3) */}
+          {/* Badges contextuais */}
           <div className="mt-3 flex items-center gap-1.5 flex-wrap justify-center sm:justify-start">
             {role === "admin" && (
-              <Badge className="bg-gold/15 text-gold border border-gold/30 hover:bg-gold/15">
+              <Badge className="bg-gold/15 text-white border border-gold/30 hover:bg-gold/15">
                 Admin
               </Badge>
             )}
-            {isMaster && (
-              <Badge className="bg-domain-rpg/15 text-domain-rpg border border-domain-rpg/30 hover:bg-domain-rpg/15">
-                Mestre
+            {playerTags.includes("boardgamer") && (
+              <Badge className="bg-domain-board/15 text-white border border-domain-board/30 hover:bg-domain-board/15">
+                🎲 Boardgamer
               </Badge>
             )}
-            {isStoryteller && (
-              <Badge className="bg-domain-botc/15 text-domain-botc border border-domain-botc/30 hover:bg-domain-botc/15">
-                Storyteller
+            {playerTags.includes("blood") && (
+              <Badge className="bg-domain-botc/15 text-white border border-domain-botc/30 hover:bg-domain-botc/15">
+                🩸 Blood on the Clocktower
+              </Badge>
+            )}
+            {(isStoryteller || playerTags.includes("storyteller")) && (
+              <Badge className="bg-domain-botc/15 text-white border border-domain-botc/30 hover:bg-domain-botc/15">
+                📖 Storyteller
+              </Badge>
+            )}
+            {playerTags.includes("aventureiro") && (
+              <Badge className="bg-domain-rpg/15 text-white border border-domain-rpg/30 hover:bg-domain-rpg/15">
+                ⚔️ Aventureiro
+              </Badge>
+            )}
+            {(isMaster || playerTags.includes("mestre")) && (
+              <Badge className="bg-domain-rpg/15 text-white border border-domain-rpg/30 hover:bg-domain-rpg/15">
+                🎭 Mestre
               </Badge>
             )}
           </div>

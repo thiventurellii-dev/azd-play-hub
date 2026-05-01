@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -13,6 +13,7 @@ import {
   RARITY_ORDER,
   resolveDescription,
 } from "@/lib/achievementUi";
+import { resolveDomain, DOMAIN_LABEL, type AchievementDomain } from "@/hooks/useGamesMap";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -21,6 +22,8 @@ interface Props {
   achievements: PlayerAchievement[];
   gamesMap: Map<string, string>;
   playerName?: string;
+  /** Quando definido, abre a galeria já filtrada por este domínio. */
+  initialDomainFilter?: AchievementDomain;
 }
 
 type TabKey = "by_game" | "recent" | "category" | "rare" | "manual" | "season";
@@ -122,12 +125,29 @@ export const AchievementsGalleryDialog = ({
   achievements,
   gamesMap,
   playerName,
+  initialDomainFilter,
 }: Props) => {
   const [tab, setTab] = useState<TabKey>("by_game");
+  const [domainFilter, setDomainFilter] = useState<AchievementDomain | null>(
+    initialDomainFilter ?? null,
+  );
+
+  // Sincroniza filtro quando o dialog reabre com novo domínio
+  useEffect(() => {
+    if (open) setDomainFilter(initialDomainFilter ?? null);
+  }, [open, initialDomainFilter]);
+
+  const scoped = useMemo(() => {
+    if (!domainFilter) return achievements;
+    return achievements.filter((a) => {
+      const gameName = a.scope_id ? gamesMap.get(a.scope_id) : undefined;
+      return resolveDomain(a.template.scope_type, gameName, a.template.code) === domainFilter;
+    });
+  }, [achievements, gamesMap, domainFilter]);
 
   const items = useMemo(
-    () => achievements.map((a) => enrich(a, gamesMap)),
-    [achievements, gamesMap],
+    () => scoped.map((a) => enrich(a, gamesMap)),
+    [scoped, gamesMap],
   );
 
   const counters = useMemo(() => {
@@ -242,6 +262,23 @@ export const AchievementsGalleryDialog = ({
             </span>
           </DialogTitle>
         </DialogHeader>
+
+        {domainFilter && (
+          <div className="flex items-center gap-2 -mt-1">
+            <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
+              Filtrado:
+            </span>
+            <button
+              type="button"
+              onClick={() => setDomainFilter(null)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-primary/40 bg-primary/10 text-xs text-primary hover:bg-primary/20 transition-colors"
+              title="Remover filtro de domínio"
+            >
+              {DOMAIN_LABEL[domainFilter]}
+              <span className="text-[14px] leading-none">×</span>
+            </button>
+          </div>
+        )}
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as TabKey)} className="flex-1 flex flex-col min-h-0">
           <TabsList className="self-start flex-wrap h-auto">

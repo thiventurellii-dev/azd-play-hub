@@ -1,9 +1,12 @@
 import { Skull, ShieldCheck, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ProfileBotcStats } from "@/hooks/usePlayerProfileData";
+import ProfileDomainAchievements from "@/components/profile/ProfileDomainAchievements";
 
 interface Props {
   stats: ProfileBotcStats;
+  profileId: string;
+  playerName?: string;
 }
 
 const teamColor = (team: string | null) => {
@@ -11,15 +14,26 @@ const teamColor = (team: string | null) => {
   return "text-domain-info bg-domain-info/15 border-domain-info/30";
 };
 
-export const BotcTab = ({ stats }: Props) => {
+export const BotcTab = ({ stats, profileId, playerName }: Props) => {
+  const achievementsBlock = (
+    <ProfileDomainAchievements
+      profileId={profileId}
+      domain="botc"
+      playerName={playerName}
+    />
+  );
+
   if (
     stats.gamesPlayed === 0 &&
     stats.storytellerGames === 0 &&
     stats.characters.length === 0
   ) {
     return (
-      <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
-        Nenhuma partida de Blood on the Clocktower registrada ainda.
+      <div className="space-y-4">
+        {achievementsBlock}
+        <div className="rounded-xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+          Nenhuma partida de Blood on the Clocktower registrada ainda.
+        </div>
       </div>
     );
   }
@@ -29,6 +43,8 @@ export const BotcTab = ({ stats }: Props) => {
 
   return (
     <div className="space-y-4">
+      {achievementsBlock}
+
       {/* Stats lado a lado */}
       <div className="grid gap-3 md:grid-cols-2">
         <StatsCard

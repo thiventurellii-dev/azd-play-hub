@@ -30,7 +30,7 @@ import {
   Download,
   ArrowUp,
   ArrowDown,
-  Minus,
+  
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { getRankIcon, getBloodPrizeClass, getBloodWinStats } from "@/utils/game-logic";

@@ -57,6 +57,7 @@ export const ProfileHero = ({
   mainCommunity,
   isOwnProfile,
   uploadingAvatar,
+  playerTags = [],
   onAvatarChange,
   onEditProfile,
   onChangePassword,

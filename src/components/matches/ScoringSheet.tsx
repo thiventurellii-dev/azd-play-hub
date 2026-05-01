@@ -78,7 +78,7 @@ const ScoringSheet = ({ schema, players, onScoresChange }: Props) => {
   };
 
   const updateScore = (playerIdx: number, fieldKey: string, rawValue: string) => {
-    const value = rawValue === '' ? 0 : parseInt(rawValue) || 0;
+    const value = rawValue === '' ? 0 : parseFloat(rawValue.replace(',', '.')) || 0;
     const updated = [...playerScores];
     const newScores = { ...updated[playerIdx].scores, [fieldKey]: value };
     updated[playerIdx] = {

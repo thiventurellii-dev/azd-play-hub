@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import DOMPurify from 'dompurify';
 import { supabase } from '@/lib/supabaseExternal';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -57,9 +58,10 @@ const Rules = () => {
       if (line.startsWith('## ')) return <h2 key={i} className="text-xl font-semibold mt-4 mb-2 text-foreground">{line.slice(3)}</h2>;
       if (line.startsWith('### ')) return <h3 key={i} className="text-lg font-medium mt-3 mb-1 text-foreground">{line.slice(4)}</h3>;
       if (line.trim() === '') return <br key={i} />;
-      // Bold
+      // Bold (markdown only) — sanitize the resulting HTML to prevent stored XSS
       const formatted = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-      return <p key={i} className="text-muted-foreground leading-relaxed" dangerouslySetInnerHTML={{ __html: formatted }} />;
+      const safe = DOMPurify.sanitize(formatted, { ALLOWED_TAGS: ['strong', 'em', 'br'], ALLOWED_ATTR: [] });
+      return <p key={i} className="text-muted-foreground leading-relaxed" dangerouslySetInnerHTML={{ __html: safe }} />;
     });
   };
 

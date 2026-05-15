@@ -289,6 +289,7 @@ export const CapabilitiesSections = () => (
   <section className="border-t border-border/60">
     <div className="py-20 md:py-28">
       <SectionShell
+        id="seasons"
         eyebrow="Seasons competitivas"
         title={
           <>
@@ -310,7 +311,7 @@ export const CapabilitiesSections = () => (
 
     <div className="border-t border-border/60 bg-surface/40 py-20 md:py-28">
       <SectionShell
-        reverse
+        id="comunidades"
         eyebrow="Comunidades"
         title={
           <>

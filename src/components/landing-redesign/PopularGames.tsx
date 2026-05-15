@@ -180,7 +180,7 @@ export const PopularGames = () => {
                       className={`flex-shrink-0 w-[320px] h-[520px] snap-start transition-all duration-300 ${
                         featured
                           ? "opacity-100"
-                          : "opacity-55 hover:opacity-100 saturate-75 hover:saturate-100"
+                          : "opacity-80 hover:opacity-100 saturate-90 hover:saturate-100"
                       }`}
                     >
                       <BoardgameCard

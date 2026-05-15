@@ -70,6 +70,7 @@ const BoardgameCard = ({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04 }}
+      className="h-full"
     >
       <article
         onClick={goToDetail}

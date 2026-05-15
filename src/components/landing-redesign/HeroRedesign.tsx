@@ -116,12 +116,10 @@ export const HeroRedesign = () => {
       </div>
 
       <style>{`
+        .lr-hero-grid { grid-template-columns: 1.05fr 1fr; }
         @media (max-width: 960px) {
-          .lr-container > .lr-hero-visual { display: none; }
-        }
-        .lr-container { display: grid; }
-        @media (max-width: 960px) {
-          section .lr-container { grid-template-columns: 1fr !important; }
+          .lr-hero-grid { grid-template-columns: 1fr !important; }
+          .lr-hero-visual { display: none; }
         }
       `}</style>
     </section>

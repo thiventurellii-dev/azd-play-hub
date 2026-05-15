@@ -107,7 +107,7 @@ export function useLandingData() {
             return {
               ...g,
               matchCount: counts.get(g.id) ?? 0,
-              typeLabel: isBotc ? "Social Deduction" : g.category ?? null ?? undefined,
+              typeLabel: isBotc ? "Social Deduction" : g.category ?? undefined,
             };
           })
           .filter((g) => g.matchCount > 0);

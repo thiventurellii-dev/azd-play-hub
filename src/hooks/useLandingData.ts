@@ -72,6 +72,7 @@ export function useLandingData() {
         const ranked = games
           .filter((g) => !/^rpg$/i.test(g.name))
           .map((g) => ({ ...g, matchCount: counts.get(g.id) ?? 0 }))
+          .filter((g) => g.matchCount > 0)
           .sort((a, b) => b.matchCount - a.matchCount)
           .slice(0, 8);
         setPopularGames(ranked);

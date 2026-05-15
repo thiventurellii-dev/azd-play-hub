@@ -72,6 +72,7 @@ export function useLandingData() {
         const ranked = games
           .filter((g) => !/^rpg$/i.test(g.name))
           .map((g) => ({ ...g, matchCount: counts.get(g.id) ?? 0 }))
+          .filter((g) => g.matchCount > 0)
           .sort((a, b) => b.matchCount - a.matchCount)
           .slice(0, 8);
         setPopularGames(ranked);
@@ -103,11 +104,11 @@ export function useLandingData() {
               const ids = top.map((t) => t.player_id);
               const { data: profs } = await supabase
                 .from("profiles")
-                .select("id,name,full_name")
+                .select("id,name,nickname")
                 .in("id", ids);
               const nameById = new Map<string, string>();
               for (const p of (profs ?? []) as any[]) {
-                nameById.set(p.id, p.full_name || p.name || "Jogador");
+                nameById.set(p.id, p.nickname || p.name || "Jogador");
               }
               setTopPlayers(top.map((t) => ({ name: nameById.get(t.player_id) ?? "Jogador", mmr: t.mmr })));
             }

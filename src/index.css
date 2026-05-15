@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -133,4 +134,72 @@
   .gradient-gold {
     background: linear-gradient(135deg, hsl(43 100% 50%), hsl(35 100% 45%));
   }
+}
+
+/* ============================================================
+   LANDING REDESIGN — tokens, typography & utilities
+   ============================================================ */
+:root {
+  --lr-bg:        oklch(0.145 0.01 250);
+  --lr-bg-2:      oklch(0.18  0.012 250);
+  --lr-bg-3:      oklch(0.22  0.014 250);
+  --lr-line:      oklch(0.28  0.014 250);
+  --lr-line-soft: oklch(0.24  0.012 250 / 0.6);
+  --lr-fg:   oklch(0.97 0.005 250);
+  --lr-fg-2: oklch(0.78 0.008 250);
+  --lr-fg-3: oklch(0.58 0.01  250);
+  --lr-gold:      oklch(0.78 0.14 80);
+  --lr-gold-soft: oklch(0.78 0.14 80 / 0.12);
+  --lr-blue:      oklch(0.65 0.14 240);
+  --lr-green:     oklch(0.74 0.14 150);
+  --lr-red:       oklch(0.66 0.18 25);
+  --lr-radius-sm: 6px;
+  --lr-radius:    12px;
+  --lr-radius-lg: 18px;
+  --lr-radius-xl: 28px;
+  --lr-container-wide: 1320px;
+}
+
+@layer components {
+  .lr-root { background: var(--lr-bg); color: var(--lr-fg); font-family: 'Inter', system-ui, sans-serif; }
+  .lr-display { font-family: 'Inter Tight', 'Inter', sans-serif; letter-spacing: -0.025em; line-height: 1.05; font-weight: 600; }
+  .lr-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  .lr-eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--lr-fg-3); }
+
+  .lr-container { max-width: var(--lr-container-wide); margin-inline: auto; padding-inline: 24px; }
+
+  .lr-section { padding: 88px 0; border-top: 1px solid var(--lr-line-soft); }
+  .lr-section-tight { padding: 56px 0; border-top: 1px solid var(--lr-line-soft); }
+  .lr-section-loose { padding: 120px 0; border-top: 1px solid var(--lr-line-soft); }
+
+  .lr-section-head { margin-bottom: 48px; }
+  .lr-section-head h2 { font-family: 'Inter Tight', sans-serif; font-weight: 600; letter-spacing: -0.025em; line-height: 1.05; font-size: clamp(28px, 4vw, 44px); margin-top: 12px; }
+  .lr-section-head p { color: var(--lr-fg-2); max-width: 580px; margin-top: 16px; font-size: 16px; line-height: 1.55; }
+
+  .lr-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 48px; padding: 0 22px; border-radius: 999px; font-weight: 600; font-size: 15px; transition: all 0.18s ease; border: 1px solid transparent; white-space: nowrap; cursor: pointer; }
+  .lr-btn:hover { transform: translateY(-1px); }
+  .lr-btn-sm { height: 38px; padding: 0 16px; font-size: 13px; }
+  .lr-btn-lg { height: 56px; padding: 0 28px; font-size: 16px; min-height: 44px; }
+  .lr-btn-gold { background: var(--lr-gold); color: #1a1408; }
+  .lr-btn-gold:hover { background: oklch(0.84 0.15 80); }
+  .lr-btn-outline { border-color: var(--lr-line); color: var(--lr-fg); background: transparent; }
+  .lr-btn-outline:hover { border-color: var(--lr-fg-2); background: var(--lr-bg-2); }
+  .lr-btn-ghost { color: var(--lr-fg-2); background: transparent; }
+  .lr-btn-ghost:hover { color: var(--lr-fg); }
+}
+
+@keyframes lr-pulse-ring {
+  0% { transform: scale(0.6); opacity: 0.6; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+.lr-pulse-dot { position: relative; width: 6px; height: 6px; border-radius: 50%; background: var(--lr-gold); display: inline-block; }
+.lr-pulse-dot::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: var(--lr-gold); animation: lr-pulse-ring 2.4s ease-out infinite; }
+
+.lr-scroll-mask { mask-image: linear-gradient(90deg, transparent 0, black 32px, black calc(100% - 32px), transparent 100%); -webkit-mask-image: linear-gradient(90deg, transparent 0, black 32px, black calc(100% - 32px), transparent 100%); }
+.lr-scroll-x { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.lr-scroll-x::-webkit-scrollbar { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lr-pulse-dot::after { animation: none; }
+  .lr-btn:hover { transform: none; }
 }

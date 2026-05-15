@@ -9,15 +9,7 @@ import { useDashboardData } from "@/hooks/useDashboardData";
 import { Hero } from "@/components/home/Hero";
 import { DashboardCard } from "@/components/home/DashboardCard";
 import { SocialButtons } from "@/components/home/SocialButtons";
-import { LandingHero } from "@/components/landing/LandingHero";
-import { LandingStats } from "@/components/landing/LandingStats";
-import { LandingTestimonials } from "@/components/landing/LandingTestimonials";
-import { LandingProfileSection } from "@/components/landing/LandingProfileSection";
-import { LandingMatchRoomsSection } from "@/components/landing/LandingMatchRoomsSection";
-import { LandingCommunitiesSection } from "@/components/landing/LandingCommunitiesSection";
-import { LandingSeasonsSection } from "@/components/landing/LandingSeasonsSection";
-import { LandingGamesSection } from "@/components/landing/LandingGamesSection";
-import { LandingFinalCTA } from "@/components/landing/LandingFinalCTA";
+import { LandingRedesign } from "@/components/landing-redesign/LandingRedesign";
 
 const POSITION_COLORS = ["text-yellow-400", "text-gray-400", "text-amber-600"];
 
@@ -55,19 +47,7 @@ function getPositionDot(position: number | null) {
   return <div className={`w-2 h-2 rounded-full shrink-0 ${colorClass}`} />;
 }
 
-const LoggedOutIndex = () => (
-  <div>
-    <LandingHero />
-    <LandingStats />
-    <LandingTestimonials />
-    <LandingProfileSection />
-    <LandingMatchRoomsSection />
-    <LandingCommunitiesSection />
-    <LandingSeasonsSection />
-    <LandingGamesSection />
-    <LandingFinalCTA />
-  </div>
-);
+const LoggedOutIndex = () => <LandingRedesign />;
 
 const LoggedInIndex = () => {
   const { user } = useAuth();

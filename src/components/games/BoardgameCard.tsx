@@ -302,12 +302,13 @@ const StatBlock = ({
   label: string;
   highlight?: boolean;
 }) => (
-  <div className="flex flex-1 flex-col items-center gap-0.5 min-w-0 text-center">
-    <span className={`text-sm font-bold leading-tight ${highlight ? "text-gold" : "text-foreground"}`}>
+  <div className="flex flex-1 flex-col items-center justify-center gap-1 min-w-0 text-center">
+    <Icon className={`h-3.5 w-3.5 ${highlight ? "text-gold" : "text-muted-foreground"}`} />
+    <span className={`text-sm font-bold leading-none ${highlight ? "text-gold" : "text-foreground"}`}>
       {value}
     </span>
-    <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-      <Icon className="h-3 w-3" /> {label}
+    <span className="text-[10px] leading-none text-muted-foreground whitespace-nowrap">
+      {label}
     </span>
   </div>
 );

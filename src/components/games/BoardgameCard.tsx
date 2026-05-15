@@ -215,12 +215,12 @@ const BoardgameCard = ({
           <div className="flex-1" />
 
           {/* Quick stats — players · matches · duration */}
-          <div className="flex items-end justify-between rounded-lg bg-background/40 px-3 py-2.5 ring-1 ring-border/30">
+          <div className="flex items-stretch justify-between rounded-lg bg-background/40 px-3 py-2.5 ring-1 ring-border/30">
             <StatBlock value={playerRange ?? "—"} label="Jogadores" icon={Users} />
-            <div className="h-8 w-px bg-border/50" />
+            <div className="w-px bg-border/50 mx-1" />
             <StatBlock value={`${matchCount}`} label="Partidas" icon={BarChart3} highlight />
-            <div className="h-8 w-px bg-border/50" />
-            <StatBlock value={avgDuration ? `${avgDuration}m` : "—"} label="Duração média" icon={Clock} />
+            <div className="w-px bg-border/50 mx-1" />
+            <StatBlock value={avgDuration ? `${avgDuration}m` : "—"} label="Duração" icon={Clock} />
           </div>
 
           {/* Active context now shown via card border + flag in cover */}

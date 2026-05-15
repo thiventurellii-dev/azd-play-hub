@@ -88,7 +88,7 @@ export const HeroRedesign = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.4 }}
-            className="mono mt-5 text-xs text-muted-foreground"
+            className="mt-5 text-sm text-muted-foreground"
           >
             <span className="text-gold">✓</span> Em 1 minuto você está numa sala.
           </motion.p>
@@ -155,7 +155,7 @@ export const HeroRedesign = () => {
                 </span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Boardgames · RPG · Blood on the Clocktower — toda semana tem mesa.
+                Boardgames, RPG e Blood on the Clocktower. Toda semana tem mesa.
               </p>
             </div>
 

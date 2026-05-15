@@ -37,7 +37,7 @@ export const FeaturesBento = () => {
         <SectionHead
           eyebrow="Tudo num lugar"
           title={<>Pensado pra quem joga toda semana.</>}
-          description="Salas, ranking, comunidades e histórico — uma plataforma só, em vez de cinco grupos de WhatsApp e uma planilha que ninguém atualiza."
+          description="Salas, ranking, comunidades e histórico em uma plataforma só, em vez de cinco grupos de WhatsApp e uma planilha que ninguém atualiza."
         />
 
         <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
@@ -54,7 +54,7 @@ export const FeaturesBento = () => {
             </h3>
             <p className="text-muted-foreground text-sm md:text-base leading-relaxed mb-6">
               Cada partida ajusta seu MMR. Cada season tem início, fim e um campeão. Compete,
-              evolui ou só acompanha — você escolhe.
+              evolui ou só acompanha. Você escolhe.
             </p>
             <div className="mt-auto rounded-xl bg-background/60 border border-border/60 p-4 relative">
               <span className="absolute top-3 right-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -77,7 +77,7 @@ export const FeaturesBento = () => {
             </h3>
             <p className="text-muted-foreground text-sm md:text-base leading-relaxed mb-6">
               Comunidades por jogo, por estilo e por interesse. Membros, eventos e calendário
-              compartilhado — tudo no mesmo lugar.
+              compartilhado, tudo no mesmo lugar.
             </p>
             <div className="mt-auto rounded-xl bg-background/60 border border-border/60 p-4">
               <div className="flex items-center justify-between mb-3">
@@ -124,7 +124,7 @@ export const FeaturesBento = () => {
             {
               icon: "📊",
               title: "Histórico persistente",
-              body: "Cada partida fica registrada — quem jogou, pontuação e vencedor.",
+              body: "Cada partida fica registrada: quem jogou, pontuação e vencedor.",
             },
             {
               icon: "🎲",

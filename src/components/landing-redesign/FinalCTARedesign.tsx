@@ -6,6 +6,17 @@ import { supabase } from "@/lib/supabaseExternal";
 
 export const FinalCTARedesign = () => {
   const { activeSeason } = useLandingData();
+  const [discordUrl, setDiscordUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase
+      .from("contact_links")
+      .select("name,url")
+      .eq("name", "discord")
+      .maybeSingle()
+      .then(({ data }) => setDiscordUrl((data as { url?: string } | null)?.url ?? null));
+  }, []);
+
   return (
     <section
       id="cta"

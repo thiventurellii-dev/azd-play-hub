@@ -59,7 +59,7 @@ const LoggedOutIndex = () => (
     <HeroRedesign />
     <StatsRedesign />
     <HowItWorks />
-    <FeaturesBento />
+    <CapabilitiesSections />
     <PopularGames />
     <Compare />
     <Testimonials />

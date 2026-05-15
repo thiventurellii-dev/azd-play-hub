@@ -70,7 +70,7 @@ const BoardgameCard = ({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.04 }}
-      className="h-full"
+      className="flex h-full"
     >
       <article
         onClick={goToDetail}
@@ -82,7 +82,7 @@ const BoardgameCard = ({
               : undefined
         }
         className={cn(
-          "group relative isolate flex h-full cursor-pointer flex-col overflow-hidden rounded-2xl bg-card transform-gpu [backface-visibility:hidden] transition-all duration-300 ring-1 hover:-translate-y-0.5",
+          "group relative isolate flex h-full min-h-0 w-full cursor-pointer flex-col overflow-hidden rounded-2xl bg-card transform-gpu [backface-visibility:hidden] transition-all duration-300 ring-1 hover:-translate-y-0.5",
           hasActiveTournament
             ? "ring-amber-400/50 hover:ring-amber-400/70"
             : hasActiveSeason

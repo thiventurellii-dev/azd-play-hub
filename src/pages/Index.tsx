@@ -12,7 +12,7 @@ import { SocialButtons } from "@/components/home/SocialButtons";
 import { HeroRedesign } from "@/components/landing-redesign/HeroRedesign";
 import { StatsRedesign } from "@/components/landing-redesign/StatsRedesign";
 import { HowItWorks } from "@/components/landing-redesign/HowItWorks";
-import { FeaturesBento } from "@/components/landing-redesign/FeaturesBento";
+import { CapabilitiesSections } from "@/components/landing-redesign/CapabilitiesSections";
 import { PopularGames } from "@/components/landing-redesign/PopularGames";
 import { Compare } from "@/components/landing-redesign/Compare";
 import { FinalCTARedesign } from "@/components/landing-redesign/FinalCTARedesign";

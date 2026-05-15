@@ -5,7 +5,7 @@ const Item = ({ value, label }: { value: number | string; label: string }) => (
     <span className="display-tight font-black text-foreground text-[clamp(32px,4.5vw,52px)] tabular-nums">
       {typeof value === "number" ? value.toLocaleString("pt-BR") : value}
     </span>
-    <span className="mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+    <span className="text-sm font-semibold uppercase tracking-[0.12em] text-muted-foreground">
       {label}
     </span>
   </div>

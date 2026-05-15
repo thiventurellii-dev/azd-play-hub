@@ -34,7 +34,7 @@ export const HowItWorks = () => (
               i > 0 ? "border-t md:border-t-0 md:border-l border-border/60" : ""
             }`}
           >
-            <p className="mono text-[11px] uppercase tracking-[0.18em] text-gold mb-8">
+            <p className="text-sm font-semibold uppercase tracking-[0.12em] text-gold mb-8">
               {s.n} / 03
             </p>
             <h3 className="display-tight font-bold text-xl md:text-2xl mb-3">{s.title}</h3>

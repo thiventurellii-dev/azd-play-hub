@@ -37,7 +37,7 @@ export const HeroRedesign = () => {
               <span className="absolute inline-flex h-full w-full rounded-full bg-gold opacity-60 animate-ping" />
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-gold" />
             </span>
-            <span className="mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+            <span className="text-sm font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               Plataforma da Comunidade AzD
             </span>
           </motion.div>
@@ -88,7 +88,7 @@ export const HeroRedesign = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.4 }}
-            className="mono mt-5 text-xs text-muted-foreground"
+            className="mt-5 text-sm text-muted-foreground"
           >
             <span className="text-gold">✓</span> Em 1 minuto você está numa sala.
           </motion.p>
@@ -113,7 +113,7 @@ export const HeroRedesign = () => {
                   <span>🏆</span>
                   <span className="truncate">{activeSeason?.name ?? "Season ativa"}</span>
                 </div>
-                <span className="mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   {activeSeason ? `encerra em ${activeSeason.daysLeft}d` : "—"}
                 </span>
               </div>
@@ -135,7 +135,7 @@ export const HeroRedesign = () => {
                     <span className={`truncate ${i === 0 ? "text-gold font-semibold" : ""}`}>
                       {i + 1}. {p.name}
                     </span>
-                    <span className="mono text-xs text-muted-foreground tabular-nums">
+                    <span className="text-sm text-muted-foreground tabular-nums">
                       {p.mmr ? formatMmr(p.mmr) : "—"}
                     </span>
                   </li>
@@ -150,12 +150,12 @@ export const HeroRedesign = () => {
                   <img src={azdLogo} alt="AzD" className="h-7 w-auto invert" />
                   <span className="text-sm font-bold">Comunidade Amizade</span>
                 </div>
-                <span className="mono text-[10px] uppercase tracking-wider text-domain-positive">
+                <span className="text-xs font-medium uppercase tracking-wider text-domain-positive">
                   ativa
                 </span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Boardgames · RPG · Blood on the Clocktower — toda semana tem mesa.
+                Boardgames, RPG e Blood on the Clocktower. Toda semana tem mesa.
               </p>
             </div>
 
@@ -166,7 +166,7 @@ export const HeroRedesign = () => {
                   <span>🎲</span>
                   <span className="font-medium">Próxima sessão</span>
                 </div>
-                <span className="mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                   agendar agora
                 </span>
               </div>
@@ -174,7 +174,7 @@ export const HeroRedesign = () => {
                 <div className="h-1.5 flex-1 rounded-full bg-muted/40 overflow-hidden">
                   <div className="h-full w-3/4 bg-gold rounded-full" />
                 </div>
-                <span className="mono text-[10px] text-muted-foreground">vagas abertas</span>
+                <span className="text-xs text-muted-foreground">vagas abertas</span>
               </div>
             </div>
           </div>

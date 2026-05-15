@@ -101,7 +101,7 @@ const GameCard = ({ game }: { game: PopularGame }) => {
       <p className="text-sm font-semibold truncate group-hover:text-gold transition-colors">
         {game.name}
       </p>
-      <p className="mono text-[11px] mt-1 flex items-center gap-1.5 flex-wrap">
+      <p className="text-sm font-medium mt-1 flex items-center gap-1.5 flex-wrap">
         {game.category && <span className="text-muted-foreground">{game.category}</span>}
         {players && <span className="text-muted-foreground">· {players}</span>}
         <span className={`ml-auto ${game.matchCount > 0 ? "text-gold" : "text-muted-foreground/60"}`}>

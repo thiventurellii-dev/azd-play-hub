@@ -28,7 +28,7 @@ export const FinalCTARedesign = () => {
 
       <div className="container relative z-10 text-center">
         {activeSeason && (
-          <p className="mono text-[11px] uppercase tracking-[0.18em] text-gold mb-5">
+          <p className="text-sm font-semibold uppercase tracking-[0.12em] text-gold mb-5">
             {activeSeason.name} em andamento · encerra em {activeSeason.daysLeft} dias
           </p>
         )}
@@ -58,7 +58,7 @@ export const FinalCTARedesign = () => {
         </div>
 
         <div className="mt-24 pt-14 border-t border-border/60 max-w-3xl mx-auto pb-20">
-          <p className="mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground mb-3">
+          <p className="text-sm font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-3">
             Junte-se também a nossas comunidades
           </p>
           <h3 className="display-tight font-bold text-2xl md:text-3xl mb-8">

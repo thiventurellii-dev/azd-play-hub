@@ -37,7 +37,7 @@ export const FeaturesBento = () => {
         <SectionHead
           eyebrow="Tudo num lugar"
           title={<>Pensado pra quem joga toda semana.</>}
-          description="Salas, ranking, comunidades e histórico — uma plataforma só, em vez de cinco grupos de WhatsApp e uma planilha que ninguém atualiza."
+          description="Salas, ranking, comunidades e histórico em uma plataforma só, em vez de cinco grupos de WhatsApp e uma planilha que ninguém atualiza."
         />
 
         <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
@@ -47,17 +47,17 @@ export const FeaturesBento = () => {
               <div className="w-9 h-9 rounded-lg bg-surface-raised border border-border flex items-center justify-center text-base">
                 🏆
               </div>
-              <span className="mono text-[11px] uppercase tracking-[0.18em] text-gold">Seasons</span>
+              <span className="text-sm font-semibold uppercase tracking-[0.12em] text-gold">Seasons</span>
             </div>
             <h3 className="display-tight font-bold text-2xl md:text-[28px] mb-3">
               Ranking mensal com MMR de verdade.
             </h3>
             <p className="text-muted-foreground text-sm md:text-base leading-relaxed mb-6">
               Cada partida ajusta seu MMR. Cada season tem início, fim e um campeão. Compete,
-              evolui ou só acompanha — você escolhe.
+              evolui ou só acompanha. Você escolhe.
             </p>
             <div className="mt-auto rounded-xl bg-background/60 border border-border/60 p-4 relative">
-              <span className="absolute top-3 right-3 mono text-[10px] uppercase tracking-wider text-muted-foreground">
+              <span className="absolute top-3 right-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 MMR · evolução típica
               </span>
               <MmrChart data={[820, 845, 832, 870, 885, 910, 902, 940, 955, 980, 992, 1010, 1030, 1055, 1080]} />
@@ -70,24 +70,24 @@ export const FeaturesBento = () => {
               <div className="w-9 h-9 rounded-lg bg-surface-raised border border-border flex items-center justify-center text-base">
                 👥
               </div>
-              <span className="mono text-[11px] uppercase tracking-[0.18em] text-gold">Comunidades</span>
+              <span className="text-sm font-semibold uppercase tracking-[0.12em] text-gold">Comunidades</span>
             </div>
             <h3 className="display-tight font-bold text-2xl md:text-[28px] mb-3">
               Pessoas que jogam o que você joga.
             </h3>
             <p className="text-muted-foreground text-sm md:text-base leading-relaxed mb-6">
               Comunidades por jogo, por estilo e por interesse. Membros, eventos e calendário
-              compartilhado — tudo no mesmo lugar.
+              compartilhado, tudo no mesmo lugar.
             </p>
             <div className="mt-auto rounded-xl bg-background/60 border border-border/60 p-4">
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <p className="text-sm font-bold">Comunidade Amizade · AzD</p>
-                  <p className="mono text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">
+                  <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mt-0.5">
                     {stats.players} membros
                   </p>
                 </div>
-                <span className="text-[10px] mono uppercase tracking-wider px-2 py-1 rounded bg-gold/15 text-gold">
+                <span className="text-xs font-medium uppercase tracking-wider px-2 py-1 rounded bg-gold/15 text-gold">
                   aberta
                 </span>
               </div>
@@ -105,7 +105,7 @@ export const FeaturesBento = () => {
                   </div>
                 ))}
                 <div
-                  className="w-7 h-7 rounded-full border-2 border-background bg-surface-raised flex items-center justify-center text-[10px] font-bold mono"
+                  className="w-7 h-7 rounded-full border-2 border-background bg-surface-raised flex items-center justify-center text-[10px] font-bold"
                   style={{ marginLeft: -8 }}
                 >
                   +{Math.max(0, stats.players - 6)}
@@ -124,7 +124,7 @@ export const FeaturesBento = () => {
             {
               icon: "📊",
               title: "Histórico persistente",
-              body: "Cada partida fica registrada — quem jogou, pontuação e vencedor.",
+              body: "Cada partida fica registrada: quem jogou, pontuação e vencedor.",
             },
             {
               icon: "🎲",

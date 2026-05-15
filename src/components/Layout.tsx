@@ -14,14 +14,12 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   }
 
   const hideNavbar = location.pathname === "/complete-profile";
-  // Logged-out landing has its own nav + footer; hide global chrome there.
-  const isLandingRedesign = !user && location.pathname === "/";
 
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
-      {!hideNavbar && !isLandingRedesign && <Navbar />}
+      {!hideNavbar && <Navbar />}
       <main className={`flex-1 ${user && !hideNavbar ? "pb-16 md:pb-0" : ""}`}>{children}</main>
-      {!hideNavbar && !isLandingRedesign && <Footer />}
+      {!hideNavbar && <Footer />}
       {!hideNavbar && user && <BottomNav />}
     </div>
   );

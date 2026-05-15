@@ -55,15 +55,13 @@ function getPositionDot(position: number | null) {
 
 const LoggedOutIndex = () => (
   <div>
-    <LandingHero />
-    <LandingStats />
-    <LandingTestimonials />
-    <LandingProfileSection />
-    <LandingMatchRoomsSection />
-    <LandingCommunitiesSection />
-    <LandingSeasonsSection />
-    <LandingGamesSection />
-    <LandingFinalCTA />
+    <HeroRedesign />
+    <StatsRedesign />
+    <HowItWorks />
+    <FeaturesBento />
+    <PopularGames />
+    <Compare />
+    <FinalCTARedesign />
   </div>
 );
 

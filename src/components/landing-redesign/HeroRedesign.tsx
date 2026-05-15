@@ -151,7 +151,7 @@ export const HeroRedesign = () => {
             <div className="bg-surface-raised border border-border rounded-2xl p-5">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <img src={azdLogo} alt="AzD" className="h-7 w-auto invert" />
+                  <img src={azdLogo} alt="AzD" className="h-7 w-auto" />
                   <span className="text-sm font-bold">Comunidade Amizade</span>
                 </div>
                 <span className="text-xs font-medium uppercase tracking-wider text-domain-positive">

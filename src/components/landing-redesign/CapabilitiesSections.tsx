@@ -16,6 +16,7 @@ const SectionShell = ({
   bullets,
   visual,
   reverse = false,
+  id,
 }: {
   eyebrow: string;
   title: React.ReactNode;
@@ -23,8 +24,9 @@ const SectionShell = ({
   bullets: string[];
   visual: React.ReactNode;
   reverse?: boolean;
+  id?: string;
 }) => (
-  <div className="container">
+  <div className="container scroll-mt-24" id={id}>
     <div
       className={`grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center ${
         reverse ? "lg:[&>*:first-child]:order-2" : ""
@@ -287,6 +289,7 @@ export const CapabilitiesSections = () => (
   <section className="border-t border-border/60">
     <div className="py-20 md:py-28">
       <SectionShell
+        id="seasons"
         eyebrow="Seasons competitivas"
         title={
           <>
@@ -308,7 +311,7 @@ export const CapabilitiesSections = () => (
 
     <div className="border-t border-border/60 bg-surface/40 py-20 md:py-28">
       <SectionShell
-        reverse
+        id="comunidades"
         eyebrow="Comunidades"
         title={
           <>

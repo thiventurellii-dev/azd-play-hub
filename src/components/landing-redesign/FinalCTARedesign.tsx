@@ -40,11 +40,6 @@ export const FinalCTARedesign = () => {
       />
 
       <div className="container relative z-10 text-center">
-        {activeSeason && (
-          <p className="text-sm font-semibold uppercase tracking-[0.12em] text-gold mb-5">
-            {activeSeason.name} em andamento · encerra em {activeSeason.daysLeft} dias
-          </p>
-        )}
         <h2 className="display-tight font-black text-[clamp(40px,6.5vw,84px)] max-w-3xl mx-auto text-balance">
           Sua próxima partida
           <br />

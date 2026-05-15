@@ -161,53 +161,82 @@ const Navbar = () => {
             </Button>
           </Link>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="gap-1 text-muted-foreground hover:text-foreground">
-                <Trophy className="h-4 w-4" /> Competitivo <ChevronDown className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuItem onClick={() => navigate("/seasons")}>
-                <Calendar className="h-4 w-4 mr-2" /> Seasons
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled className="opacity-50">
-                <Trophy className="h-4 w-4 mr-2" /> Torneios
-                <span className="ml-auto text-[10px] bg-muted px-1.5 py-0.5 rounded-full">Em breve</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {user ? (
+            <>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="gap-1 text-muted-foreground hover:text-foreground">
+                    <Trophy className="h-4 w-4" /> Competitivo <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  <DropdownMenuItem onClick={() => navigate("/seasons")}>
+                    <Calendar className="h-4 w-4 mr-2" /> Seasons
+                  </DropdownMenuItem>
+                  <DropdownMenuItem disabled className="opacity-50">
+                    <Trophy className="h-4 w-4 mr-2" /> Torneios
+                    <span className="ml-auto text-[10px] bg-muted px-1.5 py-0.5 rounded-full">Em breve</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-          <Link to="/partidas">
-            <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
-              <Calendar className="h-4 w-4" /> Partidas
-            </Button>
-          </Link>
+              <Link to="/partidas">
+                <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
+                  <Calendar className="h-4 w-4" /> Partidas
+                </Button>
+              </Link>
 
-          <Link to="/comunidades">
-            <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
-              <MessagesSquare className="h-4 w-4" /> Comunidades
-            </Button>
-          </Link>
+              <Link to="/comunidades">
+                <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
+                  <MessagesSquare className="h-4 w-4" /> Comunidades
+                </Button>
+              </Link>
 
-          <Link to="/players">
-            <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
-              <Users className="h-4 w-4" /> Jogadores
-            </Button>
-          </Link>
+              <Link to="/players">
+                <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
+                  <Users className="h-4 w-4" /> Jogadores
+                </Button>
+              </Link>
 
-          <Link to="/games">
-            <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
-              <Gamepad2 className="h-4 w-4" /> Jogos
-            </Button>
-          </Link>
+              <Link to="/games">
+                <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
+                  <Gamepad2 className="h-4 w-4" /> Jogos
+                </Button>
+              </Link>
 
-          <Link to="/suggestions">
-            <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
-              <Lightbulb className="h-4 w-4" /> Sugestões
-            </Button>
-          </Link>
-
+              <Link to="/suggestions">
+                <Button variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
+                  <Lightbulb className="h-4 w-4" /> Sugestões
+                </Button>
+              </Link>
+            </>
+          ) : (
+            <>
+              {[
+                { id: "comunidades", label: "Comunidades", icon: MessagesSquare },
+                { id: "jogos", label: "Jogos", icon: Gamepad2 },
+                { id: "seasons", label: "Seasons", icon: Trophy },
+              ].map(({ id, label, icon: Icon }) => (
+                <Button
+                  key={id}
+                  variant="ghost"
+                  className="gap-2 text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                    if (window.location.pathname !== "/") {
+                      navigate(`/#${id}`);
+                      setTimeout(() => {
+                        document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "center" });
+                      }, 100);
+                    } else {
+                      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "center" });
+                    }
+                  }}
+                >
+                  <Icon className="h-4 w-4" /> {label}
+                </Button>
+              ))}
+            </>
+          )}
 
           {isAdmin && (
             <Link to="/admin">
@@ -358,7 +387,7 @@ const Navbar = () => {
               </Link>
               <Link to="/register">
                 <Button variant="gold" size="sm">
-                  Faça parte da comunidade
+                  Criar conta
                 </Button>
               </Link>
             </>

@@ -94,7 +94,6 @@ export const FinalCTARedesign = () => {
             </div>
           )}
 
-          <SocialButtons />
         </div>
       </div>
     </section>

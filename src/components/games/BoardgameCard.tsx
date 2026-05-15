@@ -225,45 +225,43 @@ const BoardgameCard = ({
 
           {/* Active context now shown via card border + flag in cover */}
 
-          {/* Action links */}
-          {(game.rules_url || game.video_url) && (
-            <div className="flex items-center gap-1 -mx-1 pt-1 border-t border-border/40">
-              {game.rules_url && (
-                <Button
-                  asChild
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+          {/* Action links — slot sempre reservado para alinhar stats entre cards */}
+          <div className="flex items-center gap-1 -mx-1 pt-1 border-t border-border/40 min-h-[32px]">
+            {game.rules_url && (
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+              >
+                <a
+                  href={game.rules_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <a
-                    href={game.rules_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <ExternalLink className="h-3 w-3 mr-1" /> Regras
-                  </a>
-                </Button>
-              )}
-              {game.video_url && (
-                <Button
-                  asChild
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                  <ExternalLink className="h-3 w-3 mr-1" /> Regras
+                </a>
+              </Button>
+            )}
+            {game.video_url && (
+              <Button
+                asChild
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+              >
+                <a
+                  href={game.video_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  <a
-                    href={game.video_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Video className="h-3 w-3 mr-1" /> Vídeo
-                  </a>
-                </Button>
-              )}
-            </div>
-          )}
+                  <Video className="h-3 w-3 mr-1" /> Vídeo
+                </a>
+              </Button>
+            )}
+          </div>
         </div>
 
       </article>

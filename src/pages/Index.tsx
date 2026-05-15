@@ -47,19 +47,7 @@ function getPositionDot(position: number | null) {
   return <div className={`w-2 h-2 rounded-full shrink-0 ${colorClass}`} />;
 }
 
-const LoggedOutIndex = () => (
-  <div>
-    <LandingHero />
-    <LandingStats />
-    <LandingTestimonials />
-    <LandingProfileSection />
-    <LandingMatchRoomsSection />
-    <LandingCommunitiesSection />
-    <LandingSeasonsSection />
-    <LandingGamesSection />
-    <LandingFinalCTA />
-  </div>
-);
+const LoggedOutIndex = () => <LandingRedesign />;
 
 const LoggedInIndex = () => {
   const { user } = useAuth();

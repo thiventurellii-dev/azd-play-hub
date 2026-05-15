@@ -387,7 +387,7 @@ const Navbar = () => {
               </Link>
               <Link to="/register">
                 <Button variant="gold" size="sm">
-                  Faça parte da comunidade
+                  Criar conta
                 </Button>
               </Link>
             </>

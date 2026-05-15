@@ -77,7 +77,11 @@ export const HeroRedesign = () => {
               Criar conta grátis
             </Link>
             <a
-              href="#comunidades"
+              href="#como-funciona"
+              onClick={(e) => {
+                e.preventDefault();
+                document.getElementById("como-funciona")?.scrollIntoView({ behavior: "smooth", block: "center" });
+              }}
               className="inline-flex items-center justify-center h-14 px-8 rounded-full border border-border text-foreground font-medium hover:border-muted-foreground hover:bg-surface-raised transition-all hover:-translate-y-0.5"
             >
               Ver como funciona →

@@ -3,7 +3,6 @@ import { useState } from "react";
 import { useLandingData, type PopularGame } from "@/hooks/useLandingData";
 import { SectionHead } from "./SectionHead";
 
-// Stable color from name (3 distinct hues per game)
 function gameColors(name: string): { from: string; to: string; accent: string } {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
@@ -16,7 +15,7 @@ function gameColors(name: string): { from: string; to: string; accent: string } 
 }
 
 function initials(name: string): string {
-  const words = name.replace(/[:\-–]/g, " ").split(/\s+/).filter(Boolean);
+  const words = name.replace(/[:\-–·]/g, " ").split(/\s+/).filter(Boolean);
   if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
   return (words[0][0] + words[1][0]).toUpperCase();
 }
@@ -34,7 +33,6 @@ const FallbackCover = ({ name }: { name: string }) => {
         </linearGradient>
       </defs>
       <rect width="240" height="320" fill={`url(#${id})`} />
-      {/* decorative shapes */}
       <circle cx="200" cy="60" r="44" fill={accent} opacity="0.18" />
       <circle cx="40" cy="280" r="60" fill={accent} opacity="0.12" />
       <text
@@ -58,7 +56,7 @@ const Cover = ({ game }: { game: PopularGame }) => {
   const [errored, setErrored] = useState(false);
   const showImage = game.image_url && !errored;
   return (
-    <div className="aspect-[3/4] rounded-lg overflow-hidden border border-border/60 mb-3 relative bg-surface-raised">
+    <div className="aspect-[4/3] rounded-lg overflow-hidden border border-border/60 mb-4 relative bg-surface-raised">
       {showImage ? (
         <img
           src={game.image_url!}
@@ -70,12 +68,11 @@ const Cover = ({ game }: { game: PopularGame }) => {
       ) : (
         <FallbackCover name={game.name} />
       )}
-      <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/85 via-black/40 to-transparent" />
-      <div className="absolute inset-x-0 bottom-0 px-3 py-2.5">
-        <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-white/95 line-clamp-2 leading-tight">
-          {game.name}
-        </p>
-      </div>
+      {game.typeLabel && (
+        <span className="absolute top-2.5 left-2.5 inline-flex items-center text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded-full bg-black/70 text-white backdrop-blur-sm">
+          {game.typeLabel}
+        </span>
+      )}
     </div>
   );
 };
@@ -84,39 +81,47 @@ const GameCard = ({ game }: { game: PopularGame }) => {
   const players =
     game.min_players && game.max_players
       ? game.min_players === game.max_players
-        ? `${game.min_players} jog`
-        : `${game.min_players}–${game.max_players} jog`
+        ? `${game.min_players} jogadores`
+        : `${game.min_players}–${game.max_players} jogadores`
       : null;
   const matchLabel =
     game.matchCount > 0
       ? `${game.matchCount} ${game.matchCount === 1 ? "partida" : "partidas"}`
-      : "sem partidas";
+      : "Em breve";
+  const href = game.href ?? `/games/${game.id}`;
 
   return (
     <Link
-      to={`/games/${game.id}`}
-      className="group flex-shrink-0 w-[220px] rounded-xl border border-border/60 bg-surface p-3 hover:border-gold/40 hover:-translate-y-1 transition-all"
+      to={href}
+      className="group flex-shrink-0 w-[300px] sm:w-[320px] rounded-2xl border border-border/60 bg-surface p-4 hover:border-gold/40 hover:-translate-y-1 transition-all flex flex-col"
     >
       <Cover game={game} />
-      <p className="text-sm font-semibold truncate group-hover:text-gold transition-colors">
+      <h3 className="text-base font-bold leading-tight group-hover:text-gold transition-colors line-clamp-2">
         {game.name}
-      </p>
-      <p className="text-sm font-medium mt-1 flex items-center gap-1.5 flex-wrap">
-        {game.category && <span className="text-muted-foreground">{game.category}</span>}
-        {players && <span className="text-muted-foreground">· {players}</span>}
-        <span className={`ml-auto ${game.matchCount > 0 ? "text-gold" : "text-muted-foreground/60"}`}>
+      </h3>
+      <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+        {players && <span>👥 {players}</span>}
+        {players && <span className="text-border">·</span>}
+        <span className={game.matchCount > 0 ? "text-gold font-semibold" : "text-muted-foreground"}>
           {matchLabel}
         </span>
-      </p>
+      </div>
+      {game.description && (
+        <p className="mt-3 text-sm text-muted-foreground leading-relaxed line-clamp-3">
+          {game.description}
+        </p>
+      )}
     </Link>
   );
 };
 
 const SkeletonCard = () => (
-  <div className="flex-shrink-0 w-[220px] rounded-xl border border-border/60 bg-surface p-3">
-    <div className="aspect-[3/4] rounded-lg bg-surface-raised animate-pulse mb-3" />
-    <div className="h-4 bg-surface-raised rounded animate-pulse mb-2" />
-    <div className="h-3 w-2/3 bg-surface-raised rounded animate-pulse" />
+  <div className="flex-shrink-0 w-[300px] sm:w-[320px] rounded-2xl border border-border/60 bg-surface p-4">
+    <div className="aspect-[4/3] rounded-lg bg-surface-raised animate-pulse mb-4" />
+    <div className="h-5 bg-surface-raised rounded animate-pulse mb-2" />
+    <div className="h-3 w-2/3 bg-surface-raised rounded animate-pulse mb-3" />
+    <div className="h-3 bg-surface-raised rounded animate-pulse mb-1.5" />
+    <div className="h-3 w-4/5 bg-surface-raised rounded animate-pulse" />
   </div>
 );
 
@@ -152,7 +157,7 @@ export const PopularGames = () => {
         <div className="container">
           <div className="flex gap-4 min-w-max">
             {loading && popularGames.length === 0
-              ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
+              ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
               : popularGames.map((g) => <GameCard key={g.id} game={g} />)}
           </div>
         </div>

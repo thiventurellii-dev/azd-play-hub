@@ -18,7 +18,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
       {!hideNavbar && <Navbar />}
-      <main className={`flex-1 ${user && !hideNavbar ? "pb-16 md:pb-0" : ""}`}>{children}</main>
+      <main className={`flex-1 ${!hideNavbar ? "pt-16" : ""} ${user && !hideNavbar ? "pb-16 md:pb-0" : ""}`}>{children}</main>
       {!hideNavbar && <Footer />}
       {!hideNavbar && user && <BottomNav />}
     </div>

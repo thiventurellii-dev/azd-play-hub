@@ -41,17 +41,17 @@ export const ClaimGuestDialog = ({ open, onOpenChange, onClaimed }: Props) => {
     if (!normalized) return notify('error', 'Informe o código de convidado');
     setSearching(true);
     setPreview(null);
-    // Busca via RPC pública seria ideal; aqui filtramos via SELECT (auth users podem ler ghost_players)
-    const { data, error } = await supabase
-      .from('ghost_players')
-      .select('id, display_name, linked_profile_id, claim_code')
-      .ilike('claim_code', normalized)
-      .maybeSingle();
+    // Lookup via RPC SECURITY DEFINER — claim_code não é mais legível via SELECT direto
+    const { data, error } = await supabase.rpc('lookup_ghost_by_claim_code', {
+      p_code: normalized,
+    });
     setSearching(false);
     if (error) return notify('error', 'Erro ao buscar convidado');
-    if (!data) return notify('error', 'Nenhum convidado encontrado com esse código');
-    if (data.linked_profile_id) return notify('error', 'Este convidado já foi vinculado a outra conta');
-    setPreview({ id: data.id, display_name: data.display_name });
+    const row = Array.isArray(data) ? data[0] : (data as any);
+    if (!row) return notify('error', 'Nenhum convidado encontrado com esse código');
+    if (row.linked_profile_id || row.claimed_by_user_id)
+      return notify('error', 'Este convidado já foi vinculado a outra conta');
+    setPreview({ id: row.id, display_name: row.display_name });
   };
 
   const handleClaim = async () => {

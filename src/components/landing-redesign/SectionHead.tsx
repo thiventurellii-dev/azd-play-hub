@@ -13,7 +13,7 @@ export const SectionHead = ({ eyebrow, title, description, align = "left", right
     return (
       <div className="mb-12 flex items-end justify-between gap-6 flex-wrap">
         <div>
-          <p className="mono text-[11px] uppercase tracking-[0.18em] text-gold mb-3">{eyebrow}</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.12em] text-gold mb-3">{eyebrow}</p>
           <h2 className="display-tight font-black text-[clamp(28px,3.5vw,44px)] max-w-2xl">
             {title}
           </h2>
@@ -24,7 +24,7 @@ export const SectionHead = ({ eyebrow, title, description, align = "left", right
   }
   return (
     <div className="mb-12 max-w-2xl">
-      <p className="mono text-[11px] uppercase tracking-[0.18em] text-gold mb-3">{eyebrow}</p>
+      <p className="text-sm font-semibold uppercase tracking-[0.12em] text-gold mb-3">{eyebrow}</p>
       <h2 className="display-tight font-black text-[clamp(28px,3.5vw,44px)] mb-4">{title}</h2>
       {description && <p className="text-base md:text-lg text-muted-foreground leading-relaxed">{description}</p>}
     </div>

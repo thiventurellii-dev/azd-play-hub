@@ -36,7 +36,7 @@ export const Compare = () => (
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div className="rounded-2xl border border-border/60 bg-background p-7">
           <div className="flex items-center justify-between mb-5">
-            <span className="mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
+            <span className="text-sm font-semibold uppercase tracking-[0.12em] text-muted-foreground">
               Sem AzD
             </span>
             <span className="text-2xl font-bold text-muted-foreground/50">—</span>
@@ -55,7 +55,7 @@ export const Compare = () => (
 
         <div className="rounded-2xl border bg-background p-7 border-gold/40 shadow-[0_30px_60px_-40px_hsl(43_100%_50%/0.5)]">
           <div className="flex items-center justify-between mb-5">
-            <span className="mono text-[11px] uppercase tracking-[0.18em] text-gold">
+            <span className="text-sm font-semibold uppercase tracking-[0.12em] text-gold">
               Com AzD
             </span>
             <span className="text-2xl font-bold text-gold">+</span>

@@ -85,17 +85,32 @@ export function useLandingData() {
 
           const { data: ratings } = await supabase
             .from("mmr_ratings")
-            .select("player_id,current_mmr,profile:profiles!mmr_ratings_player_id_fkey(name,full_name)")
-            .eq("season_id", seasonId)
-            .order("current_mmr", { ascending: false })
-            .limit(4);
+            .select("player_id,current_mmr")
+            .eq("season_id", seasonId);
           if (!cancelled && ratings) {
-            setTopPlayers(
-              ratings.map((r: any) => ({
-                name: r.profile?.full_name || r.profile?.name || "Jogador",
-                mmr: Number(r.current_mmr ?? 0),
-              })),
-            );
+            const agg = new Map<string, { mmr: number; count: number }>();
+            for (const r of ratings as { player_id: string; current_mmr: number }[]) {
+              const cur = agg.get(r.player_id) ?? { mmr: 0, count: 0 };
+              cur.mmr += Number(r.current_mmr ?? 0);
+              cur.count += 1;
+              agg.set(r.player_id, cur);
+            }
+            const top = Array.from(agg.entries())
+              .map(([player_id, v]) => ({ player_id, mmr: v.mmr / Math.max(1, v.count) }))
+              .sort((a, b) => b.mmr - a.mmr)
+              .slice(0, 4);
+            if (top.length) {
+              const ids = top.map((t) => t.player_id);
+              const { data: profs } = await supabase
+                .from("profiles")
+                .select("id,name,full_name")
+                .in("id", ids);
+              const nameById = new Map<string, string>();
+              for (const p of (profs ?? []) as any[]) {
+                nameById.set(p.id, p.full_name || p.name || "Jogador");
+              }
+              setTopPlayers(top.map((t) => ({ name: nameById.get(t.player_id) ?? "Jogador", mmr: t.mmr })));
+            }
           }
         }
       } finally {

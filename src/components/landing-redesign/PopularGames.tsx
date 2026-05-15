@@ -5,11 +5,19 @@ import BoardgameCard from "@/components/games/BoardgameCard";
 import { useGamesData } from "@/hooks/useGamesData";
 import { supabase } from "@/lib/supabaseExternal";
 import { SectionHead } from "./SectionHead";
+import bloodCover from "@/assets/blood-clocktower.png";
 
 const BLOOD_DESCRIPTION =
   "O jogo de papel social mais complexo e satisfatório já criado. Aldeões contra Demônio em uma batalha de informação, lógica e confiança.";
-const BLOOD_OFFICIAL_IMAGE =
-  "https://wiki.bloodontheclocktower.com/images/4/4f/Blood-on-the-Clocktower-Logo-Tavern.png";
+
+// Slugs/names dos jogos "principais" — ficam em destaque
+const FEATURED_MATCHERS = [
+  /dune/i,
+  /blood on the clocktower/i,
+  /brass/i,
+];
+
+const isFeatured = (name: string) => FEATURED_MATCHERS.some((r) => r.test(name));
 
 export const PopularGames = () => {
   const { data, isLoading } = useGamesData();
@@ -21,7 +29,7 @@ export const PopularGames = () => {
 
   useEffect(() => {
     (async () => {
-      const [bloodRes, rpgRes, bloodScriptRes, bloodMatchRes] = await Promise.all([
+      const [bloodRes, rpgGameRes, rpgAdvRes, bloodMatchRes] = await Promise.all([
         supabase
           .from("games")
           .select("*")
@@ -33,25 +41,22 @@ export const PopularGames = () => {
           .or("slug.eq.rpg-generico,slug.eq.rpg-generic,name.eq.RPG")
           .maybeSingle(),
         supabase
-          .from("blood_scripts")
-          .select("name,image_url")
-          .order("created_at", { ascending: true })
-          .limit(1),
+          .from("rpg_adventures")
+          .select("id,name,description,image_url,min_players,max_players,recommended_level")
+          .ilike("name", "%RPG da AzD%")
+          .maybeSingle(),
         supabase.from("blood_matches").select("id"),
       ]);
 
       const bloodGame = bloodRes.data as any | null;
-      const rpgGame = rpgRes.data as any | null;
-      const officialImage =
-        BLOOD_OFFICIAL_IMAGE ||
-        (bloodScriptRes.data?.[0] as any)?.image_url ||
-        bloodGame?.image_url;
+      const rpgGame = rpgGameRes.data as any | null;
+      const rpgAdv = rpgAdvRes.data as any | null;
 
       setExtras({
         blood: bloodGame
           ? {
               ...bloodGame,
-              image_url: officialImage,
+              image_url: bloodCover,
               description: BLOOD_DESCRIPTION,
               category: bloodGame.category ?? "Dedução Social",
               min_players: bloodGame.min_players ?? 5,
@@ -59,7 +64,20 @@ export const PopularGames = () => {
               __matchCount: bloodMatchRes.data?.length ?? 0,
             }
           : null,
-        rpg: rpgGame ?? null,
+        rpg: rpgGame
+          ? {
+              ...rpgGame,
+              name: rpgAdv?.name || "RPG da AzD",
+              slug: rpgGame.slug,
+              image_url: rpgAdv?.image_url || rpgGame.image_url,
+              description:
+                rpgAdv?.description ||
+                "Mesa oficial de RPG da comunidade no sistema Pathfinder 2e.",
+              category: "RPG · Pathfinder 2e",
+              min_players: rpgAdv?.min_players ?? rpgGame.min_players ?? 3,
+              max_players: rpgAdv?.max_players ?? rpgGame.max_players ?? 6,
+            }
+          : null,
       });
     })();
   }, []);
@@ -71,16 +89,27 @@ export const PopularGames = () => {
   const gameTagMap = data?.gameTagMap ?? {};
   const activeSeasonGameIds = data?.activeSeasonGameIds ?? new Set<string>();
 
-  // Sort: most matches first, then alpha
-  const boardgames = [...games].sort(
-    (a: any, b: any) =>
-      (matchCounts[b.id] || 0) - (matchCounts[a.id] || 0) ||
-      a.name.localeCompare(b.name),
-  );
+  // Build full list, then sort: featured first (Dune, Blood, Brass), rest by matches
+  const all: any[] = [...games];
+  // Replace blood entry with enriched one (override image/desc), or push if missing
+  if (extras.blood) {
+    const idx = all.findIndex((g) => /blood on the clocktower/i.test(g.name));
+    if (idx >= 0) all[idx] = { ...all[idx], ...extras.blood };
+    else all.push(extras.blood);
+  }
+  // Replace generic RPG with curated one
+  if (extras.rpg) {
+    const idx = all.findIndex((g) => /^rpg$/i.test(g.name));
+    if (idx >= 0) all[idx] = { ...all[idx], ...extras.rpg };
+    else all.push(extras.rpg);
+  }
 
-  const allCards: any[] = [...boardgames];
-  if (extras.blood) allCards.push(extras.blood);
-  if (extras.rpg) allCards.push(extras.rpg);
+  const sorted = all.sort((a, b) => {
+    const fa = isFeatured(a.name) ? 0 : 1;
+    const fb = isFeatured(b.name) ? 0 : 1;
+    if (fa !== fb) return fa - fb;
+    return (matchCounts[b.id] || 0) - (matchCounts[a.id] || 0) || a.name.localeCompare(b.name);
+  });
 
   const scroll = (dir: -1 | 1) => {
     const el = scrollerRef.current;
@@ -124,49 +153,56 @@ export const PopularGames = () => {
         />
       </div>
 
-      <div
-        ref={scrollerRef}
-        className="overflow-x-auto overflow-y-visible pt-6 pb-8 scroll-smooth snap-x"
-        style={{
-          maskImage:
-            "linear-gradient(90deg, transparent 0, black 32px, black calc(100% - 32px), transparent 100%)",
-          WebkitMaskImage:
-            "linear-gradient(90deg, transparent 0, black 32px, black calc(100% - 32px), transparent 100%)",
-        }}
-      >
-        <div className="container">
-          <div className="flex gap-4 min-w-max items-stretch">
-            {isLoading && allCards.length === 0
+      <div className="container mt-8">
+        <div
+          ref={scrollerRef}
+          className="overflow-x-auto overflow-y-visible pt-6 pb-8 scroll-smooth snap-x snap-mandatory"
+          style={{
+            maskImage:
+              "linear-gradient(90deg, transparent 0, rgba(0,0,0,0.15) 60px, black 160px, black calc(100% - 160px), rgba(0,0,0,0.15) calc(100% - 60px), transparent 100%)",
+            WebkitMaskImage:
+              "linear-gradient(90deg, transparent 0, rgba(0,0,0,0.15) 60px, black 160px, black calc(100% - 160px), rgba(0,0,0,0.15) calc(100% - 60px), transparent 100%)",
+          }}
+        >
+          <div className="flex gap-5 items-stretch px-2">
+            {isLoading && sorted.length === 0
               ? Array.from({ length: 4 }).map((_, i) => (
                   <div
                     key={i}
-                    className="flex-shrink-0 w-[300px] sm:w-[320px] h-[440px] rounded-2xl border border-border/60 bg-surface animate-pulse"
+                    className="flex-shrink-0 w-[320px] h-[520px] rounded-2xl border border-border/60 bg-surface animate-pulse"
                   />
                 ))
-              : allCards.map((g: any, i: number) => (
-                  <div
-                    key={g.id}
-                    className="flex-shrink-0 w-[300px] sm:w-[330px] snap-start"
-                  >
-                    <BoardgameCard
-                      game={g}
-                      seasons={gameSeasons[g.id] || []}
-                      avgDuration={avgDurations[g.id]}
-                      matchCount={
-                        g.__matchCount != null ? g.__matchCount : matchCounts[g.id] || 0
-                      }
-                      hasActiveSeason={activeSeasonGameIds.has(g.id)}
-                      tags={gameTagMap[g.id] || []}
-                      index={i}
-                      onUpdated={() => {}}
-                    />
-                  </div>
-                ))}
+              : sorted.map((g: any, i: number) => {
+                  const featured = isFeatured(g.name);
+                  return (
+                    <div
+                      key={g.id}
+                      className={`flex-shrink-0 w-[320px] h-[520px] snap-start transition-all duration-300 ${
+                        featured
+                          ? "opacity-100"
+                          : "opacity-55 hover:opacity-100 saturate-75 hover:saturate-100"
+                      }`}
+                    >
+                      <BoardgameCard
+                        game={g}
+                        seasons={gameSeasons[g.id] || []}
+                        avgDuration={avgDurations[g.id]}
+                        matchCount={
+                          g.__matchCount != null ? g.__matchCount : matchCounts[g.id] || 0
+                        }
+                        hasActiveSeason={activeSeasonGameIds.has(g.id)}
+                        tags={gameTagMap[g.id] || []}
+                        index={i}
+                        onUpdated={() => {}}
+                      />
+                    </div>
+                  );
+                })}
           </div>
         </div>
       </div>
 
-      {!isLoading && allCards.length === 0 && (
+      {!isLoading && sorted.length === 0 && (
         <div className="container mt-6">
           <p className="text-sm text-muted-foreground text-center">
             Nenhum jogo cadastrado ainda.

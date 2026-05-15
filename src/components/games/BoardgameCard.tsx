@@ -215,12 +215,12 @@ const BoardgameCard = ({
           <div className="flex-1" />
 
           {/* Quick stats — players · matches · duration */}
-          <div className="flex items-end justify-between rounded-lg bg-background/40 px-3 py-2.5 ring-1 ring-border/30">
+          <div className="flex items-stretch justify-between rounded-lg bg-background/40 px-3 py-2.5 ring-1 ring-border/30">
             <StatBlock value={playerRange ?? "—"} label="Jogadores" icon={Users} />
-            <div className="h-8 w-px bg-border/50" />
+            <div className="w-px bg-border/50 mx-1" />
             <StatBlock value={`${matchCount}`} label="Partidas" icon={BarChart3} highlight />
-            <div className="h-8 w-px bg-border/50" />
-            <StatBlock value={avgDuration ? `${avgDuration}m` : "—"} label="Duração média" icon={Clock} />
+            <div className="w-px bg-border/50 mx-1" />
+            <StatBlock value={avgDuration ? `${avgDuration}m` : "—"} label="Duração" icon={Clock} />
           </div>
 
           {/* Active context now shown via card border + flag in cover */}
@@ -302,12 +302,13 @@ const StatBlock = ({
   label: string;
   highlight?: boolean;
 }) => (
-  <div className="flex flex-1 flex-col items-center gap-0.5 min-w-0 text-center">
-    <span className={`text-sm font-bold leading-tight ${highlight ? "text-gold" : "text-foreground"}`}>
+  <div className="flex flex-1 flex-col items-center justify-center gap-1 min-w-0 text-center">
+    <Icon className={`h-3.5 w-3.5 ${highlight ? "text-gold" : "text-muted-foreground"}`} />
+    <span className={`text-sm font-bold leading-none ${highlight ? "text-gold" : "text-foreground"}`}>
       {value}
     </span>
-    <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-      <Icon className="h-3 w-3" /> {label}
+    <span className="text-[10px] leading-none text-muted-foreground whitespace-nowrap">
+      {label}
     </span>
   </div>
 );

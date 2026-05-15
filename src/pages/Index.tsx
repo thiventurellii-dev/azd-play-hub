@@ -9,15 +9,13 @@ import { useDashboardData } from "@/hooks/useDashboardData";
 import { Hero } from "@/components/home/Hero";
 import { DashboardCard } from "@/components/home/DashboardCard";
 import { SocialButtons } from "@/components/home/SocialButtons";
-import { LandingHero } from "@/components/landing/LandingHero";
-import { LandingStats } from "@/components/landing/LandingStats";
-import { LandingTestimonials } from "@/components/landing/LandingTestimonials";
-import { LandingProfileSection } from "@/components/landing/LandingProfileSection";
-import { LandingMatchRoomsSection } from "@/components/landing/LandingMatchRoomsSection";
-import { LandingCommunitiesSection } from "@/components/landing/LandingCommunitiesSection";
-import { LandingSeasonsSection } from "@/components/landing/LandingSeasonsSection";
-import { LandingGamesSection } from "@/components/landing/LandingGamesSection";
-import { LandingFinalCTA } from "@/components/landing/LandingFinalCTA";
+import { HeroRedesign } from "@/components/landing-redesign/HeroRedesign";
+import { StatsRedesign } from "@/components/landing-redesign/StatsRedesign";
+import { HowItWorks } from "@/components/landing-redesign/HowItWorks";
+import { FeaturesBento } from "@/components/landing-redesign/FeaturesBento";
+import { PopularGames } from "@/components/landing-redesign/PopularGames";
+import { Compare } from "@/components/landing-redesign/Compare";
+import { FinalCTARedesign } from "@/components/landing-redesign/FinalCTARedesign";
 
 const POSITION_COLORS = ["text-yellow-400", "text-gray-400", "text-amber-600"];
 
@@ -57,15 +55,13 @@ function getPositionDot(position: number | null) {
 
 const LoggedOutIndex = () => (
   <div>
-    <LandingHero />
-    <LandingStats />
-    <LandingTestimonials />
-    <LandingProfileSection />
-    <LandingMatchRoomsSection />
-    <LandingCommunitiesSection />
-    <LandingSeasonsSection />
-    <LandingGamesSection />
-    <LandingFinalCTA />
+    <HeroRedesign />
+    <StatsRedesign />
+    <HowItWorks />
+    <FeaturesBento />
+    <PopularGames />
+    <Compare />
+    <FinalCTARedesign />
   </div>
 );
 

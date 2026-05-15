@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useLandingData } from "@/hooks/useLandingData";
-import { SocialButtons } from "@/components/home/SocialButtons";
+
 import { supabase } from "@/lib/supabaseExternal";
 
 export const FinalCTARedesign = () => {
@@ -94,7 +94,6 @@ export const FinalCTARedesign = () => {
             </div>
           )}
 
-          <SocialButtons />
         </div>
       </div>
     </section>

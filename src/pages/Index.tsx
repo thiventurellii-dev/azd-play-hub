@@ -16,6 +16,7 @@ import { FeaturesBento } from "@/components/landing-redesign/FeaturesBento";
 import { PopularGames } from "@/components/landing-redesign/PopularGames";
 import { Compare } from "@/components/landing-redesign/Compare";
 import { FinalCTARedesign } from "@/components/landing-redesign/FinalCTARedesign";
+import { Testimonials } from "@/components/landing-redesign/Testimonials";
 
 const POSITION_COLORS = ["text-yellow-400", "text-gray-400", "text-amber-600"];
 
@@ -61,6 +62,7 @@ const LoggedOutIndex = () => (
     <FeaturesBento />
     <PopularGames />
     <Compare />
+    <Testimonials />
     <FinalCTARedesign />
   </div>
 );

@@ -27,7 +27,7 @@ export const HeroRedesign = () => {
                        radial-gradient(600px 300px at 0% 30%,  color-mix(in oklab, var(--lr-blue) 14%, transparent), transparent 60%)`,
         }}
       />
-      <div className="lr-container relative grid gap-14 items-center" style={{ gridTemplateColumns: "1.05fr 1fr" }}>
+      <div className="lr-container lr-hero-grid relative grid gap-14 items-center">
         <div className="lr-hero-copy">
           <div className="flex items-center gap-2.5 mb-6">
             <span className="lr-pulse-dot" aria-hidden />

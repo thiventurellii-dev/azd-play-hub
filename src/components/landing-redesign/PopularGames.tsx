@@ -159,9 +159,9 @@ export const PopularGames = () => {
           className="overflow-x-auto overflow-y-visible pt-6 pb-8 scroll-smooth snap-x snap-mandatory"
           style={{
             maskImage:
-              "linear-gradient(90deg, transparent 0, rgba(0,0,0,0.15) 60px, black 160px, black calc(100% - 160px), rgba(0,0,0,0.15) calc(100% - 60px), transparent 100%)",
+              "linear-gradient(90deg, transparent 0, rgba(0,0,0,0.5) 32px, black 96px, black calc(100% - 96px), rgba(0,0,0,0.5) calc(100% - 32px), transparent 100%)",
             WebkitMaskImage:
-              "linear-gradient(90deg, transparent 0, rgba(0,0,0,0.15) 60px, black 160px, black calc(100% - 160px), rgba(0,0,0,0.15) calc(100% - 60px), transparent 100%)",
+              "linear-gradient(90deg, transparent 0, rgba(0,0,0,0.5) 32px, black 96px, black calc(100% - 96px), rgba(0,0,0,0.5) calc(100% - 32px), transparent 100%)",
           }}
         >
           <div className="flex gap-5 items-stretch px-2">
@@ -177,24 +177,26 @@ export const PopularGames = () => {
                   return (
                     <div
                       key={g.id}
-                      className={`flex-shrink-0 w-[320px] h-[520px] snap-start transition-all duration-300 ${
+                      className={`flex h-[520px] w-[320px] flex-shrink-0 snap-start transition-all duration-300 ${
                         featured
                           ? "opacity-100"
-                          : "opacity-55 hover:opacity-100 saturate-75 hover:saturate-100"
+                          : "opacity-90 hover:opacity-100 saturate-95 hover:saturate-100"
                       }`}
                     >
-                      <BoardgameCard
-                        game={g}
-                        seasons={gameSeasons[g.id] || []}
-                        avgDuration={avgDurations[g.id]}
-                        matchCount={
-                          g.__matchCount != null ? g.__matchCount : matchCounts[g.id] || 0
-                        }
-                        hasActiveSeason={activeSeasonGameIds.has(g.id)}
-                        tags={gameTagMap[g.id] || []}
-                        index={i}
-                        onUpdated={() => {}}
-                      />
+                      <div className="h-full w-full [&>*]:h-full">
+                        <BoardgameCard
+                          game={g}
+                          seasons={gameSeasons[g.id] || []}
+                          avgDuration={avgDurations[g.id]}
+                          matchCount={
+                            g.__matchCount != null ? g.__matchCount : matchCounts[g.id] || 0
+                          }
+                          hasActiveSeason={activeSeasonGameIds.has(g.id)}
+                          tags={gameTagMap[g.id] || []}
+                          index={i}
+                          onUpdated={() => {}}
+                        />
+                      </div>
                     </div>
                   );
                 })}

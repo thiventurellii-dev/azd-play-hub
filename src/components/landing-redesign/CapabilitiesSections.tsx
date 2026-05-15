@@ -16,6 +16,7 @@ const SectionShell = ({
   bullets,
   visual,
   reverse = false,
+  id,
 }: {
   eyebrow: string;
   title: React.ReactNode;
